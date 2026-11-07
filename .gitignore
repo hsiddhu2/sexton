@@ -19,3 +19,7 @@ coverage/
 cdk.out/
 .aws-sam/
 # NOTE: .kiro/ is intentionally NOT ignored. Hackathon rules require it committed.
+
+# build artefacts
+*.tsbuildinfo
+*.timestamp-*.mjs

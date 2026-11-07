@@ -1,0 +1,30 @@
+{
+  "name": "sexton-workspace",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Sexton finds the dependencies that will hurt you, proves it, and opens the pull request that fixes it.",
+  "license": "Apache-2.0",
+  "author": "Harpreet Singh Siddhu",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc -b"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.17.0",
+    "@types/node": "22.10.2",
+    "eslint": "9.17.0",
+    "typescript": "5.7.2",
+    "typescript-eslint": "8.18.1",
+    "vitest": "2.1.8",
+    "fast-check": "3.23.1"
+  },
+  "type": "module"
+}
