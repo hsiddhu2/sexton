@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "github": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"],
+      "env": { "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}" },
+      "autoApprove": ["get_file_contents", "get_repository", "list_branches", "get_pull_request", "list_pull_requests", "search_repositories"],
+      "disabledTools": ["delete_repository", "force_push", "merge_pull_request", "delete_branch", "update_pull_request_branch", "create_repository", "fork_repository"]
+    },
+    "aws-docs": {
+      "command": "uvx",
+      "args": ["awslabs.aws-documentation-mcp-server@latest"],
+      "env": { "FASTMCP_LOG_LEVEL": "ERROR" },
+      "autoApprove": ["search_documentation", "read_documentation"]
+    }
+  }
+}

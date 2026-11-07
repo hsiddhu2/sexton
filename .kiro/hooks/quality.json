@@ -1,0 +1,29 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "typecheck-before-task",
+      "description": "Refuse to start a spec task when the workspace does not typecheck.",
+      "trigger": "PreTaskExec",
+      "action": { "type": "command", "command": "npm run -s typecheck || exit 2" },
+      "timeout": 120,
+      "enabled": true
+    },
+    {
+      "name": "engine-tests-on-save",
+      "description": "Run engine tests whenever Kiro changes an engine source file.",
+      "trigger": "PostFileSave",
+      "matcher": "^packages/engine/.*\\.ts$",
+      "action": { "type": "command", "command": "npm test -s -w @sexton/engine" },
+      "timeout": 180,
+      "enabled": true
+    },
+    {
+      "name": "property-tests-after-task",
+      "description": "After a spec task, run the property tests for that spec and report any counterexample against the requirement it validates.",
+      "trigger": "PostTaskExec",
+      "action": { "type": "agent", "prompt": "Run the property-based tests for the spec task that just completed. If any property fails, report the shrunken counterexample and the requirement ID it validates. Do not change code. Report only." },
+      "enabled": true
+    }
+  ]
+}
