@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Reject AI attribution trailers in commit messages.
+set -euo pipefail
+if grep -qEi 'co-authored-by:.*(claude|anthropic|kiro|copilot|openai)|generated (with|by) (claude|kiro|copilot)' "$1"; then
+  echo "commit-msg: AI attribution trailer found. Remove it." >&2; exit 1
+fi

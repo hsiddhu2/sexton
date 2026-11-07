@@ -1,0 +1,21 @@
+# private research and filings never leave this machine
+private/
+# dependencies and build
+node_modules/
+dist/
+build/
+coverage/
+.turbo/
+# env and secrets
+.env
+.env.*
+!.env.example
+*.pem
+# os and editors
+.DS_Store
+.vscode/
+.idea/
+# aws
+cdk.out/
+.aws-sam/
+# NOTE: .kiro/ is intentionally NOT ignored. Hackathon rules require it committed.
