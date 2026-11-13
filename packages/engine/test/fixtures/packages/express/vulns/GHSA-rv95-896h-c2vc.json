@@ -1,0 +1,13 @@
+{
+  "id": "GHSA-rv95-896h-c2vc",
+  "summary": "Express.js Open Redirect in malformed URLs",
+  "severity": [
+    {
+      "type": "CVSS_V3",
+      "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N"
+    }
+  ],
+  "database_specific": {
+    "severity": "MODERATE"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "GHSA-4p3w-j4w9-5jqw",
+  "summary": "moment vulnerable to Path Traversal via crafted non-string locale name",
+  "severity": [
+    {
+      "type": "CVSS_V3",
+      "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:N"
+    }
+  ],
+  "database_specific": {
+    "severity": "MODERATE"
+  }
+}

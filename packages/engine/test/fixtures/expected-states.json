@@ -1,0 +1,12 @@
+{
+  "react": { "state": "Alive", "stateReason": "no rule matched", "missingSignals": [] },
+  "lodash": { "state": "Haunted", "stateReason": "advisory of severity High or Critical", "missingSignals": [] },
+  "express": { "state": "Restless", "stateReason": "advisory of severity Moderate or Low", "missingSignals": [] },
+  "request": { "state": "Dead", "stateReason": "installed version is deprecated", "missingSignals": [] },
+  "node-sass": { "state": "Dead", "stateReason": "installed version is deprecated", "missingSignals": [] },
+  "left-pad": { "state": "Dead", "stateReason": "installed version is deprecated", "missingSignals": [] },
+  "event-stream": { "state": "Dead", "stateReason": "last publish more than 24 months ago", "missingSignals": ["hasInstallScript"] },
+  "colors": { "state": "Dead", "stateReason": "last publish more than 24 months ago", "missingSignals": [] },
+  "moment": { "state": "Restless", "stateReason": "advisory of severity Moderate or Low", "missingSignals": [] },
+  "uuid": { "state": "Dead", "stateReason": "installed version is deprecated", "missingSignals": [] }
+}
