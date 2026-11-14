@@ -1,0 +1,269 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Add the new types to src/types.ts additively": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671690436
+      },
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671703351
+      }
+    ],
+    "1.2 Implement src/snapshot.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671690480
+      }
+    ],
+    "1.3 Write example tests in test/snapshot.test.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671690519
+      }
+    ],
+    "1.4 Write Property 4 (append-only store round trip and immutability) in test/snapshot.test.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671690574
+      }
+    ],
+    "2.1 Implement compareVersionOrder, publishedVersions and isRecent in src/history.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671690616
+      }
+    ],
+    "2.2 Implement maintainerDiff and maintainerChangeValue in src/history.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671690644
+      }
+    ],
+    "2.3 Implement evaluateProvenanceRegression in src/history.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671690672
+      }
+    ],
+    "2.4 Implement newInstallScriptEvents in src/history.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671690703
+      }
+    ],
+    "2.5 Write example tests in test/history.test.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671690740
+      }
+    ],
+    "2.6 Write Properties 5 and 9 in test/history.test.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671690769
+      }
+    ],
+    "3.1 Implement unionGraph and transitiveReach in src/reach.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671690803
+      }
+    ],
+    "3.2 Write example tests in test/reach.test.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671690833
+      }
+    ],
+    "3.3 Write Properties 6, 7 and 8 in test/reach.test.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671690862
+      }
+    ],
+    "4.1 Copy the current evaluateState verbatim into test/support/health-scoring-oracle.ts, before any edit to src/state.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671690896
+      }
+    ],
+    "4.2 Extend StateInputs, evaluateState and stateFromSignals in src/state.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671690939
+      }
+    ],
+    "4.3 Write example tests in test/state-possessed.test.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671690992
+      }
+    ],
+    "4.4 Write Properties 1, 2, 3 and 12 in test/state-possessed.test.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671691025
+      }
+    ],
+    "5.1 Implement src/clients/attestations.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671691059
+      }
+    ],
+    "5.2 Implement src/clients/deps-dev.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671691088
+      }
+    ],
+    "5.3 Implement src/clients/maintainers.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671691120
+      }
+    ],
+    "5.4 Write test/clients/attestations.test.ts including Property 11": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671691152
+      }
+    ],
+    "5.5 Write example tests in test/clients/deps-dev.test.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671691185
+      }
+    ],
+    "5.6 Write example tests in test/clients/maintainers.test.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671691218
+      }
+    ],
+    "6.1 Implement runSnapshotter(store, ctx, names?) in src/snapshotter.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671691252
+      }
+    ],
+    "6.2 Write example tests in test/snapshotter.test.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671691299
+      }
+    ],
+    "6.3 Write Property 10 in test/snapshotter.test.ts, covering both paths": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671691328
+      }
+    ],
+    "7.1 Switch to ten signals in src/types.ts and update existing tests": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671691367
+      }
+    ],
+    "7.2 Add collectReach and buildHistorySignals to src/score.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671691404
+      }
+    ],
+    "7.3 Extend scoreOne, buildHealth and scorePackages in src/score.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671691435
+      }
+    ],
+    "7.4 Write example tests in test/score-history.test.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671691477
+      }
+    ],
+    "8.1 Extend scripts/record-fixtures.mjs": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671691508
+      }
+    ],
+    "8.2 Add test/fixtures/seed-maintainer-change.json": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671691543
+      }
+    ],
+    "8.3 Extend test/fixture-scan.test.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671691581
+      }
+    ],
+    "8.4 HUMAN REVIEW STEP, do not do this silently: record fixtures and review states": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671691614
+      }
+    ],
+    "9.1 Export the public surface listed in design.md from src/index.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671691647
+      }
+    ],
+    "9.2 Write test/index.test.ts": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671691719
+      }
+    ],
+    "10.1 Run npm run typecheck, npm run lint and npm test at the repository root and fix anything until all three are green with zero warnings": [
+      {
+        "executionId": "c26aa799-3129-49f6-9de5-d178594d7f5b",
+        "chatSessionId": "sess_9e33f5cb-cf5e-4cd0-b04e-2ccef37830ea",
+        "timestamp": 1794671691754
+      }
+    ]
+  }
+}
