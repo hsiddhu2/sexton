@@ -9,6 +9,7 @@
   "scripts": {
     "build": "tsc -b",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "fixtures:record": "node scripts/record-fixtures.mjs"
   }
 }

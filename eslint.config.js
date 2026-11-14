@@ -5,4 +5,5 @@ export default tseslint.config(
   { files: ["packages/**/*.ts", "packages/**/*.tsx", "infra/**/*.ts"] },
   js.configs.recommended,
   ...tseslint.configs.strict,
+  { files: ["**/scripts/**/*.mjs"], languageOptions: { globals: { fetch: "readonly", console: "readonly" } } },
 );
