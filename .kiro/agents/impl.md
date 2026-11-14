@@ -12,7 +12,7 @@ permissions:
       effect: allow
     - capability: shell
       match: ["*"]
-      effect: deny
+      effect: ask
     - capability: subagent
       match: ["security-reviewer"]
       effect: allow
