@@ -51,15 +51,28 @@ export interface PackumentSignals {
   readonly deprecated: Signal<boolean>;
 }
 
+/** Reads the full packument through the shared cache key. Throws on failure so callers can mark signals unavailable. */
+export function readFullPackument(ctx: ClientContext, name: string): Promise<unknown> {
+  return cachedJson(ctx, cacheKey(NPM_PACKUMENT_SOURCE, name, "*"), packumentUrl(name), {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+}
+
+/** Reads the abbreviated packument through the shared cache key. Throws on failure. */
+export function readAbbreviatedPackument(ctx: ClientContext, name: string): Promise<unknown> {
+  return cachedJson(ctx, cacheKey(NPM_ABBREVIATED_SOURCE, name, "*"), packumentUrl(name), {
+    method: "GET",
+    headers: { Accept: ABBREVIATED_ACCEPT },
+  });
+}
+
 /** Reads last publish and deprecated from the full packument. One failure marks both unavailable. Requirement 4.5. */
 export async function fetchPackumentSignals(ctx: ClientContext, name: string, version: string): Promise<PackumentSignals> {
   const url = packumentUrl(name);
   const now = ctx.clock();
   try {
-    const packument = await cachedJson(ctx, cacheKey(NPM_PACKUMENT_SOURCE, name, "*"), url, {
-      method: "GET",
-      headers: { Accept: "application/json" },
-    });
+    const packument = await readFullPackument(ctx, name);
     const last = extractLastPublish(packument);
     return {
       lastPublish: available(last === null ? null : last.toISOString(), url, now),

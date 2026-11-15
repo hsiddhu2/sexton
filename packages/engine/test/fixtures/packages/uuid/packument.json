@@ -60,6 +60,14 @@
     "14.0.2": "2026-08-18T18:21:56.060Z",
     "14.0.3": "2026-10-10T00:30:19.423Z"
   },
+  "maintainers": [
+    {
+      "name": "broofa"
+    },
+    {
+      "name": "ctavan"
+    }
+  ],
   "versions": {
     "9.0.1": {
       "deprecated": "uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028)."

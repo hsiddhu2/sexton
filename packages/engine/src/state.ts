@@ -1,7 +1,16 @@
 // The pure state function. Requirements 2, 11, 12, 13, 14. No I/O here.
 
 import { fromIso, isAvailable } from "./signal.js";
-import { STATE_ORDER, type Advisory, type PackageSignals, type State } from "./types.js";
+import {
+  STATE_ORDER,
+  type Advisory,
+  type MaintainerChangeValue,
+  type NewInstallScriptEvent,
+  type NewSignals,
+  type PackageSignals,
+  type ProvenanceRegressionValue,
+  type State,
+} from "./types.js";
 
 export { STATE_ORDER };
 
@@ -21,6 +30,10 @@ export interface StateInputs {
   readonly lastPublish?: Date | null;
   readonly deprecated?: boolean;
   readonly advisories?: readonly Advisory[];
+  /** Possession inputs. undefined means unavailable. Requirement 9. */
+  readonly maintainerChange?: MaintainerChangeValue;
+  readonly provenanceRegression?: ProvenanceRegressionValue;
+  readonly newInstallScript?: readonly NewInstallScriptEvent[];
 }
 
 export interface StateResult {
@@ -36,11 +49,27 @@ export function monthsBefore(now: Date, months: number): Date {
 }
 
 /**
- * Evaluates the state rules in order, first match wins: Dead, Haunted, Restless, Alive.
- * Rules only use conditions whose signals are available. Requirement 11, 14.
- * Possessed is never produced here. Requirement 11.7.
+ * Evaluates the state rules in order, first match wins: Possessed, Dead, Haunted, Restless, Alive.
+ * Rules only use conditions whose signals are available. Requirement 9, 11, 14.
+ * Possessed comes only from the three Possession inputs. Requirement 9.8.
  */
 export function evaluateState(inputs: StateInputs, now: Date): StateResult {
+  // Possessed, first, before the all-unavailable shortcut. Requirement 9.1, 9.12.
+  if (inputs.maintainerChange?.events.some((e) => e.recent) === true) {
+    return { state: "Possessed", stateReason: "maintainer change in the last 90 days" };
+  }
+  const regression = inputs.provenanceRegression;
+  if (regression?.status === "regression") {
+    return {
+      state: "Possessed",
+      stateReason: `provenance regression: ${regression.installedVersion} has no provenance, ${regression.earlierVersion} had it`,
+    };
+  }
+  const added = inputs.newInstallScript?.[0];
+  if (added !== undefined) {
+    return { state: "Possessed", stateReason: `install script added in ${added.version}` };
+  }
+
   const hasPublish = inputs.lastPublish !== undefined;
   const hasDeprecated = inputs.deprecated !== undefined;
   const hasAdvisories = inputs.advisories !== undefined;
@@ -84,7 +113,8 @@ export function evaluateState(inputs: StateInputs, now: Date): StateResult {
 
 /** Adapts signal envelopes to state inputs and evaluates. ISO at the boundary, Date inside. Requirement 2. */
 export function stateFromSignals(
-  signals: Pick<PackageSignals, "lastPublish" | "deprecated" | "advisories">,
+  signals: Pick<PackageSignals, "lastPublish" | "deprecated" | "advisories"> &
+    Partial<Pick<NewSignals, "maintainerChange" | "provenanceRegression" | "newInstallScript">>,
   now: Date,
 ): StateResult {
   const inputs: { -readonly [K in keyof StateInputs]: StateInputs[K] } = {};
@@ -96,6 +126,15 @@ export function stateFromSignals(
   }
   if (isAvailable(signals.advisories)) {
     inputs.advisories = signals.advisories.value;
+  }
+  if (signals.maintainerChange !== undefined && isAvailable(signals.maintainerChange)) {
+    inputs.maintainerChange = signals.maintainerChange.value;
+  }
+  if (signals.provenanceRegression !== undefined && isAvailable(signals.provenanceRegression)) {
+    inputs.provenanceRegression = signals.provenanceRegression.value;
+  }
+  if (signals.newInstallScript !== undefined && isAvailable(signals.newInstallScript)) {
+    inputs.newInstallScript = signals.newInstallScript.value;
   }
   return evaluateState(inputs, now);
 }

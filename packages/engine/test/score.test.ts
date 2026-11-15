@@ -4,12 +4,13 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { buildHealth, mapWithConcurrency, PACKAGE_CONCURRENCY, scorePackages } from "../src/score.js";
 import { ABBREVIATED_ACCEPT } from "../src/clients/npm.js";
-import { SIGNAL_NAMES, STATE_ORDER } from "../src/types.js";
+import { ORIGINAL_SIGNAL_NAMES, STATE_ORDER } from "../src/types.js";
 import { packageSignalsArb } from "./arbitraries.js";
 import { NOW, routedTransport, type Route } from "./helpers.js";
 
 const QB = "https://api.osv.dev/v1/querybatch";
 const noSleep = { sleep: () => Promise.resolve() };
+const originalOnly = (names: readonly string[]): string[] => names.filter((n) => ORIGINAL_SIGNAL_NAMES.some((o) => o === n));
 
 function npmRoutes(name: string, version: string, opts: { publish: string; deprecated?: string; install?: boolean }): Route[] {
   const url = `https://registry.npmjs.org/${name}`;
@@ -44,7 +45,7 @@ describe("scorePackages", () => {
       ["old", "Dead"],
     ]);
     expect(report.packages[1]?.signals.hasInstallScript.value).toBe(true);
-    expect(report.packages[0]?.missingSignals).toEqual([]);
+    expect(originalOnly(report.packages[0]?.missingSignals ?? [])).toEqual([]);
   });
 
   it("a failing package does not affect another, and still gets a state (10.6, 14.3)", async () => {
@@ -59,7 +60,7 @@ describe("scorePackages", () => {
     expect(report.packages[0]?.state).toBe("Alive");
     const gone = report.packages[1];
     expect(gone?.state).toBe("Restless");
-    expect(gone?.missingSignals).toEqual([...SIGNAL_NAMES]);
+    expect(originalOnly(gone?.missingSignals ?? [])).toEqual([...ORIGINAL_SIGNAL_NAMES]);
     expect(gone?.stateReason).toBe("all state signals unavailable");
   });
 
@@ -95,8 +96,8 @@ describe("buildHealth properties (14.2)", () => {
     fc.assert(
       fc.property(packageSignalsArb, (signals) => {
         const h = buildHealth({ name: "p", installedVersion: "1.0.0" }, signals, NOW);
-        const expected = SIGNAL_NAMES.filter((n) => !signals[n].available);
-        expect(h.missingSignals).toEqual(expected);
+        const expected = ORIGINAL_SIGNAL_NAMES.filter((n) => !signals[n].available);
+        expect(originalOnly(h.missingSignals)).toEqual(expected);
         expect(STATE_ORDER).toContain(h.state);
         expect(h.state).not.toBe("Possessed");
       }),

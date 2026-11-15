@@ -1,0 +1,14 @@
+{
+  "status": 200,
+  "body": {
+    "nodes": [
+      {
+        "versionKey": {
+          "name": "lodash",
+          "version": "4.17.21"
+        }
+      }
+    ],
+    "edges": []
+  }
+}

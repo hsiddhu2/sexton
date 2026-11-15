@@ -1,0 +1,24 @@
+{
+  "name": "left-padder",
+  "snapshots": [
+    {
+      "name": "left-padder",
+      "captureTime": "2026-10-01T00:00:00.000Z",
+      "maintainers": ["alice", "bob"],
+      "versions": [
+        { "version": "1.2.0", "publishTime": "2026-09-01T10:00:00.000Z", "hasInstallScript": false, "provenance": true },
+        { "version": "1.2.1", "publishTime": "2026-09-20T10:00:00.000Z", "hasInstallScript": false, "provenance": true }
+      ]
+    },
+    {
+      "name": "left-padder",
+      "captureTime": "2026-10-31T00:00:00.000Z",
+      "maintainers": ["alice", "mallory"],
+      "versions": [
+        { "version": "1.2.0", "publishTime": "2026-09-01T10:00:00.000Z", "hasInstallScript": false, "provenance": true },
+        { "version": "1.2.1", "publishTime": "2026-09-20T10:00:00.000Z", "hasInstallScript": false, "provenance": true },
+        { "version": "1.3.0", "publishTime": "2026-10-25T10:00:00.000Z", "hasInstallScript": true, "provenance": false }
+      ]
+    }
+  ]
+}

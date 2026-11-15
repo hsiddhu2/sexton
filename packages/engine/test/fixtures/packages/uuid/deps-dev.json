@@ -1,0 +1,14 @@
+{
+  "status": 200,
+  "body": {
+    "nodes": [
+      {
+        "versionKey": {
+          "name": "uuid",
+          "version": "9.0.1"
+        }
+      }
+    ],
+    "edges": []
+  }
+}

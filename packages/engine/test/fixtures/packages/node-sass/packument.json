@@ -158,6 +158,14 @@
     "8.0.0": "2022-11-09T10:19:45.412Z",
     "9.0.0": "2023-05-20T06:03:42.097Z"
   },
+  "maintainers": [
+    {
+      "name": "nex3"
+    },
+    {
+      "name": "xzyfer"
+    }
+  ],
   "versions": {
     "7.0.3": {
       "deprecated": "Node Sass is no longer supported. Please use `sass` or `sass-embedded` instead."

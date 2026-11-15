@@ -1,0 +1,35 @@
+{
+  "status": 200,
+  "body": {
+    "nodes": [
+      {
+        "versionKey": {
+          "name": "react",
+          "version": "18.3.1"
+        }
+      },
+      {
+        "versionKey": {
+          "name": "js-tokens",
+          "version": "4.0.0"
+        }
+      },
+      {
+        "versionKey": {
+          "name": "loose-envify",
+          "version": "1.4.0"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "fromNode": 0,
+        "toNode": 2
+      },
+      {
+        "fromNode": 2,
+        "toNode": 1
+      }
+    ]
+  }
+}

@@ -3015,6 +3015,14 @@
     "19.3.0-canary-df6aa4ec-20261112": "2026-11-12T16:20:08.519Z",
     "0.0.0-experimental-df6aa4ec-20261112": "2026-11-12T16:22:00.893Z"
   },
+  "maintainers": [
+    {
+      "name": "fb"
+    },
+    {
+      "name": "react-bot"
+    }
+  ],
   "versions": {
     "18.3.1": {}
   }
