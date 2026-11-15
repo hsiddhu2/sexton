@@ -105,7 +105,7 @@ Health-scoring Requirement 11.7 (never Possessed from last-publish, deprecated a
 7. THE SnapshotStore SHALL return a History ordered by Capture time ascending, with ties ordered by append order (for any sequence of appends in any order).
 8. WHEN the Engine appends a Snapshot for package A, THE SnapshotStore SHALL leave the History of every other package unchanged.
 9. WHEN a Seen record is recorded for a package name and Reference time, THE SnapshotStore SHALL include that package name in the list of packages seen within 90 days for any Reference time at which the Seen record is Recent (90 days).
-10. WHEN the Engine lists packages seen within 90 days of a Reference time, THE SnapshotStore SHALL return each package name exactly once, in ascending lexical order, excluding every package whose most recent Seen record is not Recent (90 days) (for any set of Seen records).
+10. WHEN the Engine lists packages seen within 90 days of a Reference time, THE SnapshotStore SHALL return each package name exactly once, in ascending code-unit order, excluding every package none of whose Seen records is Recent (90 days) (for any set of Seen records).
 11. WHEN the History is read for a package that has no appended Snapshot, THE SnapshotStore SHALL return an empty History and SHALL NOT raise an error.
 12. IF a Snapshot is appended whose Capture time is not a valid ISO 8601 UTC string, THEN THE SnapshotStore SHALL reject the append with an error indicating the invalid Capture time and SHALL leave every History unchanged.
 13. THE Engine SHALL treat a null provenance presence in a Snapshot as unknown, and a null provenance presence SHALL never satisfy a condition that requires provenance presence true or provenance presence false.
@@ -211,3 +211,4 @@ Health-scoring Requirement 11.7 (never Possessed from last-publish, deprecated a
 10. THE Engine SHALL send every upstream request for the New signals and the snapshotter through the injected Transport, so that the User-Agent, backoff and Cache of health-scoring apply and no test requires network access. (review constraint, not a correctness property)
 11. THE Engine SHALL add no runtime dependency to implement the New signals. (review constraint, not a correctness property)
 12. IF recording a Seen record through the SnapshotStore fails for a package, THEN THE Engine SHALL still return the health entry for that package with the same ten signals, State and missingSignals as it would return had the recording succeeded.
+13. WHEN no SnapshotStore is injected, THE Engine SHALL evaluate history-derived signals as if the History were empty, so that they are available and marked History-insufficient and never listed in missingSignals.
