@@ -1,0 +1,14 @@
+{
+  "status": 200,
+  "body": {
+    "nodes": [
+      {
+        "versionKey": {
+          "name": "colors",
+          "version": "1.4.0"
+        }
+      }
+    ],
+    "edges": []
+  }
+}

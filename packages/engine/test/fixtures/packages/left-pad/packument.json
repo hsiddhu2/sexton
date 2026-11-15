@@ -19,6 +19,14 @@
     "1.2.0": "2017-11-17T05:48:38.934Z",
     "1.3.0": "2018-04-09T01:10:45.796Z"
   },
+  "maintainers": [
+    {
+      "name": "stevemao"
+    },
+    {
+      "name": "westlac"
+    }
+  ],
   "versions": {
     "1.3.0": {
       "deprecated": "use String.prototype.padStart()"

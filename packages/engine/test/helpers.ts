@@ -67,6 +67,25 @@ export function fixtureRoutes(name: string, version: string): Route[] {
       json: readJson(join(dir, "osv-querybatch.json")),
     },
   ];
+  // Recorded as { status, body? }. Added only when the recorder has produced them.
+  const attestationsPath = join(dir, "attestations.json");
+  if (existsSync(attestationsPath)) {
+    const rec = readJson(attestationsPath) as { status: number; body?: unknown };
+    routes.push({
+      url: `https://registry.npmjs.org/-/npm/v1/attestations/${encoded}@${encodeURIComponent(version)}`,
+      status: rec.status,
+      json: rec.body ?? { error: "Not found" },
+    });
+  }
+  const depsDevPath = join(dir, "deps-dev.json");
+  if (existsSync(depsDevPath)) {
+    const rec = readJson(depsDevPath) as { status: number; body?: unknown };
+    routes.push({
+      url: `https://api.deps.dev/v3/systems/npm/packages/${encodeURIComponent(name)}/versions/${encodeURIComponent(version)}:dependencies`,
+      status: rec.status,
+      json: rec.body ?? { error: "Not found" },
+    });
+  }
   const vulnsDir = join(dir, "vulns");
   if (existsSync(vulnsDir)) {
     const batch = readJson(join(dir, "osv-querybatch.json")) as { results: { vulns?: { id: string }[] }[] };

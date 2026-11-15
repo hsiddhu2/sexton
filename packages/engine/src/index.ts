@@ -32,3 +32,44 @@ export type { ScoringDependencies } from "./score.js";
 export type { ClientContext } from "./clients/context.js";
 export { fetchPackumentSignals, fetchInstallScriptSignal, extractLastPublish, extractDeprecated, packumentUrl, encodePackageName, NPM_REGISTRY, ABBREVIATED_ACCEPT } from "./clients/npm.js";
 export { fetchAdvisoriesSignal, fetchAdvisory, queryVulnIds, OSV_API, OSV_MAX_PAGES } from "./clients/osv.js";
+
+// history-signals
+export type {
+  MaintainerChangeEvent,
+  MaintainerChangeValue,
+  NewInstallScriptEvent,
+  NewSignals,
+  OriginalSignals,
+  ProvenanceRegressionValue,
+  ProvenanceValue,
+  TransitiveReachValue,
+} from "./types.js";
+export { NEW_SIGNAL_NAMES, ORIGINAL_SIGNAL_NAMES } from "./types.js";
+
+export { InMemorySnapshotStore, InvalidCaptureTimeError, MAX_SNAPSHOT_VERSIONS, RECENT_WINDOW_MS } from "./snapshot.js";
+export type { Snapshot, SnapshotStore, SnapshotVersion } from "./snapshot.js";
+
+export { unionGraph, transitiveReach } from "./reach.js";
+export type { NameEdge, ResolvedGraph, UnionGraph } from "./reach.js";
+
+export {
+  compareVersionOrder,
+  evaluateProvenanceRegression,
+  isRecent,
+  maintainerChangeValue,
+  maintainerDiff,
+  newInstallScriptEvents,
+  publishedVersions,
+} from "./history.js";
+export type { MaintainerDiff, ProvenanceRegressionInput, ProvenanceRegressionOutcome, PublishedVersion } from "./history.js";
+
+export { runSnapshotter } from "./snapshotter.js";
+export type { SnapshotterFailure, SnapshotterResult } from "./snapshotter.js";
+
+export { fetchProvenanceSignal } from "./clients/attestations.js";
+export { fetchDependencyGraph } from "./clients/deps-dev.js";
+export type { GraphFetch } from "./clients/deps-dev.js";
+export { extractMaintainers, fetchMaintainersSignal } from "./clients/maintainers.js";
+
+export { collectReach, buildHistorySignals } from "./score.js";
+export type { HistorySignalInput, ReachPhase, ScoreOneOptions } from "./score.js";

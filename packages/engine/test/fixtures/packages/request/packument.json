@@ -130,6 +130,20 @@
     "2.88.0": "2018-08-10T16:26:50.936Z",
     "2.88.2": "2020-02-11T16:35:36.122Z"
   },
+  "maintainers": [
+    {
+      "name": "fredkschott"
+    },
+    {
+      "name": "mikeal"
+    },
+    {
+      "name": "nylen"
+    },
+    {
+      "name": "simov"
+    }
+  ],
   "versions": {
     "2.88.2": {
       "deprecated": "request has been deprecated, see https://github.com/request/request/issues/3142"
