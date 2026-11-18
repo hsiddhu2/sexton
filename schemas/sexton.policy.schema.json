@@ -1,0 +1,200 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Sexton policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "rules"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/rule"
+      }
+    }
+  },
+  "$defs": {
+    "nameList": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "patternList": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9@/._*?-]+$"
+      }
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "forbid_state",
+            "forbid_install_scripts",
+            "max_age_months",
+            "require_provenance"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "matchPackageNames": {
+          "$ref": "#/$defs/nameList"
+        },
+        "matchPackagePatterns": {
+          "$ref": "#/$defs/patternList"
+        },
+        "excludePackageNames": {
+          "$ref": "#/$defs/nameList"
+        },
+        "states": true,
+        "allow": true,
+        "months": true,
+        "packages": true
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "forbid_state"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "states"
+            ],
+            "properties": {
+              "states": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "enum": [
+                    "Possessed",
+                    "Dead",
+                    "Haunted",
+                    "Restless",
+                    "Alive"
+                  ]
+                }
+              },
+              "allow": false,
+              "months": false,
+              "packages": false
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "forbid_install_scripts"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "allow": {
+                "$ref": "#/$defs/nameList"
+              },
+              "states": false,
+              "months": false,
+              "packages": false
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "max_age_months"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "months"
+            ],
+            "properties": {
+              "months": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "states": false,
+              "allow": false,
+              "packages": false
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "require_provenance"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "packages"
+            ],
+            "properties": {
+              "packages": {
+                "oneOf": [
+                  {
+                    "const": [
+                      "*"
+                    ]
+                  },
+                  {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "not": {
+                        "const": "*"
+                      }
+                    }
+                  }
+                ]
+              },
+              "states": false,
+              "allow": false,
+              "months": false
+            }
+          }
+        }
+      ]
+    }
+  }
+}

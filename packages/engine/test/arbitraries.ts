@@ -6,12 +6,19 @@ import type { Snapshot, SnapshotVersion } from "../src/snapshot.js";
 import type { StateInputs } from "../src/state.js";
 import {
   SEVERITIES,
+  STATE_ORDER,
   type Advisory,
+  type HealthReport,
   type MaintainerChangeEvent,
   type MaintainerChangeValue,
   type NewInstallScriptEvent,
   type OriginalSignals,
+  type PackageHealth,
+  type PackageSignals,
+  type Policy,
   type ProvenanceRegressionValue,
+  type ProvenanceValue,
+  type Rule,
   type Signal,
 } from "../src/types.js";
 
@@ -166,3 +173,113 @@ export const arbSnapshot: fc.Arbitrary<Snapshot> = fc.record({
   maintainers: fc.array(fc.constantFrom("alice", "bob", "carol", "mallory"), { maxLength: 6 }),
   versions: fc.array(snapshotVersionArb, { maxLength: 20 }),
 });
+
+// Policy generators. Spec: .kiro/specs/policy, design.md "Shared generators".
+
+/** Short names from a small pool so collisions between matchers and report packages are common. */
+export const arbName: fc.Arbitrary<string> = fc.constantFrom("a", "b", "c", "left-pad", "@s/a", "@s/b", "@t/a");
+
+const arbValidPattern: fc.Arbitrary<string> = fc.constantFrom("*", "**", "a*", "@s/*", "@*/a", "?", "left-*", "zzz");
+
+const DAY_MS = 86_400_000;
+
+/** A lastPublish value around the reference instant: past, future, null or unparseable. */
+function lastPublishValueArb(generatedMs: number): fc.Arbitrary<string | null> {
+  return fc.oneof(
+    { weight: 8, arbitrary: fc.integer({ min: -3000, max: 60 }).map((days) => new Date(generatedMs + days * DAY_MS).toISOString()) },
+    { weight: 1, arbitrary: fc.constant(null) },
+    { weight: 1, arbitrary: fc.constant("not-a-date") },
+  );
+}
+
+const provenanceValueArb: fc.Arbitrary<ProvenanceValue> = fc.oneof(
+  fc.constant<ProvenanceValue>({ present: false, predicateType: null }),
+  fc.constant<ProvenanceValue>({ present: true, predicateType: "https://slsa.dev/provenance/v1" }),
+);
+
+const FIXED_AT = new Date("2026-01-01T00:00:00Z");
+const FIXED_SOURCE = "https://example.test/fixed";
+
+/** A PackageHealth whose three policy-relevant signals are generated and whose other signals are fixed. */
+export function arbPackageFor(generatedMs: number, name: fc.Arbitrary<string> = arbName): fc.Arbitrary<PackageHealth> {
+  return fc
+    .record({
+      name,
+      installedVersion: fc.stringMatching(/^[0-9]\.[0-9]\.[0-9]$/),
+      state: fc.constantFrom(...STATE_ORDER),
+      stateReason: fc.string({ minLength: 1, maxLength: 20 }),
+      hasInstallScript: signalArb(fc.boolean()),
+      lastPublish: signalArb(lastPublishValueArb(generatedMs)),
+      provenance: signalArb(provenanceValueArb),
+    })
+    .map((r): PackageHealth => {
+      const signals: PackageSignals = {
+        lastPublish: r.lastPublish,
+        deprecated: available(false, FIXED_SOURCE, FIXED_AT),
+        hasInstallScript: r.hasInstallScript,
+        advisories: available([], FIXED_SOURCE, FIXED_AT),
+        maintainers: available([], FIXED_SOURCE, FIXED_AT),
+        provenance: r.provenance,
+        transitiveReach: available({ reach: 0, graphsMissing: 0 }, FIXED_SOURCE, FIXED_AT),
+        maintainerChange: available({ status: "history-insufficient", events: [] }, FIXED_SOURCE, FIXED_AT),
+        provenanceRegression: available({ status: "history-insufficient", reason: "none" }, FIXED_SOURCE, FIXED_AT),
+        newInstallScript: available([], FIXED_SOURCE, FIXED_AT),
+      };
+      return {
+        name: r.name,
+        installedVersion: r.installedVersion,
+        state: r.state,
+        stateReason: r.stateReason,
+        signals,
+        missingSignals: [],
+      };
+    });
+}
+
+export const arbPackage: fc.Arbitrary<PackageHealth> = arbPackageFor(Date.parse("2026-11-12T00:00:00Z"));
+
+/** 0 to 8 packages with unique names. generatedAt is a valid ISO instant, or occasionally unparseable. */
+export const arbReport: fc.Arbitrary<HealthReport> = fc
+  .tuple(fc.date({ min: new Date("2024-01-01T00:00:00Z"), max: new Date("2030-01-01T00:00:00Z"), noInvalidDate: true }), fc.nat(9))
+  .chain(([base, dice]) =>
+    fc
+      .uniqueArray(arbPackageFor(base.getTime()), { selector: (p) => p.name, maxLength: 8 })
+      .map((packages): HealthReport => ({ generatedAt: dice === 0 ? "not-a-date" : base.toISOString(), packages })),
+  );
+
+const arbNameList = fc.array(arbName, { maxLength: 4 });
+const arbPatternList = fc.array(arbValidPattern, { maxLength: 3 });
+
+const arbMatcherFields = fc
+  .tuple(arbNameList, arbPatternList, arbNameList, fc.boolean(), fc.boolean(), fc.boolean())
+  .map(([names, patterns, excludes, a, b, c]) => ({
+    ...(a ? { matchPackageNames: names } : {}),
+    ...(b ? { matchPackagePatterns: patterns } : {}),
+    ...(c ? { excludePackageNames: excludes } : {}),
+  }));
+
+const arbRuleName = fc.option(fc.string({ minLength: 1, maxLength: 80 }), { nil: undefined });
+
+/** Any valid rule of the four types, with generated parameters and matchers. */
+export const arbRule: fc.Arbitrary<Rule> = fc
+  .tuple(
+    arbMatcherFields,
+    arbRuleName,
+    fc.oneof(
+      fc.uniqueArray(fc.constantFrom(...STATE_ORDER), { minLength: 1 }).map((states) => ({ type: "forbid_state" as const, states })),
+      fc.option(arbNameList, { nil: undefined }).map((allow) => ({
+        type: "forbid_install_scripts" as const,
+        ...(allow === undefined ? {} : { allow }),
+      })),
+      fc.integer({ min: 1, max: 1200 }).map((months) => ({ type: "max_age_months" as const, months })),
+      fc.oneof(
+        fc.constant(["*"]),
+        fc.uniqueArray(arbName, { minLength: 1, maxLength: 4 }),
+      ).map((packages) => ({ type: "require_provenance" as const, packages })),
+    ),
+  )
+  .map(([matchers, name, body]): Rule => ({ ...body, ...matchers, ...(name === undefined ? {} : { name }) }));
+
+export const arbValidPolicy: fc.Arbitrary<Policy> = fc
+  .array(arbRule, { maxLength: 6 })
+  .map((rules): Policy => ({ version: 1, rules }));

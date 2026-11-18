@@ -73,3 +73,28 @@ export { extractMaintainers, fetchMaintainersSignal } from "./clients/maintainer
 
 export { collectReach, buildHistorySignals } from "./score.js";
 export type { HistorySignalInput, ReachPhase, ScoreOneOptions } from "./score.js";
+
+// policy
+export { parsePolicy } from "./policy/parse.js";
+export { formatPolicy } from "./policy/format.js";
+export { evaluatePolicy } from "./policy/evaluate.js";
+export { DEFAULT_POLICY } from "./policy/default.js";
+export { inScope } from "./policy/match.js";
+export { POLICY_SCHEMA } from "./policy/schema.js";
+export type {
+  ErrorCode,
+  Failure,
+  ForbidInstallScriptsRule,
+  ForbidStateRule,
+  MaxAgeMonthsRule,
+  ParseResult,
+  Policy,
+  PolicyResult,
+  PolicySource,
+  RequireProvenanceRule,
+  Rule,
+  RuleResult,
+  RuleType,
+  Unevaluated,
+  ValidationError,
+} from "./types.js";

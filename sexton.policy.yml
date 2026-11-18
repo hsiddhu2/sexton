@@ -1,0 +1,18 @@
+# Sexton's own policy. Sexton scans itself in CI and must pass this (N-7).
+version: 1
+rules:
+  - name: No possessed or dead dependencies
+    type: forbid_state
+    states:
+      - Possessed
+      - Dead
+  - name: No install scripts
+    type: forbid_install_scripts
+    # Empty on purpose: none of the root direct dependencies declares an
+    # install, preinstall or postinstall script, or ships a binding.gyp.
+    # Add a package here, with a comment saying what its script does, only
+    # when one is reviewed and accepted.
+    allow: []
+  - name: Published within 24 months
+    type: max_age_months
+    months: 24

@@ -1,0 +1,27 @@
+version: 1
+rules:
+  # Passes: no package is Possessed. Exercises matchPackagePatterns with a bare glob.
+  - name: no possessed packages
+    type: forbid_state
+    states: [Possessed]
+    matchPackagePatterns: ["*"]
+  # Fails: several packages are Dead or Haunted. Exercises excludePackageNames and a scope glob.
+  - name: no dead or haunted outside the legacy list
+    type: forbid_state
+    states: [Dead, Haunted]
+    matchPackagePatterns: ["**"]
+    excludePackageNames: [left-pad]
+  # Unevaluated: event-stream has no hasInstallScript signal. Exercises matchPackageNames and allow.
+  - name: no install scripts in the watch list
+    type: forbid_install_scripts
+    allow: [node-sass]
+    matchPackageNames: [event-stream, node-sass, react]
+  # Fails on old packages. Exercises max_age_months with a glob that spans names starting with e, c or l.
+  - name: published within 24 months
+    type: max_age_months
+    months: 24
+    matchPackagePatterns: ["e*", "c*", "l*"]
+  # notFound: no-such-package is not in the report. Exercises a named provenance list.
+  - name: provenance on named packages
+    type: require_provenance
+    packages: [react, no-such-package]
