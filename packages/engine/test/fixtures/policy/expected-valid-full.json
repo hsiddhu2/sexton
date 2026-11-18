@@ -1,0 +1,159 @@
+{
+  "source": "file",
+  "pass": false,
+  "rules": [
+    {
+      "index": 0,
+      "type": "forbid_state",
+      "name": "no possessed packages",
+      "pass": true,
+      "failures": [],
+      "unevaluated": [],
+      "notFound": []
+    },
+    {
+      "index": 1,
+      "type": "forbid_state",
+      "name": "no dead or haunted outside the legacy list",
+      "pass": false,
+      "failures": [
+        {
+          "name": "lodash",
+          "installedVersion": "4.17.21",
+          "signal": "state",
+          "value": "Haunted",
+          "source": null,
+          "fetchedAt": "2026-11-12T00:00:00.000Z",
+          "reason": "state is Haunted: advisory of severity High or Critical"
+        },
+        {
+          "name": "request",
+          "installedVersion": "2.88.2",
+          "signal": "state",
+          "value": "Dead",
+          "source": null,
+          "fetchedAt": "2026-11-12T00:00:00.000Z",
+          "reason": "state is Dead: installed version is deprecated"
+        },
+        {
+          "name": "node-sass",
+          "installedVersion": "7.0.3",
+          "signal": "state",
+          "value": "Dead",
+          "source": null,
+          "fetchedAt": "2026-11-12T00:00:00.000Z",
+          "reason": "state is Dead: installed version is deprecated"
+        },
+        {
+          "name": "event-stream",
+          "installedVersion": "3.3.6",
+          "signal": "state",
+          "value": "Dead",
+          "source": null,
+          "fetchedAt": "2026-11-12T00:00:00.000Z",
+          "reason": "state is Dead: last publish more than 24 months ago"
+        },
+        {
+          "name": "colors",
+          "installedVersion": "1.4.0",
+          "signal": "state",
+          "value": "Dead",
+          "source": null,
+          "fetchedAt": "2026-11-12T00:00:00.000Z",
+          "reason": "state is Dead: last publish more than 24 months ago"
+        },
+        {
+          "name": "uuid",
+          "installedVersion": "9.0.1",
+          "signal": "state",
+          "value": "Dead",
+          "source": null,
+          "fetchedAt": "2026-11-12T00:00:00.000Z",
+          "reason": "state is Dead: installed version is deprecated"
+        }
+      ],
+      "unevaluated": [],
+      "notFound": []
+    },
+    {
+      "index": 2,
+      "type": "forbid_install_scripts",
+      "name": "no install scripts in the watch list",
+      "pass": true,
+      "failures": [],
+      "unevaluated": [
+        {
+          "name": "event-stream",
+          "installedVersion": "3.3.6",
+          "signal": "hasInstallScript",
+          "reason": "version not found"
+        }
+      ],
+      "notFound": []
+    },
+    {
+      "index": 3,
+      "type": "max_age_months",
+      "name": "published within 24 months",
+      "pass": false,
+      "failures": [
+        {
+          "name": "left-pad",
+          "installedVersion": "1.3.0",
+          "signal": "lastPublish",
+          "value": "2018-04-09T01:10:45.796Z",
+          "source": "https://registry.npmjs.org/left-pad",
+          "fetchedAt": "2026-11-12T00:00:00.000Z",
+          "reason": "last published 2018-04-09T01:10:45.796Z, earlier than 2024-11-12T00:00:00.000Z (24 months before 2026-11-12T00:00:00.000Z)",
+          "boundary": "2024-11-12T00:00:00.000Z"
+        },
+        {
+          "name": "event-stream",
+          "installedVersion": "3.3.6",
+          "signal": "lastPublish",
+          "value": "2018-09-29T06:55:49.107Z",
+          "source": "https://registry.npmjs.org/event-stream",
+          "fetchedAt": "2026-11-12T00:00:00.000Z",
+          "reason": "last published 2018-09-29T06:55:49.107Z, earlier than 2024-11-12T00:00:00.000Z (24 months before 2026-11-12T00:00:00.000Z)",
+          "boundary": "2024-11-12T00:00:00.000Z"
+        },
+        {
+          "name": "colors",
+          "installedVersion": "1.4.0",
+          "signal": "lastPublish",
+          "value": "2022-01-09T19:35:35.048Z",
+          "source": "https://registry.npmjs.org/colors",
+          "fetchedAt": "2026-11-12T00:00:00.000Z",
+          "reason": "last published 2022-01-09T19:35:35.048Z, earlier than 2024-11-12T00:00:00.000Z (24 months before 2026-11-12T00:00:00.000Z)",
+          "boundary": "2024-11-12T00:00:00.000Z"
+        }
+      ],
+      "unevaluated": [],
+      "notFound": []
+    },
+    {
+      "index": 4,
+      "type": "require_provenance",
+      "name": "provenance on named packages",
+      "pass": false,
+      "failures": [
+        {
+          "name": "react",
+          "installedVersion": "18.3.1",
+          "signal": "provenance",
+          "value": {
+            "present": false,
+            "predicateType": null
+          },
+          "source": "https://registry.npmjs.org/-/npm/v1/attestations/react@18.3.1",
+          "fetchedAt": "2026-11-12T00:00:00.000Z",
+          "reason": "provenance is absent"
+        }
+      ],
+      "unevaluated": [],
+      "notFound": [
+        "no-such-package"
+      ]
+    }
+  ]
+}

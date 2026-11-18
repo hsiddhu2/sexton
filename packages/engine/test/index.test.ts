@@ -2,6 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 import * as engine from "../src/index.js";
+import { DEFAULT_POLICY } from "../src/policy/default.js";
 
 const NEW_FUNCTIONS = [
   "unionGraph",
@@ -55,6 +56,49 @@ describe("engine public surface (history-signals)", () => {
     ]);
     expect(engine.SIGNAL_NAMES).toEqual([...engine.ORIGINAL_SIGNAL_NAMES, ...engine.NEW_SIGNAL_NAMES]);
     expect(engine.SIGNAL_NAMES).toHaveLength(10);
+  });
+
+  it.each(["parsePolicy", "formatPolicy", "evaluatePolicy", "inScope"] as const)(
+    "exports %s as a function (policy)",
+    (name) => {
+      expect(typeof engine[name]).toBe("function");
+    },
+  );
+
+  it("exports DEFAULT_POLICY and POLICY_SCHEMA as plain objects (policy)", () => {
+    expect(typeof engine.DEFAULT_POLICY).toBe("object");
+    expect(engine.DEFAULT_POLICY).toBe(DEFAULT_POLICY);
+    expect(engine.DEFAULT_POLICY).toEqual({
+      version: 1,
+      rules: [{ type: "forbid_state", states: ["Possessed", "Dead"] }],
+    });
+    expect(typeof engine.POLICY_SCHEMA).toBe("object");
+    expect(engine.POLICY_SCHEMA).not.toBeNull();
+    expect(Array.isArray(engine.POLICY_SCHEMA)).toBe(false);
+  });
+
+  it("exports the policy types (compile-time check)", () => {
+    const policy: engine.Policy | undefined = undefined;
+    const rule: engine.Rule | undefined = undefined;
+    const ruleType: engine.RuleType | undefined = undefined;
+    const rules: [
+      engine.ForbidStateRule | undefined,
+      engine.ForbidInstallScriptsRule | undefined,
+      engine.MaxAgeMonthsRule | undefined,
+      engine.RequireProvenanceRule | undefined,
+    ] = [undefined, undefined, undefined, undefined];
+    const parse: engine.ParseResult | undefined = undefined;
+    const validation: engine.ValidationError | undefined = undefined;
+    const code: engine.ErrorCode | undefined = undefined;
+    const source: engine.PolicySource | undefined = undefined;
+    const result: engine.PolicyResult | undefined = undefined;
+    const ruleResult: engine.RuleResult | undefined = undefined;
+    const failure: engine.Failure | undefined = undefined;
+    const unevaluated: engine.Unevaluated | undefined = undefined;
+    expect([policy, rule, ruleType, parse, validation, code, source, result, ruleResult, failure, unevaluated]).toEqual(
+      new Array(11).fill(undefined),
+    );
+    expect(rules).toEqual([undefined, undefined, undefined, undefined]);
   });
 
   it("exports the new types (compile-time check)", () => {

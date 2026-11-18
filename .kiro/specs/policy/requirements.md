@@ -86,6 +86,7 @@ This spec does NOT add file reading, GitHub access, process exit codes, the CLI 
 23. FOR ANY valid Policy, THE Engine SHALL produce the same text from two calls to `formatPolicy` (determinism), and parsing then formatting then parsing SHALL produce a Policy deeply equal to the first parse (idempotence).
 24. THE Engine SHALL return a Policy that carries only the keys defined by the Schema, so that a Policy held in memory is a plain value that can be serialised to JSON without loss.
 25. IF a Rule's `name` is a string of fewer than 1 or more than 80 characters, THEN THE Engine SHALL return an error with code `WRONG_TYPE` and path `/rules/{index}/name`.
+26. IF the Schema validator reports the document invalid and no other Validation error results from mapping or from the Engine checks, THEN THE Engine SHALL return `{ ok: false }` with exactly one Validation error with code `WRONG_TYPE`, path the empty string and message "policy rejected by schema validation", so that parsing fails closed.
 
 ### Requirement 3: Matchers
 

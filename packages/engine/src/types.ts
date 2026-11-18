@@ -139,3 +139,122 @@ export interface HealthReport {
   readonly generatedAt: string;
   readonly packages: readonly PackageHealth[];
 }
+
+// Types for the policy spec (.kiro/specs/policy).
+
+export const RULE_TYPES = ["forbid_state", "forbid_install_scripts", "max_age_months", "require_provenance"] as const;
+export type RuleType = (typeof RULE_TYPES)[number];
+
+export interface Matchers {
+  readonly matchPackageNames?: readonly string[];
+  /** Plain strings, validated at parse time. */
+  readonly matchPackagePatterns?: readonly string[];
+  readonly excludePackageNames?: readonly string[];
+}
+
+interface RuleBase extends Matchers {
+  /** 1 to 80 characters. */
+  readonly name?: string;
+}
+
+export interface ForbidStateRule extends RuleBase {
+  readonly type: "forbid_state";
+  readonly states: readonly State[];
+}
+export interface ForbidInstallScriptsRule extends RuleBase {
+  readonly type: "forbid_install_scripts";
+  readonly allow?: readonly string[];
+}
+export interface MaxAgeMonthsRule extends RuleBase {
+  readonly type: "max_age_months";
+  readonly months: number;
+}
+export interface RequireProvenanceRule extends RuleBase {
+  readonly type: "require_provenance";
+  readonly packages: readonly string[];
+}
+export type Rule = ForbidStateRule | ForbidInstallScriptsRule | MaxAgeMonthsRule | RequireProvenanceRule;
+
+/** Only schema keys. */
+export interface Policy {
+  readonly version: 1;
+  readonly rules: readonly Rule[];
+}
+
+export const ERROR_CODES = [
+  "YAML_SYNTAX",
+  "MULTIPLE_DOCUMENTS",
+  "DUPLICATE_KEY",
+  "NOT_OBJECT",
+  "MISSING_FIELD",
+  "VERSION_UNSUPPORTED",
+  "UNKNOWN_RULE_TYPE",
+  "UNKNOWN_FIELD",
+  "WRONG_TYPE",
+  "EMPTY_LIST",
+  "INVALID_MONTHS",
+  "INVALID_WILDCARD",
+  "INVALID_PATTERN",
+] as const;
+export type ErrorCode = (typeof ERROR_CODES)[number];
+
+export interface ValidationError {
+  /** JSON Pointer, "" for the document, "$" for the text as a whole. */
+  readonly path: string;
+  readonly message: string;
+  readonly code: ErrorCode;
+}
+
+export type ParseResult =
+  | { readonly ok: true; readonly policy: Policy }
+  | { readonly ok: false; readonly errors: readonly [ValidationError, ...ValidationError[]] };
+
+export type PolicySource = "default" | "file";
+
+export interface Failure {
+  readonly name: string;
+  readonly installedVersion: string;
+  /** "state" for forbid_state, else the signal name. */
+  readonly signal: "state" | "hasInstallScript" | "lastPublish" | "provenance";
+  /** State name, true, ISO string, or provenance value. */
+  readonly value: string | boolean | ProvenanceValue;
+  /** Null for the state rule. */
+  readonly source: string | null;
+  /** generatedAt for the state rule. */
+  readonly fetchedAt: string;
+  readonly reason: string;
+  /** max_age_months only. ISO instant of the age boundary. */
+  readonly boundary?: string;
+}
+
+export interface Unevaluated {
+  readonly name: string;
+  readonly installedVersion: string;
+  readonly signal: "hasInstallScript" | "lastPublish" | "provenance";
+  readonly reason: string;
+}
+
+/** Internal. The shared return type of the four rule functions. */
+export interface RuleOutcome {
+  readonly failures: readonly Failure[];
+  readonly unevaluated: readonly Unevaluated[];
+  readonly notFound: readonly string[];
+}
+
+export interface RuleResult {
+  readonly index: number;
+  readonly type: RuleType;
+  /** Key absent when the rule has no name. */
+  readonly name?: string;
+  readonly pass: boolean;
+  readonly failures: readonly Failure[];
+  readonly unevaluated: readonly Unevaluated[];
+  /** Empty except for require_provenance. */
+  readonly notFound: readonly string[];
+}
+
+export interface PolicyResult {
+  readonly source: PolicySource;
+  readonly pass: boolean;
+  readonly rules: readonly RuleResult[];
+}
