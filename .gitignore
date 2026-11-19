@@ -3,7 +3,8 @@ private/
 # dependencies and build
 node_modules/
 dist/
-build/
+build/*
+!build/reviews/
 coverage/
 .turbo/
 # env and secrets
