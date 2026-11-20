@@ -87,3 +87,103 @@ describe("backoffDelay property (9.3)", () => {
     );
   });
 });
+
+describe("text() body reader (2.11, 2.14)", () => {
+  const MIB5 = 5 * 1024 * 1024;
+
+  function chunked(totalBytes: number, chunk: number): { stream: ReadableStream<Uint8Array>; state: { pulls: number; cancelled: boolean } } {
+    const state = { pulls: 0, cancelled: false };
+    let sent = 0;
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        state.pulls++;
+        if (sent >= totalBytes) {
+          controller.close();
+          return;
+        }
+        const n = Math.min(chunk, totalBytes - sent);
+        controller.enqueue(new Uint8Array(n).fill(0x61));
+        sent += n;
+      },
+      cancel() {
+        state.cancelled = true;
+      },
+    });
+    return { stream, state };
+  }
+
+  async function read(body: BodyInit | null, init: ResponseInit = { status: 200 }, limit = MIB5) {
+    const fakeFetch = (() => Promise.resolve(new Response(body, init))) as unknown as typeof fetch;
+    const response = await createFetchTransport(fakeFetch)("https://x.invalid/", { method: "GET", headers: {} });
+    return (response.text as NonNullable<TransportResponse["text"]>)(limit);
+  }
+
+  it("accepts exactly the limit across several chunks", async () => {
+    const { stream } = chunked(MIB5, 100_000);
+    const result = await read(stream);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.text.length).toBe(MIB5);
+  });
+
+  it("rejects limit + 1, cancels the stream and stops pulling", async () => {
+    const { stream, state } = chunked(MIB5 * 3, 1_000_000);
+    const result = await read(stream);
+    expect(result).toEqual({ ok: false, reason: "too-large" });
+    expect(state.cancelled).toBe(true);
+    expect(state.pulls).toBeLessThan(10);
+  });
+
+  it("rejects limit + 1 bytes exactly", async () => {
+    const { stream } = chunked(MIB5 + 1, MIB5 + 1);
+    expect(await read(stream)).toEqual({ ok: false, reason: "too-large" });
+  });
+
+  it("rejects on a Content-Length above the limit without pulling", async () => {
+    const { stream, state } = chunked(10, 10);
+    const result = await read(stream, { status: 200, headers: { "content-length": String(MIB5 + 1) } });
+    expect(result).toEqual({ ok: false, reason: "too-large" });
+    expect(state.pulls).toBeLessThanOrEqual(1); // the stream primes one pull at construction; text() never reads
+    expect(state.cancelled).toBe(true);
+  });
+
+  it("counts bytes when Content-Length understates the body", async () => {
+    const { stream } = chunked(100, 50);
+    expect(await read(stream, { status: 200, headers: { "content-length": "1" } }, 60)).toEqual({ ok: false, reason: "too-large" });
+  });
+
+  it("decodes a multi-byte character split across chunks", async () => {
+    const bytes = new TextEncoder().encode("a€b");
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(bytes.slice(0, 2));
+        controller.enqueue(bytes.slice(2));
+        controller.close();
+      },
+    });
+    expect(await read(stream)).toEqual({ ok: true, text: "a€b" });
+  });
+
+  it("gives invalid-encoding for invalid UTF-8", async () => {
+    expect(await read(new Uint8Array([0x7b, 0xff, 0xfe]))).toEqual({ ok: false, reason: "invalid-encoding" });
+  });
+
+  it("strips a leading BOM", async () => {
+    const bytes = new Uint8Array([0xef, 0xbb, 0xbf, ...new TextEncoder().encode("{}")]);
+    expect(await read(bytes)).toEqual({ ok: true, text: "{}" });
+  });
+
+  it("gives the empty string for a null body", async () => {
+    expect(await read(null, { status: 204 })).toEqual({ ok: true, text: "" });
+  });
+
+  it("leaves json() working", async () => {
+    const fakeFetch = (() => Promise.resolve(new Response('{"a":1}', { status: 200 }))) as unknown as typeof fetch;
+    const response = await createFetchTransport(fakeFetch)("https://x.invalid/", { method: "GET", headers: {} });
+    expect(await response.json()).toEqual({ a: 1 });
+  });
+
+  it("a response with only status and json still satisfies TransportResponse", () => {
+    const minimal: TransportResponse = { status: 200, json: () => Promise.resolve(null) };
+    expect(minimal.text).toBeUndefined();
+  });
+});

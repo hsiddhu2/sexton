@@ -5,5 +5,6 @@ export default tseslint.config(
   { files: ["packages/**/*.ts", "packages/**/*.tsx", "infra/**/*.ts"] },
   js.configs.recommended,
   ...tseslint.configs.strict,
+  { rules: { "no-eval": "error", "no-new-func": "error", "no-implied-eval": "error" } },
   { files: ["**/scripts/**/*.mjs"], languageOptions: { globals: { fetch: "readonly", console: "readonly", URL: "readonly", process: "readonly" } } },
 );

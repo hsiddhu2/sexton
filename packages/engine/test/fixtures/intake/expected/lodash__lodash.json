@@ -1,0 +1,210 @@
+{
+  "ok": true,
+  "repo": {
+    "owner": "lodash",
+    "repo": "lodash",
+    "url": "https://github.com/lodash/lodash"
+  },
+  "packages": [
+    {
+      "name": "async",
+      "installedVersion": "2.6.3",
+      "declaredRange": "^2.6.3",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "benchmark",
+      "installedVersion": "2.1.4",
+      "declaredRange": "^2.1.3",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "chalk",
+      "installedVersion": "1.1.3",
+      "declaredRange": "^1.1.3",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "cheerio",
+      "installedVersion": "0.22.0",
+      "declaredRange": "^0.22.0",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "codecov.io",
+      "installedVersion": "0.1.6",
+      "declaredRange": "~0.1.6",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "coveralls",
+      "installedVersion": "2.13.3",
+      "declaredRange": "^2.11.15",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "curl-amd",
+      "installedVersion": "0.8.12",
+      "declaredRange": "~0.8.12",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "docdown",
+      "installedVersion": "0.7.3",
+      "declaredRange": "~0.7.2",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "dojo",
+      "installedVersion": "1.15.0",
+      "declaredRange": "^1.15.0",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "ecstatic",
+      "installedVersion": "2.2.2",
+      "declaredRange": "^2.2.2",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "fs-extra",
+      "installedVersion": "1.0.0",
+      "declaredRange": "~1.0.0",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "glob",
+      "installedVersion": "7.1.4",
+      "declaredRange": "^7.1.4",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "istanbul",
+      "installedVersion": "0.4.5",
+      "declaredRange": "0.4.5",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "jquery",
+      "installedVersion": "3.4.1",
+      "declaredRange": "^3.4.1",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "jscs",
+      "installedVersion": "3.0.7",
+      "declaredRange": "^3.0.7",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "lodash",
+      "installedVersion": "4.17.20",
+      "declaredRange": "4.17.20",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "lodash-doc-globals",
+      "installedVersion": "0.1.2",
+      "declaredRange": "^0.1.1",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "markdown-doctest",
+      "installedVersion": "0.9.1",
+      "declaredRange": "^0.9.1",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "optional-dev-dependency",
+      "installedVersion": "2.0.1",
+      "declaredRange": "^2.0.0",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "platform",
+      "installedVersion": "1.3.5",
+      "declaredRange": "^1.3.3",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "qunit-extras",
+      "installedVersion": "3.0.0",
+      "declaredRange": "^3.0.0",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "qunitjs",
+      "installedVersion": "2.4.1",
+      "declaredRange": "^2.1.0",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "request",
+      "installedVersion": "2.88.0",
+      "declaredRange": "^2.88.0",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "requirejs",
+      "installedVersion": "2.3.6",
+      "declaredRange": "^2.3.6",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "sauce-tunnel",
+      "installedVersion": "2.5.0",
+      "declaredRange": "^2.5.0",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "uglify-js",
+      "installedVersion": "2.7.5",
+      "declaredRange": "2.7.5",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    },
+    {
+      "name": "webpack",
+      "installedVersion": "1.15.0",
+      "declaredRange": "^1.14.0",
+      "origin": "devDependencies",
+      "resolution": "locked"
+    }
+  ],
+  "unlocked": false,
+  "unlockedPackages": [],
+  "lockfileVersion": 1,
+  "capped": false,
+  "totalDirect": 27,
+  "skipped": {
+    "peer": 0,
+    "optional": 0,
+    "invalidName": 0
+  },
+  "unresolved": []
+}

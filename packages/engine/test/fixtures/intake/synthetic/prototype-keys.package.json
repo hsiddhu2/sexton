@@ -1,0 +1,14 @@
+{
+  "name": "synthetic-prototype-keys",
+  "version": "1.0.0",
+  "dependencies": {
+    "__proto__": "^1.0.0",
+    "constructor": "^1.0.0",
+    "prototype": "^1.0.0",
+    "left-pad": "^1.3.0"
+  },
+  "devDependencies": {
+    "__proto__": "^2.0.0",
+    "constructor": "^2.0.0"
+  }
+}

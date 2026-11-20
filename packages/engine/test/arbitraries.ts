@@ -1,6 +1,7 @@
 // Shared fast-check arbitraries for engine tests.
 
 import fc from "fast-check";
+import { isValidPackageName } from "../src/intake/names.js";
 import { available, unavailable } from "../src/signal.js";
 import type { Snapshot, SnapshotVersion } from "../src/snapshot.js";
 import type { StateInputs } from "../src/state.js";
@@ -9,6 +10,8 @@ import {
   STATE_ORDER,
   type Advisory,
   type HealthReport,
+  type LockfileVersion,
+  type ScanMetadata,
   type MaintainerChangeEvent,
   type MaintainerChangeValue,
   type NewInstallScriptEvent,
@@ -283,3 +286,294 @@ export const arbRule: fc.Arbitrary<Rule> = fc
 export const arbValidPolicy: fc.Arbitrary<Policy> = fc
   .array(arbRule, { maxLength: 6 })
   .map((rules): Policy => ({ version: 1, rules }));
+
+// Intake generators. Spec: .kiro/specs/repo-intake, design.md "Shared generators".
+
+export const arbOwner: fc.Arbitrary<string> = fc
+  .stringMatching(/^[A-Za-z0-9_-][A-Za-z0-9_.-]{0,20}$/)
+  .filter((s) => !s.includes("..") && s !== "orgs");
+
+export const arbRepo: fc.Arbitrary<string> = arbOwner.filter((s) => !s.endsWith(".git"));
+
+const arbScopePart: fc.Arbitrary<string> = fc.stringMatching(/^[a-z0-9~-][a-z0-9._~-]{0,20}$/);
+const arbNamePart: fc.Arbitrary<string> = fc.stringMatching(/^[A-Za-z0-9~-][A-Za-z0-9._~-]{0,20}$/);
+
+/** A valid npm package name, scoped or unscoped. Uppercase appears in the name part only. */
+export const arbValidName: fc.Arbitrary<string> = fc.oneof(
+  arbNamePart,
+  fc.tuple(arbScopePart, arbNamePart).map(([scope, name]) => `@${scope}/${name}`),
+);
+
+export const arbInvalidName: fc.Arbitrary<string> = fc.constantFrom(
+  "__proto__",
+  "_x",
+  ".x",
+  "@Scope/x",
+  "@x",
+  "@/x",
+  "a/b",
+  "a b",
+  "",
+  "x".repeat(215),
+  "naïve",
+);
+
+// Manifest generators. Spec: .kiro/specs/repo-intake, tasks 2.3.
+
+export const arbVersion: fc.Arbitrary<string> = fc
+  .tuple(fc.nat(20), fc.nat(20), fc.nat(20), fc.option(fc.tuple(fc.constantFrom("alpha", "beta", "rc"), fc.nat(5)), { nil: undefined }))
+  .map(([major, minor, patch, pre]) => `${major}.${minor}.${patch}${pre === undefined ? "" : `-${pre[0]}.${pre[1]}`}`);
+
+const arbDeclaredRange: fc.Arbitrary<string> = fc.constantFrom(
+  "^1.2.3",
+  "~0.4.0",
+  "1.x",
+  "*",
+  ">=1 <3",
+  "latest",
+  "git+https://example.invalid/x.git",
+  "file:../x",
+  "workspace:*",
+);
+
+export type MapEntries = ReadonlyArray<readonly [string, string]>;
+
+/** A model of the maps in a package.json. Entry order is the order in the rendered text. */
+export interface PackageJsonModel {
+  readonly dependencies: MapEntries;
+  readonly devDependencies: MapEntries;
+  readonly peerDependencies: MapEntries;
+  readonly optionalDependencies: MapEntries;
+  /** "array" renders peerDependencies as a JSON array, which must count as zero names. */
+  readonly peerShape: "object" | "array";
+}
+
+/** Renders entries as a JSON object by template, so a key such as __proto__ stays an own key. */
+export function renderMap(entries: MapEntries): string {
+  return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${JSON.stringify(v)}`).join(",")}}`;
+}
+
+/** Renders a package.json text. extraTop is raw JSON members such as `"scripts":{}`, without a leading comma. */
+export function renderPackageJson(model: PackageJsonModel, extraTop = ""): string {
+  const members = [
+    `"dependencies":${renderMap(model.dependencies)}`,
+    `"devDependencies":${renderMap(model.devDependencies)}`,
+    `"peerDependencies":${model.peerShape === "array" ? "[]" : renderMap(model.peerDependencies)}`,
+    `"optionalDependencies":${renderMap(model.optionalDependencies)}`,
+  ];
+  if (extraTop !== "") members.push(extraTop);
+  return `{${members.join(",")}}`;
+}
+
+/** A package.json model. Names come from one small pool so the maps overlap. withInvalid adds invalid names. */
+export function arbPackageJson(withInvalid: boolean): fc.Arbitrary<PackageJsonModel> {
+  const poolArb = fc
+    .tuple(fc.uniqueArray(arbValidName, { maxLength: 10 }), withInvalid ? fc.uniqueArray(arbInvalidName, { maxLength: 4 }) : fc.constant<string[]>([]))
+    .map(([valid, invalid]) => [...new Set([...valid, ...invalid])]);
+  const mapArb = (pool: readonly string[]): fc.Arbitrary<MapEntries> =>
+    fc.subarray([...pool]).chain((names) =>
+      fc
+        .array(arbDeclaredRange, { minLength: names.length, maxLength: names.length })
+        .map((ranges): MapEntries => names.map((n, i) => [n, ranges[i] ?? "*"] as const)),
+    );
+  return poolArb.chain((pool) =>
+    fc
+      .tuple(mapArb(pool), mapArb(pool), mapArb(pool), mapArb(pool), fc.constantFrom<"object" | "array">("object", "object", "array"))
+      .map(([dependencies, devDependencies, peerDependencies, optionalDependencies, peerShape]) => ({
+        dependencies,
+        devDependencies,
+        peerDependencies,
+        optionalDependencies,
+        peerShape,
+      })),
+  );
+}
+
+export type LockfileFormat = 1 | 2 | 3;
+
+/** Renders a lockfile of the given version with one entry per [name, version]. Version 2 holds both sections. */
+export function renderLockfile(format: LockfileFormat, entries: MapEntries): string {
+  const packageMembers = [
+    `"":{"name":"root"}`,
+    ...entries.map(([k, v]) => `${JSON.stringify(`node_modules/${k}`)}:{"version":${JSON.stringify(v)}}`),
+  ];
+  const packages = `{${packageMembers.join(",")}}`;
+  const dependencies = `{${entries.map(([k, v]) => `${JSON.stringify(k)}:{"version":${JSON.stringify(v)}}`).join(",")}}`;
+  if (format === 1) return `{"lockfileVersion":1,"dependencies":${dependencies}}`;
+  if (format === 2) return `{"lockfileVersion":2,"packages":${packages},"dependencies":${dependencies}}`;
+  return `{"lockfileVersion":3,"packages":${packages}}`;
+}
+
+/**
+ * A lockfile for a model. Entries cover every direct name when all is true, otherwise a subset,
+ * plus a few transitive names. Versions are independent of the declared ranges.
+ */
+export function arbLockfile(
+  model: PackageJsonModel,
+  format: LockfileFormat,
+  all: boolean,
+): fc.Arbitrary<{ readonly text: string; readonly entries: MapEntries }> {
+  const direct = [...new Set([...model.dependencies, ...model.devDependencies].map(([n]) => n))].filter(isValidPackageName);
+  const transitive = fc.uniqueArray(arbValidName, { maxLength: 4 }).map((names) => names.filter((n) => !direct.includes(n)));
+  return fc
+    .tuple(all ? fc.constant(direct) : fc.subarray(direct), transitive)
+    .chain(([chosen, extra]) => {
+      const names = [...chosen, ...extra];
+      return fc
+        .array(arbVersion, { minLength: names.length, maxLength: names.length })
+        .map((versions) => {
+          const entries: MapEntries = names.map((n, i) => [n, versions[i] ?? "1.0.0"] as const);
+          return { text: renderLockfile(format, entries), entries };
+        });
+    });
+}
+
+// Resolver generators. Spec: .kiro/specs/repo-intake, tasks 3.3.
+
+const UNRESOLVABLE_SPECIFIERS: readonly string[] = [
+  "latest",
+  "next",
+  "git+https://example.invalid/x.git",
+  "github:o/r",
+  "o/r",
+  "file:../x",
+  "link:../x",
+  "http://example.invalid/x.tgz",
+  "https://example.invalid/x.tgz",
+  "workspace:*",
+  "npm:other@1",
+];
+
+/** Valid ranges built from version parts, including prerelease comparators. */
+export const validRangeArb: fc.Arbitrary<string> = fc
+  .tuple(fc.constantFrom("^", "~", ">=", ">", "<=", "<", "=", ""), arbVersion, fc.constantFrom("", " || ^1.0.0", " <99.0.0"))
+  .map(([op, version, tail]) => `${op}${version}${tail}`);
+
+/** Valid ranges, unresolvable specifiers, arbitrary strings and a 300-character range. */
+export const arbRange: fc.Arbitrary<string> = fc.oneof(
+  { weight: 4, arbitrary: validRangeArb },
+  { weight: 2, arbitrary: fc.constantFrom(...UNRESOLVABLE_SPECIFIERS) },
+  { weight: 2, arbitrary: fc.string({ maxLength: 40 }) },
+  { weight: 1, arbitrary: fc.constantFrom("", "*", "1.x", ">=1 <3") },
+  { weight: 1, arbitrary: fc.constant(`^${"1".repeat(299)}`) },
+);
+
+// intakeRepo generators. Spec: .kiro/specs/repo-intake, tasks 6.2.
+
+export type UpstreamBehaviour =
+  | { readonly kind: "ok"; readonly body: string }
+  | { readonly kind: "not-found" }
+  | { readonly kind: "server-error" }
+  | { readonly kind: "rate-limited" }
+  | { readonly kind: "throws-sync" }
+  | { readonly kind: "rejects-error" }
+  | { readonly kind: "rejects-non-error" }
+  | { readonly kind: "text-rejects" }
+  | { readonly kind: "too-large" }
+  | { readonly kind: "invalid-encoding" }
+  | { readonly kind: "no-text" }
+  | { readonly kind: "nan-status" };
+
+export interface IntakeBehaviours {
+  readonly pkg: UpstreamBehaviour;
+  readonly lock: UpstreamBehaviour;
+  readonly registry: UpstreamBehaviour;
+}
+
+const arbBodyText: fc.Arbitrary<string> = fc.oneof(
+  arbPackageJson(true).map((model) => renderPackageJson(model)),
+  fc.string({ maxLength: 40 }),
+  fc.constant(""),
+);
+
+/** One upstream behaviour: a body, a status, a thrown value or a broken response. */
+export const arbUpstreamBehaviour: fc.Arbitrary<UpstreamBehaviour> = fc.oneof(
+  { weight: 4, arbitrary: arbBodyText.map((body): UpstreamBehaviour => ({ kind: "ok", body })) },
+  ...(
+    [
+      "not-found",
+      "server-error",
+      "rate-limited",
+      "throws-sync",
+      "rejects-error",
+      "rejects-non-error",
+      "text-rejects",
+      "too-large",
+      "invalid-encoding",
+      "no-text",
+      "nan-status",
+    ] as const
+  ).map((kind) => ({ weight: 1, arbitrary: fc.constant<UpstreamBehaviour>({ kind }) })),
+);
+
+/** Behaviour per upstream: package.json, package-lock.json and the registry. */
+export const arbIntakeTransport: fc.Arbitrary<IntakeBehaviours> = fc.record({
+  pkg: arbUpstreamBehaviour,
+  lock: arbUpstreamBehaviour,
+  registry: arbUpstreamBehaviour,
+});
+
+/** One package of the Property 16 model. */
+export interface IntakeModelDependency {
+  readonly name: string;
+  readonly range: string;
+  readonly dev: boolean;
+  /** Locked version, or null when the lockfile has no entry. */
+  readonly locked: string | null;
+  readonly registry: { readonly kind: "versions"; readonly versions: readonly string[] } | { readonly kind: "not-found" } | { readonly kind: "server-error" };
+}
+
+export interface IntakeModel {
+  readonly dependencies: readonly IntakeModelDependency[];
+  readonly lockfile: LockfileFormat | null;
+}
+
+/** Model for Property 16: up to 320 direct dependencies, an optional lockfile with gaps, a registry route per name. */
+export const arbIntakeModel: fc.Arbitrary<IntakeModel> = fc
+  .oneof(fc.integer({ min: 0, max: 12 }), fc.integer({ min: 290, max: 320 }))
+  .chain((count) =>
+    fc.tuple(
+      fc.constantFrom<LockfileFormat | null>(null, 1, 2, 3),
+      fc.array(
+        fc.record({
+          range: arbRange,
+          dev: fc.boolean(),
+          locked: fc.option(arbVersion, { nil: null }),
+          registry: fc.oneof(
+            { weight: 6, arbitrary: fc.array(arbVersion, { maxLength: 6 }).map((versions) => ({ kind: "versions" as const, versions })) },
+            { weight: 1, arbitrary: fc.constant({ kind: "not-found" as const }) },
+            { weight: 1, arbitrary: fc.constant({ kind: "server-error" as const }) },
+          ),
+        }),
+        { minLength: count, maxLength: count },
+      ),
+    ),
+  )
+  .map(([lockfile, items]) => ({
+    lockfile,
+    dependencies: items.map((item, index) => ({ name: `pkg-${index.toString()}`, ...item })),
+  }));
+
+// Scan metadata generator. Spec: .kiro/specs/repo-intake, task 7.3.
+
+/** Scan metadata with unresolved a subset of unlockedPackages, as intakeRepo guarantees. */
+export const arbScanMetadata: fc.Arbitrary<ScanMetadata> = fc
+  .tuple(
+    arbOwner,
+    arbRepo,
+    fc.uniqueArray(arbValidName, { maxLength: 8 }),
+    fc.constantFrom<LockfileVersion | null>(null, 1, 2, 3),
+    fc.nat(400),
+    fc.record({ peer: fc.nat(20), optional: fc.nat(20), invalidName: fc.nat(20) }),
+    fc.nat(8),
+  )
+  .map(([owner, repo, unlockedPackages, lockfileVersion, totalDirect, skipped, k]): ScanMetadata => ({
+    repo: { owner, repo, url: `https://github.com/${owner}/${repo}` },
+    unlocked: lockfileVersion === null,
+    unlockedPackages,
+    lockfileVersion,
+    capped: totalDirect > 300,
+    totalDirect,
+    skipped,
+    unresolved: unlockedPackages.slice(0, k),
+  }));
