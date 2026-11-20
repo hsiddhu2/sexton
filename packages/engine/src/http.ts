@@ -8,10 +8,16 @@ export interface TransportRequest {
   readonly body?: string;
 }
 
+export type TextBody =
+  | { readonly ok: true; readonly text: string }
+  | { readonly ok: false; readonly reason: "too-large" | "invalid-encoding" };
+
 export interface TransportResponse {
   readonly status: number;
   /** Parses the body as JSON. Rejects when the body is not JSON. */
   json(): Promise<unknown>;
+  /** Reads the body as UTF-8 text, stopping once more than limitBytes bytes arrive. Optional so existing fakes still compile. */
+  readonly text?: (limitBytes: number) => Promise<TextBody>;
 }
 
 /** The only thing that touches the network. Injectable so tests never do. Requirement 10.3. */
@@ -50,8 +56,58 @@ export function createFetchTransport(fetchImpl: typeof fetch = fetch): Transport
     };
     if (request.body !== undefined) init.body = request.body;
     const response = await fetchImpl(url, init);
-    return { status: response.status, json: () => response.json() as Promise<unknown> };
+    return {
+      status: response.status,
+      json: () => response.json() as Promise<unknown>,
+      text: (limitBytes) => readLimitedText(response, limitBytes),
+    };
   };
+}
+
+async function cancelQuietly(target: { cancel(): Promise<void> } | null): Promise<void> {
+  if (target === null) return;
+  try {
+    await target.cancel();
+  } catch {
+    // Cancelling is best effort.
+  }
+}
+
+/** Reads a body as UTF-8 under an inclusive byte limit. Requirement 2.11. */
+async function readLimitedText(response: Response, limitBytes: number): Promise<TextBody> {
+  const declared = response.headers.get("content-length");
+  if (declared !== null && /^\d+$/.test(declared)) {
+    const length = Number(declared);
+    if (Number.isSafeInteger(length) && length > limitBytes) {
+      await cancelQuietly(response.body);
+      return { ok: false, reason: "too-large" };
+    }
+  }
+  if (response.body === null) return { ok: true, text: "" };
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > limitBytes) {
+      await cancelQuietly(reader);
+      return { ok: false, reason: "too-large" };
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  try {
+    return { ok: true, text: new TextDecoder("utf-8", { fatal: true }).decode(bytes) };
+  } catch {
+    return { ok: false, reason: "invalid-encoding" };
+  }
 }
 
 /** Full-jitter delay for a retry attempt. Attempt 0 is the first retry. Requirement 9.3. */

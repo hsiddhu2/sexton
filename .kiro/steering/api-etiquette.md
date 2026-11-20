@@ -4,7 +4,7 @@ fileMatchPattern: "packages/engine/src/clients/**/*.ts"
 ---
 # Upstream etiquette
 
-Applies to every call to registry.npmjs.org, api.osv.dev, api.deps.dev, api.npmjs.org and api.scorecard.dev.
+Applies to every call to registry.npmjs.org, api.osv.dev, api.deps.dev, api.npmjs.org, api.scorecard.dev and raw.githubusercontent.com (no token, no cookies, HEAD ref only).
 
 - Send User-Agent: sexton/<version> (+https://github.com/hsiddhu2/sexton) on every request.
 - Check the cache before every fetch. Cache key is source, package, version. TTL 24 hours.

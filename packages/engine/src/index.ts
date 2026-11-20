@@ -98,3 +98,44 @@ export type {
   Unevaluated,
   ValidationError,
 } from "./types.js";
+
+// repo-intake
+export { parseRepoUrl, formatRepoUrl, isValidOwner, isValidRepo } from "./intake/url.js";
+export { isValidPackageName, MAX_PACKAGE_NAME_LENGTH } from "./intake/names.js";
+export { parsePackageJson, applyLockfile, parseManifests } from "./intake/manifest.js";
+export { resolveUnlocked, isResolvableRange, UNRESOLVED_VERSION, MAX_RANGE_LENGTH } from "./intake/resolve.js";
+export { applyCap, MAX_DIRECT_DEPENDENCIES } from "./intake/cap.js";
+export { intakeRepo } from "./intake/intake.js";
+export { scanMetadata, attachScan } from "./intake/scan.js";
+export {
+  fetchManifest,
+  fetchRepoManifests,
+  manifestUrl,
+  GITHUB_RAW_SOURCE,
+  GITHUB_RAW_HOST,
+  MAX_MANIFEST_BYTES,
+} from "./clients/github-raw.js";
+export type { ManifestFile, ManifestOutcome, LockfileOutcome, ManifestFailure } from "./clients/github-raw.js";
+export type { CapResult } from "./intake/cap.js";
+export type {
+  RepoRef,
+  ParseRepoUrlResult,
+  DependencyOrigin,
+  Resolution,
+  IntakePackage,
+  SkippedCounts,
+  LockfileVersion,
+  ParsedDependency,
+  PackageJsonOk,
+  PackageJsonParse,
+  ManifestsOk,
+  ManifestsParse,
+  ManifestParseError,
+  IntakeErrorCode,
+  IntakeError,
+  IntakeSuccess,
+  IntakeResult,
+  ScanMetadata,
+} from "./types.js";
+export { INTAKE_ERROR_CODES } from "./types.js";
+export type { TextBody } from "./http.js";

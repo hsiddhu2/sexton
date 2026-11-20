@@ -1,0 +1,9 @@
+{
+  "name": "synthetic-ranges",
+  "version": "1.0.0",
+  "dependencies": {
+    "from-git": "git+https://github.com/example/from-git.git#main",
+    "tagged": "latest",
+    "plain": "^1.0.0"
+  }
+}

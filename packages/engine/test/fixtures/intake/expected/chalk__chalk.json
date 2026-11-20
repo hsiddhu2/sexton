@@ -1,0 +1,94 @@
+{
+  "ok": true,
+  "repo": {
+    "owner": "chalk",
+    "repo": "chalk",
+    "url": "https://github.com/chalk/chalk"
+  },
+  "packages": [
+    {
+      "name": "@types/node",
+      "installedVersion": "26.6.6",
+      "declaredRange": "^26.6.3",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "ansi-styles",
+      "installedVersion": "7.0.0",
+      "declaredRange": "^7.0.0",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "c8",
+      "installedVersion": "12.0.0",
+      "declaredRange": "^12.0.0",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "color-convert",
+      "installedVersion": "3.1.3",
+      "declaredRange": "^3.1.3",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "execa",
+      "installedVersion": "10.2.1",
+      "declaredRange": "^10.0.1",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "log-update",
+      "installedVersion": "8.0.0",
+      "declaredRange": "^8.0.0",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "typescript",
+      "installedVersion": "6.0.3",
+      "declaredRange": "^6.0.3",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "xo",
+      "installedVersion": "5.0.1",
+      "declaredRange": "^5.0.1",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "yoctodelay",
+      "installedVersion": "2.0.0",
+      "declaredRange": "^2.0.0",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    }
+  ],
+  "unlocked": true,
+  "unlockedPackages": [
+    "@types/node",
+    "ansi-styles",
+    "c8",
+    "color-convert",
+    "execa",
+    "log-update",
+    "typescript",
+    "xo",
+    "yoctodelay"
+  ],
+  "lockfileVersion": null,
+  "capped": false,
+  "totalDirect": 9,
+  "skipped": {
+    "peer": 0,
+    "optional": 0,
+    "invalidName": 0
+  },
+  "unresolved": []
+}

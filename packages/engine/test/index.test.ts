@@ -116,3 +116,42 @@ describe("engine public surface (history-signals)", () => {
     );
   });
 });
+
+// repo-intake task 9.2. Requirements 1.1, 2.1, 3.1, 5.1, 6.1, 7.1, 9.3.
+const INTAKE_FUNCTIONS = [
+  "parseRepoUrl",
+  "formatRepoUrl",
+  "isValidOwner",
+  "isValidRepo",
+  "isValidPackageName",
+  "parsePackageJson",
+  "applyLockfile",
+  "parseManifests",
+  "resolveUnlocked",
+  "isResolvableRange",
+  "applyCap",
+  "intakeRepo",
+  "scanMetadata",
+  "attachScan",
+  "fetchManifest",
+  "fetchRepoManifests",
+  "manifestUrl",
+] as const;
+
+describe("engine public surface (repo-intake)", () => {
+  it.each(INTAKE_FUNCTIONS)("exports %s as a function", (name) => {
+    expect(typeof engine[name]).toBe("function");
+  });
+
+  it("exports the intake constants", () => {
+    expect(engine.UNRESOLVED_VERSION).toBe("unresolved");
+    expect(engine.MAX_DIRECT_DEPENDENCIES).toBe(300);
+    expect(typeof engine.MAX_PACKAGE_NAME_LENGTH).toBe("number");
+    expect(typeof engine.MAX_RANGE_LENGTH).toBe("number");
+    expect(typeof engine.MAX_MANIFEST_BYTES).toBe("number");
+    expect(typeof engine.GITHUB_RAW_SOURCE).toBe("string");
+    expect(typeof engine.GITHUB_RAW_HOST).toBe("string");
+    expect(Array.isArray(engine.INTAKE_ERROR_CODES)).toBe(true);
+    expect(engine.INTAKE_ERROR_CODES.length).toBeGreaterThan(0);
+  });
+});

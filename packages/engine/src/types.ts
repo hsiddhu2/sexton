@@ -138,6 +138,7 @@ export interface PackageHealth extends PackageRef {
 export interface HealthReport {
   readonly generatedAt: string;
   readonly packages: readonly PackageHealth[];
+  readonly scan?: ScanMetadata;
 }
 
 // Types for the policy spec (.kiro/specs/policy).
@@ -257,4 +258,114 @@ export interface PolicyResult {
   readonly source: PolicySource;
   readonly pass: boolean;
   readonly rules: readonly RuleResult[];
+}
+
+// Types for the repo-intake spec (.kiro/specs/repo-intake).
+
+export interface RepoRef {
+  readonly owner: string;
+  readonly repo: string;
+  /** Canonical URL: https://github.com/{owner}/{repo}. */
+  readonly url: string;
+}
+
+export type ParseRepoUrlResult =
+  | { readonly ok: true; readonly repo: RepoRef }
+  | { readonly ok: false; readonly code: "invalid-url"; readonly message: string };
+
+export type DependencyOrigin = "dependencies" | "devDependencies";
+export type Resolution = "locked" | "unlocked" | "unresolved";
+export type LockfileVersion = 1 | 2 | 3;
+
+/** One kept direct dependency. Assignable to PackageRef, so it can be passed to scorePackages. */
+export interface IntakePackage extends PackageRef {
+  readonly declaredRange: string;
+  readonly origin: DependencyOrigin;
+  readonly resolution: Resolution;
+}
+
+export interface SkippedCounts {
+  readonly peer: number;
+  readonly optional: number;
+  readonly invalidName: number;
+}
+
+/** A direct dependency after package.json and the lockfile are read, before the Cap and Unlocked resolution. */
+export interface ParsedDependency {
+  readonly name: string;
+  readonly declaredRange: string;
+  readonly origin: DependencyOrigin;
+  /** The version recorded in the lockfile, or null when it must be resolved. */
+  readonly lockedVersion: string | null;
+}
+
+export interface PackageJsonOk {
+  readonly ok: true;
+  readonly dependencies: readonly ParsedDependency[]; // lockedVersion null in this phase
+  readonly totalDirect: number;
+  readonly skipped: SkippedCounts;
+}
+
+export interface ManifestParseError {
+  readonly ok: false;
+  readonly code: "invalid-package-json" | "invalid-lockfile";
+  readonly message: string;
+  readonly file: "package.json" | "package-lock.json";
+}
+
+export type PackageJsonParse = PackageJsonOk | ManifestParseError;
+
+export interface ManifestsOk {
+  readonly ok: true;
+  readonly dependencies: readonly ParsedDependency[];
+  readonly totalDirect: number;
+  readonly skipped: SkippedCounts;
+  readonly lockfileVersion: LockfileVersion | null;
+  readonly unlocked: boolean;
+  readonly unlockedPackages: readonly string[];
+}
+export type ManifestsParse = ManifestsOk | ManifestParseError;
+
+export const INTAKE_ERROR_CODES = [
+  "invalid-url",
+  "missing-package-json",
+  "invalid-package-json",
+  "invalid-lockfile",
+  "manifest-too-large",
+  "fetch-failed",
+  "internal-error",
+] as const;
+export type IntakeErrorCode = (typeof INTAKE_ERROR_CODES)[number];
+
+export interface IntakeError {
+  readonly ok: false;
+  readonly code: IntakeErrorCode;
+  readonly message: string;
+  /** Present for every code except invalid-url and internal-error. */
+  readonly file?: "package.json" | "package-lock.json";
+}
+
+export interface IntakeSuccess {
+  readonly ok: true;
+  readonly repo: RepoRef;
+  readonly packages: readonly IntakePackage[];
+  readonly unlocked: boolean;
+  readonly unlockedPackages: readonly string[];
+  readonly lockfileVersion: LockfileVersion | null;
+  readonly capped: boolean;
+  readonly totalDirect: number;
+  readonly skipped: SkippedCounts;
+  readonly unresolved: readonly string[];
+}
+export type IntakeResult = IntakeSuccess | IntakeError;
+
+export interface ScanMetadata {
+  readonly repo: RepoRef;
+  readonly unlocked: boolean;
+  readonly unlockedPackages: readonly string[];
+  readonly lockfileVersion: LockfileVersion | null;
+  readonly capped: boolean;
+  readonly totalDirect: number;
+  readonly skipped: SkippedCounts;
+  readonly unresolved: readonly string[];
 }

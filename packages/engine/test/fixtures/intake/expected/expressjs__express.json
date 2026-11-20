@@ -1,0 +1,374 @@
+{
+  "ok": true,
+  "repo": {
+    "owner": "expressjs",
+    "repo": "express",
+    "url": "https://github.com/expressjs/express"
+  },
+  "packages": [
+    {
+      "name": "accepts",
+      "installedVersion": "2.0.0",
+      "declaredRange": "^2.0.0",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "body-parser",
+      "installedVersion": "2.4.0",
+      "declaredRange": "^2.4.0",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "content-disposition",
+      "installedVersion": "2.0.1",
+      "declaredRange": "^2.0.1",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "content-type",
+      "installedVersion": "2.1.0",
+      "declaredRange": "^2.0.0",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "cookie",
+      "installedVersion": "0.7.2",
+      "declaredRange": "^0.7.1",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "cookie-signature",
+      "installedVersion": "1.2.2",
+      "declaredRange": "^1.2.1",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "debug",
+      "installedVersion": "4.4.3",
+      "declaredRange": "^4.4.0",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "depd",
+      "installedVersion": "2.0.0",
+      "declaredRange": "^2.0.0",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "encodeurl",
+      "installedVersion": "2.0.3",
+      "declaredRange": "^2.0.0",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "escape-html",
+      "installedVersion": "1.0.3",
+      "declaredRange": "^1.0.3",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "etag",
+      "installedVersion": "1.8.1",
+      "declaredRange": "^1.8.1",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "finalhandler",
+      "installedVersion": "2.1.1",
+      "declaredRange": "^2.1.0",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "fresh",
+      "installedVersion": "2.0.0",
+      "declaredRange": "^2.0.0",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "http-errors",
+      "installedVersion": "2.0.1",
+      "declaredRange": "^2.0.0",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "merge-descriptors",
+      "installedVersion": "2.0.0",
+      "declaredRange": "^2.0.0",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "mime-types",
+      "installedVersion": "3.0.2",
+      "declaredRange": "^3.0.0",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "on-finished",
+      "installedVersion": "2.4.2",
+      "declaredRange": "^2.4.1",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "once",
+      "installedVersion": "1.4.0",
+      "declaredRange": "^1.4.0",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "parseurl",
+      "installedVersion": "1.3.3",
+      "declaredRange": "^1.3.3",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "proxy-addr",
+      "installedVersion": "2.0.8",
+      "declaredRange": "^2.0.8",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "qs",
+      "installedVersion": "6.17.1",
+      "declaredRange": "^6.16.0",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "range-parser",
+      "installedVersion": "1.3.0",
+      "declaredRange": "^1.2.1",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "router",
+      "installedVersion": "2.3.0",
+      "declaredRange": "^2.2.0",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "send",
+      "installedVersion": "1.2.1",
+      "declaredRange": "^1.1.0",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "serve-static",
+      "installedVersion": "2.2.1",
+      "declaredRange": "^2.2.0",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "statuses",
+      "installedVersion": "2.0.2",
+      "declaredRange": "^2.0.1",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "type-is",
+      "installedVersion": "2.1.0",
+      "declaredRange": "^2.1.0",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "vary",
+      "installedVersion": "1.1.2",
+      "declaredRange": "^1.1.2",
+      "origin": "dependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "after",
+      "installedVersion": "0.8.2",
+      "declaredRange": "0.8.2",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "connect-redis",
+      "installedVersion": "8.1.0",
+      "declaredRange": "^8.0.1",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "cookie-parser",
+      "installedVersion": "1.4.7",
+      "declaredRange": "1.4.7",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "cookie-session",
+      "installedVersion": "2.1.1",
+      "declaredRange": "2.1.1",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "ejs",
+      "installedVersion": "3.1.10",
+      "declaredRange": "^3.1.10",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "eslint",
+      "installedVersion": "8.47.0",
+      "declaredRange": "8.47.0",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "express-session",
+      "installedVersion": "1.19.0",
+      "declaredRange": "^1.18.1",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "hbs",
+      "installedVersion": "4.4.0",
+      "declaredRange": "4.4.0",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "marked",
+      "installedVersion": "15.0.12",
+      "declaredRange": "^15.0.3",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "method-override",
+      "installedVersion": "3.0.0",
+      "declaredRange": "3.0.0",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "mocha",
+      "installedVersion": "11.8.0",
+      "declaredRange": "^11.7.5",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "morgan",
+      "installedVersion": "1.12.1",
+      "declaredRange": "1.12.1",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "nyc",
+      "installedVersion": "17.1.0",
+      "declaredRange": "^17.1.0",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "pbkdf2-password",
+      "installedVersion": "1.2.1",
+      "declaredRange": "1.2.1",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "supertest",
+      "installedVersion": "6.3.4",
+      "declaredRange": "^6.3.0",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    },
+    {
+      "name": "vhost",
+      "installedVersion": "3.0.2",
+      "declaredRange": "~3.0.2",
+      "origin": "devDependencies",
+      "resolution": "unlocked"
+    }
+  ],
+  "unlocked": true,
+  "unlockedPackages": [
+    "accepts",
+    "body-parser",
+    "content-disposition",
+    "content-type",
+    "cookie",
+    "cookie-signature",
+    "debug",
+    "depd",
+    "encodeurl",
+    "escape-html",
+    "etag",
+    "finalhandler",
+    "fresh",
+    "http-errors",
+    "merge-descriptors",
+    "mime-types",
+    "on-finished",
+    "once",
+    "parseurl",
+    "proxy-addr",
+    "qs",
+    "range-parser",
+    "router",
+    "send",
+    "serve-static",
+    "statuses",
+    "type-is",
+    "vary",
+    "after",
+    "connect-redis",
+    "cookie-parser",
+    "cookie-session",
+    "ejs",
+    "eslint",
+    "express-session",
+    "hbs",
+    "marked",
+    "method-override",
+    "mocha",
+    "morgan",
+    "nyc",
+    "pbkdf2-password",
+    "supertest",
+    "vhost"
+  ],
+  "lockfileVersion": null,
+  "capped": false,
+  "totalDirect": 44,
+  "skipped": {
+    "peer": 0,
+    "optional": 0,
+    "invalidName": 0
+  },
+  "unresolved": []
+}

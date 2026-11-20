@@ -5,7 +5,14 @@ import { fetchProvenanceSignal } from "./clients/attestations.js";
 import { describeFailure, type ClientContext } from "./clients/context.js";
 import { dependenciesUrl, DEPS_DEV_SOURCE, fetchDependencyGraph } from "./clients/deps-dev.js";
 import { fetchFullPackumentDocument, maintainersSignalFrom, type PackumentDocument } from "./clients/maintainers.js";
-import { fetchInstallScriptSignal, fetchPackumentSignals, packumentUrl, readAbbreviatedPackument } from "./clients/npm.js";
+import {
+  fetchInstallScriptSignal,
+  fetchPackumentSignals,
+  NPM_REGISTRY,
+  packumentUrl,
+  readAbbreviatedPackument,
+} from "./clients/npm.js";
+import { UNRESOLVED_VERSION } from "./intake/resolve.js";
 import { fetchAdvisoriesSignal } from "./clients/osv.js";
 import { evaluateProvenanceRegression, maintainerChangeValue, newInstallScriptEvents } from "./history.js";
 import { createFetchTransport, type RetryOptions, type Transport } from "./http.js";
@@ -56,14 +63,42 @@ export async function scorePackages(packages: readonly PackageRef[], deps: Scori
     ...(deps.retry !== undefined ? { retry: deps.retry } : {}),
   };
   const reference = clock();
-  const reach = await collectReach(ctx, packages);
+  const unresolvedCount = packages.filter(isUnresolved).length;
+  const phase = await collectReach(ctx, packages.filter((pkg) => !isUnresolved(pkg)));
+  const reach: ReachPhase = { ...phase, graphsMissing: phase.graphsMissing + unresolvedCount };
   const options: ScoreOneOptions = {
     reach,
     reference,
     ...(deps.snapshotStore !== undefined ? { snapshotStore: deps.snapshotStore } : {}),
   };
-  const results = await mapWithConcurrency(packages, PACKAGE_CONCURRENCY, (pkg) => scoreOne(ctx, pkg, options));
+  const results = await mapWithConcurrency(packages, PACKAGE_CONCURRENCY, (pkg) =>
+    isUnresolved(pkg) ? Promise.resolve(unresolvedHealth(pkg, reference)) : scoreOne(ctx, pkg, options),
+  );
   return { generatedAt: clock().toISOString(), packages: results };
+}
+
+const UNRESOLVED_REASON = "unresolvable range";
+
+function isUnresolved(pkg: PackageRef): boolean {
+  return pkg.installedVersion === UNRESOLVED_VERSION;
+}
+
+/** packumentUrl throws on a lone surrogate. Fall back to the registry root so the branch is total. */
+function sourceFor(name: string): string {
+  try {
+    return packumentUrl(name);
+  } catch {
+    return NPM_REGISTRY;
+  }
+}
+
+/** All ten signals unavailable, no request made. Requirement 5.14. */
+function unresolvedHealth(pkg: PackageRef, reference: Date): PackageHealth {
+  const source = sourceFor(pkg.name);
+  const signals = Object.fromEntries(
+    SIGNAL_NAMES.map((name) => [name, unavailable(UNRESOLVED_REASON, source, reference)]),
+  ) as unknown as OriginalSignals & NewSignals;
+  return buildHealth(pkg, signals, reference);
 }
 
 type HistoryRead = HistorySignalInput["historyRead"];
