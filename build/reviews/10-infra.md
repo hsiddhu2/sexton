@@ -73,3 +73,18 @@ Notes, and what was done:
 | Task 11.2's local check is not a committed script | Recorded here instead. The check parsed the YAML, found 6 action uses and 0 unpinned, and found no `secrets.`, credentials step or `cdk deploy`. It then ran `npm run build`, `cdk synth -q` with AWS variables unset, and the infra tests (44 passed), plus `npm run scan:self` (policy passed) |
 | Tasks 12.1 to 12.3 are ticked in this commit | They were finished in the docs commit, 126bb27 |
 | A note from the session, not the reviewer: the self-scan reads only the root package.json, so infra's dependencies are not scanned. esbuild in infra has an install script | Raised with HP. The script is Kiro's (scripts/self-scan.mjs) |
+
+## Review 4: docs/adr/0001-dev-dependency-licences.md
+
+Verdict: READY. No defects.
+
+The reviewer checked that the quoted N-7 matches the amended wording word for word. That amendment is an uncommitted edit in the main checkout. The reviewer also checked that axe-core 4.14.1 is MPL-2.0 on npm, and that the usage claims match the cemetery-ui design: a dev dependency, used only in jsdom tests, unmodified, kept out of the bundle by a postbuild check. The MPL-2.0 statements are correct in substance.
+
+| Note | Action |
+|---|---|
+| "a dated change-log entry" does not match how requirements.md tracks changes | Now "a version bump and a date" |
+| Condition 4 said "this ADR", narrower than N-7's "docs/adr" | Now "recorded in docs/adr" |
+| The GPL and AGPL ban goes beyond N-7 | Now stated as a rule this ADR adds |
+| cemetery-ui design.md expects the name `00NN-axe-core-dev-only.md` | Told Kiro the real path in build/handoffs/to-kiro.md |
+| The byline reads "Harpreet S. Siddhu" while requirements.md says "Harpreet Singh Siddhu" | Kept. The byline uses the published form of the name |
+| MPL-2.0 also requires source when a binary is distributed | Kept as written. Sexton distributes no form of axe-core |
