@@ -102,3 +102,26 @@ The reviewer checked every claim against `main` and this branch. The problem sta
 | "Alive: none of the above" skips the all-signals-unavailable case, which is Restless | Kept. It is a product page, and the full rule is in docs/requirements.md |
 | The docs linked at the end exist on spec/infra, not yet on main | Kept. The README lands with them on this branch |
 | "due on 4 Dec 2026" against "ships by" | Kept. Same meaning |
+
+## Review 6: task 2, the DynamoDB port, its SDK adapter, the fakes and the generators
+
+Verdict: READY. No defects.
+
+main (with cemetery-ui, b7bcef0) was merged into spec/infra first (bc35860). The gates passed after the merge: engine 664, web 165, api 14 and infra 44 tests. `contract-pending.ts` was never created, because `contract.ts` was already on main, so task 2.2 was skipped and there was nothing to delete.
+
+The reviewer checked:
+- the adapter mapping: eventually consistent GetItem, the not-exists condition, ascending Query, paging with a cap, and the two mapped errors
+- that the fake models the key schema, the sparse GSI, numeric Number ordering, the conditional put and the 400 KB limit
+- that the contract tests can fail
+- the exact pins and the licences of the 29 new lock entries (Apache-2.0, MIT, 0BSD)
+- the 11 generators the design names
+
+| Note | Action |
+|---|---|
+| The fake ordered String keys by UTF-16 code units, while DynamoDB orders by UTF-8 bytes | Fixed. The fake now compares UTF-8 bytes |
+| The fake does not reproduce some DynamoDB validation errors (wrong GSI key type, empty key, BETWEEN low above high) | Kept. No caller relies on them |
+| `itemBytes` counts a Number as one byte per character | Kept. It overestimates, which is the safe direction |
+| The paging test name overstated what the memory fake does | Renamed. Paging is proven on the stub path |
+| The design's Dependencies table did not list fast-check for packages/api | Row added |
+| 2.2 is ticked although it was skipped | Kept, with the note in tasks.md |
+| `arbOwner` and `arbRepo` are written locally rather than reused from the engine | Kept. The engine's test files are outside the API's tsconfig. `arbitraries.test.ts` checks them against `parseRepoUrl` |

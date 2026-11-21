@@ -34,21 +34,22 @@ Ordering constraints, recorded here:
     - Names `SextonData-dev`, `SextonEdge-dev`, `sexton-cache-dev`, `sexton-snapshots-dev`, `sexton/github-token-dev`. Synth with `eu-west-1` throws with a message naming `us-east-1`. Synth with no credentials in the environment succeeds and writes no `cdk.context.json`.
     - _Requirements: 1.1, 1.2, 1.3_
 
-- [ ] 2. API wiring and the DynamoDB port (blocked until cemetery-ui is on main)
+- [x] 2. API wiring and the DynamoDB port
   - _Requirements: 2.1, 3.1, 4.6_
-  - [ ] 2.1 Merge main and add API dependencies
+  - [x] 2.1 Merge main and add API dependencies
     - `git merge main` into spec/infra. Add `@aws-sdk/client-dynamodb@3.1166.0` and `@types/aws-lambda@8.10.164` (dev) with `npm install -w @sexton/api <pkg>@<exact>`. Root package.json is not edited by hand.
     - _Requirements: 4.6_
-  - [ ] 2.2 Implement packages/api/src/contract-pending.ts
+  - [x] 2.2 Implement packages/api/src/contract-pending.ts
     - `ScanResponse = { report, policy }` mirroring cemetery-ui. Skip this sub-task if `contract.ts` is already on main, and import from it instead.
+    - Skipped: cemetery-ui merged into main (b7bcef0) before this task, so `contract-pending.ts` was never created. The API imports `ScanResponse` from `./contract.js`. `fast-check` 3.23.1 is also a dev dependency of `@sexton/api`, the same pin as the root.
     - _Requirements: 4.6_
-  - [ ] 2.3 Implement src/dynamo/port.ts and src/dynamo/aws-port.ts
+  - [x] 2.3 Implement src/dynamo/port.ts and src/dynamo/aws-port.ts
     - Interface, `ConditionFailedError`, `ItemTooLargeError` and the SDK adapter as in design.md: eventually consistent GetItem, PutItem with `attribute_not_exists(pk)` when asked, Query following `LastEvaluatedKey` ascending. The client is created by the caller and passed in.
     - _Requirements: 2.1, 3.1, 3.6_
-  - [ ] 2.4 Write test/fakes/memory-dynamo.ts and test/dynamo/port-contract.test.ts
+  - [x] 2.4 Write test/fakes/memory-dynamo.ts and test/dynamo/port-contract.test.ts
     - The fake models the key schema of both tables, the sparse GSI, ascending sort-key order, the conditional put, the 400 KB item limit, injectable failures and a shuffled-order mode. The contract suite runs against the fake and against `AwsDynamoPort` over a stubbed `send` that returns recorded command outputs, including a two-page Query and a `ConditionalCheckFailedException`.
     - _Requirements: 2.1, 3.1, 3.6_
-  - [ ] 2.5 Add test/arbitraries.ts
+  - [x] 2.5 Add test/arbitraries.ts
     - `arbCacheKey`, `arbJsonValue`, `arbStoredAt`, `arbTtlSeconds`, `arbPackageName`, `arbIsoUtc`, `arbSequence`, `arbSnapshot`, `arbSeenSet`, `arbEvent`, `arbHostileRepo`, as in design.md.
     - _Requirements: 2.2, 3.3, 3.9, 4.1_
 

@@ -746,6 +746,7 @@ A rule that fires and is not in this table is fixed, not suppressed, unless HP a
 | tsx | exact, chosen at task time | infra | dev | Runs `bin/sexton.ts` as ESM TypeScript for `cdk.json`. |
 | @aws-sdk/client-dynamodb | 3.1166.0 | packages/api | runtime | The only AWS API the functions call. |
 | @types/aws-lambda | 8.10.164 | packages/api | dev | Types for function URL events and results. |
+| fast-check | 3.23.1 | packages/api | dev | Property tests; the same pin as the root, declared so the API does not rely on hoisting. |
 
 All direct licences are Apache-2.0 or MIT (N-7). Two packages bundled inside aws-cdk-lib carry other permissive licences: `case` is `MIT OR GPL-3.0-or-later` (we take it under MIT) and `minimatch` is `BlueOak-1.0.0`. infra also declares `fast-check` 3.23.1 as a dev dependency, the same pin as the root. No other runtime dependency: gzip, UUIDs and logging use Node built-ins.
 
