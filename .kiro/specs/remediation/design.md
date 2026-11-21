@@ -1192,3 +1192,11 @@ Recorded as the session protocol requires: each is the choice that keeps the sma
 6. **Two more fixed reasons in `gatherBumpData`.** Its own re-checks return the planner's fixed texts (`package name is not a valid npm package name`, `installed version is not a valid semver version`), and an unexpected throw inside one package becomes `bump data could not be read`. All are fixed text; no error message is copied.
 7. **Small helper files.** `unhealthy.ts` (the Haunted, Dead or Possessed test) and `plan-options.ts` (the `PlanOptions` type, shared by the planner and `bump-targets.ts` without an import cycle) are added under `remediation/`. `clients/osv.ts` exports `OsvShapeError` and `OsvPaginationError` so `gatherBumpData` can choose the fixed reason by error class.
 8. **The planner and the bump-target list skip a repeated report name after its first entry, whatever the first entry's state**, so both see exactly the same packages.
+
+## Correction, 21 Nov 2026 (spec migration-node-sass, handoff decision 13)
+
+Two open items of this spec are closed by the migration-node-sass spec, and the body rules are widened for its migrate plans. Requirements 2.20, 2.21, 2.22, 5.2, 5.6, 5.9 and 5.14 above were edited to match; tasks.md is not changed.
+
+1. `escapeField` and `cleanLine` also replace the direction marks U+200E (left-to-right mark), U+200F (right-to-left mark) and U+061C (Arabic letter mark) with a space. Property 11 checks them.
+2. Distinct advisory IDs per package are capped at 200. Beyond that `gatherBumpData` fetches no detail and returns the failure `too many advisories`. The fetch body moved to `remediation/version-data.ts`, shared with `gatherMigrationData`; for 200 IDs or fewer the behaviour is unchanged. This closes open item 11 ("no cap on distinct IDs").
+3. A proposed migrate plan's body adds "Files changed" and "Review before merging" before the lockfile note, carries the lockfile note, and renders Review site paths, line numbers, script names and excerpts from the repository, each only through `escapeField` (5.2, 5.9, 5.14 amended).
