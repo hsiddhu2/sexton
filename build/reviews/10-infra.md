@@ -218,3 +218,25 @@ During this task, the real `cdk synth` bundle of the scan handler was loaded off
 | The end-to-end test loads cemetery-ui's validator by path | Kept. A rename in web will break the test loudly |
 | design.md quoted old engine text for `invalid-url` | Updated |
 | Scoring runs to the end even when the policy fetch fails | Kept. The result is correct, at a small cost in I/O |
+
+## Review 11: task 7, the snapshotter, Property 12
+
+Verdict: READY. No defects.
+
+The reviewer checked:
+- Names are listed once over 90 days.
+- The 90-second margin is checked before every chunk.
+- Deferred names start at the first chunk not started, and snapshotted + failed + deferred = listed holds even when a chunk throws.
+- A listing failure gives `error` and zero counts.
+- There is one summary line, and no package names are logged.
+- The EMF document (namespace `Sexton`, `Dimensions: [[]]`, the three metric names) matches the dimensionless metrics the alarm reads in edge-stack.ts.
+- The handler never throws.
+- Every DynamoDB call is granted to the snapshotter role.
+- The entry reads the three environment variables and exports `handler`.
+
+| Note | Action |
+|---|---|
+| EMF through `console.log` gets the Lambda text-format prefix, and CloudWatch may not extract metrics from a prefixed line | Changed. The EMF line now goes to `process.stdout` with no prefix. Test added. Task 14.3 now checks that the three metrics appear after the first deploy |
+| A missing environment variable throws at init | Kept by design. The function fails fast, and the Lambda Errors part of the alarm catches it |
+| The handler's outer catch writes the EMF line but no summary line | Kept. It covers a failure while wiring the stores, which is unlikely |
+| `planChunks` turns a size of 0 or less into 1 | Kept. It is a guard only; the constant is 25 |

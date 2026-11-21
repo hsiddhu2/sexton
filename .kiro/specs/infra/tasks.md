@@ -111,13 +111,14 @@ Ordering constraints, recorded here:
     - Done with three details. The handler logic is in `src/scan-handler.ts` (`createScanHandler`, `readScanEnvironment`), and `src/handlers/scan.ts` is only the Lambda entry that reads the environment and builds the client, so tests can import the factory without the init-time environment check. The end-to-end test also checks the body with cemetery-ui's own `validateScanResponse`, loaded at run time. Property 10's invalid-policy scenario keeps the repository canary out of the policy file's keys: see design.md, "Notes on requirements and open items", item 13.
     - _Requirements: 4.6_
 
-- [ ] 7. Snapshotter with property 12
+- [x] 7. Snapshotter with property 12
   - _Requirements: 7.3, 7.4, 7.5, 7.6_
-  - [ ] 7.1 Implement src/snapshot-run.ts and src/handlers/snapshotter.ts
+  - [x] 7.1 Implement src/snapshot-run.ts and src/handlers/snapshotter.ts
     - `planChunks`, `runSnapshotJob` with injected `remainingMs`, list once, chunks of 25, 90-second margin, counts, summary line. The handler writes the Embedded Metric Format line for `SnapshotterFailed`, `SnapshotterDeferred` and `SnapshotterError` in namespace `Sexton`, and never throws.
     - _Requirements: 7.3, 7.4, 7.5, 7.6_
-  - [ ] 7.2 Write test/snapshot-run.test.ts
+  - [x] 7.2 Write test/snapshot-run.test.ts
     - Property 12 (snapshot job accounting). Examples: a listing failure gives `error` and zero counts; a run with plenty of time defers nothing; the EMF line has the three metrics and parses as JSON; the handler resolves when `runSnapshotter` is replaced by a throwing fake.
+    - Done with the same split as the scan handler: `src/snapshotter-handler.ts` holds `createSnapshotterHandler` and `emfLine`, and `src/handlers/snapshotter.ts` is only the Lambda entry. A chunk whose `runSnapshotter` call throws counts all its names as failed, so the accounting still adds up.
     - _Requirements: 7.3, 7.4, 7.5, 7.6_
 
 - [x] 8. Data stack
@@ -198,7 +199,7 @@ Ordering constraints, recorded here:
     - Build web with `VITE_SEXTON_API=/api`. Confirm `cdk synth` shows neither placeholder warning. Deploy `SextonData-dev`, then `SextonEdge-dev` with `--parameters AlarmEmail=<from HP>`. One pass.
     - _Requirements: 4.6, 5.1_
   - [ ] 14.3 Verify and record
-    - The CloudFront URL serves the demo. A direct unsigned call to the function URL returns 403. `GET {url}/api/scan?repo=https://github.com/expressjs/express` returns a ScanResponse under 60 seconds cold and under 20 seconds warm, measured with `curl -w` and recorded in build/reviews/10-infra.md. 101 rapid requests from one IP get blocked within about a minute. A manual invoke of the snapshotter appends snapshots (checked with a Query on one `snap#` partition). The confirmed or corrected `X-Amz-Cf-Id` behaviour is written into design.md; any doc and behaviour mismatch is filed under private/filing.
+    - The CloudFront URL serves the demo. A direct unsigned call to the function URL returns 403. `GET {url}/api/scan?repo=https://github.com/expressjs/express` returns a ScanResponse under 60 seconds cold and under 20 seconds warm, measured with `curl -w` and recorded in build/reviews/10-infra.md. 101 rapid requests from one IP get blocked within about a minute. A manual invoke of the snapshotter appends snapshots (checked with a Query on one `snap#` partition). The three snapshotter metrics appear in the `Sexton` namespace after the manual invoke. The bundled handlers load (no `Cannot find module` at init). The confirmed or corrected `X-Amz-Cf-Id` behaviour is written into design.md; any doc and behaviour mismatch is filed under private/filing.
     - _Requirements: 4.6, 5.1, 5.5, 7.3, 10.2_
 
 ## Task Dependency Graph
