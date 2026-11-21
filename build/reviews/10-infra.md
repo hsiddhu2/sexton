@@ -146,4 +146,28 @@ The reviewer checked:
 | Property 3 built values with `crypto.randomBytes`, so a failure could not be replayed from its seed | Fixed. It now uses `fc.uint8Array` as hex |
 | A `storedAt` that is not a safe integer was logged as `not-json` | Now `invalid-entry`. Test added, and design.md updated |
 | Decoding does not check that `pk` equals the requested key | Kept. GetItem reads by that key |
-| The `expiresAt` example test depends on the wall clock | Kept. The CachedFetcher test with a 1-second TTL covers the same rule without the wall clock |
+| The CachedFetcher test with a 1-second TTL depends on the wall clock to catch a decoder that compares `expiresAt` with `Date.now()` | Kept. The decode example with `expiresAt: 0` catches that decoder at any time |
+
+## Review 8: task 4, the DynamoDB snapshot store, Properties 5 to 8
+
+Verdict: NOT READY, one defect. Fixed and re-reviewed: READY.
+
+| Defect | Fix |
+|---|---|
+| `listSeenWithin` clamped only an infinite window. A huge finite window, such as 1e200, sent the lower bound as `"-1e+200"`, which is outside the DynamoDB Number range, so the real query would fail. The in-memory store lists every name seen up to the reference. The fake parses N with `Number()`, so no test caught it | The lower bound is now `Math.max(ref - windowMs, MIN_DATE_MS)`. A new example compares windows of 1e200, `Number.MAX_VALUE` and Infinity with `InMemorySnapshotStore`. It checks that all six bounds sent to the port are plain integers. That test fails against the old line |
+
+Checked and correct:
+- key encoding and injectivity
+- validation before any write, and the retry only on a collision
+- explicit history sort, with differing ISO spellings of one instant tying as they do in memory
+- corrupt items dropped, with a log line that holds a count only
+- NaN and negative inputs
+- Properties 5 to 8 can fail, and the reorder hook really scrambles results
+
+| Note | Action |
+|---|---|
+| `isSnapshotOf` is shallow | Kept. The engine parses `captureTime` again and checks the versions it reads |
+| If the SDK retries a put that already succeeded, the retry hits the condition and the store writes the snapshot again under a new sequence. That gives a duplicate, never a replacement | Kept. The snapshotter's reserved concurrency of 1 makes this rare, and a duplicate snapshot does not change the maintainer diff |
+| Snapshots from different store instances with equal capture times are ordered by the random part of the sequence | Accepted in design.md |
+| `ISO_UTC` copies the engine's rule | Kept. The engine does not export its validator. Raised as a possible engine export |
+| `recordSeen` rejects a time it cannot encode | Kept. The engine swallows `recordSeen` failures |

@@ -67,15 +67,15 @@ Ordering constraints, recorded here:
     - Done with two details: Property 3 draws 400 KB to 600 KB of random bytes as hex (360 KB can compress to just under the limit), and `src/log/logger.ts` gets the `Logger` type and `errorName` here, because the store needs them. Task 5 adds the rest of the logger.
     - _Requirements: 2.2, 2.3, 2.4, 2.5, 2.6, 2.7_
 
-- [ ] 4. Snapshot store with properties 5 to 8
+- [x] 4. Snapshot store with properties 5 to 8
   - _Requirements: 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10_
-  - [ ] 4.1 Implement src/dynamo/snapshot-keys.ts
+  - [x] 4.1 Implement src/dynamo/snapshot-keys.ts
     - Fixed-width 15-digit capture field with the year-0000 offset, `#`, Sequence. Seen keys use the same number. Decoding splits after the 15 digits.
     - _Requirements: 3.2, 3.3, 3.8_
-  - [ ] 4.2 Implement src/dynamo/snapshot-store.ts
+  - [x] 4.2 Implement src/dynamo/snapshot-store.ts
     - `append` with the engine's capture-time check, conditional put, one retry on collision. `history` sorts explicitly by numeric capture time then Sequence and drops corrupt items with a log line. `recordSeen` without a condition. `listSeenWithin` through the GSI with inclusive numeric bounds, de-duplicated and sorted by code units. The Sequence source is injectable for tests.
     - _Requirements: 3.2, 3.4, 3.6, 3.7, 3.8, 3.9, 3.10_
-  - [ ] 4.3 Write test/dynamo/snapshot-keys.test.ts and test/dynamo/snapshot-store.test.ts
+  - [x] 4.3 Write test/dynamo/snapshot-keys.test.ts and test/dynamo/snapshot-store.test.ts
     - Property 5 (key encoding is injective and round-trips), Property 6 (history order and equivalence with the in-memory store, with shuffled port results), Property 7 (append never replaces, numRuns 1000), Property 8 (Seen listing, numRuns 1000, with exact window boundaries). Examples: `InvalidCaptureTimeError` writes nothing; a forced collision retries once; a second collision rejects; the engine seed `seed-maintainer-change.json` scored with `scorePackages` over this store gives the same Possessed result as with `InMemorySnapshotStore`.
     - _Requirements: 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10_
 
