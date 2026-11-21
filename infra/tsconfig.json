@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    // aws-cdk-lib types are not written for exactOptionalPropertyTypes (Bucket is not assignable to IBucket under it).
+    "exactOptionalPropertyTypes": false,
+    "rootDir": ".",
+    "noEmit": true,
+    "composite": false,
+    "declaration": false,
+    "sourceMap": false,
+    "types": ["node"]
+  },
+  "include": ["bin", "lib", "test", "vitest.config.ts"]
+}

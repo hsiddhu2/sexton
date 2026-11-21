@@ -1,0 +1,5 @@
+{
+  "app": "npx tsx bin/sexton.ts",
+  "watch": { "include": ["bin/**", "lib/**"] },
+  "context": {}
+}
