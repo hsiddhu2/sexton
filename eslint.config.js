@@ -6,6 +6,8 @@ export default tseslint.config(
       "**/dist/**", "**/node_modules/**", "private/**", "cdk.out/**", "**/cdk.out/**", ".kiro/hooks/scripts/**",
       "packages/web/dist-e2e/**", "packages/web/dist-types/**", "packages/web/dist-types-node/**", "packages/web/test-results/**",
       "packages/web/playwright-report/**", "packages/web/e2e-artifacts/**", "packages/web/public/demo/**",
+      // a sample repository the node-sass recipe scans, not project code
+      "packages/engine/test/fixtures/migration/node-sass-app/**",
     ],
   },
   { files: ["packages/**/*.ts", "packages/**/*.tsx", "infra/**/*.ts"] },

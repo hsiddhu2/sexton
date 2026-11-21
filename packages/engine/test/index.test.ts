@@ -199,3 +199,31 @@ describe("engine public surface (remediation)", () => {
     }
   });
 });
+
+// migration-node-sass task 6.4. Public surface of the migration module.
+const MIGRATION_FUNCTIONS = [
+  "runMigrations",
+  "runRecipe",
+  "gatherMigrationData",
+  "capFileSource",
+  "findReviewSites",
+  "reviewComments",
+  "isSafePath",
+  "hasIgnoredSegment",
+  "readPackageScripts",
+] as const;
+
+describe("engine public surface (migration)", () => {
+  it.each(MIGRATION_FUNCTIONS)("exports %s as a function", (name) => {
+    expect(typeof engine[name]).toBe("function");
+  });
+
+  it("exports the recipe, the registries and the constants", () => {
+    expect(typeof engine.InMemoryFileSource).toBe("function");
+    expect([...engine.DEFAULT_RECIPE_REGISTRY.keys()]).toEqual(["node-sass"]);
+    expect(engine.NODE_SASS_RECIPE.id).toBe("node-sass-to-sass");
+    expect(engine.SASS_LOADER_MINIMUM).toBe("7.2.0");
+    expect([engine.MAX_LISTED, engine.MAX_READ, engine.MAX_FILE_BYTES, engine.MAX_REVIEW_SITES, engine.MAX_ADVISORY_IDS]).toEqual([500, 200, 262144, 200, 200]);
+    expect(engine.REVIEW_RULES).toEqual(["deep-combinator", "legacy-render", "node-sass-script"]);
+  });
+});

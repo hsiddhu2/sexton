@@ -150,6 +150,7 @@ export function arbRemediations(names: readonly string[]): fc.Arbitrary<Remediat
                     body: w,
                     files: [{ path: "package.json" as const, op: "remove-dependency" as const, section: "dependencies" as const, name: packageName }] as const,
                     baseRef: "@default" as const,
+                    reviewComments: [{ path: "src/a.scss", line: 1, body: w }],
                   })),
                 },
                 { requiredKeys: ["packageName", "kind", "status", "title", "summary", "prBody"] },

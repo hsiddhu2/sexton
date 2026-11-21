@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 // Records trimmed upstream responses for the fixture scan. Run from packages/engine with network access.
-// Usage: node scripts/record-fixtures.mjs [--intake | --remediation]
+// Usage: node scripts/record-fixtures.mjs [--intake | --remediation | --migration]
 // --intake records only the repo-intake fixtures (raw manifests and full packuments) and skips the package loop.
 // --remediation records only the remediation fixtures: every published version with its deprecation marker,
 // and the OSV advisory IDs and details for every release above the installed version.
+// --migration records the same for every release of sass and sass-loader into test/fixtures/migration/packages
+// (spec migration-node-sass, task 8.1), apart from the remediation fixtures so their test is unchanged.
 // Trimming keeps only the fields the engine reads so the fixtures stay small and reviewable.
 
 import { mkdir, writeFile, readFile } from "node:fs/promises";
@@ -263,7 +265,32 @@ async function recordRemediation() {
   }
 }
 
-if (process.argv.includes("--remediation")) {
+// The packages the node-sass to sass recipe reads. Every release is recorded, a superset of any candidate list.
+const MIGRATION_PACKAGES = ["sass", "sass-loader"];
+
+async function recordMigration() {
+  for (const name of MIGRATION_PACKAGES) {
+    const dir = join(fixturesDir, "migration", "packages", name);
+    const full = await getJson(`https://registry.npmjs.org/${encodeName(name)}`);
+    const packument = trimPackumentAllVersions(full);
+    await write(join(dir, "packument.json"), packument);
+    const releases = releasesAbove(Object.keys(packument.versions), "0.0.0");
+    const ids = await osvIdsByVersion(name, releases);
+    await write(join(dir, "osv-by-version.json"), { name, installedVersion: "0.0.0", ids });
+    const distinct = [...new Set(Object.values(ids).flat())].sort();
+    for (const id of distinct) {
+      if (!/^[A-Za-z0-9._:-]{1,128}$/.test(id)) throw new Error(`implausible advisory ID from OSV for ${name}`);
+      const detail = await getJson(`https://api.osv.dev/v1/vulns/${encodeURIComponent(id)}`);
+      await write(join(dir, "vulns", `${id}.json`), trimVuln(detail));
+    }
+    console.log(`recorded migration ${name}: ${Object.keys(packument.versions).length} versions, ${releases.length} releases, ${distinct.length} advisories`);
+  }
+}
+
+if (process.argv.includes("--migration")) {
+  await recordMigration();
+  console.log(`recorded at ${new Date().toISOString()}`);
+} else if (process.argv.includes("--remediation")) {
   await recordRemediation();
   console.log(`recorded at ${new Date().toISOString()}`);
 } else if (process.argv.includes("--intake")) {

@@ -21,7 +21,7 @@ describe("buildPrIntent", () => {
           const ctx = buildPrContext(report, POLICY, plan.packageName);
           if (ctx === null) continue;
           const intent = buildPrIntent(plan, ctx);
-          const expected = plan.status === "proposed" && (plan.kind === "bump" || plan.kind === "remove");
+          const expected = plan.status === "proposed";
           expect(intent !== null).toBe(expected);
           if (intent === null) continue;
           expect(intent.baseRef).toBe(BASE_REF_DEFAULT);
@@ -30,12 +30,21 @@ describe("buildPrIntent", () => {
           expect(intent.branch).not.toBe(intent.baseRef);
           expect(intent.title.length).toBeLessThanOrEqual(200);
           expect(intent.title).toBe(
-            plan.kind === "bump" ? `Sexton: bump ${plan.packageName} to ${plan.chosenVersion ?? ""}` : `Sexton: remove unused ${plan.packageName}`,
+            plan.kind === "bump"
+              ? `Sexton: bump ${plan.packageName} to ${plan.chosenVersion ?? ""}`
+              : plan.kind === "remove"
+                ? `Sexton: remove unused ${plan.packageName}`
+                : `Sexton: migrate ${plan.migration?.from ?? ""} to ${plan.migration?.to ?? ""}`,
           );
-          // Property 15, intent arm.
-          expect(intent.files).toEqual([plan.edit]);
-          expect(Object.keys(intent.files[0])).not.toContain("content");
-          expect(intent.files[0].path).toBe("package.json");
+          // Property 15, intent arm; files are one or more package.json Edits (spec migration-node-sass 7.1).
+          expect(intent.files).toEqual(plan.kind === "migrate" ? plan.edits : [plan.edit]);
+          expect(intent.files.length).toBeGreaterThan(0);
+          for (const f of intent.files) {
+            expect(Object.keys(f)).not.toContain("content");
+            expect(f.path).toBe("package.json");
+          }
+          if (plan.kind !== "migrate") expect(intent.reviewComments).toEqual([]);
+          else expect(intent.reviewComments.length).toBe(plan.migration?.reviewSites.length);
           expect(buildPrIntent(plan, ctx)).toEqual(intent);
           branches.push(intent.branch);
         }
@@ -51,6 +60,7 @@ describe("buildPrIntent", () => {
     const base = { packageName: "x", installedVersion: "1.0.0", state: "Dead" as const, stateReason: "r" };
     const plans: RemediationPlan[] = [
       { ...base, kind: "migrate", status: "proposed" },
+      { ...base, kind: "migrate", status: "unavailable", reason: "migration was not run" },
       { ...base, kind: "bump", status: "proposed" },
       { ...base, kind: "bump", status: "no-safe-version", reason: "n" },
       { ...base, packageName: "Bad Name", kind: "remove", status: "proposed", edit: { path: "package.json", op: "remove-dependency", section: "dependencies", name: "Bad Name" } },

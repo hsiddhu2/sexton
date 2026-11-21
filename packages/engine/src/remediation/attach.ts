@@ -1,4 +1,5 @@
-// API remediations list. Spec: .kiro/specs/remediation, Requirements 7.2 to 7.9. Pure.
+// API remediations list. Spec: .kiro/specs/remediation, Requirements 7.2 to 7.9, and .kiro/specs/migration-node-sass,
+// Requirement 5.8. Pure.
 
 import type { HealthReport, PolicyResult, RemediationEntry, RemediationPlan } from "../types.js";
 import { cleanLine } from "./clean-line.js";
@@ -12,6 +13,7 @@ function summarise(plan: RemediationPlan): string {
   if (plan.status === "proposed") {
     if (plan.kind === "bump") return `Bump ${plan.packageName} from ${plan.installedVersion} to ${plan.chosenVersion ?? ""}`;
     if (plan.kind === "remove") return `Remove unused ${plan.packageName} from ${plan.edit?.section ?? "package.json"}`;
+    if (plan.migration !== undefined) return `Migrate ${plan.migration.from} to ${plan.migration.to}`;
     return `Migration proposed for ${plan.packageName}`;
   }
   return `No change proposed for ${plan.packageName}: ${plan.reason ?? ""}`;

@@ -64,6 +64,18 @@ describe("demo scan generator", () => {
     const request = scan.remediations?.find((r) => r.packageName === "request");
     expect(request).toMatchObject({ status: "no-safe-version", title: "Sexton: no change proposed for request" });
     expect(scan.remediations?.find((r) => r.packageName === "lodash")).toMatchObject({ status: "proposed", chosenVersion: "4.18.1", majorUpgrade: false });
+    // Spec migration-node-sass, Requirement 7.3: node-sass stays Dead and shows the migration with its review list.
+    const nodeSass = scan.remediations?.find((r) => r.packageName === "node-sass");
+    expect(scan.report.packages.find((p) => p.name === "node-sass")?.state).toBe("Dead");
+    expect(nodeSass).toMatchObject({ kind: "migrate", status: "proposed", title: "Sexton: migrate node-sass to sass" });
+    expect(nodeSass?.intent?.files.map((f) => f.op)).toEqual(["remove-dependency", "add-dependency"]);
+    expect(nodeSass?.intent?.reviewComments.map((c) => [c.path, c.line])).toEqual([
+      ["package.json", null],
+      ["scripts/compile.js", 3],
+      ["scripts/compile.js", 8],
+      ["src/styles/app.scss", 3],
+    ]);
+    expect(nodeSass?.prBody).toContain("## Review before merging");
   });
 
   it("passes the web contract validator", () => {

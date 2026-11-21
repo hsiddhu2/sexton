@@ -42,7 +42,8 @@ export type SeverityList = typeof SEVERITIES;
 export type RuleTypeList = typeof RULE_TYPES;
 
 // Remediation shapes live in the engine (spec remediation, Requirement 7.1); the contract re-exports them.
-export type { PackageJsonEdit, PrIntent, RemediationEntry, RemediationKind, RemediationStatus } from "@sexton/engine";
+// Spec migration-node-sass, Requirement 7.1: PrIntent carries one or more Edits and review comments.
+export type { PackageJsonEdit, PrIntent, RemediationEntry, RemediationKind, RemediationStatus, ReviewComment } from "@sexton/engine";
 export { REMEDIATION_KINDS, REMEDIATION_STATUSES } from "@sexton/engine";
 export type RemediationStatusList = typeof REMEDIATION_STATUSES;
 

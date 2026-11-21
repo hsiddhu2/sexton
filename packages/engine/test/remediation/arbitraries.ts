@@ -17,6 +17,7 @@ import {
   type PackageSignals,
   type PolicyResult,
   type Recipe,
+  type RecipeOutcome,
   type RuleResult,
   type Signal,
 } from "../../src/types.js";
@@ -162,7 +163,41 @@ export const arbBumpData: fc.Arbitrary<BumpDataResult> = fc.oneof(
     },
 );
 
-/** Options for a report: intake for most names, import sites, recipes and bump data for a subset. */
+/** A recipe that is never run by the planner; the planner reads outcomes from options.migrations. */
+export function stubRecipe(id: string, from = "old", to = "new"): Recipe {
+  return { id, from, to, run: () => Promise.resolve({ ok: false, reason: "stub" }) };
+}
+
+/** Recipe outcomes: a failure, no edits, or one to three package.json edits with review sites. */
+export const arbRecipeOutcome: fc.Arbitrary<RecipeOutcome> = fc.oneof(
+  fc.constant<RecipeOutcome>({ ok: false, reason: "migration data unavailable: packument request failed (HTTP 500)" }),
+  fc
+    .record({
+      n: fc.integer({ min: 0, max: 3 }),
+      section: fc.constantFrom("dependencies" as const, "devDependencies" as const),
+      sites: fc.array(fc.record({ path: fc.constantFrom("a.scss", "src/b.js", "package.json"), line: fc.option(fc.integer({ min: 1, max: 50 }), { nil: null }), excerpt: fc.string({ maxLength: 30 }) }), { maxLength: 4 }),
+      performed: fc.boolean(),
+    })
+    .map(({ n, section, sites, performed }): RecipeOutcome => {
+      const all = [
+        { path: "package.json" as const, op: "remove-dependency" as const, section, name: "node-sass" },
+        { path: "package.json" as const, op: "add-dependency" as const, section, name: "sass", range: "^1.2.3" },
+        { path: "package.json" as const, op: "set-range" as const, section, name: "sass-loader", range: "^7.2.0" },
+      ];
+      return {
+        ok: true,
+        result: {
+          edits: all.slice(0, n),
+          reviewSites: sites.map((x) => ({ ...x, rule: x.path === "package.json" ? ("node-sass-script" as const) : x.path.endsWith(".scss") ? ("deep-combinator" as const) : ("legacy-render" as const) })),
+          filesChanged: n > 0 ? ["package.json"] : [],
+          scan: { performed, listed: 3, read: 2, skipped: 0, capped: false },
+          notes: [],
+        },
+      };
+    }),
+);
+
+/** Options for a report: intake for most names, import sites, recipes, bump data and recipe outcomes for a subset. */
 export function arbOptionsFor(report: HealthReport): fc.Arbitrary<PlanOptions> {
   const names = [...new Set(report.packages.map((p) => p.name))];
   return fc
@@ -173,6 +208,7 @@ export function arbOptionsFor(report: HealthReport): fc.Arbitrary<PlanOptions> {
       sites: fc.array(fc.tuple(fc.constantFrom(...(names.length > 0 ? names : ["a"])), arbImportSite), { maxLength: names.length }),
       recipeNames: fc.subarray(names, { maxLength: Math.min(2, names.length) }),
       bump: fc.array(fc.tuple(fc.constantFrom(...(names.length > 0 ? names : ["a"])), arbBumpData), { maxLength: names.length }),
+      migrations: fc.array(fc.tuple(fc.constantFrom(...(names.length > 0 ? names : ["a"])), arbRecipeOutcome), { maxLength: names.length }),
     })
     .map((r): PlanOptions => {
       const intake: IntakePackage[] = r.intakeNames.map((name) => {
@@ -186,8 +222,8 @@ export function arbOptionsFor(report: HealthReport): fc.Arbitrary<PlanOptions> {
           resolution: "locked",
         };
       });
-      const recipes = new Map<string, Recipe>(r.recipeNames.map((n) => [n, { id: `recipe-${n}` }]));
-      return { intake, importSites: new Map(r.sites), recipes, bumpData: new Map(r.bump) };
+      const recipes = new Map<string, Recipe>(r.recipeNames.map((n) => [n, stubRecipe(`recipe-${n}`)]));
+      return { intake, importSites: new Map(r.sites), recipes, bumpData: new Map(r.bump), migrations: new Map(r.migrations) };
     });
 }
 

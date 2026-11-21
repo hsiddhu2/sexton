@@ -13,7 +13,7 @@ import { BENIGN_FAULTS, contextFor, FAULTS, scriptedUpstream, type Fault, type P
 
 const SEVERITY_WORDS = ["LOW", "MODERATE", "HIGH", "CRITICAL", "BOGUS"];
 const REASON_SET =
-  /^(packument request failed( \(HTTP \d{3}\))?|packument has no versions|OSV querybatch failed( \(HTTP \d{3}\))?|OSV querybatch response is malformed|OSV querybatch pagination did not finish|OSV advisory detail failed( \(HTTP \d{3}\))?|OSV advisory detail response is malformed|packument request response is malformed|bump data could not be read)$/;
+  /^(packument request failed( \(HTTP \d{3}\))?|packument has no versions|OSV querybatch failed( \(HTTP \d{3}\))?|OSV querybatch response is malformed|OSV querybatch pagination did not finish|OSV advisory detail failed( \(HTTP \d{3}\))?|OSV advisory detail response is malformed|packument request response is malformed|bump data could not be read|too many advisories)$/;
 
 const arbModel = (name: string): fc.Arbitrary<PackageModel> =>
   fc
@@ -193,6 +193,24 @@ describe("gatherBumpData", () => {
     ]);
     expect(calls).toHaveLength(0);
     expect([...r.values()].every((x) => !x.ok)).toBe(true);
+  });
+
+  it("fails with too many advisories above 200 distinct IDs and fetches no detail (migration-node-sass 9.2)", async () => {
+    const many = (n: number): PackageModel => ({
+      name: "flood",
+      versions: { "1.0.0": "", "1.1.0": "" },
+      ids: { "1.1.0": Array.from({ length: n }, (_, i) => `GHSA-${String(i).padStart(4, "0")}`) },
+    });
+    const over = many(201);
+    const a = scriptedUpstream([over], vulnsFor([over]));
+    const r = await gatherBumpData(contextFor(a.transport), [{ name: "flood", installedVersion: "1.0.0" }]);
+    expect(r.get("flood")).toEqual({ ok: false, reason: "too many advisories" });
+    expect(a.calls.filter((c) => c.url.includes("/v1/vulns/"))).toHaveLength(0);
+    const at = many(200);
+    const b = scriptedUpstream([at], vulnsFor([at]));
+    const ok = await gatherBumpData(contextFor(b.transport), [{ name: "flood", installedVersion: "1.0.0" }]);
+    expect(ok.get("flood")?.ok).toBe(true);
+    expect(b.calls.filter((c) => c.url.includes("/v1/vulns/"))).toHaveLength(200);
   });
 
   it("shares the npm-packument and osv-vuln keys with scoring", async () => {

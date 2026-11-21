@@ -7,7 +7,7 @@ import { planRemediation, type PlanOptions } from "../../src/remediation/plan.js
 import { rangeStyle, styledRange } from "../../src/remediation/range-style.js";
 import { EMPTY_RECIPE_REGISTRY } from "../../src/remediation/recipes.js";
 import type { HealthReport, PackageHealth, State } from "../../src/types.js";
-import { arbReportAndOptions, arbSelectInput, deepFreeze, healthySignals } from "./arbitraries.js";
+import { arbReportAndOptions, arbSelectInput, deepFreeze, healthySignals, stubRecipe } from "./arbitraries.js";
 
 const UNHEALTHY = new Set<State>(["Possessed", "Dead", "Haunted"]);
 
@@ -128,6 +128,7 @@ describe("planRemediation", () => {
             importSites: new Map([...(options.importSites ?? [])].filter(([n]) => n === plan.packageName)),
             recipes: new Map([...(options.recipes ?? EMPTY_RECIPE_REGISTRY)].filter(([n]) => n === plan.packageName)),
             bumpData: new Map([...(options.bumpData ?? [])].filter(([n]) => n === plan.packageName)),
+            migrations: new Map([...(options.migrations ?? [])].filter(([n]) => n === plan.packageName)),
           });
           expect(alone).toEqual([plan]);
         }
@@ -169,13 +170,21 @@ describe("planRemediation examples", () => {
     expect(plans.at(-1)).toMatchObject({ kind: "bump", chosenVersion: "1.1.0", majorUpgrade: false, edit: { range: "^1.1.0", section: "dependencies" } });
   });
 
-  it("a recipe gives migrate, proposed, no edit, whatever the import sites", () => {
-    const plans = planRemediation(report(pkg("node-sass")), {
-      intake: [intake("node-sass")],
-      importSites: new Map([["node-sass", 0]]),
-      recipes: new Map([["node-sass", { id: "sass" }]]),
+  it("a recipe gives migrate whatever the import sites; without a recipe outcome it is unavailable", () => {
+    const options = { intake: [intake("node-sass")], importSites: new Map([["node-sass", 0]]), recipes: new Map([["node-sass", stubRecipe("sass", "node-sass", "sass")]]) };
+    const base = { packageName: "node-sass", installedVersion: "1.0.0", state: "Dead", stateReason: "deprecated", kind: "migrate" };
+    expect(planRemediation(report(pkg("node-sass")), options)).toEqual([{ ...base, status: "unavailable", reason: "migration was not run" }]);
+    const edit = { path: "package.json" as const, op: "remove-dependency" as const, section: "dependencies" as const, name: "node-sass" };
+    const scan = { performed: false, listed: 0, read: 0, skipped: 0, capped: false };
+    const migrations = new Map([["node-sass", { ok: true as const, result: { edits: [edit], reviewSites: [], filesChanged: ["package.json"], scan, notes: [] } }]]);
+    const [plan] = planRemediation(report(pkg("node-sass")), { ...options, migrations });
+    expect(plan).toEqual({
+      ...base,
+      status: "proposed",
+      edits: [edit],
+      migration: { recipeId: "sass", from: "node-sass", to: "sass", reviewSites: [], filesChanged: ["package.json"], scan, notes: [] },
     });
-    expect(plans).toEqual([{ packageName: "node-sass", installedVersion: "1.0.0", state: "Dead", stateReason: "deprecated", kind: "migrate", status: "proposed" }]);
+    expect(plan?.edit).toBeUndefined();
     expect(EMPTY_RECIPE_REGISTRY.size).toBe(0);
   });
 
