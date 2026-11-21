@@ -191,3 +191,30 @@ The reviewer checked:
 | The throw line also carries `latencyMs`, which design.md did not list | design.md updated |
 | design.md typed the `upstreamFields` status as `number \| null` | design.md updated to `number` |
 | `fc.webUrl()` could in theory contain the canary | Kept. The odds are negligible |
+
+## Review 10: task 6, the scan API, Properties 9 and 10
+
+Verdict: NOT READY, two defects. Fixed and re-reviewed: READY.
+
+| Defect | Fix |
+|---|---|
+| `runScan` could reject when a step threw and the log sink threw too, because the error log call in its catch block was not guarded | `createLogger` now wraps every sink call, so no log call can throw. Tests added for the logger and for `runScan` with a throwing sink |
+| A throwing sink turned a 400 or 405 into a 500, because the rejection's log line sat inside the handler's try | The same logger fix covers it. A test checks that 405 and 400 stay as they are with a throwing sink |
+
+The reviewer checked:
+- the validation order, and that a rejected request does no I/O
+- the error table, statuses and headers
+- that found and 404 policy outcomes are cached and every other policy failure gives 502 with no fallback
+- that no partial scan is returned on an error
+- no echo: bodies are built from named fields, and Property 10 runs a sliding 4-character window over nine scenarios
+- no secrets and no network in tests
+
+During this task, the real `cdk synth` bundle of the scan handler was loaded offline. It fails with `Cannot find module '../package.json'`, because the engine's `version.ts` reads its manifest at run time. This is handed to Kiro (build/handoffs/to-kiro.md, item 7), and deploy is blocked until it is fixed.
+
+| Note | Action |
+|---|---|
+| The lint run failed on `infra/cdk.out`, the local synth output that git ignores and eslint does not | Deleted. Asked Kiro to add `**/cdk.out/**` to the eslint ignores (to-kiro.md, item 8) |
+| Upstream log lines carry `/{owner}/{repo}` for github-raw, while the summary line leaves the repository out | Recorded in design.md, "Notes on requirements and open items", item 14, for HP to decide |
+| The end-to-end test loads cemetery-ui's validator by path | Kept. A rename in web will break the test loudly |
+| design.md quoted old engine text for `invalid-url` | Updated |
+| Scoring runs to the end even when the policy fetch fails | Kept. The result is correct, at a small cost in I/O |

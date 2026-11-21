@@ -32,6 +32,15 @@ describe("createLogger", () => {
   });
 });
 
+describe("a throwing sink", () => {
+  it("never makes a log call throw", () => {
+    const log = createLogger("cid", () => {
+      throw new Error("sink down");
+    });
+    expect(() => log.error({ msg: "x" })).not.toThrow();
+  });
+});
+
 describe("correlationId", () => {
   it("uses a valid x-amz-cf-id header, in any case", () => {
     expect(correlationId({ "x-amz-cf-id": "Abc_123=-xyz" }, "req")).toBe("Abc_123=-xyz");

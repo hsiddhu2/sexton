@@ -88,25 +88,27 @@ Ordering constraints, recorded here:
     - Property 11 (upstream log lines carry no query and no body). Examples: exact key set, `status` 0 and error name on throw, the error is rethrown unchanged, correlation ID from a valid `x-amz-cf-id`, fallback for an absent, empty, 129-character or `/`-containing header.
     - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-- [ ] 6. Scan API with properties 9 and 10
+- [x] 6. Scan API with properties 9 and 10
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10, 4.11, 4.12, 4.13, 6.5_
-  - [ ] 6.1 Implement src/http/scan-request.ts
+  - [x] 6.1 Implement src/http/scan-request.ts
     - Method, exact path, exactly one `repo` and no other parameter, 512-character limit, `parseRepoUrl`, Canonical URL out. Reads no header and no cookie.
     - _Requirements: 4.1, 4.2, 4.3_
-  - [ ] 6.2 Implement src/http/responses.ts
+  - [x] 6.2 Implement src/http/responses.ts
     - The error table of design.md, 422 for the four intake input errors, headers on every response, `invalid-policy` with at most 20 `{ code, path }` entries and paths cut to 200 characters.
     - _Requirements: 4.2, 4.3, 4.4, 4.5, 4.7, 4.8, 4.10_
-  - [ ] 6.3 Implement src/policy-source.ts
+  - [x] 6.3 Implement src/policy-source.ts
     - `policyUrl` with re-validation, cached found and 404, not-cached failures, 256 KiB limit through `text()`, no auth or cookie headers.
     - _Requirements: 4.10, 4.11, 4.12, 4.13_
-  - [ ] 6.4 Implement src/scan.ts and src/handlers/scan.ts
+  - [x] 6.4 Implement src/scan.ts and src/handlers/scan.ts
     - `runScan` with injected deps: one `CachedFetcher` and context, intake, then policy fetch and scoring in parallel, policy outcome mapping, `evaluatePolicy`, `attachScan`, one summary log line without the Repo parameter. Never rejects. The handler module builds the DynamoDB client and port once at init, checks the three environment variables, and exports `createScanHandler(deps)` for tests.
     - _Requirements: 4.1, 4.4, 4.6, 4.9, 4.10, 4.11, 4.12, 4.13, 6.5_
-  - [ ] 6.5 Write tests for 6.1 to 6.4
+  - [x] 6.5 Write tests for 6.1 to 6.4
     - Property 9 (request validation is exclusive, numRuns 1000) across scan-request.test.ts and scan.test.ts. Property 10 (error bodies never echo input, numRuns 1000). Examples: one per error-table row; 405 for POST; 400 for `/api/scan/x`, a repeated `repo`, an extra `x=1`, 513 characters; an end-to-end scan of the engine's ten fixture packages through a routed fake transport and the memory port returns a body that the cemetery-ui validator shape accepts (checked with a type-level test against `ScanResponse` and a JSON round trip); policy found, absent (source `default`), invalid (422) and 500 (502); a shared cache store makes zero packument requests in scoring for names intake already read; `cache-control` values; `x-sexton-request-id` on every response.
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10, 4.11, 4.12, 4.13, 6.5_
-  - [ ] 6.6 Switch to contract.ts when it is on main
+  - [x] 6.6 Switch to contract.ts when it is on main
     - Replace the `contract-pending.ts` import with `./contract.js`, delete `contract-pending.ts`, re-run the tests. Blocked until cemetery-ui is merged.
+    - Done from the start: `contract.ts` was on main before task 2, so the API has always imported `ScanResponse` from `./contract.js` and `contract-pending.ts` never existed.
+    - Done with three details. The handler logic is in `src/scan-handler.ts` (`createScanHandler`, `readScanEnvironment`), and `src/handlers/scan.ts` is only the Lambda entry that reads the environment and builds the client, so tests can import the factory without the init-time environment check. The end-to-end test also checks the body with cemetery-ui's own `validateScanResponse`, loaded at run time. Property 10's invalid-policy scenario keeps the repository canary out of the policy file's keys: see design.md, "Notes on requirements and open items", item 13.
     - _Requirements: 4.6_
 
 - [ ] 7. Snapshotter with property 12

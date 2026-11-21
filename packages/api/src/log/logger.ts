@@ -36,7 +36,14 @@ export function logLine(level: LogLevel, correlationId: string, fields: LogField
 }
 
 export function createLogger(correlationId: string, sink: (line: string) => void = console.log, clock: () => Date = () => new Date()): Logger {
-  const write = (level: LogLevel) => (fields: LogFields) => sink(logLine(level, correlationId, fields, clock()));
+  // A sink that throws loses one line. Logging never changes a request's outcome.
+  const write = (level: LogLevel) => (fields: LogFields) => {
+    try {
+      sink(logLine(level, correlationId, fields, clock()));
+    } catch {
+      // Swallowed on purpose.
+    }
+  };
   return { info: write("info"), warn: write("warn"), error: write("error") };
 }
 
