@@ -309,3 +309,79 @@ The reviewer checked:
 | The test left its temp directory behind | Removed in a `finally` |
 | The dynamic import in vitest goes through Vite's resolver, so the regex assertions are the real guard | Kept. The offline load is also checked in precondition 7 of the runbook, with plain node |
 | The source map is deployed with each function | Kept. It is a pre-existing choice and well within the size limits |
+
+## Review 15: log write on the log group ARN itself (defect found by the first deploy)
+
+Verdict: READY. No blocking defects. Two wording fixes and one stricter assertion applied.
+
+The first deploy granted `logs:CreateLogStream` and `logs:PutLogEvents` on `{log group Arn}:log-stream:*`. CloudFormation's `AWS::Logs::LogGroup` `Arn` attribute already ends in `:*`, so the deployed resource was `…:log-group:<name>:*:log-stream:*`. That matches no stream, as a stream ARN is `…:log-group:<name>:log-stream:<stream>` and neither name can contain `:`. Lambda was denied `CreateLogStream` and dropped every log line and every EMF metric without an error. The old IAM test checked only that a logs statement existed, and it asserted the same wrong shape through the nag acknowledgements.
+
+The fix grants both actions on the `Arn` attribute itself, the same shape as the AWS managed basic execution policy, scoped to one group. The two IAM5 acknowledgements for the old shape are removed, as the findings no longer fire.
+
+The reviewer checked:
+- The resource against the CloudFormation `AWS::Logs::LogGroup` return values and the Service Authorization Reference for CloudWatch Logs. It is not over-broad: log group names cannot contain `:`, so `<name>:*` cannot reach another group.
+- With the old shape and the new nag file, cdk-nag fails the synth on `AwsSolutions-IAM5[Resource::<ScanLogs….Arn>:log-stream:*]`.
+- With the old shape and the old nag file, both new tests fail. The render test prints the deployed ARN, `…:log-group:ScanLogsE2E8E605:*:log-stream:*`.
+- The design.md nag table and `NAG_SUPPRESSIONS` still agree, row for row.
+- No stale mention of the old shape in docs/, build/, .kiro/specs/infra or infra/.
+
+| Note | Action |
+|---|---|
+| design.md and tasks.md said the resource "holds one `:*`", the test asserted at most one | Assertion changed to exactly one |
+| design.md still called the nag table "the full list that fired on the first synth" | Added a sentence on the two IAM5 rows removed on 21 Nov 2026 |
+| The "no wildcard" exceptions paragraph said both exceptions sit in an allow list | Reworded: the log exception is pinned by the exact-statement and render tests |
+| `render()` resolves `Fn::GetAtt` against the Edge template only, and only the array form | Kept. A future Data stack log statement would fail loudly, not pass |
+| The render models the trailing `:*` from the CloudFormation docs | Kept. The redeploy below proves it against the real ARN |
+
+## Deploy 1: SextonData-dev and SextonEdge-dev, us-east-1, 21 Nov 2026
+
+Run by the runbook, build/infra/10-deploy.md, after HP typed `deploy`. Profile `sandbox`. The account ID and the alarm email are not recorded here.
+
+| Step | Result | Time |
+|---|---|---|
+| Deploy SextonData-dev | CREATE_COMPLETE | 42 s |
+| Deploy SextonEdge-dev at 5a67ba0 | CREATE_COMPLETE | 271 s |
+| Smoke checks 1 to 7 | Pass | below |
+| Smoke check 8, metrics | Fail: none listed | |
+| Smoke check 10, correlation ID in logs | Fail: no log streams in either group. Stopped here, as the runbook and HP require | |
+| Fix | Review 15, commit 4dbda55. Gates green, infra tests 45 to 47 | |
+| Redeploy SextonEdge-dev at 4dbda55, `--exclusively` | UPDATE_COMPLETE. Only the two role policies changed, as `cdk diff --method template` showed | 27 s |
+| Smoke checks 8 to 11 | Pass | below |
+
+The first redeploy attempt piped `y` to the approval prompt. It was read before the prompt appeared, so CDK created its change set and exited without executing it. The second, from the `!` prefix, had no TTY and stopped at the prompt. HP then ran the same command from a terminal and approved the IAM change.
+
+CloudFront URL: https://de1giv8lj8sfh.cloudfront.net
+
+| # | Check | Result | Time |
+|---|---|---|---|
+| 1 | The URL serves the demo | 200, title "Sexton cemetery", `demo/scan.json` 200 | 0.29 s |
+| 2 | Security headers | HSTS, CSP, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` all present | |
+| 3 | Cold scan of expressjs/express | 200, 44 packages, `report` and `policy` present, default policy | 8.48 s |
+| 4 | Warm scan | 200, `cache-control: public, max-age=300` | 3.91 s |
+| 5 | Request ID | `x-sexton-request-id` present, in CloudFront request-ID format | |
+| 6 | Direct function URL | 403 | |
+| 7 | Snapshotter invoke | `{"listed":44,"snapshotted":44,"failed":0,"deferred":0}`, `snap#body-parser` Count 1. After the redeploy: same counts | 10 s, then 6 s |
+| 8 | Snapshotter metrics | `SnapshotterFailed`, `SnapshotterDeferred`, `SnapshotterError` in namespace `Sexton`, plus `ScanErrors5xx` from the metric filter | about 2 min after the invoke |
+| 9 | WAF 429 on a burst | 130 requests in 18 s all got 400. Probes from 10 s later got 429 from the 136th request on, with one 400 slipping through 11 s after that. The rule is 100 per 5 min per IP on `/api/`. WAF counts in the background, so detection lags a short burst | first 429 about 40 s after the burst ended |
+| 10 | Correlation ID in logs | Scan log lines carry `correlationId` equal to the response's `x-sexton-request-id`, so `x-amz-cf-id` reaches the function and design.md open item 11 is settled. Snapshotter lines carry `snap-<requestId>`, and the EMF line is written alone | scan 5.68 s, Lambda init 435 ms |
+| 11 | No alarm firing | `describe-alarms --state-value ALARM` is empty, after the burst too | |
+
+The two alarms that were blind now evaluate real data:
+
+| Alarm | Expression | Inputs over the last hour |
+|---|---|---|
+| ScanErrorRate | `IF(invocations > 0, 100 * errors / invocations, 0)` above 5 | `ScanErrors5xx` Sum 0 over 555 samples, as the filter writes 0 for every scan line that does not match. Result 0.0 |
+| SnapshotterProblems | `FILL(failed,0) + FILL(deferred,0) + FILL(listingError,0) + FILL(lambdaErrors,0)` above 0 | `SnapshotterFailed`, `SnapshotterDeferred`, `SnapshotterError` each Sum 0 over 1 sample, the EMF line. Result 0.0 |
+
+The SNS email subscription is confirmed by HP.
+
+Cost-relevant settings as deployed:
+
+| Item | Setting |
+|---|---|
+| `sexton-cache-dev` | On demand, TTL on `expiresAt`, no PITR, no deletion protection |
+| `sexton-snapshots-dev` | On demand, no TTL, PITR on, deletion protection on |
+| Scan function | Reserved concurrency 10, nodejs22.x arm64, 1024 MB, 60 s. Max memory used 235 MB |
+| Snapshotter function | Reserved concurrency 1, nodejs22.x arm64, 1024 MB, 600 s. Max memory used 229 MB |
+| Log groups | 30-day retention, both |
+| WAF | One web ACL with two AWS managed rule groups and the rate rule |
