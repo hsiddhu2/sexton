@@ -56,6 +56,17 @@ Every download runs its own scan, so the pack can differ from the scan on screen
 
 The `format` parameter reaches the function only after the next deploy of the edge stack. Until then CloudFront drops it, and the Markdown link returns JSON.
 
+## The CLI and the Action
+
+The CLI (`packages/cli`) runs the same engine as the API on the user's machine. It never calls the Sexton API.
+
+1. A GitHub URL target is read through raw.githubusercontent.com exactly as the hosted scan does. Any other target is a local directory: the CLI reads `package.json`, `package-lock.json` and `sexton.policy.yml` from its root, with the hosted size limits, and names the repository from `--repo` or the `origin` remote.
+2. Scoring, policy, bump data, the node-sass migration and planning run as in the demo generator, with an in-memory cache and no snapshot history.
+3. For a local directory the CLI lists the working tree (`git ls-files`, or a directory walk), reads at most 5000 files and counts references to each dependency. A dependency with no reference is proposed for removal only when the listing ran in full.
+4. `scan` writes `scan.json`, `check` exits 1 on a policy failure, `evidence` writes the pack with the local `HEAD` as the commit.
+
+The Action (`packages/action`) is a composite action. It builds the engine and the CLI from its own checkout with `npm ci --ignore-scripts`, runs `sexton check` on the caller's workspace, appends the summary to the job summary and posts or updates one comment through three GitHub REST calls: list, create and update issue comments. This repository runs it on its own pull requests (`.github/workflows/sexton.yml`).
+
 ## The data model
 
 The cache table has one item per upstream response.

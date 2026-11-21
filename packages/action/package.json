@@ -1,0 +1,12 @@
+{
+  "name": "@sexton/action",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sexton GitHub Action: runs sexton check on a pull request and posts one summary comment.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run"
+  }
+}

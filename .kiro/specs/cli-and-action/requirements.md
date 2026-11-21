@@ -21,7 +21,7 @@ This spec does NOT publish to npm, add the remediation executor or `POST /api/re
 - **Git port**: three fixed commands, `remote get-url origin`, `rev-parse HEAD` and `ls-files -z`, each as `git -c core.fsmonitor=false -C <path> ...` through `execFile` with a fixed argument list, no shell, 5 second timeout; any failure gives null.
 - **Working-tree source**: the CLI File source over a Path target: `git ls-files -z` inside a work tree, else a directory walk; at most 20000 raw entries; no symbolic link; reads only listed paths inside the root, at most 256 KiB each.
 - **Count limits**: Capped-source limits of 20000 listed and 5000 read, used for import counting only.
-- **Reference**: a line of a counted file that holds the package name between quote characters (`"`, `'`, `` ` ``) or followed by `/` inside quotes, and for style files the forms `~name/` and `~name"`; or a package.json script whose command holds the name as a whole word.
+- **Reference**: a line of a counted file that holds the package name between quote characters (`"`, `'`, `` ` ``) or followed by `/` inside quotes, and for style files `~name` followed by `/` or a quote character; or a package.json script whose command holds the name as a whole word.
 - **importSites**: the planner map from package name to reference count.
 - **Safe text**: a string that went through `neutralise` and `cleanLine`, so it holds no escape or control character.
 - **Summary**: the Markdown policy summary of `sexton check --summary`, first line `<!-- sexton:check -->`, at most 60000 characters.
@@ -51,7 +51,7 @@ This spec does NOT publish to npm, add the remediation executor or `POST /api/re
 
 1. THE Engine SHALL expose `countReferences(files, scripts, names)`, pure, returning a map from each name to its Reference count.
 2. THE Engine SHALL count only files whose path ends in `.js .mjs .cjs .ts .mts .cts .jsx .tsx .vue .svelte .json .yml .yaml .scss .sass .css .less .html`, and SHALL NOT count `package.json`, `package-lock.json`, `npm-shrinkwrap.json` at any depth or any path with an Ignored directory segment.
-3. FOR ANY name and any listed import form (`require("n")`, `from 'n'`, `` import(`n`) ``, `"n/sub"`, `~n/x` and `~n"` in a style file, a script `n --flag`), THE count SHALL be at least 1 (completeness).
+3. FOR ANY name and any listed import form (`require("n")`, `from 'n'`, `` import(`n`) ``, `"n/sub"`, `~n/x`, `~n"`, `~n'` and `` ~n` `` in a style file, a script `n --flag`), THE count SHALL be at least 1 (completeness).
 4. FOR ANY name `n` and any longer valid name that contains `n` (`n-es`, `@x/n`, `n2`, `xn`), a file that references only the longer name SHALL give `n` a count of 0 (no false match).
 5. THE CLI SHALL give `importSites` an entry for a package only WHEN its origin is `dependencies`, the listing was performed, nothing was capped and nothing was skipped; otherwise the name SHALL be absent.
 6. FOR ANY scan, `importSites` SHALL have no entry for a `devDependencies` package, and no entry at all WHEN the listing was capped or a file was skipped (invariant).

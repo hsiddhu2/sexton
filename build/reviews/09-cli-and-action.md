@@ -21,3 +21,17 @@ Notes acted on: output safety covers stdout and stderr of every command and no c
 ## Review 1b: spec re-review
 
 Verdict: READY. Notes fixed: Requirement 4 renumbered in order; 4.7 says "existing" path; the working-tree paragraph shows `-c core.fsmonitor=false`; 9.2 names the three built packages; the README will say a personal token gives a new comment each run.
+
+## Review 2: implementation (engine, api, cli, action, workflow, docs), 21 Nov 2026
+
+Verdict: NOT READY, 1 defect, fixed and re-reviewed.
+
+1. `countReferences` counted `~name"` but not `~name'` or `` ~name` `` in style files, so a package imported only as `@import '~bootstrap';` counted 0 and could be proposed for removal. Fixed: any quote after `~name`; the completeness property covers both forms; requirements glossary and 2.3 amended; design decision 18.
+
+Probes clean: no expression inside any run block, inputs through env, every `uses` pinned; `--` before the path parses as the target; the exit code crosses composite steps through `GITHUB_OUTPUT`; the token is in the comment step's env only and the API base is fixed; only the three comment requests, at most 3 lists, updates only a `github-actions[bot]` comment; git through `execFile` with fixed arguments and `-c core.fsmonitor=false`; file reads lstat, O_NOFOLLOW, capped at maxBytes + 1, fatal UTF-8; writes O_NOFOLLOW; working-tree realpath check under the real root; importSites conditions; the summary cut; intakeFromManifests equivalence and the lockfile skip for an invalid package.json; no `node:` import under packages/engine/src; .kiro/steering, hooks, agents and settings untouched.
+
+Notes acted on: a path git lists but missing on disk (sparse checkout) is skipped, so remove is not offered (decision 11 amended); the threat model lists what the remove check cannot see; table cells cut to 39 plus the ellipsis (decision 19); `writeText` refuses an existing non-regular entry before opening, so a FIFO cannot block; static import of repo-name. Notes kept: `test/index.test.ts` drops `cleanLine` from the "kept internal" list because Requirement 1.4 exports it, an earlier-test change outside the two named categories; time-of-check gaps between realpath and open are not reachable from a static checkout; a backslash file name turns off remove for the scan (the safe direction); the walk has no directory count limit, only the 20000-file cap.
+
+## Review 2b: re-review of the fixes
+
+Verdict: READY.

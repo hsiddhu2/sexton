@@ -27,13 +27,23 @@ function byCodeUnits(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
+/** Caps for one wrapper. Defaults are the recipe caps; import counting passes larger ones (spec cli-and-action, 1.5). */
+export interface CapLimits {
+  readonly maxListed: number;
+  readonly maxRead: number;
+  readonly maxFileBytes: number;
+}
+
 export interface CappedSource {
   readonly source: FileSource;
   counts(): ScanCounts;
 }
 
 /** Wraps a File source with the Caps. Never rejects. */
-export function capFileSource(inner: FileSource): CappedSource {
+export function capFileSource(inner: FileSource, limits: Partial<CapLimits> = {}): CappedSource {
+  const maxListed = limits.maxListed ?? MAX_LISTED;
+  const maxRead = limits.maxRead ?? MAX_READ;
+  const maxFileBytes = limits.maxFileBytes ?? MAX_FILE_BYTES;
   let listed: string[] = [];
   let listFailed = false;
   let skipped = 0;
@@ -62,8 +72,8 @@ export function capFileSource(inner: FileSource): CappedSource {
       if (!hasIgnoredSegment(path)) kept.add(path);
     }
     const sorted = [...kept].sort(byCodeUnits);
-    if (sorted.length > MAX_LISTED) capped = true;
-    listed = sorted.slice(0, MAX_LISTED);
+    if (sorted.length > maxListed) capped = true;
+    listed = sorted.slice(0, maxListed);
     return [...listed];
   };
 
@@ -74,7 +84,7 @@ export function capFileSource(inner: FileSource): CappedSource {
     } catch {
       text = undefined;
     }
-    if (typeof text !== "string" || utf8Length(text) > MAX_FILE_BYTES) {
+    if (typeof text !== "string" || utf8Length(text) > maxFileBytes) {
       skipped += 1;
       return undefined;
     }
@@ -90,7 +100,7 @@ export function capFileSource(inner: FileSource): CappedSource {
       if (typeof path !== "string" || !listed.includes(path)) return Promise.resolve(undefined);
       const earlier = answers.get(path);
       if (earlier !== undefined) return earlier;
-      if (read >= MAX_READ) {
+      if (read >= maxRead) {
         capped = true;
         return Promise.resolve(undefined);
       }

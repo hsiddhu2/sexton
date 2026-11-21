@@ -1,0 +1,26 @@
+# Sexton checks its own pull requests with its own Action. Spec: .kiro/specs/cli-and-action, Requirement 9.10.
+# pull_request only, never pull_request_target: a fork pull request gets a read-only token and no secrets.
+# uses: ./packages/action builds the pull request's own code, the same trust as ci.yml (design decision 10).
+
+name: sexton
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: sexton-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./packages/action

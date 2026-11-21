@@ -24,7 +24,8 @@ export const API_ERROR_CODES = [
 ] as const;
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
 
-export const POLICY_FILE = "sexton.policy.yml";
+export { POLICY_FILE } from "@sexton/engine";
+import { POLICY_FILE } from "@sexton/engine";
 export const MAX_POLICY_ERRORS = 20;
 export const MAX_POLICY_ERROR_PATH = 200;
 

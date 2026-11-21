@@ -131,6 +131,17 @@ The evidence pack carries a SHA-256 digest over the RFC 8785 canonical form of i
 
 The pack is built from untrusted text: package names, versions, advisory summaries, maintainer names and reasons all come from upstream or the repository. The Markdown report writes every such string only inside an escaped inline code span (`escapeField`), so none of them can open a heading, a link, HTML or a table cell. A property test plants Markdown, HTML and a marker in every field and checks that no marker is left outside a code span. The download file name is built from the parsed owner and repository and filtered to letters, digits, dot, hyphen and underscore. Each evidence download runs a full scan, so it counts against the same rate rule as a scan.
 
+### The CLI and the Action
+
+1. **Terminal escape injection.** Package names, reasons, advisory summaries and policy pointers are attacker-controlled. Every string is neutralised before it is printed: control characters (C0, C1, DEL), line and paragraph separators, bidi controls and direction marks become spaces. A property test plants escape sequences and checks every output.
+2. **The working-tree boundary.** The CLI never lists or follows a symbolic link, resolves the real path of every file it reads and refuses one outside the root, and caps each file at 256 KiB. It never writes through a link: `scan.json` and the evidence files are opened with `O_NOFOLLOW`, so a checkout cannot plant a link that makes `sexton scan .` overwrite another file.
+3. **Git inside an untrusted checkout.** A checkout's `.git/config` can set `core.fsmonitor`, a command git runs when it reads the index. The CLI runs its three git commands with `-c core.fsmonitor=false`, through `execFile` with no shell.
+4. **The fork token.** On a pull request from a fork the workflow token is read-only and secrets are not passed, so the comment fails with a warning and the check result still decides the job.
+5. **Why `pull_request_target` is refused.** It runs with a write token in the base repository's context. Combined with reading the pull request's files that is the pattern GitHub's hardening guide warns about. The Action documents `pull_request` only. Inputs reach scripts only through environment variables, never through `${{ }}` inside a script.
+6. **Comment hijack.** The Action updates a marker comment only when `github-actions[bot]` wrote it, so nobody can plant a marker comment for Sexton to fill and then rewrite.
+7. **The limit of the remove check.** Sexton counts quoted references in source, config and style files and script commands. A package loaded by a computed name, or named only in a file type it does not read, is not seen. Also unseen: untracked files, files under `dist`, `build` or `coverage`, unquoted paths such as `node_modules/n/x.js` in a script or `/node_modules/n/` in HTML, a package used only through a binary of another name (such as `tsc` for `typescript`), and escaped quotes. Remove is offered only for `dependencies`, only when every file was read (a sparse checkout counts as not read), and the pull request body tells the reviewer to check.
+8. **The dogfood workflow builds pull request code**, as ci.yml does. Callers using the published Action build only the Action's own checkout.
+
 ### Other accepted limits
 
 1. CloudFront access logs and S3 server access logs are off, for cost and to avoid storing visitor IP addresses. WAF sampled requests and Lambda logs cover day-to-day operations.

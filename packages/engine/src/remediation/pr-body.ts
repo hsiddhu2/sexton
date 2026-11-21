@@ -15,6 +15,9 @@ export const POSSESSED_WARNING =
 export const MAJOR_UPGRADE_LINE = "Major upgrade: the chosen version is outside the declared range.";
 export const RANGE_STYLE_LINE = "Range style preserved.";
 export const REMOVE_SCOPE_LINE = "The edit removes it from every dependency section of package.json that lists it.";
+/** Spec cli-and-action, Requirement 2.7: what the import count cannot see. */
+export const REMOVE_CHECK_LINE =
+  "No reference to this package was found in the files read. A package loaded by name at run time is not detected. Check before merging.";
 export const MIGRATE_LINE = "A migration is proposed. Its changes come from the recipe.";
 export const NO_RULE_LINE = "No policy rule fails for this package.";
 export const NONE_LINE = "none";
@@ -94,7 +97,7 @@ function proposedChange(plan: RemediationPlan): string[] {
     lines.push(`Bump ${F(plan.packageName)} from ${F(plan.installedVersion)} to ${F(plan.chosenVersion ?? "")}.`, "", RANGE_STYLE_LINE);
     if (plan.majorUpgrade === true) lines.push("", MAJOR_UPGRADE_LINE);
   } else if (plan.kind === "remove") {
-    lines.push(`Remove ${F(plan.packageName)}, listed in ${F(plan.edit?.section ?? "")}.`, "", REMOVE_SCOPE_LINE);
+    lines.push(`Remove ${F(plan.packageName)}, listed in ${F(plan.edit?.section ?? "")}.`, "", REMOVE_SCOPE_LINE, "", REMOVE_CHECK_LINE);
   } else if (plan.edits !== undefined) {
     lines.push(...plan.edits.map((e) => `- ${editLine(e)}`));
     if (plan.edits.some((e) => e.op === "remove-dependency")) lines.push("", REMOVE_SCOPE_LINE);

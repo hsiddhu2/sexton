@@ -12,7 +12,7 @@ import {
   NO_RULE_LINE,
   POSSESSED_WARNING,
   RANGE_STYLE_LINE,
-  REMOVE_SCOPE_LINE,
+  REMOVE_SCOPE_LINE, REMOVE_CHECK_LINE,
 } from "../../src/remediation/pr-body.js";
 import { SIGNAL_NAMES, type FailingRule, type PackageHealth, type PrContext, type RemediationPlan, type UnhealthyState } from "../../src/types.js";
 import { arbHostileHealth, arbHostileString, arbPolicyResultFor, healthySignals, MARKER, RANGE_MARKER } from "./arbitraries.js";
@@ -180,6 +180,9 @@ describe("buildPrBody examples", () => {
     expect(body).toContain("Remove `request`, listed in `devDependencies`.");
     expect(body).toContain(REMOVE_SCOPE_LINE);
     expect(body).toContain(LOCKFILE_NOTE);
+    // Spec cli-and-action, Requirement 2.7 (remediation Correction, 21 Nov 2026).
+    expect(body).toContain(`${REMOVE_SCOPE_LINE}\n\n${REMOVE_CHECK_LINE}`);
+    expect(REMOVE_CHECK_LINE).toBe("No reference to this package was found in the files read. A package loaded by name at run time is not detected. Check before merging.");
   });
 
   it("no-safe-version says no change proposed with the reason and no lockfile note", () => {

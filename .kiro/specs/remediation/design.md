@@ -1200,3 +1200,8 @@ Two open items of this spec are closed by the migration-node-sass spec, and the 
 1. `escapeField` and `cleanLine` also replace the direction marks U+200E (left-to-right mark), U+200F (right-to-left mark) and U+061C (Arabic letter mark) with a space. Property 11 checks them.
 2. Distinct advisory IDs per package are capped at 200. Beyond that `gatherBumpData` fetches no detail and returns the failure `too many advisories`. The fetch body moved to `remediation/version-data.ts`, shared with `gatherMigrationData`; for 200 IDs or fewer the behaviour is unchanged. This closes open item 11 ("no cap on distinct IDs").
 3. A proposed migrate plan's body adds "Files changed" and "Review before merging" before the lockfile note, carries the lockfile note, and renders Review site paths, line numbers, script names and excerpts from the repository, each only through `escapeField` (5.2, 5.9, 5.14 amended).
+
+## Correction, 21 Nov 2026 (spec cli-and-action, handoff decision 16)
+
+A remove plan's body carries one more fixed line after the remove-scope line: "No reference to this package was found in the files read. A package loaded by name at run time is not detected. Check before merging." (`REMOVE_CHECK_LINE` in `pr-body.ts`). The CLI is the first caller that supplies `importSites`, from a reference count over the working tree, and the line states what that count cannot see. Requirement 5 of this spec is read with this line added; its tasks.md is unchanged.
+
