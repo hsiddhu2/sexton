@@ -80,6 +80,6 @@ Fills the `migrate` kind with the node-sass to sass recipe: Recipe and Edit type
   - packages/api/scripts/generate-demo-scan.mjs runs the migration for node-sass with the sample repository; remediation-routes.mjs answers from the migration fixtures; regenerate packages/web/public/demo/scan.json; demo generator test.
   - _Requirements: 7.3_
 
-- [ ] 10. Close
+- [x] 10. Close
   - Root gates, independent reviews before each commit in build/reviews/06-migration-node-sass.md, merge to main with --no-ff, gates on main, PROGRESS, TRACKER, private/reports/06-migration-node-sass.md.
   - _Requirements: 1.2_
