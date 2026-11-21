@@ -4,12 +4,15 @@ import { cacheKey } from "../cache.js";
 import { severityFromOsv } from "../severity.js";
 import { available, unavailable } from "../signal.js";
 import type { Advisory, Signal } from "../types.js";
+import { requestWithRetry, UpstreamError } from "../http.js";
 import { cachedJson, describeFailure, isRecord, type ClientContext } from "./context.js";
 
 export const OSV_API = "https://api.osv.dev/v1";
 export const OSV_QUERY_SOURCE = "osv-querybatch";
 export const OSV_VULN_SOURCE = "osv-vuln";
 export const OSV_MAX_PAGES = 10;
+/** Cache source of the batched multi-version query. Spec: .kiro/specs/remediation, Decision 4. */
+export const OSV_BATCH_SOURCE = "osv-querybatch-multi";
 
 const JSON_HEADERS = { Accept: "application/json", "Content-Type": "application/json" } as const;
 
@@ -72,4 +75,106 @@ export async function fetchAdvisoriesSignal(ctx: ClientContext, name: string, ve
   } catch (error) {
     return unavailable(describeFailure(error), source, now);
   }
+}
+
+// Batched query for several versions of one package. Spec: .kiro/specs/remediation, Requirements 2.18, 2.19, 2.21, 2.22, 8.6, 8.7.
+
+const PLAUSIBLE_ID = /^[A-Za-z0-9._:-]{1,128}$/;
+const BATCH_VERSION = /^[0-9A-Za-z.+-]{1,64}$/;
+
+/** Thrown for a response or cached value that is not the expected shape. */
+export class OsvShapeError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "OsvShapeError";
+  }
+}
+
+/** Thrown when a token remains after OSV_MAX_PAGES requests. */
+export class OsvPaginationError extends Error {
+  constructor() {
+    super("querybatch pagination did not finish");
+    this.name = "OsvPaginationError";
+  }
+}
+
+type Pairs = [string, string[]][];
+
+function isObjectLike(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readBatchResults(body: unknown, expected: number): { ids: string[]; token: string | undefined }[] {
+  if (!isObjectLike(body) || !Object.hasOwn(body, "results")) throw new OsvShapeError("querybatch response is malformed");
+  const results = body["results"];
+  if (!Array.isArray(results) || results.length !== expected) throw new OsvShapeError("querybatch response is malformed");
+  return results.map((result: unknown) => {
+    if (!isObjectLike(result)) throw new OsvShapeError("querybatch response is malformed");
+    const ids: string[] = [];
+    if (Object.hasOwn(result, "vulns")) {
+      const vulns = result["vulns"];
+      if (!Array.isArray(vulns)) throw new OsvShapeError("querybatch response is malformed");
+      for (const vuln of vulns as unknown[]) {
+        if (!isObjectLike(vuln) || !Object.hasOwn(vuln, "id")) throw new OsvShapeError("querybatch response is malformed");
+        const id = vuln["id"];
+        if (typeof id !== "string" || !PLAUSIBLE_ID.test(id)) throw new OsvShapeError("querybatch response is malformed");
+        ids.push(id);
+      }
+    }
+    const raw = Object.hasOwn(result, "next_page_token") ? result["next_page_token"] : undefined;
+    return { ids, token: typeof raw === "string" && raw.length > 0 ? raw : undefined };
+  });
+}
+
+function readPairs(value: unknown, versions: readonly string[]): Map<string, readonly string[]> {
+  if (!Array.isArray(value) || value.length !== versions.length) throw new OsvShapeError("cached querybatch value is malformed");
+  const map = new Map<string, readonly string[]>();
+  value.forEach((pair: unknown, i) => {
+    if (!Array.isArray(pair) || pair.length !== 2 || pair[0] !== versions[i] || !Array.isArray(pair[1])) {
+      throw new OsvShapeError("cached querybatch value is malformed");
+    }
+    const ids = pair[1] as unknown[];
+    if (!ids.every((id) => typeof id === "string" && PLAUSIBLE_ID.test(id))) throw new OsvShapeError("cached querybatch value is malformed");
+    map.set(versions[i] as string, ids as string[]);
+  });
+  return map;
+}
+
+async function runBatch(ctx: ClientContext, name: string, versions: readonly string[]): Promise<Pairs> {
+  const url = `${OSV_API}/querybatch`;
+  const ids = versions.map(() => [] as string[]);
+  let pending: { index: number; token?: string }[] = versions.map((_, index) => ({ index }));
+  for (let sent = 0; pending.length > 0; sent++) {
+    if (sent >= OSV_MAX_PAGES) throw new OsvPaginationError();
+    const queries = pending.map((q) => ({
+      package: { name, ecosystem: "npm" },
+      version: versions[q.index],
+      ...(q.token === undefined ? {} : { page_token: q.token }),
+    }));
+    const response = await requestWithRetry(ctx.transport, url, { method: "POST", headers: JSON_HEADERS, body: JSON.stringify({ queries }) }, ctx.retry ?? {});
+    if (response.status < 200 || response.status >= 300) throw new UpstreamError(url, response.status);
+    const results = readBatchResults(await response.json(), queries.length);
+    const next: { index: number; token: string }[] = [];
+    results.forEach((result, i) => {
+      const q = pending[i] as (typeof pending)[number];
+      const list = ids[q.index] as string[];
+      for (const id of result.ids) if (!list.includes(id)) list.push(id);
+      if (result.token !== undefined) next.push({ index: q.index, token: result.token });
+    });
+    pending = next;
+  }
+  return versions.map((v, i) => [v, ids[i] as string[]]);
+}
+
+/**
+ * Advisory IDs for several versions of one package, in at most OSV_MAX_PAGES querybatch requests in total.
+ * The whole exchange is cached as one value of [version, ids] pairs. Throws on any failure so the cache stores nothing.
+ */
+export async function queryVulnIdsBatch(ctx: ClientContext, name: string, versions: readonly string[]): Promise<ReadonlyMap<string, readonly string[]>> {
+  if (versions.length === 0) return new Map();
+  if (new Set(versions).size !== versions.length || !versions.every((v) => typeof v === "string" && BATCH_VERSION.test(v))) {
+    throw new OsvShapeError("querybatch versions are invalid");
+  }
+  const stored = await ctx.cache.get(cacheKey(OSV_BATCH_SOURCE, name, versions.join(",")), () => runBatch(ctx, name, versions));
+  return readPairs(stored, versions);
 }

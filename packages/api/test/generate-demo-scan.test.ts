@@ -54,8 +54,16 @@ describe("demo scan generator", () => {
     expect(scan.report.scan?.repo).toEqual({ owner: "sexton-demo", repo: "fixture", url: "https://github.com/sexton-demo/fixture" });
   });
 
-  it("has no remediations key", () => {
-    expect(Object.hasOwn(scan, "remediations")).toBe(false);
+  it("has one remediation per unhealthy package, and a title and body for a Dead package (spec remediation, 7.13)", () => {
+    const unhealthy = scan.report.packages.filter((p) => ["Possessed", "Dead", "Haunted"].includes(p.state)).map((p) => p.name);
+    expect(scan.remediations?.map((r) => r.packageName)).toEqual(unhealthy);
+    const uuid = scan.remediations?.find((r) => r.packageName === "uuid");
+    expect(uuid).toMatchObject({ kind: "bump", status: "proposed", chosenVersion: "11.1.1", majorUpgrade: true, title: "Sexton: bump uuid to 11.1.1" });
+    expect(uuid?.prBody).toContain("Bump `uuid` from `9.0.1` to `11.1.1`.");
+    expect(uuid?.intent?.files).toEqual([{ path: "package.json", op: "set-range", section: "dependencies", name: "uuid", range: "^11.1.1" }]);
+    const request = scan.remediations?.find((r) => r.packageName === "request");
+    expect(request).toMatchObject({ status: "no-safe-version", title: "Sexton: no change proposed for request" });
+    expect(scan.remediations?.find((r) => r.packageName === "lodash")).toMatchObject({ status: "proposed", chosenVersion: "4.18.1", majorUpgrade: false });
   });
 
   it("passes the web contract validator", () => {

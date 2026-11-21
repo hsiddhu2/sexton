@@ -155,3 +155,47 @@ describe("engine public surface (repo-intake)", () => {
     expect(engine.INTAKE_ERROR_CODES.length).toBeGreaterThan(0);
   });
 });
+
+// remediation task 9.1. Public surface of the remediation module.
+const REMEDIATION_FUNCTIONS = [
+  "planRemediation",
+  "selectBump",
+  "orderCandidates",
+  "rangeStyle",
+  "styledRange",
+  "isPublishedVersion",
+  "gatherBumpData",
+  "bumpTargets",
+  "branchName",
+  "encodeName",
+  "decodeName",
+  "isValidBranchName",
+  "buildPrIntent",
+  "buildPrBody",
+  "escapeField",
+  "createInMemoryRemediationLog",
+  "attachRemediations",
+  "failingRulesFor",
+  "queryVulnIdsBatch",
+] as const;
+
+describe("engine public surface (remediation)", () => {
+  it.each(REMEDIATION_FUNCTIONS)("exports %s as a function", (name) => {
+    expect(typeof engine[name]).toBe("function");
+  });
+
+  it("exports the remediation constants", () => {
+    expect(engine.REMEDIATION_KINDS).toEqual(["bump", "remove", "migrate"]);
+    expect(engine.REMEDIATION_STATUSES).toEqual(["proposed", "no-safe-version", "unavailable"]);
+    expect(engine.BASE_REF_DEFAULT).toBe("@default");
+    expect(engine.EMPTY_RECIPE_REGISTRY.size).toBe(0);
+    expect(engine.MAX_CANDIDATES).toBe(20);
+    expect(engine.OSV_BATCH_SOURCE).toBe("osv-querybatch-multi");
+  });
+
+  it("keeps the internal helpers internal", () => {
+    for (const name of ["cleanLine", "precheck", "chooseKind", "readPublished", "buildPrContext", "isValidLogEntry"]) {
+      expect(Object.keys(engine)).not.toContain(name);
+    }
+  });
+});

@@ -1,0 +1,12 @@
+{
+  "note": "Expected plans for the recorded remediation fixtures. Intake range is ^installedVersion, origin dependencies. Reasoning in expected-plans.md.",
+  "plans": [
+    { "packageName": "request", "installedVersion": "2.88.2", "kind": "bump", "status": "no-safe-version", "reason": "no safe version found among 0 evaluated candidate versions" },
+    { "packageName": "uuid", "installedVersion": "9.0.1", "kind": "bump", "status": "proposed", "chosenVersion": "11.1.1", "majorUpgrade": true, "range": "^11.1.1" },
+    { "packageName": "lodash", "installedVersion": "4.17.21", "kind": "bump", "status": "proposed", "chosenVersion": "4.18.1", "majorUpgrade": false, "range": "^4.18.1" },
+    { "packageName": "event-stream", "installedVersion": "3.3.6", "kind": "bump", "status": "proposed", "chosenVersion": "4.0.0", "majorUpgrade": true, "range": "^4.0.0" },
+    { "packageName": "node-sass", "installedVersion": "7.0.3", "kind": "bump", "status": "no-safe-version", "reason": "no safe version found among 2 evaluated candidate versions" },
+    { "packageName": "left-pad", "installedVersion": "1.3.0", "kind": "bump", "status": "no-safe-version", "reason": "no safe version found among 0 evaluated candidate versions" },
+    { "packageName": "colors", "installedVersion": "1.4.0", "kind": "bump", "status": "no-safe-version", "reason": "no safe version found among 0 evaluated candidate versions" }
+  ]
+}

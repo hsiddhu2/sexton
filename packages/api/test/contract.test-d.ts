@@ -1,9 +1,11 @@
 import { describe, expectTypeOf, it } from "vitest";
-import type { RULE_TYPES, SEVERITIES, SIGNAL_NAMES, STATE_ORDER } from "@sexton/engine";
+import type { REMEDIATION_STATUSES, RULE_TYPES, SEVERITIES, SIGNAL_NAMES, STATE_ORDER } from "@sexton/engine";
 import type {
   HealthReport,
   PolicyResult,
+  PrIntent,
   RemediationEntry,
+  RemediationStatusList,
   RuleTypeList,
   ScanResponse,
   SeverityList,
@@ -29,5 +31,13 @@ describe("contract types", () => {
 
   it("RemediationEntry.kind is bump, remove or migrate", () => {
     expectTypeOf<RemediationEntry["kind"]>().toEqualTypeOf<"bump" | "remove" | "migrate">();
+  });
+
+  it("RemediationEntry has the remediation spec shape", () => {
+    expectTypeOf<RemediationEntry["status"]>().toEqualTypeOf<"proposed" | "no-safe-version" | "unavailable">();
+    expectTypeOf<RemediationEntry["summary"]>().toEqualTypeOf<string>();
+    expectTypeOf<RemediationEntry["intent"]>().toEqualTypeOf<PrIntent | undefined>();
+    expectTypeOf<PrIntent["baseRef"]>().toEqualTypeOf<"@default">();
+    expectTypeOf<Same<RemediationStatusList, typeof REMEDIATION_STATUSES>>().toEqualTypeOf<true>();
   });
 });

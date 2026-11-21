@@ -1,7 +1,7 @@
 // Shared generators. Typed against @sexton/api's contract, never against engine test helpers.
 import type { PackageHealth, PolicyResult, RemediationEntry, ScanResponse, Severity, State } from "@sexton/api";
 import fc from "fast-check";
-import { REMEDIATION_KINDS, RULE_TYPES, SEVERITIES, SIGNAL_NAMES, STATES } from "../src/load/lists.js";
+import { REMEDIATION_KINDS, REMEDIATION_STATUSES, RULE_TYPES, SEVERITIES, SIGNAL_NAMES, STATES } from "../src/load/lists.js";
 
 export const FAULT_MARKER = "@@marker-8f3a@@";
 
@@ -134,12 +134,26 @@ export function arbRemediations(names: readonly string[]): fc.Arbitrary<Remediat
         ? fc.constant([])
         : fc.tuple(
             ...picked.map((packageName) =>
-              fc.record({
-                packageName: fc.constant(packageName),
-                kind: fc.constantFrom(...REMEDIATION_KINDS),
-                title: arbWord,
-                prBody: arbWord,
-              }),
+              fc.record(
+                {
+                  packageName: fc.constant(packageName),
+                  kind: fc.constantFrom(...REMEDIATION_KINDS),
+                  status: fc.constantFrom(...REMEDIATION_STATUSES),
+                  title: arbWord,
+                  summary: arbWord,
+                  prBody: arbWord,
+                  chosenVersion: arbWord,
+                  majorUpgrade: fc.boolean(),
+                  intent: arbWord.map((w) => ({
+                    branch: `sexton/bump-${w}`,
+                    title: w,
+                    body: w,
+                    files: [{ path: "package.json" as const, op: "remove-dependency" as const, section: "dependencies" as const, name: packageName }] as const,
+                    baseRef: "@default" as const,
+                  })),
+                },
+                { requiredKeys: ["packageName", "kind", "status", "title", "summary", "prBody"] },
+              ),
             ),
           ),
     )

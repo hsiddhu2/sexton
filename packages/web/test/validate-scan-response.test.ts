@@ -5,7 +5,7 @@ import {
   validateScanResponse,
   type ContractError,
 } from "../src/load/validate-scan-response.js";
-import { FAULT_MARKER, arbBigScanResponse, arbFault, arbJson, arbScanResponse, cheapScan } from "./arbitraries.js";
+import { FAULT_MARKER, arbBigScanResponse, arbFault, arbJson, arbRemediations, arbScanResponse, cheapScan } from "./arbitraries.js";
 import { readDemoScan } from "./support/demo-scan.js";
 
 const PATH_RE = /^(\/(report|policy|remediations|packages|signals|[A-Za-z]+|\d+))*$/;
@@ -154,5 +154,62 @@ describe("validateScanResponse demo scan", () => {
     const result = validateScanResponse(readDemoScan());
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.value.report.packages).toHaveLength(11);
+  });
+});
+
+describe("validateScanResponse remediations (spec remediation)", () => {
+  const scan = cheapScan(3);
+  const names = scan.report.packages.map((p) => p.name);
+  type Entry = Record<string, unknown>;
+  const FAULTS: readonly ((e: Entry, j: number) => string)[] = [
+    (e, j) => (delete e["status"], `/remediations/${j}/status`),
+    (e, j) => (delete e["summary"], `/remediations/${j}/summary`),
+    (e, j) => (delete e["title"], `/remediations/${j}/title`),
+    (e, j) => (delete e["prBody"], `/remediations/${j}/prBody`),
+    (e, j) => ((e["status"] = FAULT_MARKER), `/remediations/${j}/status`),
+    (e, j) => ((e["kind"] = FAULT_MARKER), `/remediations/${j}/kind`),
+    (e, j) => ((e["summary"] = 7), `/remediations/${j}/summary`),
+    (e, j) => ((e["chosenVersion"] = [FAULT_MARKER]), `/remediations/${j}/chosenVersion`),
+    (e, j) => ((e["majorUpgrade"] = FAULT_MARKER), `/remediations/${j}/majorUpgrade`),
+    (e, j) => ((e["intent"] = FAULT_MARKER), `/remediations/${j}/intent`),
+    (e, j) => ((e["intent"] = { branch: 1, title: "t", body: "b", baseRef: "@default", files: [] }), `/remediations/${j}/intent/branch`),
+    (e, j) => ((e["intent"] = { branch: "b", title: "t", body: "b", baseRef: "@default", files: FAULT_MARKER }), `/remediations/${j}/intent/files`),
+  ];
+  const arbFaulty = arbRemediations(names)
+    .filter((list) => list.length > 0)
+    .chain((list) => fc.tuple(fc.constant(list), fc.nat(list.length - 1), fc.nat(FAULTS.length - 1), fc.boolean()));
+
+  it("Feature: remediation, Property 20: Web validator round trip and single faults", () => {
+    fc.assert(
+      fc.property(arbFaulty, ([list, j, f, duplicate]) => {
+        const good = structuredClone({ ...scan, remediations: list });
+        const ok = validateScanResponse(good);
+        expect(ok.ok).toBe(true);
+        if (ok.ok) expect(ok.value).toEqual(good);
+        const broken = structuredClone(good) as unknown as { remediations: Entry[] };
+        let path: string;
+        if (duplicate && list.length > 1) {
+          broken.remediations[1] = { ...(broken.remediations[1] as Entry), packageName: (broken.remediations[0] as Entry)["packageName"] };
+          path = "/remediations/1/packageName";
+        } else {
+          path = (FAULTS[f] as (e: Entry, j: number) => string)(broken.remediations[j] as Entry, j);
+        }
+        const result = validateScanResponse(broken);
+        expect(result.ok).toBe(false);
+        if (!result.ok) {
+          expect(result.errors.some((e) => e.path === path)).toBe(true);
+          expect(JSON.stringify(result.errors)).not.toContain(FAULT_MARKER);
+        }
+      }),
+      { numRuns: 1000 },
+    );
+  });
+
+  it("rejects the old placeholder shape and accepts a response with no remediations", () => {
+    const old = { ...scan, remediations: [{ packageName: names[0], kind: "bump", title: "t", prBody: "b" }] };
+    expect(errorsOf(old).map((e) => `${e.path}:${e.code}`)).toEqual(["/remediations/0/status:MISSING_FIELD", "/remediations/0/summary:MISSING_FIELD"]);
+    const { remediations: _drop, ...none } = { ...scan, remediations: [] };
+    expect(_drop).toEqual([]);
+    expect(validateScanResponse(none).ok).toBe(true);
   });
 });

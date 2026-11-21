@@ -3,8 +3,21 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { ABBREVIATED_ACCEPT, DEFAULT_POLICY, InMemorySnapshotStore, evaluatePolicy, scorePackages } from "@sexton/engine";
+import {
+  ABBREVIATED_ACCEPT,
+  CachedFetcher,
+  DEFAULT_POLICY,
+  InMemorySnapshotStore,
+  MemoryCacheStore,
+  attachRemediations,
+  bumpTargets,
+  evaluatePolicy,
+  gatherBumpData,
+  planRemediation,
+  scorePackages,
+} from "@sexton/engine";
 import { fixtureRoutes, routedTransport } from "./lib/fixture-routes.mjs";
+import { hasRemediationFixture, remediationTransport } from "./lib/remediation-routes.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const DEFAULT_FIXTURES_DIR = join(HERE, "..", "..", "engine", "test", "fixtures");
@@ -80,7 +93,31 @@ export async function buildDemoScan({ fixturesDir = DEFAULT_FIXTURES_DIR, now = 
     },
   };
   const policy = evaluatePolicy(DEFAULT_POLICY, report, "default");
-  return { report, policy };
+  const remediations = await demoRemediations(fixturesDir, report, policy, now);
+  return { report, policy, remediations };
+}
+
+/**
+ * Plans the demo report offline from the recorded remediation fixtures. Spec remediation, Requirement 7.13.
+ * The demo has no package.json, so each package is declared as ^installed in dependencies, and no import sites
+ * are known, so no plan is a remove. Packages without recorded remediation data get no bump data.
+ */
+async function demoRemediations(fixturesDir, report, policy, now) {
+  const intake = report.packages.map((p) => ({
+    name: p.name,
+    installedVersion: p.installedVersion,
+    declaredRange: `^${p.installedVersion}`,
+    origin: "dependencies",
+    resolution: "locked",
+  }));
+  const options = { intake };
+  const targets = bumpTargets(report, options).filter((t) => hasRemediationFixture(fixturesDir, t.name));
+  const { transport, unrouted } = remediationTransport(fixturesDir);
+  const clock = () => now;
+  const ctx = { transport, clock, cache: new CachedFetcher({ store: new MemoryCacheStore(), clock }), retry: { sleep: () => Promise.resolve() } };
+  const bumpData = await gatherBumpData(ctx, targets);
+  if (unrouted.length > 0) throw new Error(`unrouted URLs: ${[...new Set(unrouted)].join(", ")}`);
+  return attachRemediations(report, policy, planRemediation(report, { ...options, bumpData }));
 }
 
 export function serialiseDemoScan(scan) {

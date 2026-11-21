@@ -24,7 +24,7 @@ function withExtras(): { response: ScanResponse; pkg: PackageHealth } {
         { index: 5, type: "max_age_months", pass: true, failures: [], unevaluated: [], notFound: [] },
       ],
     },
-    remediations: [{ packageName: pkg.name, kind: "bump", title: "Bump <b>it</b>", prBody: "<img src=x onerror=alert(1)>\n# not markdown" }],
+    remediations: [{ packageName: pkg.name, kind: "bump", status: "proposed", title: "Bump <b>it</b>", summary: "Bump it", prBody: "<img src=x onerror=alert(1)>\n# not markdown" }],
   } as unknown as ScanResponse;
   return { response, pkg };
 }
