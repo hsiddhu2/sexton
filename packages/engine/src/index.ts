@@ -13,7 +13,7 @@ export type {
   State,
   UnavailableSignal,
 } from "./types.js";
-export { SEVERITIES, SIGNAL_NAMES, STATE_ORDER } from "./types.js";
+export { RULE_TYPES, SEVERITIES, SIGNAL_NAMES, STATE_ORDER } from "./types.js";
 
 export { available, unavailable, cleanReason, fromIso, toIso, isAvailable, MAX_REASON_LENGTH } from "./signal.js";
 export { evaluateState, stateFromSignals, healthRank, monthsBefore, DEAD_AFTER_MONTHS, RESTLESS_AFTER_MONTHS } from "./state.js";
