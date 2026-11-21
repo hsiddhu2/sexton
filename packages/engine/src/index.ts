@@ -159,7 +159,37 @@ export { isValidBranchName } from "./remediation/is-valid-branch-name.js";
 export { buildPrIntent, BASE_REF_DEFAULT } from "./remediation/pr-intent.js";
 export { buildPrBody, MAX_BODY_CHARS } from "./remediation/pr-body.js";
 export { escapeField } from "./remediation/escape-field.js";
-export { EMPTY_RECIPE_REGISTRY } from "./remediation/recipes.js";
+export { EMPTY_RECIPE_REGISTRY, DEFAULT_RECIPE_REGISTRY } from "./remediation/recipes.js";
+// migration-node-sass
+export { REASON_MIGRATION_NOT_RUN, REASON_NO_CHANGE } from "./remediation/plan.js";
+export { InMemoryFileSource } from "./remediation/file-source.js";
+export { isSafePath, hasIgnoredSegment, IGNORED_DIRECTORIES } from "./remediation/safe-path.js";
+export { capFileSource, MAX_LISTED, MAX_READ, MAX_FILE_BYTES } from "./remediation/capped-source.js";
+export type { CappedSource } from "./remediation/capped-source.js";
+export { findReviewSites, MAX_REVIEW_SITES } from "./remediation/review-sites.js";
+export { reviewComments } from "./remediation/review-comments.js";
+export { gatherMigrationData } from "./remediation/gather-migration-data.js";
+export { SASS_LOADER_MINIMUM } from "./remediation/migration-candidates.js";
+export { NODE_SASS_RECIPE, NODE_SASS_RECIPE_ID } from "./remediation/node-sass-recipe.js";
+export { RECIPE_NOTES } from "./remediation/recipe-notes.js";
+export { runMigrations, runRecipe, REASON_RECIPE_FAILED } from "./remediation/run-migrations.js";
+export { MAX_ADVISORY_IDS } from "./remediation/version-data.js";
+export { readPackageScripts, MAX_SCRIPTS } from "./intake/scripts.js";
+export { REVIEW_RULES } from "./types.js";
+export type {
+  FileSource,
+  ReviewRule,
+  ReviewSite,
+  ReviewComment,
+  ScanCounts,
+  RecipeResult,
+  RecipeOutcome,
+  PackageJsonView,
+  PackageJsonEdits,
+  MigrationData,
+  RecipeInput,
+  MigrationDetail,
+} from "./types.js";
 export type { RecipeRegistry } from "./remediation/recipes.js";
 export { createInMemoryRemediationLog } from "./remediation/in-memory-log.js";
 export { LOG_REJECTED_REASON } from "./remediation/remediation-log.js";

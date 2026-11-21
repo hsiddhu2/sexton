@@ -1,10 +1,13 @@
-// Planner. Spec: .kiro/specs/remediation, Requirements 1, 2.13, 3.1 to 3.6, 4.13, 8.2. Pure.
+// Planner. Spec: .kiro/specs/remediation, Requirements 1, 2.13, 3.1 to 3.6, 4.13, 8.2, and
+// .kiro/specs/migration-node-sass, Requirements 5.2 to 5.4. Pure.
 
 import semver from "semver";
 import type { HealthReport, PackageHealth, RemediationPlan, UnhealthyState } from "../types.js";
+import { branchName } from "./branch-name.js";
 import type { PlanOptions } from "./plan-options.js";
-import { indexIntake, precheck, REASON_NO_INTAKE } from "./precheck.js";
+import { indexIntake, precheck, REASON_BRANCH_TOO_LONG, REASON_NO_INTAKE } from "./precheck.js";
 import { styledRange } from "./range-style.js";
+import { DEFAULT_RECIPE_REGISTRY } from "./recipes.js";
 import { selectBump } from "./select-bump.js";
 import { isUnhealthy } from "./unhealthy.js";
 
@@ -12,6 +15,37 @@ export type { PlanOptions } from "./plan-options.js";
 
 export const REASON_INSTALLED_INVALID = "installed version is not a valid semver version";
 export const REASON_NOT_GATHERED = "bump data was not gathered";
+export const REASON_MIGRATION_NOT_RUN = "migration was not run";
+export const REASON_NO_CHANGE = "the recipe proposed no change to package.json";
+
+type Base = Pick<RemediationPlan, "packageName" | "installedVersion" | "state" | "stateReason">;
+
+function planMigrate(base: Base, options: PlanOptions): RemediationPlan {
+  const unavailable = (reason: string): RemediationPlan => ({ ...base, kind: "migrate", status: "unavailable", reason });
+  const outcome = options.migrations?.get(base.packageName);
+  const recipe = (options.recipes ?? DEFAULT_RECIPE_REGISTRY).get(base.packageName);
+  if (outcome === undefined || recipe === undefined) return unavailable(REASON_MIGRATION_NOT_RUN);
+  if (!outcome.ok) return unavailable(outcome.reason);
+  if (branchName("migrate", base.packageName) === null) return unavailable(REASON_BRANCH_TOO_LONG);
+  const [first, ...rest] = outcome.result.edits;
+  if (first === undefined) return unavailable(REASON_NO_CHANGE);
+  const r = outcome.result;
+  return {
+    ...base,
+    kind: "migrate",
+    status: "proposed",
+    edits: [first, ...rest],
+    migration: {
+      recipeId: recipe.id,
+      from: recipe.from,
+      to: recipe.to,
+      reviewSites: r.reviewSites,
+      filesChanged: r.filesChanged,
+      scan: r.scan,
+      notes: r.notes,
+    },
+  };
+}
 
 function noSafeVersionReason(evaluated: number): string {
   return `no safe version found among ${String(evaluated)} evaluated candidate versions`;
@@ -21,7 +55,7 @@ function planOne(pkg: PackageHealth & { readonly state: UnhealthyState }, option
   const base = { packageName: pkg.name, installedVersion: pkg.installedVersion, state: pkg.state, stateReason: pkg.stateReason };
   const check = precheck(pkg, options, intakeByName);
   if (!check.ok) return { ...base, kind: check.kind, status: "unavailable", reason: check.reason };
-  if (check.kind === "migrate") return { ...base, kind: "migrate", status: "proposed" };
+  if (check.kind === "migrate") return planMigrate(base, options);
   const intake = check.intake;
   if (intake === undefined) return { ...base, kind: check.kind, status: "unavailable", reason: REASON_NO_INTAKE };
   if (check.kind === "remove") {

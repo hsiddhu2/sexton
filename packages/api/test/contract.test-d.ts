@@ -4,6 +4,7 @@ import type {
   HealthReport,
   PolicyResult,
   PrIntent,
+  ReviewComment,
   RemediationEntry,
   RemediationStatusList,
   RuleTypeList,
@@ -38,6 +39,9 @@ describe("contract types", () => {
     expectTypeOf<RemediationEntry["summary"]>().toEqualTypeOf<string>();
     expectTypeOf<RemediationEntry["intent"]>().toEqualTypeOf<PrIntent | undefined>();
     expectTypeOf<PrIntent["baseRef"]>().toEqualTypeOf<"@default">();
+    expectTypeOf<PrIntent["reviewComments"]>().toEqualTypeOf<readonly ReviewComment[]>();
+    expectTypeOf<PrIntent["files"][0]["path"]>().toEqualTypeOf<"package.json">();
+    expectTypeOf<PrIntent["files"][0]["op"]>().toEqualTypeOf<"set-range" | "remove-dependency" | "add-dependency">();
     expectTypeOf<Same<RemediationStatusList, typeof REMEDIATION_STATUSES>>().toEqualTypeOf<true>();
   });
 });

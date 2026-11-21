@@ -172,8 +172,9 @@ describe("validateScanResponse remediations (spec remediation)", () => {
     (e, j) => ((e["chosenVersion"] = [FAULT_MARKER]), `/remediations/${j}/chosenVersion`),
     (e, j) => ((e["majorUpgrade"] = FAULT_MARKER), `/remediations/${j}/majorUpgrade`),
     (e, j) => ((e["intent"] = FAULT_MARKER), `/remediations/${j}/intent`),
-    (e, j) => ((e["intent"] = { branch: 1, title: "t", body: "b", baseRef: "@default", files: [] }), `/remediations/${j}/intent/branch`),
-    (e, j) => ((e["intent"] = { branch: "b", title: "t", body: "b", baseRef: "@default", files: FAULT_MARKER }), `/remediations/${j}/intent/files`),
+    (e, j) => ((e["intent"] = { branch: 1, title: "t", body: "b", baseRef: "@default", files: [], reviewComments: [] }), `/remediations/${j}/intent/branch`),
+    (e, j) => ((e["intent"] = { branch: "b", title: "t", body: "b", baseRef: "@default", files: FAULT_MARKER, reviewComments: [] }), `/remediations/${j}/intent/files`),
+    (e, j) => ((e["intent"] = { branch: "b", title: "t", body: "b", baseRef: "@default", files: [] }), `/remediations/${j}/intent/reviewComments`),
   ];
   const arbFaulty = arbRemediations(names)
     .filter((list) => list.length > 0)

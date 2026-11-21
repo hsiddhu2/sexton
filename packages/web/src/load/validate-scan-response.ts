@@ -311,6 +311,8 @@ function checkRemediations(w: Walk, root: Obj): void {
         w.str(intent, ip, "body");
         w.str(intent, ip, "baseRef");
         w.arr(intent, ip, "files");
+        // Spec migration-node-sass, Requirement 7.2.
+        w.arr(intent, ip, "reviewComments");
       }
     }
   }

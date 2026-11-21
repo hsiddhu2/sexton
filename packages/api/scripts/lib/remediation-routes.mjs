@@ -9,8 +9,12 @@ function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
 }
 
+// Remediation fixtures first, then the migration fixtures (sass, sass-loader) of spec migration-node-sass.
+const PACKAGE_ROOTS = [["remediation", "packages"], ["migration", "packages"]];
+
 function packageDir(fixturesDir, name) {
-  return join(fixturesDir, "remediation", "packages", name.replace("/", "__"));
+  const dirs = PACKAGE_ROOTS.map((root) => join(fixturesDir, ...root, name.replace("/", "__")));
+  return dirs.find((d) => existsSync(join(d, "osv-by-version.json"))) ?? dirs[0];
 }
 
 /** True when recorded remediation data exists for the package. */
@@ -43,9 +47,13 @@ export function remediationTransport(fixturesDir) {
     } else if (url.startsWith(vulns)) {
       const id = decodeURIComponent(url.slice(vulns.length));
       if (/^[A-Za-z0-9._:-]{1,128}$/.test(id) && !id.includes("..")) {
-        for (const dir of readdirSync(join(fixturesDir, "remediation", "packages"))) {
-          const path = join(fixturesDir, "remediation", "packages", dir, "vulns", `${id}.json`);
-          if (existsSync(path)) return Promise.resolve(respond(200, readJson(path)));
+        for (const root of PACKAGE_ROOTS) {
+          const base = join(fixturesDir, ...root);
+          if (!existsSync(base)) continue;
+          for (const dir of readdirSync(base)) {
+            const path = join(base, dir, "vulns", `${id}.json`);
+            if (existsSync(path)) return Promise.resolve(respond(200, readJson(path)));
+          }
         }
       }
     }

@@ -5,9 +5,9 @@ export const ESCAPE_MAX_CODE_POINTS = 200;
 const ELLIPSIS = "\u2026";
 
 const LONE_SURROGATE = /[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/g;
-const UNSAFE = /[\p{Cc}\u2028\u2029\u202a-\u202e\u2066-\u2069]/gu;
+const UNSAFE = /[\p{Cc}\u2028\u2029\u202a-\u202e\u2066-\u2069\u200e\u200f\u061c]/gu;
 
-/** Lone surrogates to U+FFFD, then control, line-separator and bidi characters to a space. */
+/** Lone surrogates to U+FFFD, then control, line-separator, bidi and direction-mark characters to a space. */
 export function neutralise(value: unknown): string {
   const text = typeof value === "string" ? value : "";
   return text.replace(LONE_SURROGATE, "\ufffd").replace(UNSAFE, " ");

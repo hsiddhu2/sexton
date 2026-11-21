@@ -1,19 +1,23 @@
 // Builds the demo scan offline from the recorded engine fixtures. Requirements 2.19, 2.20.
 
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   ABBREVIATED_ACCEPT,
   CachedFetcher,
   DEFAULT_POLICY,
+  InMemoryFileSource,
   InMemorySnapshotStore,
   MemoryCacheStore,
   attachRemediations,
   bumpTargets,
   evaluatePolicy,
   gatherBumpData,
+  gatherMigrationData,
   planRemediation,
+  readPackageScripts,
+  runMigrations,
   scorePackages,
 } from "@sexton/engine";
 import { fixtureRoutes, routedTransport } from "./lib/fixture-routes.mjs";
@@ -101,7 +105,24 @@ export async function buildDemoScan({ fixturesDir = DEFAULT_FIXTURES_DIR, now = 
  * Plans the demo report offline from the recorded remediation fixtures. Spec remediation, Requirement 7.13.
  * The demo has no package.json, so each package is declared as ^installed in dependencies, and no import sites
  * are known, so no plan is a remove. Packages without recorded remediation data get no bump data.
+ * node-sass is migrated by the default recipe (spec migration-node-sass, Requirement 7.3): its view is the demo intake
+ * plus the scripts of the sample repository, and its File source is the sample repository.
  */
+/** Every file of the sample repository by repository path. Spec migration-node-sass, Requirement 7.3. */
+function sampleRepository(fixturesDir) {
+  const root = join(fixturesDir, "migration", "node-sass-app");
+  const files = new Map();
+  const walk = (at) => {
+    for (const entry of readdirSync(at).sort()) {
+      const full = join(at, entry);
+      if (statSync(full).isDirectory()) walk(full);
+      else files.set(relative(root, full).split(sep).join("/"), readFileSync(full, "utf8"));
+    }
+  };
+  walk(root);
+  return files;
+}
+
 async function demoRemediations(fixturesDir, report, policy, now) {
   const intake = report.packages.map((p) => ({
     name: p.name,
@@ -116,8 +137,12 @@ async function demoRemediations(fixturesDir, report, policy, now) {
   const clock = () => now;
   const ctx = { transport, clock, cache: new CachedFetcher({ store: new MemoryCacheStore(), clock }), retry: { sleep: () => Promise.resolve() } };
   const bumpData = await gatherBumpData(ctx, targets);
+  const files = sampleRepository(fixturesDir);
+  const packageJson = { packages: intake, scripts: readPackageScripts(files.get("package.json") ?? "") };
+  const data = await gatherMigrationData(ctx, packageJson);
+  const migrations = await runMigrations(report, options, { packageJson, files: new InMemoryFileSource(files), data });
   if (unrouted.length > 0) throw new Error(`unrouted URLs: ${[...new Set(unrouted)].join(", ")}`);
-  return attachRemediations(report, policy, planRemediation(report, { ...options, bumpData }));
+  return attachRemediations(report, policy, planRemediation(report, { ...options, bumpData, migrations }));
 }
 
 export function serialiseDemoScan(scan) {

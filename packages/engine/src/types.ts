@@ -394,7 +394,17 @@ export type PackageJsonEdit =
       readonly name: string;
       readonly range: string;
     }
-  | { readonly path: "package.json"; readonly op: "remove-dependency"; readonly section: DependencyOrigin; readonly name: string };
+  | { readonly path: "package.json"; readonly op: "remove-dependency"; readonly section: DependencyOrigin; readonly name: string }
+  | {
+      readonly path: "package.json";
+      readonly op: "add-dependency";
+      readonly section: DependencyOrigin;
+      readonly name: string;
+      readonly range: string;
+    };
+
+/** One or more Edits. Spec migration-node-sass, Requirement 7.1. */
+export type PackageJsonEdits = readonly [PackageJsonEdit, ...PackageJsonEdit[]];
 
 export interface RemediationPlan {
   readonly packageName: string;
@@ -407,17 +417,24 @@ export interface RemediationPlan {
   readonly majorUpgrade?: boolean;
   /** Fixed text from a closed set of templates. Present for no-safe-version and unavailable. */
   readonly reason?: string;
+  /** Bump and remove only. */
   readonly edit?: PackageJsonEdit;
+  /** A proposed migrate plan only, in recipe order. Spec migration-node-sass, Requirement 5.4. */
+  readonly edits?: PackageJsonEdits;
+  /** A proposed migrate plan only. */
+  readonly migration?: MigrationDetail;
 }
 
 export interface PrIntent {
   readonly branch: string;
   readonly title: string;
   readonly body: string;
-  /** Exactly one Edit. No file text. */
-  readonly files: readonly [PackageJsonEdit];
+  /** One or more Edits, every one to package.json. No file text. */
+  readonly files: PackageJsonEdits;
   /** BASE_REF_DEFAULT. Never a branch name. */
   readonly baseRef: "@default";
+  /** Comments the Executor leaves on review sites. Empty for bump and remove. */
+  readonly reviewComments: readonly ReviewComment[];
 }
 
 export interface RemediationEntry {
@@ -433,9 +450,97 @@ export interface RemediationEntry {
   readonly intent?: PrIntent;
 }
 
-/** A migration description. The recipe spec extends it. */
+// Types for the migration-node-sass spec (.kiro/specs/migration-node-sass).
+
+/** Bump data for one package. Requirement 2.17 of the remediation spec. */
+export interface BumpData {
+  readonly ok: true;
+  readonly published: readonly string[];
+  readonly deprecated: ReadonlySet<string>;
+  readonly advisories: ReadonlyMap<string, readonly Advisory[]>;
+}
+
+export interface BumpFailure {
+  readonly ok: false;
+  readonly reason: string;
+}
+
+export type BumpDataResult = BumpData | BumpFailure;
+
+/** The port through which a recipe sees repository files. Untrusted paths and contents. Requirement 1.1. */
+export interface FileSource {
+  listFiles(): Promise<readonly string[]>;
+  readFile(path: string): Promise<string | undefined>;
+}
+
+export const REVIEW_RULES = ["deep-combinator", "legacy-render", "node-sass-script"] as const;
+export type ReviewRule = (typeof REVIEW_RULES)[number];
+
+/** A place a human must check. line is 1-based, null for a package.json script. Requirement 2. */
+export interface ReviewSite {
+  readonly path: string;
+  readonly line: number | null;
+  readonly rule: ReviewRule;
+  /** Plain text through cleanLine, at most 120 code points. */
+  readonly excerpt: string;
+}
+
+export interface ReviewComment {
+  readonly path: string;
+  readonly line: number | null;
+  readonly body: string;
+}
+
+export interface ScanCounts {
+  readonly performed: boolean;
+  readonly listed: number;
+  readonly read: number;
+  readonly skipped: number;
+  readonly capped: boolean;
+}
+
+export interface RecipeResult {
+  readonly edits: readonly PackageJsonEdit[];
+  readonly reviewSites: readonly ReviewSite[];
+  readonly filesChanged: readonly string[];
+  readonly scan: ScanCounts;
+  /** Fixed note texts only. */
+  readonly notes: readonly string[];
+}
+
+export type RecipeOutcome = { readonly ok: true; readonly result: RecipeResult } | { readonly ok: false; readonly reason: string };
+
+/** The intake list of the scanned repository and the scripts of its package.json. */
+export interface PackageJsonView {
+  readonly packages: readonly IntakePackage[];
+  readonly scripts: ReadonlyMap<string, string>;
+}
+
+/** Bump data or a failure per package the recipe reads, such as sass and sass-loader. */
+export type MigrationData = ReadonlyMap<string, BumpDataResult>;
+
+export interface RecipeInput {
+  readonly packageJson: PackageJsonView;
+  readonly files: FileSource | undefined;
+  readonly data: MigrationData;
+}
+
+/** A migration for one package. run resolves to an outcome and never rejects by contract. */
 export interface Recipe {
   readonly id: string;
+  readonly from: string;
+  readonly to: string;
+  run(input: RecipeInput): Promise<RecipeOutcome>;
+}
+
+export interface MigrationDetail {
+  readonly recipeId: string;
+  readonly from: string;
+  readonly to: string;
+  readonly reviewSites: readonly ReviewSite[];
+  readonly filesChanged: readonly string[];
+  readonly scan: ScanCounts;
+  readonly notes: readonly string[];
 }
 
 export interface FailingRule {

@@ -5,8 +5,8 @@ import { describe, expect, it } from "vitest";
 import { cleanLine } from "../../src/remediation/clean-line.js";
 import { escapeField } from "../../src/remediation/escape-field.js";
 
-const SPECIALS = ["`", "|", "\n", "\r", "\u2028", "\u2029", "\u202a", "\u202e", "\u2066", "\u2069", "\u0000", "\u007f", "\ud800", "\udc00", "\ud83d\ude00", "a", " "];
-const BAD = /[\n\r\u2028\u2029\u202a-\u202e\u2066-\u2069]/;
+const SPECIALS = ["`", "|", "\n", "\r", "\u2028", "\u2029", "\u202a", "\u202e", "\u2066", "\u2069", "\u200e", "\u200f", "\u061c", "\u0085", "\u0000", "\u007f", "\ud800", "\udc00", "\ud83d\ude00", "a", " "];
+const BAD = /[\n\r\u2028\u2029\u202a-\u202e\u2066-\u2069\u200e\u200f\u061c]/;
 const codePoints = (s: string): number => Array.from(s).length;
 
 const arbSpecial = fc.array(fc.constantFrom(...SPECIALS), { maxLength: 400 }).map((a) => a.join(""));
@@ -28,7 +28,7 @@ describe("escapeField", () => {
     fc.assert(
       fc.property(fc.oneof(fc.fullUnicodeString({ maxLength: 600 }), arbSpecial, arbBoundary, fc.string({ maxLength: 600 })), (input) => {
         checkInvariants(input);
-        const plain = !/[`|\p{Cc}\u2028\u2029\u202a-\u202e\u2066-\u2069\ud800-\udfff]/u.test(input) && input.length > 0;
+        const plain = !/[`|\p{Cc}\u2028\u2029\u202a-\u202e\u2066-\u2069\u200e\u200f\u061c\ud800-\udfff]/u.test(input) && input.length > 0;
         if (plain && codePoints(input) <= 200) expect(escapeField(input)).toBe(`\`${input}\``);
         if (codePoints(input) > 200) {
           const inner = escapeField(input).slice(1, -1);
@@ -46,6 +46,8 @@ describe("escapeField", () => {
     expect(escapeField("a|b")).toBe("`a\\|b`");
     expect(escapeField("a\nb")).toBe("`a b`");
     expect(escapeField("\u202eabc")).toBe("` abc`");
+    // Correction from spec migration-node-sass, Requirement 9.1: direction marks.
+    expect(escapeField("a\u200eb\u200fc\u061cd")).toBe("`a b c d`");
     expect(escapeField("x".repeat(200))).toBe(`\`${"x".repeat(200)}\``);
     expect(escapeField("x".repeat(201))).toBe(`\`${"x".repeat(200)}\u2026\``);
     expect(escapeField("|".repeat(101))).toBe(`\`${"\\|".repeat(100)}\u2026\``);

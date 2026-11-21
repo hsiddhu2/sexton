@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { bumpTargets } from "../../src/remediation/bump-targets.js";
 import { gatherBumpData } from "../../src/remediation/gather-bump-data.js";
 import { planRemediation } from "../../src/remediation/plan.js";
+import { EMPTY_RECIPE_REGISTRY } from "../../src/remediation/recipes.js";
 import type { HealthReport, IntakePackage } from "../../src/types.js";
 import { healthySignals } from "./arbitraries.js";
 import { recordedPackages, recordedTransport, REMEDIATION_DIR } from "./recorded.js";
@@ -35,10 +36,10 @@ describe("recorded remediation fixtures", () => {
     };
     const intake: IntakePackage[] = order.map((r) => ({ ...r, declaredRange: `^${r.installedVersion}`, origin: "dependencies", resolution: "locked" }));
     const { transport, urls } = recordedTransport();
-    const bumpData = await gatherBumpData(contextFor(transport), bumpTargets(report, { intake }));
+    const bumpData = await gatherBumpData(contextFor(transport), bumpTargets(report, { intake, recipes: EMPTY_RECIPE_REGISTRY }));
     // One querybatch each for uuid, lodash, event-stream and node-sass; none for the three with no candidate.
     expect(urls.filter((u) => u.endsWith("/querybatch")).length).toBe(4);
-    const plans = planRemediation(report, { intake, bumpData });
+    const plans = planRemediation(report, { intake, bumpData, recipes: EMPTY_RECIPE_REGISTRY });
     expect(
       plans.map((p) => ({
         packageName: p.packageName,

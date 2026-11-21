@@ -8,75 +8,75 @@ Fills the `migrate` kind with the node-sass to sass recipe: Recipe and Edit type
   - Verify the sass-loader minimum against the sass-loader changelog and source, record the URLs, write requirements.md, design.md and tasks.md, and commit.
   - _Requirements: 3.3, 4.2_
 
-- [ ] 2. Types and contract
+- [x] 2. Types and contract
   - Recipe, RecipeInput, RecipeOutcome, RecipeResult, ReviewSite, ReviewComment, ScanCounts, PackageJsonView, MigrationData, MigrationDetail, FileSource; the add-dependency op; `PrIntent.files` one or more and `reviewComments`; `RemediationPlan.edits` and `migration`.
   - _Requirements: 5.4, 5.5, 7.1_
 
-  - [ ] 2.1 src/types.ts additions and the remediation test arbitraries updated to the new Recipe shape
+  - [x] 2.1 src/types.ts additions and the remediation test arbitraries updated to the new Recipe shape
     - _Requirements: 5.4, 7.1_
 
-  - [ ] 2.2 API contract re-exports and type tests; web validator requires `reviewComments`; web arbitraries and validator tests
+  - [x] 2.2 API contract re-exports and type tests; web validator requires `reviewComments`; web arbitraries and validator tests
     - _Requirements: 7.1, 7.2_
 
-  - [ ] 2.3 src/intake/scripts.ts `readPackageScripts` with tests
+  - [x] 2.3 src/intake/scripts.ts `readPackageScripts` with tests
     - _Requirements: 8.1, 8.2_
 
-- [ ] 3. File source and caps
+- [x] 3. File source and caps
   - _Requirements: 1.1 to 1.9_
 
-  - [ ] 3.1 src/remediation/file-source.ts `InMemoryFileSource` and safe-path.ts, and a test that no file under src/remediation imports node:fs or calls fetch
+  - [x] 3.1 src/remediation/file-source.ts `InMemoryFileSource` and safe-path.ts, and a test that no file under src/remediation imports node:fs or calls fetch
     - _Requirements: 1.1, 1.2, 1.4_
 
-  - [ ] 3.2 src/remediation/capped-source.ts with property 24 (caps part)
+  - [x] 3.2 src/remediation/capped-source.ts with property 24 (caps part)
     - _Requirements: 1.3 to 1.9_
 
-- [ ] 4. Review sites
+- [x] 4. Review sites
   - _Requirements: 2.1 to 2.7, 5.7_
 
-  - [ ] 4.1 src/remediation/review-sites.ts and review-comments.ts with examples
+  - [x] 4.1 src/remediation/review-sites.ts and review-comments.ts with examples
     - _Requirements: 2.1 to 2.6, 5.7_
 
-  - [ ] 4.2 Properties 23 and 27
+  - [x] 4.2 Properties 23 and 27
     - _Requirements: 2.7, 5.7_
 
-- [ ] 5. Migration data and version choice
+- [x] 5. Migration data and version choice
   - _Requirements: 3.1 to 3.6, 9.2_
 
-  - [ ] 5.1 src/remediation/version-data.ts extracted from gather-bump-data.ts, behaviour unchanged
+  - [x] 5.1 src/remediation/version-data.ts extracted from gather-bump-data.ts, behaviour unchanged
     - _Requirements: 3.5, 3.6_
 
-  - [ ] 5.2 src/remediation/migration-candidates.ts and gather-migration-data.ts with properties 28 and 29
+  - [x] 5.2 src/remediation/migration-candidates.ts and gather-migration-data.ts with properties 28 and 29
     - _Requirements: 3.1 to 3.6_
 
-- [ ] 6. Recipe, registry, planner, intent, body and attach
+- [x] 6. Recipe, registry, planner, intent, body and attach
   - _Requirements: 1.3, 1.9, 3.7, 4.1 to 4.11, 5.1 to 5.8, 6.1 to 6.5, 7.1, 9.3_
 
-  - [ ] 6.1 src/remediation/recipe-notes.ts and node-sass-recipe.ts with properties 21 and 22
+  - [x] 6.1 src/remediation/recipe-notes.ts and node-sass-recipe.ts with properties 21 and 22
     - _Requirements: 3.7, 4.1 to 4.10_
 
-  - [ ] 6.2 recipes.ts DEFAULT_RECIPE_REGISTRY, choose-kind.ts default, run-migrations.ts
+  - [x] 6.2 recipes.ts DEFAULT_RECIPE_REGISTRY, choose-kind.ts default, run-migrations.ts
     - _Requirements: 1.3, 1.9, 4.1, 5.1, 5.2_
 
-  - [ ] 6.3 plan.ts migrate branch, pr-intent.ts, pr-body.ts sections, attach.ts summary, with properties 25 and 26; remediation tests updated (fixture test passes EMPTY, property 16 accepts migrate)
+  - [x] 6.3 plan.ts migrate branch, pr-intent.ts, pr-body.ts sections, attach.ts summary, with properties 25 and 26; remediation tests updated (fixture test passes EMPTY, property 16 accepts migrate)
     - _Requirements: 5.2 to 5.8, 6.1 to 6.5, 9.3_
 
-  - [ ] 6.4 src/index.ts exports and the index test
+  - [x] 6.4 src/index.ts exports and the index test
     - _Requirements: 5.1, 7.1_
 
-- [ ] 7. Corrections to the remediation spec
+- [x] 7. Corrections to the remediation spec
   - escape-field.ts neutralises U+200E, U+200F, U+061C (remediation property 11 and examples); version-data.ts caps distinct advisory IDs at 200 with "too many advisories"; Correction section in .kiro/specs/remediation/design.md; requirements 2.20, 2.21, 2.22, 5.2, 5.6, 5.9 and 5.14 of the remediation spec edited (spec commit); its tasks.md untouched.
   - _Requirements: 9.1, 9.2, 9.3_
 
-- [ ] 8. Fixtures
+- [x] 8. Fixtures
   - _Requirements: 2.1 to 2.3, 3.1, 4.2, 4.5, 4.7, 4.11, 6.2_
 
-  - [ ] 8.1 scripts/record-fixtures.mjs --migration records sass and sass-loader into test/fixtures/migration/packages; run once with network
+  - [x] 8.1 scripts/record-fixtures.mjs --migration records sass and sass-loader into test/fixtures/migration/packages; run once with network
     - _Requirements: 3.1_
 
-  - [ ] 8.2 Sample repository test/fixtures/migration/node-sass-app, expected-migration.md checked by hand, and the recorded test: 3 edits, 4 review sites, filesChanged ["package.json"]
+  - [x] 8.2 Sample repository test/fixtures/migration/node-sass-app, expected-migration.md checked by hand, and the recorded test: 3 edits, 4 review sites, filesChanged ["package.json"]
     - _Requirements: 2.1 to 2.3, 4.2, 4.5, 4.7, 4.11, 6.2_
 
-- [ ] 9. Demo
+- [x] 9. Demo
   - packages/api/scripts/generate-demo-scan.mjs runs the migration for node-sass with the sample repository; remediation-routes.mjs answers from the migration fixtures; regenerate packages/web/public/demo/scan.json; demo generator test.
   - _Requirements: 7.3_
 

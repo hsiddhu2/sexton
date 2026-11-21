@@ -2,6 +2,8 @@
 private/
 # dependencies and build
 node_modules/
+# the migration sample repository has a node_modules file that the recipe must ignore
+!packages/engine/test/fixtures/migration/node-sass-app/node_modules/
 dist/
 dist-types/
 dist-types-node/
