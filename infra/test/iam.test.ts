@@ -62,6 +62,36 @@ const FORBIDDEN_ON_SNAPSHOTS = new Set([
 /** The only statement allowed a "*" resource: CDK's BucketDeployment CloudFront invalidation. Design.md, IAM. */
 const ALLOWED_STAR_ACTIONS = ["cloudfront:CreateInvalidation", "cloudfront:GetInvalidation"];
 
+/**
+ * Renders a policy resource the way CloudFormation would in us-east-1, account 123456789012.
+ * A LogGroup's Arn attribute renders with its trailing ":*", as CloudFormation documents it.
+ */
+function render(value: Json): string {
+  if (typeof value === "string") return value;
+  if (value === null || typeof value !== "object" || Array.isArray(value)) throw new Error(`cannot render ${JSON.stringify(value)}`);
+  if ("Fn::GetAtt" in value) {
+    const [id, attr] = value["Fn::GetAtt"] as [string, string];
+    const type = (built.edgeTemplate.toJSON()["Resources"] as Record<string, { Type: string }>)[id]?.Type;
+    if (type === "AWS::Logs::LogGroup" && attr === "Arn") return `arn:aws:logs:us-east-1:123456789012:log-group:${id}:*`;
+    return `arn:aws:x:us-east-1:123456789012:${id}`;
+  }
+  if ("Fn::Join" in value) {
+    const [sep, parts] = value["Fn::Join"] as [string, Json[]];
+    return parts.map(render).join(sep);
+  }
+  if ("Ref" in value) {
+    const ref = String(value["Ref"]);
+    return { "AWS::Partition": "aws", "AWS::Region": "us-east-1", "AWS::AccountId": "123456789012", "AWS::URLSuffix": "amazonaws.com" }[ref] ?? ref;
+  }
+  throw new Error(`cannot render ${JSON.stringify(value)}`);
+}
+
+/** IAM resource matching: "*" matches any run of characters, "?" any one character. */
+function globMatches(pattern: string, arn: string): boolean {
+  const source = pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".");
+  return new RegExp(`^${source}$`).test(arn);
+}
+
 let built: Built;
 let statements: Statement[];
 beforeAll(() => {
@@ -120,6 +150,33 @@ describe("Feature: infra, Property 13: IAM policy shape", () => {
       ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:PutItem", "dynamodb:Query", "dynamodb:Query", "logs:CreateLogStream", "logs:PutLogEvents"].sort(),
     );
     expect(JSON.stringify(snap)).toContain("/index/seen-by-time");
+  });
+
+  it("grants log write on each function's log group ARN itself, with no suffix (8.4)", () => {
+    for (const [role, group] of [["ScanRoleDefaultPolicy", "ScanLogs"], ["SnapshotterRoleDefaultPolicy", "SnapshotterLogs"]] as const) {
+      const ids = resourcesOfType(built.edgeTemplate, "AWS::Logs::LogGroup").map(([id]) => id).filter((id) => id.startsWith(group));
+      expect(ids, group).toHaveLength(1);
+      const logStatements = statements.filter((s) => s.source.includes(role) && s.actions.some((a) => a.startsWith("logs:")));
+      expect(logStatements.map((s) => ({ actions: [...s.actions].sort(), resources: s.resources })), role).toEqual([
+        { actions: ["logs:CreateLogStream", "logs:PutLogEvents"], resources: [{ "Fn::GetAtt": [ids[0], "Arn"] }] },
+      ]);
+    }
+  });
+
+  it("renders every log statement resource with exactly one ':*', never ':*:', and matching a Lambda log stream ARN", () => {
+    const logStatements = statements.filter((s) => s.actions.some((a) => a.startsWith("logs:")));
+    expect(logStatements.length).toBeGreaterThanOrEqual(2);
+    for (const s of logStatements) {
+      for (const resource of s.resources) {
+        const rendered = render(resource);
+        expect(rendered.split(":*").length - 1, `${s.source}: ${rendered}`).toBe(1);
+        expect(rendered.includes(":*:"), `${s.source}: ${rendered}`).toBe(false);
+        const group = /:log-group:([^:]+):/.exec(rendered)?.[1];
+        expect(group, `${s.source}: ${rendered}`).toBeDefined();
+        const stream = `arn:aws:logs:us-east-1:123456789012:log-group:${group ?? ""}:log-stream:2026/11/21/[$LATEST]0123abcd`;
+        expect(globMatches(rendered, stream), `${s.source}: ${rendered} does not cover ${stream}`).toBe(true);
+      }
+    }
   });
 
   it("attaches no managed policy to the scan or snapshotter role (8.1)", () => {

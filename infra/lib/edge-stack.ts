@@ -299,10 +299,15 @@ export class SextonEdgeStack extends Stack {
   }
 }
 
+/**
+ * Log write on the log group ARN itself. CloudFormation's LogGroup Arn attribute already ends in ":*",
+ * which covers every stream in the group. Appending ":log-stream:*" to it gives a resource that matches
+ * no stream, and Lambda then drops every log line without an error.
+ */
 function logStatement(group: logs.LogGroup): iam.PolicyStatement {
   return new iam.PolicyStatement({
     actions: ["logs:CreateLogStream", "logs:PutLogEvents"],
-    resources: [`${group.logGroupArn}:log-stream:*`],
+    resources: [group.logGroupArn],
   });
 }
 
