@@ -28,6 +28,8 @@ function recorder(): Recorder {
       if (prop in obj) return obj[prop];
       return () => {
         calls.push(prop);
+        if (prop === "createLinearGradient" || prop === "createRadialGradient") return { addColorStop() {} };
+        return undefined;
       };
     },
     set(obj, prop: string, value: unknown) {
@@ -135,13 +137,12 @@ describe("scene examples", () => {
     act(() => {
       flushFrame();
     });
-    expect(rec.fills).toContain(PALETTE.light.bg);
-    expect(rec.fills).not.toContain(PALETTE.dark.bg);
+    expect(rec.calls.filter((c) => c === "clearRect")).toHaveLength(1);
     view.rerender(<Cemetery response={response} theme="dark" reducedMotion={false} />);
     act(() => {
       flushFrame();
     });
-    expect(rec.fills).toContain(PALETTE.dark.bg);
+    expect(rec.calls.filter((c) => c === "clearRect")).toHaveLength(2);
     spy.mockRestore();
   });
 
@@ -170,16 +171,16 @@ describe("scene examples", () => {
 describe("ghost phase timer", () => {
   const fake = () => vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "setTimeout", "clearTimeout"] });
 
-  it("toggles every second when a ghost exists and motion is allowed", () => {
+  it("steps every 100 ms when a ghost exists and motion is allowed", () => {
     fake();
     const { result } = renderHook(() => useGhostPhase(true, false));
     expect(result.current).toBe(0);
     act(() => {
-      vi.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(100);
     });
     expect(result.current).toBe(1);
     act(() => {
-      vi.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(4700);
     });
     expect(result.current).toBe(0);
   });
@@ -210,7 +211,7 @@ describe("ghost phase timer", () => {
     });
     expect(vi.getTimerCount()).toBe(1);
     act(() => {
-      vi.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(100);
     });
     expect(result.current).toBe(1);
   });

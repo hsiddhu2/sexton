@@ -4,6 +4,7 @@ import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 import { Cemetery } from "../src/Cemetery.js";
 import { Header } from "../src/header/Header.js";
+import { failingRulesText } from "../src/header/failing-rules-text.js";
 import { headerModel } from "../src/header/header-model.js";
 import { arbHeaderResponse, arbHostilePair, cheapScan, mapFreeText } from "./arbitraries.js";
 
@@ -183,5 +184,16 @@ describe("Header examples", () => {
     const model = headerModel(response, false);
     expect(model.unlockedNotice).toBe("unlocked scan: no lockfile exists, so versions were resolved from declared ranges");
     expect(model.cappedNotice).toBe("capped: showing 1 of 400 direct dependencies");
+  });
+});
+
+describe("Header failing rules text", () => {
+  it("pluralises 0, 1 and 2 failing rules", () => {
+    expect(failingRulesText(0)).toBe("0 failing rules");
+    expect(failingRulesText(1)).toBe("1 failing rule");
+    expect(failingRulesText(2)).toBe("2 failing rules");
+    const { container } = renderHeader(cheapScan(1), false);
+    const model = headerModel(cheapScan(1), false);
+    expect(container.querySelector(".header-policy")?.textContent).toContain(failingRulesText(model.failingRules));
   });
 });

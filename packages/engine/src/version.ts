@@ -1,10 +1,6 @@
-// Engine version, read from the package manifest. Requirement 8.1.
+// Engine version, a plain constant so the module evaluates in a bundle. Requirements 2.1, 2.2.
+// test/version.test.ts checks it against packages/engine/package.json. Bump both together.
 
-import { createRequire } from "node:module";
-
-const require = createRequire(import.meta.url);
-const manifest = require("../package.json") as { version: string };
-
-export const ENGINE_VERSION: string = manifest.version;
+export const ENGINE_VERSION = "0.1.0";
 export const REPO_URL = "https://github.com/hsiddhu2/sexton";
 export const USER_AGENT = `sexton/${ENGINE_VERSION} (+${REPO_URL})`;

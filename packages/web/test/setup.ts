@@ -60,6 +60,7 @@ function makeContext(): CanvasRenderingContext2D {
       if (prop in obj) return obj[prop];
       return (...args: unknown[]) => {
         state.calls.push({ method: prop, args });
+        if (prop === "createLinearGradient" || prop === "createRadialGradient") return { addColorStop() {} };
         if (prop === "clearRect") state.paints += 1;
         return undefined;
       };

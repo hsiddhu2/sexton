@@ -430,7 +430,7 @@ export function arbTriagePackages(max: number): fc.Arbitrary<PackageHealth[]> {
 
 export const arbTheme: fc.Arbitrary<"light" | "dark"> = fc.constantFrom("light", "dark");
 
-/** Names with astral characters near the 13-unit cut, never a lone surrogate. */
+/** Names with astral characters near the 15-unit cut, never a lone surrogate. */
 export const arbSceneName: fc.Arbitrary<string> = fc
   .array(fc.oneof(fc.constantFrom("😀", "𝒜", "é", "a", "-"), fc.stringMatching(/^[a-z]$/)), { maxLength: 24 })
   .map((parts) => parts.join(""));
@@ -463,7 +463,7 @@ export function arbScenePackages(sizes: readonly number[] = [0, 1, 59, 60, 61, 3
 export const arbSceneWidth: fc.Arbitrary<number> = fc.oneof(
   fc.integer({ min: -10, max: 5000 }),
   fc.double({ noNaN: false }),
-  fc.constantFrom(128, 129, 223, 224, 1280),
+  fc.constantFrom(128, 129, 223, 224, 225, 415, 416, 1280),
 );
 
 /** Indexed read that fails loudly instead of using a non-null assertion. */

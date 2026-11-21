@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import type { Theme } from "../scene/palette.js";
 import { HOSTED_UNAVAILABLE_TEXT } from "../load/use-scan-loader.js";
 import type { HeaderModel } from "./header-model.js";
+import { failingRulesText } from "./failing-rules-text.js";
 import { Legend } from "./Legend.js";
 
 export interface HeaderProps {
@@ -33,8 +34,7 @@ export function Header({ model, theme, apiConfigured, onSubmit }: HeaderProps) {
           {model.unlockedNotice === null ? null : <p className="notice notice-unlocked">{model.unlockedNotice}</p>}
           {model.cappedNotice === null ? null : <p className="notice notice-capped">{model.cappedNotice}</p>}
           <p className="header-policy">
-            policy: <strong>{model.policyStatus}</strong>, {model.policyLabel}, {String(model.failingRules)} failing
-            rules
+            policy: <strong>{model.policyStatus}</strong>, {model.policyLabel}, {failingRulesText(model.failingRules)}
           </p>
         </>
       )}

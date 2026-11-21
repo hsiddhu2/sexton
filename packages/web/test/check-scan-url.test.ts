@@ -45,11 +45,15 @@ function oracle(input: string, pageOrigin: string, api: string | null): boolean 
   if (u.protocol !== "http:" && u.protocol !== "https:") return false;
   if (u.username !== "" || u.password !== "") return false;
   if (u.origin === new URL(pageOrigin).origin) return true;
-  return u.protocol === "https:" && api !== null && u.origin === new URL(api).origin;
+  return u.protocol === "https:" && api !== null && !api.startsWith("/") && u.origin === new URL(api).origin;
 }
 
 const arbPage = fc.constantFrom("https://sexton.example", "http://localhost:5173");
-const arbApi = fc.option(fc.constantFrom("https://api.sexton.example", "https://api.sexton.example:8443"), { nil: null });
+const PATH_BASES = ["/api", "/v1/api", "/a.b/c~d"] as const;
+const arbApi = fc.option(
+  fc.constantFrom("https://api.sexton.example", "https://api.sexton.example:8443", ...PATH_BASES),
+  { nil: null },
+);
 
 const nearMiss = fc.constantFrom(
   "https://api.sexton.example./scan",
@@ -81,6 +85,53 @@ const arbInput = fc.oneof(
   nearMiss,
 );
 
+describe("checkScanUrl with a path base", () => {
+  it("treats a path base as same-origin and never derives a cross-origin from it", () => {
+    expect(checkScanUrl("/api/scan?repo=a", PAGE, "/api")).toEqual({ ok: true, url: "https://sexton.example/api/scan?repo=a" });
+    expect(checkScanUrl("https://api.sexton.example/scan", PAGE, "/api").ok).toBe(false);
+    expect(checkScanUrl("https://evil.example/x.json", PAGE, "/api").ok).toBe(false);
+  });
+});
+
+const arbBase = fc.option(
+  fc.constantFrom("https://api.sexton.example", "https://api.sexton.example:8443", ...PATH_BASES),
+  { nil: null },
+);
+
+describe("checkScanUrl path base property", () => {
+  it(
+    "Feature: cemetery-theme, Property 10: checkScanUrl with a path base",
+    () => {
+      fc.assert(
+        fc.property(fc.oneof(arbInput, fc.string()), arbPage, arbBase, fc.string(), (input, page, base, v) => {
+          const a = checkScanUrl(input, page, base);
+          expect(a).toEqual(checkScanUrl(input, page, base));
+          if (a.ok) {
+            const u = new URL(a.url);
+            expect(u.username + u.password).toBe("");
+            const same = u.origin === new URL(page).origin;
+            if (base !== null && base.startsWith("/")) {
+              expect(same).toBe(true);
+            } else {
+              const cross = base !== null && u.protocol === "https:" && u.origin === new URL(base).origin;
+              expect(same || cross).toBe(true);
+            }
+          }
+          if (base !== null && base.startsWith("/")) {
+            const path = `${base}/scan?repo=${encodeURIComponent(v)}`;
+            const r = checkScanUrl(path, page, base);
+            // URL serialisation re-encodes some characters encodeURIComponent leaves alone (for example "'").
+            expect(r).toEqual({ ok: true, url: new URL(path, new URL(page).origin + "/").href });
+            expect(r.ok && new URL(r.url).origin === new URL(page).origin).toBe(true);
+          }
+        }),
+        { numRuns: 1000 },
+      );
+    },
+    60000,
+  );
+});
+
 describe("checkScanUrl properties", () => {
   it(
     "Feature: cemetery-ui, Property 11: checkScanUrl accepts only same-origin or https API-origin URLs",
@@ -96,7 +147,8 @@ describe("checkScanUrl properties", () => {
             expect(u.username + u.password).toBe("");
             expect(["http:", "https:"]).toContain(u.protocol);
             const sameOrigin = u.origin === new URL(page).origin;
-            const apiOrigin = api !== null && u.protocol === "https:" && u.origin === new URL(api).origin;
+            const apiOrigin =
+              api !== null && !api.startsWith("/") && u.protocol === "https:" && u.origin === new URL(api).origin;
             expect(sameOrigin || apiOrigin).toBe(true);
           }
         }),
