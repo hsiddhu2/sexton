@@ -3,6 +3,8 @@ private/
 # dependencies and build
 node_modules/
 dist/
+dist-types/
+dist-types-node/
 build/*
 !build/reviews/
 coverage/
@@ -24,3 +26,10 @@ cdk.out/
 # build artefacts
 *.tsbuildinfo
 *.timestamp-*.mjs
+# cemetery-ui generated and test outputs
+packages/web/public/demo/scan.json
+packages/web/dist-e2e
+packages/web/dist-types
+packages/web/test-results
+packages/web/playwright-report
+packages/web/e2e-artifacts

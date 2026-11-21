@@ -1,0 +1,23 @@
+{
+  "name": "@sexton/api",
+  "version": "0.1.0",
+  "description": "Sexton API: the response contract shared with the web app.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/contract.d.ts",
+      "default": "./dist/contract.js"
+    }
+  },
+  "dependencies": {
+    "@sexton/engine": "0.1.0"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "pretest": "tsc -b",
+    "test": "vitest run",
+    "predemo:generate": "tsc -b",
+    "demo:generate": "node scripts/generate-demo-scan.mjs"
+  }
+}

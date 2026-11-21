@@ -1,0 +1,172 @@
+/* Layout only. Colours come from custom properties written by applyPalette. */
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: system-ui, sans-serif;
+}
+
+.scene-container {
+  position: relative;
+  width: 100%;
+  background: var(--bg);
+}
+
+.scene-canvas {
+  display: block;
+  max-width: 100%;
+}
+
+.cemetery-empty {
+  margin: 0;
+  color: var(--muted);
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.grave-button {
+  position: absolute;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.grave-button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+}
+
+header,
+main {
+  box-sizing: border-box;
+  padding: 16px;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: flex-end;
+  background: transparent;
+}
+
+.drawer {
+  box-sizing: border-box;
+  width: min(32rem, 100%);
+  height: 100%;
+  padding: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  color: var(--text);
+  border-left: 2px solid var(--border);
+}
+
+.drawer-close {
+  align-self: flex-end;
+  padding: 8px 12px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.drawer button:focus-visible,
+.drawer-body:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.drawer-body {
+  flex: 1;
+  overflow: auto;
+}
+
+.drawer pre {
+  margin: 0;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.drawer-signals,
+.drawer-missing,
+.drawer-rules {
+  padding-left: 16px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.notice,
+.header-repo,
+.header-time,
+.header-policy {
+  margin: 4px 0;
+}
+
+.legend-toggle,
+.repo-form button {
+  padding: 8px 12px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.repo-form input {
+  margin-left: 8px;
+  padding: 6px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.legend-toggle:focus-visible,
+.repo-form button:focus-visible,
+.repo-form input:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.legend-panel[hidden] {
+  display: none;
+}
+
+.legend-states {
+  list-style: none;
+  padding: 0;
+}
+
+.repo-form {
+  margin-top: 8px;
+}
+
+.repo-disabled {
+  margin-left: 8px;
+  color: var(--muted);
+}
+
+.load-error {
+  border: 2px solid var(--border);
+  padding: 16px;
+}

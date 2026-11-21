@@ -1,0 +1,35 @@
+{
+  "name": "@sexton/web",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "pretest": "npm run demo:generate -w @sexton/api",
+    "prebuild": "npm run demo:generate -w @sexton/api",
+    "build": "vite build",
+    "postbuild": "node scripts/check-bundle.mjs",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "pretest:e2e": "npm run demo:generate -w @sexton/api && vite build --mode e2e --outDir dist-e2e",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1",
+    "@sexton/api": "0.1.0",
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.13",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.3.0",
+    "axe-core": "4.14.1",
+    "jsdom": "31.0.1",
+    "vite": "8.3.8"
+  }
+}

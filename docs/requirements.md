@@ -131,7 +131,7 @@ R-EV-3. The evidence pack SHALL contain a SHA-256 hash of its JSON body so that 
 
 R-UI-1. THE SYSTEM SHALL render each direct dependency as a grave in a cemetery scene. Grave form encodes state: upright stone for Alive and Restless, cross for Haunted, cracked tilted stone for Dead, open grave for Possessed. Colour follows the same state. No continuous encodings.
 R-UI-2. A ghost above a grave SHALL mean one or more advisories, and nothing else.
-R-UI-3. Graves SHALL be ordered by triage priority: Possessed first, then by advisory severity, then by transitive reach.
+R-UI-3. Graves SHALL be ordered by triage priority: Possessed first, then by state from least healthy to most healthy (Dead, Haunted, Restless, Alive), then by highest advisory severity, then by transitive reach descending, then by name.
 R-UI-4. Selecting a grave SHALL show the package's signals with sources, its state and the rule that produced it, and the proposed remediation with a preview of the PR body.
 R-UI-5. The scene SHALL be readable without the legend by a first-time viewer. Verified by one person outside the project before submission.
 R-UI-6. The scene SHALL render 300 graves without visible lag on a 2020 laptop.
@@ -158,7 +158,7 @@ N-3. Performance. A scan of 50 direct dependencies completes in under 20 seconds
 N-4. Reliability. An upstream outage degrades one signal, never the whole scan.
 N-5. Observability. Every outbound request is logged with target, status and latency. Every scan has a correlation ID.
 N-6. Cost. The hosted demo runs within the AWS free tier plus under 20 USD per month at launch traffic.
-N-7. Licensing. Apache-2.0. All dependencies permissively licensed. Sexton scans itself in CI and must pass its own default policy.
+N-7. Licensing. Apache-2.0. All runtime dependencies permissively licensed. Development-only tools may carry a weak copyleft licence such as MPL-2.0 when used unmodified and never shipped, each recorded in docs/adr. Sexton scans itself in CI and must pass its own default policy.
 N-8. Quality. Property-based tests on the state function, the bump selector, the cache and the policy evaluator. Unit tests on every recipe. The product's own CI runs Sexton against the product's own repo.
 N-9. Documentation. README leads with the one-sentence pitch and a one-command demo. docs/ holds ADRs, threat model, architecture, Well-Architected review.
 
@@ -194,3 +194,4 @@ Every Kiro spec names the requirements it implements. Every PR names the spec. T
 ## Change log
 
 0.1, 7 Nov 2026. First version. Policy file renamed from graveyard.policy.yml to sexton.policy.yml.
+0.2, 20 Nov 2026. R-UI-3 triage order adds state rank after Possessed. N-7 limited to runtime dependencies, dev-only weak copyleft recorded in docs/adr.
