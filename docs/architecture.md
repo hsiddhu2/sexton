@@ -29,7 +29,7 @@ There are two CloudFormation stacks. `SextonData-dev` holds the two tables and a
 
 ## The request path
 
-Here is what will happen when you paste a repository URL into the cemetery. Steps 1 to 4 are built. Steps 5 to 7 are planned and arrive with the handler code.
+Here is what happens when you paste a repository URL into the cemetery. Every step is built. None is deployed yet.
 
 1. The browser sends `GET /api/scan?repo=<url>` to the CloudFront domain. The web app and the API share that domain, so there is no CORS.
 2. WAF checks the request. The AWS managed rule groups block known bad input. A rate rule blocks one IP after 100 requests to `/api/` in 5 minutes, with HTTP 429.
@@ -41,7 +41,7 @@ Here is what will happen when you paste a repository URL into the cemetery. Step
 
 Why no API Gateway? A cold scan of 50 dependencies may take up to 60 seconds. An HTTP API stops waiting at 30 seconds. CloudFront can wait 60 seconds for a function URL with no quota increase. We also set CloudFront to try the API origin only once. A retry on a slow scan would start a second full scan.
 
-The daily path is shorter. The schedule is built, and the handler steps are planned. EventBridge Scheduler invokes the snapshotter at 03:17 UTC. It lists every package seen in the last 90 days and appends one snapshot per package. It works in chunks of 25 names and stops 90 seconds before its 10-minute timeout. Any names it did not reach are counted, and that count raises an alarm.
+The daily path is shorter, and it is built too. EventBridge Scheduler invokes the snapshotter at 03:17 UTC. It lists every package seen in the last 90 days and appends one snapshot per package. It works in chunks of 25 names and stops 90 seconds before its 10-minute timeout. Any names it did not reach are counted, and that count raises an alarm.
 
 ## The data model
 

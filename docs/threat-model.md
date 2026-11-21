@@ -2,7 +2,7 @@
 
 Sexton is a security tool, so its own hosted demo has to hold up. This page lists what can go wrong with each part of the AWS deployment and what stops it. It uses STRIDE: spoofing, tampering, repudiation, information disclosure, denial of service and elevation of privilege.
 
-It covers release 0.1 as designed in `.kiro/specs/infra/design.md`. The scan and snapshotter handlers are not written yet. Controls that live in that code are marked as planned.
+It covers release 0.1 as built from `.kiro/specs/infra/design.md`. The stacks and both handlers are written and tested. Nothing is deployed yet.
 
 ## What we protect
 
@@ -20,11 +20,11 @@ This is the core rule, and it comes from the repo-intake spec. The `repo` URL a 
 1. The URL is checked by a hand-written parser before any request. It accepts only `https://github.com/{owner}/{repo}` and a few fixed suffixes. Credentials, ports, other hosts, queries and fragments are refused.
 2. Manifests are read with `JSON.parse` only. There is no `eval`, no shell and no template rendering. Reads use own-property checks, so a key like `__proto__` cannot change an object's prototype.
 3. Every outbound URL is built from validated parts with a fixed host. A `resolved` or `tarball` field in a lockfile is never followed.
-4. Bodies are capped at 5 MiB for manifests. The policy file is planned with a 256 KiB cap.
-5. Error messages are fixed text. The engine's intake errors already hold no input. Planned: the API adds no input to any response either, so it cannot be used to reflect content.
+4. Bodies are capped at 5 MiB for manifests and 256 KiB for the policy file.
+5. Error messages are fixed text. The engine's intake errors hold no input, and the API adds none, so it cannot be used to reflect content. A property test plants a marker in the `repo` parameter and checks every error body for it.
 6. A scan keeps at most 300 direct dependencies.
 
-The policy file is parsed by the engine's YAML parser and checked against a JSON Schema before use. An invalid policy fails the scan with error codes and paths only. Planned: if the policy file cannot be fetched for any reason other than 404, the scan fails with 502. We do not fall back to the default policy, as that could report a pass under a policy the repository never chose.
+The policy file is parsed by the engine's YAML parser and checked against a JSON Schema before use. An invalid policy fails the scan with error codes and paths only. If the policy file cannot be fetched for any reason other than 404, the scan fails with 502. We do not fall back to the default policy, as that could report a pass under a policy the repository never chose.
 
 ## STRIDE per component
 
@@ -50,17 +50,17 @@ The policy file is parsed by the engine's YAML parser and checked against a JSON
 | Threat | Example | Control |
 |---|---|---|
 | Tampering | A hostile manifest tries prototype pollution or a URL in a version field | Own-property reads, validated names and versions, fixed URL hosts. Covered by property tests in the engine |
-| Information disclosure | Logs leak a token or a response body | Planned: log lines hold scalars only, the host and path of each upstream call, never the query or the body. A property test plants a marker string to prove it |
+| Information disclosure | Logs leak a token or a response body | Log lines hold scalars only: the host and path of each upstream call, never the query, a header or the body. For GitHub hosts no owner or repository is logged: raw file requests keep only the file path, and other GitHub hosts log no path. Property tests plant marker strings in the query, the body, and the owner and repository to prove it |
 | Denial of service | A huge repository or a very slow upstream | The 300-dependency cap, a 60-second timeout, one CloudFront attempt and reserved concurrency of 10 |
 | Elevation of privilege | A bug in scan code tries to rewrite history | The scan role cannot write any `snap#` item. It can only add `seen#` records |
-| Repudiation | Nobody can tell which request failed | Planned: every response carries `x-sexton-request-id`, and every log line of that request carries the same ID |
+| Repudiation | Nobody can tell which request failed | Every response carries `x-sexton-request-id`, and every log line of that request carries the same ID |
 
 ### Snapshotter function
 
 | Threat | Example | Control |
 |---|---|---|
 | Tampering | Code in the snapshotter replaces an old snapshot | See the append-only proof below |
-| Denial of service | Too many packages to snapshot in 10 minutes | Planned: it stops 90 seconds before its timeout, counts the names it did not reach and raises an alarm |
+| Denial of service | Too many packages to snapshot in 10 minutes | It stops 90 seconds before its timeout, counts the names it did not reach and raises an alarm |
 | Tampering | Two runs at once write duplicate snapshots | Reserved concurrency of 1 and no retries from the schedule |
 
 ### DynamoDB
@@ -69,7 +69,7 @@ The policy file is parsed by the engine's YAML parser and checked against a JSON
 |---|---|---|
 | Tampering | Snapshots are deleted or changed | No role has update, delete or batch-write on the table. No TTL on the table. Deletion protection on. Point-in-time recovery keeps 35 days |
 | Information disclosure | Data at rest is read | Encryption with the AWS owned key. The tables hold public package metadata only |
-| Denial of service | The cache stops working | Planned: a cache or history failure degrades that one read and never fails the scan. An alarm fires on throttling |
+| Denial of service | The cache stops working | A cache or history failure degrades that one read and never fails the scan. An alarm fires on throttling |
 
 ### Web bucket
 
@@ -105,7 +105,7 @@ Here is the gap. `PutItem` replaces an item that has the same key, and no IAM co
 | Scan flooding from many IPs | Reserved concurrency of 10 caps parallel scans, and extra requests get 429 from Lambda. An alarm fires on any throttle |
 | Huge repositories | The 300-dependency cap and the 5 MiB manifest cap |
 | Hostile manifests and policy files | The untrusted-input rules above, plus fixed error text |
-| Using Sexton to hammer npm, OSV or GitHub | Backoff on 429 and 503 and a User-Agent that names Sexton, both in the engine today. Planned: the 24-hour cache shared by every Lambda container |
+| Using Sexton to hammer npm, OSV or GitHub | Backoff on 429 and 503 and a User-Agent that names Sexton, both in the engine. The 24-hour cache in DynamoDB is shared by every Lambda container |
 | Running up the AWS bill | The caps above, one CloudFront attempt per request, a 60-second timeout and on-demand pricing. The alarms on error rate, duration and throttles show unusual load |
 | Calling the function URL directly | IAM auth with OAC. An unsigned call gets 403 |
 | Reading private repositories | Sexton sends no token, so a private repository answers 404 like a missing one |

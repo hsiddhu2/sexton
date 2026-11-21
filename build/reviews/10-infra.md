@@ -240,3 +240,20 @@ The reviewer checked:
 | A missing environment variable throws at init | Kept by design. The function fails fast, and the Lambda Errors part of the alarm catches it |
 | The handler's outer catch writes the EMF line but no summary line | Kept. It covers a failure while wiring the stores, which is unlikely |
 | `planChunks` turns a size of 0 or less into 1 | Kept. It is a guard only; the constant is 25 |
+
+## Review 12: no Owner or Repo in GitHub log lines (HP decision), and the docs marked "planned"
+
+Verdict: NOT READY, three defects. Fixed and re-reviewed: READY.
+
+| Defect | Fix |
+|---|---|
+| For github.com and api.github.com, the "last segment" of the path is the repository name. An encoded slash also leaked the owner | raw.githubusercontent.com keeps only the path after `/{owner}/{repo}/{ref}/`. github.com and api.github.com log no path |
+| The host check used `host`, so a port or a trailing dot skipped the GitHub rule | It now matches on `hostname`, lower-cased, with trailing dots removed |
+| The test regex let a bare repository name through | Replaced by a property with canaries in the owner and repo across eleven URL shapes |
+
+The docs that said handler controls were "planned" now say they are built and not yet deployed. The reviewer checked each claim against packages/api/src.
+
+| Note | Action |
+|---|---|
+| Other GitHub hosts (gist, codeload, objects.githubusercontent.com) still log full paths | Kept. Nothing fetches them. A new client for one of them must add it to `GITHUB_HOSTS` |
+| Three descriptions said "file name only" | Reworded to match design.md item 14 |

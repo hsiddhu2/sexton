@@ -44,6 +44,31 @@ describe("Feature: infra, Property 11: Upstream log lines carry no query and no 
   });
 });
 
+describe("Feature: infra, Property 11 (GitHub): no Owner or Repo in any GitHub log line", () => {
+  it("holds for every GitHub host spelling, port, trailing slash or dot, and encoded slash", () => {
+    const shapes = [
+      (o: string, r: string) => `https://raw.githubusercontent.com/${o}/${r}/HEAD/package.json`,
+      (o: string, r: string) => `https://raw.githubusercontent.com:8443/${o}/${r}/HEAD/package.json`,
+      (o: string, r: string) => `https://raw.githubusercontent.com./${o}/${r}/HEAD/package.json`,
+      (o: string, r: string) => `https://RAW.GITHUBUSERCONTENT.COM/${o}/${r}`,
+      (o: string, r: string) => `https://raw.githubusercontent.com/${o}%2F${r}/HEAD`,
+      (o: string, r: string) => `https://github.com/${o}/${r}`,
+      (o: string, r: string) => `https://github.com/${o}/${r}/`,
+      (o: string, r: string) => `https://GITHUB.COM:444/${o}/${r}/tree/main`,
+      (o: string, r: string) => `https://github.com/${o}%2F${r}`,
+      (o: string, r: string) => `https://api.github.com/repos/${o}/${r}`,
+      (o: string, r: string) => `https://api.github.com./repos/${o}/${r}/contents/package.json`,
+    ];
+    fc.assert(
+      fc.property(arbCanary, arbCanary, fc.constantFrom(...shapes), (owner, repo, shape) => {
+        const text = JSON.stringify(upstreamFields(shape(`O${owner}`, `R${repo}`), 200, 1));
+        expect(text).not.toContain(`O${owner}`);
+        expect(text).not.toContain(`R${repo}`);
+      }),
+    );
+  });
+});
+
 describe("withRequestLogging", () => {
   it("returns the inner response object unchanged and logs the latency", async () => {
     const response = { status: 200, json: () => Promise.resolve(1) };
@@ -81,6 +106,18 @@ describe("a failing log sink", () => {
 });
 
 describe("upstreamFields", () => {
+  it("logs only the file path for raw GitHub, nothing for other GitHub hosts, and the full path elsewhere", () => {
+    expect(upstreamFields("https://raw.githubusercontent.com/OwnerName/RepoName/HEAD/package-lock.json", 200, 1)).toEqual({
+      msg: "upstream",
+      host: "raw.githubusercontent.com",
+      path: "package-lock.json",
+      status: 200,
+      latencyMs: 1,
+    });
+    expect(upstreamFields("https://raw.githubusercontent.com/OwnerName/RepoName/HEAD/sexton.policy.yml", 404, 1)["path"]).toBe("sexton.policy.yml");
+    expect(upstreamFields("https://registry.npmjs.org/@scope%2fname", 200, 1)["path"]).toBe("/@scope%2fname");
+  });
+
   it("cuts the path to 200 characters and logs nothing of an unparseable URL", () => {
     expect(upstreamFields(`https://h.example/${"a".repeat(300)}`, 200, 1)["path"]).toHaveLength(200);
     expect(upstreamFields("not a url SECRET", 0, 1)).toEqual({ msg: "upstream", host: "invalid-url", path: "", status: 0, latencyMs: 1 });

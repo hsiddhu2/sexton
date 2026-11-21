@@ -171,6 +171,7 @@ describe("end to end over the engine fixtures", () => {
     expect(typeof summaries[0]?.["durationMs"]).toBe("number");
     expect(JSON.stringify(summaries)).not.toContain(OWNER);
     expect(h.lines.filter((l) => l["msg"] === "upstream")).toHaveLength(h.calls.length);
+    expect(JSON.stringify(h.lines)).not.toContain(OWNER);
   });
 
   it("evaluates a policy file from the repository with source file", async () => {
