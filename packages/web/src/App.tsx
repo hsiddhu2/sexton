@@ -23,8 +23,8 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
   }, [theme]);
   const { state } = loader;
   const model = useMemo(
-    () => (state.status === "ready" ? headerModel(state.response, state.isDemo) : null),
-    [state],
+    () => (state.status === "ready" ? headerModel(state.response, state.isDemo, state.source === "hosted" ? apiBase : null) : null),
+    [state, apiBase],
   );
   return (
     <>

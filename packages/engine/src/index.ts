@@ -211,3 +211,42 @@ export type {
   PrContext,
   RemediationLogEntry,
 } from "./types.js";
+// evidence-pack
+export { intakeRepoWithManifests } from "./intake/intake.js";
+export type { IntakeManifests, IntakeWithManifests } from "./intake/intake.js";
+export { canonicalJson, cleanJsonCopy } from "./evidence/canonical-json.js";
+export type { JsonValue } from "./evidence/canonical-json.js";
+export { sha256Hex, sha256HexOfText } from "./evidence/sha256.js";
+export { npmPurl } from "./evidence/purl.js";
+export { buildSbom, SBOM_SCOPE_PROPERTY, NPM_DEVELOPMENT_PROPERTY } from "./evidence/sbom.js";
+export type { SbomInput } from "./evidence/sbom.js";
+export { buildEvidencePack, serialiseEvidencePack, BUILD_FAILURES, COMMIT_NOTE } from "./evidence/build-pack.js";
+export type { EvidenceInput } from "./evidence/build-pack.js";
+export { verifyEvidencePack } from "./evidence/verify-pack.js";
+export { SIGNAL_SUMMARIES } from "./evidence/signal-summary.js";
+export {
+  renderEvidenceMarkdown,
+  DIGEST_LIMIT_SENTENCE,
+  VERIFY_TEXT,
+  FOOTER as EVIDENCE_FOOTER,
+  LOG_NOT_CONNECTED,
+  LOG_EMPTY,
+  MAX_ADVISORIES_SHOWN,
+} from "./evidence/render-markdown.js";
+export { EVIDENCE_BUILD_FAILURES, EVIDENCE_VERIFY_FAILURES } from "./types.js";
+export type {
+  ManifestDigests,
+  CycloneDxBom,
+  CycloneDxComponent,
+  CycloneDxProperty,
+  CycloneDxExternalReference,
+  EvidenceScan,
+  EvidencePlan,
+  EvidenceBody,
+  EvidenceIntegrity,
+  EvidencePack,
+  EvidenceBuildFailure,
+  EvidenceBuildResult,
+  EvidenceVerifyFailure,
+  EvidenceVerifyResult,
+} from "./types.js";

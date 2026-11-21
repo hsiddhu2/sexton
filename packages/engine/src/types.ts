@@ -570,3 +570,118 @@ export interface RemediationLogEntry {
   /** ISO 8601 instant. */
   readonly timestamp: string;
 }
+
+// Types for the evidence-pack spec (.kiro/specs/evidence-pack).
+
+/** SHA-256 hex of each manifest text intake read, or null. Requirement 3.2. */
+export interface ManifestDigests {
+  readonly packageJson: string | null;
+  readonly packageLock: string | null;
+}
+
+export interface CycloneDxProperty {
+  readonly name: string;
+  readonly value: string;
+}
+
+export interface CycloneDxExternalReference {
+  readonly type: "vcs";
+  readonly url: string;
+}
+
+export interface CycloneDxComponent {
+  readonly type: "library" | "application";
+  readonly group?: string;
+  readonly name: string;
+  readonly version?: string;
+  readonly purl?: string;
+  readonly "bom-ref"?: string;
+  readonly scope?: "excluded";
+  readonly externalReferences?: readonly CycloneDxExternalReference[];
+  readonly properties?: readonly CycloneDxProperty[];
+}
+
+/** A CycloneDX 1.5 JSON document with exactly the fields Sexton writes. Requirement 2. */
+export interface CycloneDxBom {
+  readonly bomFormat: "CycloneDX";
+  readonly specVersion: "1.5";
+  readonly version: 1;
+  readonly serialNumber: string;
+  readonly metadata: {
+    readonly timestamp: string;
+    readonly tools: { readonly components: readonly CycloneDxComponent[] };
+    readonly component: CycloneDxComponent;
+    readonly properties: readonly CycloneDxProperty[];
+  };
+  readonly components: readonly CycloneDxComponent[];
+  readonly dependencies: readonly { readonly ref: string; readonly dependsOn: readonly string[] }[];
+  readonly compositions: readonly {
+    readonly aggregate: "incomplete";
+    readonly assemblies: readonly string[];
+    readonly dependencies: readonly string[];
+  }[];
+}
+
+export interface EvidenceScan {
+  readonly repository: string;
+  readonly commit: string | null;
+  readonly commitNote: string | null;
+  readonly generatedAt: string;
+  readonly engineVersion: string;
+  readonly policy: { readonly version: 1; readonly source: PolicySource; readonly digest: string | null };
+  readonly manifests: ManifestDigests;
+  readonly unlocked: boolean;
+  readonly unlockedPackages: readonly string[];
+  readonly lockfileVersion: LockfileVersion | null;
+  readonly capped: boolean;
+  readonly totalDirect: number;
+  readonly skipped: SkippedCounts;
+  readonly unresolved: readonly string[];
+}
+
+export interface EvidencePlan {
+  readonly packageName: string;
+  readonly kind: RemediationKind;
+  readonly status: RemediationStatus;
+  readonly title: string;
+  readonly chosenVersion?: string;
+  readonly majorUpgrade?: boolean;
+}
+
+export interface EvidenceBody {
+  readonly scan: EvidenceScan;
+  readonly sbom: CycloneDxBom;
+  readonly packages: readonly PackageHealth[];
+  readonly policy: PolicyResult;
+  readonly remediation: {
+    readonly plans: readonly EvidencePlan[];
+    readonly log: { readonly available: boolean; readonly entries: readonly RemediationLogEntry[] };
+  };
+}
+
+export interface EvidenceIntegrity {
+  readonly algorithm: "SHA-256";
+  readonly canonicalization: "RFC 8785";
+  /** 64 lower-case hex characters over the UTF-8 bytes of the canonical body. */
+  readonly digest: string;
+}
+
+/** Requirement 3. No package name is ever an object key. */
+export interface EvidencePack {
+  readonly evidenceVersion: 1;
+  readonly body: EvidenceBody;
+  readonly integrity: EvidenceIntegrity;
+}
+
+export const EVIDENCE_BUILD_FAILURES = [
+  "report has no scan metadata",
+  "commit is not a 40 character hex string",
+  "body is not serialisable",
+] as const;
+export type EvidenceBuildFailure = (typeof EVIDENCE_BUILD_FAILURES)[number];
+
+export type EvidenceBuildResult = { readonly ok: true; readonly pack: EvidencePack } | { readonly ok: false; readonly reason: EvidenceBuildFailure };
+
+export const EVIDENCE_VERIFY_FAILURES = ["malformed", "unsupported-version", "digest-mismatch"] as const;
+export type EvidenceVerifyFailure = (typeof EVIDENCE_VERIFY_FAILURES)[number];
+export type EvidenceVerifyResult = { readonly ok: true } | { readonly ok: false; readonly reason: EvidenceVerifyFailure };

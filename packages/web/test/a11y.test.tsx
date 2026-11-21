@@ -51,7 +51,7 @@ describe("axe-core, wcag2a/aa and wcag21a/aa, color-contrast off (Requirement 10
   it("has no violations on the loaded Demo scan", async () => {
     const { container } = mount();
     await ready();
-    expect(container.querySelectorAll("button[data-grave-index]").length).toBe(11);
+    expect(container.querySelectorAll("button[data-grave-index]").length).toBe(12);
     expect(await violations()).toEqual([]);
   });
 
@@ -108,7 +108,7 @@ describe("landmarks, labels and text alternatives (Requirements 10.1, 10.2, 10.6
     await ready();
     expect(container.querySelector("canvas")?.getAttribute("aria-hidden")).toBe("true");
     const buttons = [...container.querySelectorAll<HTMLButtonElement>("button[data-grave-index]")];
-    expect(buttons).toHaveLength(11);
+    expect(buttons).toHaveLength(12);
     for (const b of buttons) {
       expect(b.getAttribute("aria-label")).toMatch(/^.+ \S+, (Possessed|Dead|Haunted|Restless|Alive)(, \d+ advisor(y|ies))?$/);
     }
@@ -136,19 +136,21 @@ describe("landmarks, labels and text alternatives (Requirements 10.1, 10.2, 10.6
 });
 
 describe("keyboard reach (Requirement 10.5)", () => {
-  it("reaches the Legend control, field, submit and one grave stop by Tab, and wraps out of the page", async () => {
+  it("reaches the two evidence links, the Legend control, field, submit and one grave stop by Tab, and wraps out of the page", async () => {
     const user = userEvent.setup();
     const { container } = mount({ apiBase: API });
     await ready();
     const seen: string[] = [];
-    for (let i = 0; i < 4; i += 1) {
+    for (let i = 0; i < 6; i += 1) {
       await user.tab();
       const el = document.activeElement as HTMLElement;
       seen.push(el.getAttribute("aria-label") ?? (el.textContent === "" ? el.getAttribute("name") : el.textContent) ?? el.tagName);
     }
-    expect(seen[0]).toBe("Legend");
-    expect(seen[1]).toBe("repo");
-    expect(seen[2]).toBe("Scan");
+    expect(seen[0]).toBe("Download evidence pack as JSON");
+    expect(seen[1]).toBe("Download evidence pack as Markdown");
+    expect(seen[2]).toBe("Legend");
+    expect(seen[3]).toBe("repo");
+    expect(seen[4]).toBe("Scan");
     const first = container.querySelector<HTMLElement>('button[data-grave-index][tabindex="0"]');
     expect(first).not.toBeNull();
     expect(document.activeElement).toBe(first);

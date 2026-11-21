@@ -15,3 +15,9 @@ Notes acted on: policy digest is over BOM-stripped text too; 3.4 says "after the
 ## Review 1b: spec re-review
 
 Verdict: READY. Notes fixed: task 9 carries the jq trial; 5.2 names `VERIFY_TEXT` so it holds with either text; Testing Strategy says which properties exclude `-0` and lone surrogates.
+
+## Review 2: implementation (engine, api, web, infra, fixtures, demo, docs), 21 Nov 2026
+
+Verdict: READY, no defects. Checked with a probe and the suites (engine 943, api 175, web 213, infra 47): RFC 8785 key order and number output against the RFC samples; `__proto__`, getters and key collisions in the Clean copy; serial number bits; purl encoding; log filtering and order; every pack string in the report through `escapeField`; request parser edge cases; the evidence log line holds no repository; `runScan` unchanged; web links only from the canonical URL with no fetch; no `node:` import or `fetch` under packages/engine/src; IAM unchanged; .kiro/steering, hooks, agents and settings untouched.
+
+Notes recorded as design decisions: 16 (after the edge deploy a `format` parameter on `/api/scan` answers 400), 17 (policy and manifest digests are not re-checked as hex; callers use `sha256HexOfText`), 18 (the verifier ignores extra top-level keys). Notes kept: the CloudFront change and the purl colon are design decisions 1 and 2; an undefined input gives "body is not serialisable"; array index accessors are read while object accessors are refused (the digest is over the copy); log order is by timestamp text (decision 13); empty query segments are dropped by URLSearchParams.

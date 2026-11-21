@@ -208,8 +208,9 @@ export class SextonEdgeStack extends Stack {
     });
 
     const apiOriginRequestPolicy = new cloudfront.OriginRequestPolicy(this, "ApiOriginRequestPolicy", {
-      comment: "Sexton API: forward the repo query parameter only",
-      queryStringBehavior: cloudfront.OriginRequestQueryStringBehavior.allowList("repo"),
+      // format reaches GET /api/evidence (spec evidence-pack, design decision 1). No other parameter is forwarded.
+      comment: "Sexton API: forward the repo and format query parameters only",
+      queryStringBehavior: cloudfront.OriginRequestQueryStringBehavior.allowList("repo", "format"),
       headerBehavior: cloudfront.OriginRequestHeaderBehavior.none(),
       cookieBehavior: cloudfront.OriginRequestCookieBehavior.none(),
     });

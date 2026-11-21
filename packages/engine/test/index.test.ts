@@ -227,3 +227,32 @@ describe("engine public surface (migration)", () => {
     expect(engine.REVIEW_RULES).toEqual(["deep-combinator", "legacy-render", "node-sass-script"]);
   });
 });
+
+// evidence-pack task 6.2. Public surface of the evidence module.
+const EVIDENCE_FUNCTIONS = [
+  "intakeRepoWithManifests",
+  "canonicalJson",
+  "cleanJsonCopy",
+  "sha256Hex",
+  "sha256HexOfText",
+  "npmPurl",
+  "buildSbom",
+  "buildEvidencePack",
+  "serialiseEvidencePack",
+  "verifyEvidencePack",
+  "renderEvidenceMarkdown",
+] as const;
+
+describe("engine public surface (evidence-pack)", () => {
+  it.each(EVIDENCE_FUNCTIONS)("exports %s as a function", (name) => {
+    expect(typeof engine[name]).toBe("function");
+  });
+
+  it("exports the closed failure lists and the fixed texts", () => {
+    expect(engine.EVIDENCE_BUILD_FAILURES).toEqual(["report has no scan metadata", "commit is not a 40 character hex string", "body is not serialisable"]);
+    expect(engine.BUILD_FAILURES).toBe(engine.EVIDENCE_BUILD_FAILURES);
+    expect(engine.EVIDENCE_VERIFY_FAILURES).toEqual(["malformed", "unsupported-version", "digest-mismatch"]);
+    expect(engine.COMMIT_NOTE).toBe("commit not recorded, the scan read the default branch head");
+    expect(Object.keys(engine.SIGNAL_SUMMARIES).sort()).toEqual([...engine.SIGNAL_NAMES].sort());
+  });
+});

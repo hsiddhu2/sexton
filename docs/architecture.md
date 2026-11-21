@@ -33,7 +33,7 @@ Here is what happens when you paste a repository URL into the cemetery. Every st
 
 1. The browser sends `GET /api/scan?repo=<url>` to the CloudFront domain. The web app and the API share that domain, so there is no CORS.
 2. WAF checks the request. The AWS managed rule groups block known bad input. A rate rule blocks one IP after 100 requests to `/api/` in 5 minutes, with HTTP 429.
-3. CloudFront forwards only the `repo` query parameter. It sends no cookies and no viewer headers. It signs the request with origin access control (OAC).
+3. CloudFront forwards only the `repo` and `format` query parameters. It sends no cookies and no viewer headers. It signs the request with origin access control (OAC).
 4. The function URL uses IAM auth. It accepts the signed request from this distribution and rejects anything else with 403.
 5. The scan function checks the method, the path and the `repo` value before it does anything else. A bad request gets 400 and costs no upstream call.
 6. The engine reads `package.json` and `package-lock.json`, scores each direct dependency and evaluates the policy. Every upstream response goes through the DynamoDB cache for 24 hours.
@@ -42,6 +42,19 @@ Here is what happens when you paste a repository URL into the cemetery. Every st
 Why no API Gateway? A cold scan of 50 dependencies may take up to 60 seconds. An HTTP API stops waiting at 30 seconds. CloudFront can wait 60 seconds for a function URL with no quota increase. We also set CloudFront to try the API origin only once. A retry on a slow scan would start a second full scan.
 
 The daily path is shorter, and it is built too. EventBridge Scheduler invokes the snapshotter at 03:17 UTC. It lists every package seen in the last 90 days and appends one snapshot per package. It works in chunks of 25 names and stops 90 seconds before its 10-minute timeout. Any names it did not reach are counted, and that count raises an alarm.
+
+## The evidence pack
+
+`GET /api/evidence?repo=<url>&format=json|md` runs on the same scan function, with the same role, WAF rule, cache and limits. There is no new function, table or permission. It runs the scan, then builds the pack in the engine:
+
+1. Intake also returns the `package.json` and `package-lock.json` texts it read. The API hashes them, and the policy file text when there is one, with SHA-256.
+2. The engine builds the body: scan metadata, a CycloneDX 1.5 SBOM of the direct dependencies, every package with its ten signals and their sources, the policy result, and the remediation plans and log. The hosted path has no remediation log and no head commit yet, and the pack says so.
+3. The engine takes the RFC 8785 canonical form of the body and puts its SHA-256 in `integrity.digest`.
+4. The function returns the JSON file, or the Markdown report rendered from it, as a download. The digest also goes in the `x-sexton-evidence-digest` header. A body over 5 MiB gets 422 `evidence-too-large`.
+
+Every download runs its own scan, so the pack can differ from the scan on screen, and each download counts against the rate rule. The demo writes `evidence.json` and `evidence.md` next to `scan.json` at build time, and the header links to them.
+
+The `format` parameter reaches the function only after the next deploy of the edge stack. Until then CloudFront drops it, and the Markdown link returns JSON.
 
 ## The data model
 

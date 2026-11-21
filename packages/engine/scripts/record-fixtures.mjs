@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // Records trimmed upstream responses for the fixture scan. Run from packages/engine with network access.
-// Usage: node scripts/record-fixtures.mjs [--intake | --remediation | --migration]
+// Usage: node scripts/record-fixtures.mjs [--intake | --remediation | --migration | --package <name>]
+// --package <name> runs the normal package loop for that one entry of packages.json and leaves the others as they are
+// (spec evidence-pack, decision 18).
 // --intake records only the repo-intake fixtures (raw manifests and full packuments) and skips the package loop.
 // --remediation records only the remediation fixtures: every published version with its deprecation marker,
 // and the OSV advisory IDs and details for every release above the installed version.
@@ -297,7 +299,11 @@ if (process.argv.includes("--migration")) {
   await recordIntake();
   console.log(`recorded at ${new Date().toISOString()}`);
 } else {
-  const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  const all = JSON.parse(await readFile(manifestPath, "utf8"));
+  const flag = process.argv.indexOf("--package");
+  const only = flag === -1 ? undefined : process.argv[flag + 1];
+  if (flag !== -1 && (only === undefined || !all.some((p) => p.name === only))) throw new Error("--package needs a name listed in packages.json");
+  const manifest = only === undefined ? all : all.filter((p) => p.name === only);
   for (const { name, installedVersion } of manifest) {
     const dir = join(fixturesDir, "packages", name.replace("/", "__"));
     const url = `https://registry.npmjs.org/${encodeName(name)}`;

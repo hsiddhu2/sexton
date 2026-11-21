@@ -30,4 +30,5 @@ Sexton is a product with a long road. Release 0.1 is the Kiroween 2026 slice. Ev
 
 - Maven, Go, Cargo
 - Team accounts and audit retention
+- Signed evidence packs
 - Evidence pack export for SOC 2, DORA and CRA reporting

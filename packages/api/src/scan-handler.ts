@@ -6,7 +6,9 @@ import type { LambdaFunctionURLEvent } from "aws-lambda";
 import { DynamoCacheStore } from "./dynamo/cache-store.js";
 import type { DynamoPort } from "./dynamo/port.js";
 import { DynamoSnapshotStore } from "./dynamo/snapshot-store.js";
-import { errorResponse, internalErrorSpec, okResponse, requestErrorSpec, type FunctionUrlResponse } from "./http/responses.js";
+import { runEvidence } from "./evidence.js";
+import { EVIDENCE_PATH, parseEvidenceRequest } from "./http/evidence-request.js";
+import { errorResponse, evidenceRequestErrorSpec, internalErrorSpec, okResponse, requestErrorSpec, type FunctionUrlResponse } from "./http/responses.js";
 import { parseScanRequest } from "./http/scan-request.js";
 import { correlationId, createLogger } from "./log/logger.js";
 import { withRequestLogging } from "./log/logging-transport.js";
@@ -47,12 +49,7 @@ export function createScanHandler(deps: ScanHandlerDeps): ScanHandler {
     const requestId = correlationId(event.headers, context.awsRequestId);
     const log = createLogger(requestId, deps.sink);
     try {
-      const request = parseScanRequest(event);
-      if (!request.ok) {
-        log.info({ msg: "scan", status: request.status, packages: 0, capped: false, unlocked: false, policySource: "none", durationMs: 0 });
-        return errorResponse(requestErrorSpec(request.code), requestId);
-      }
-      const outcome = await runScan(request.repoUrl, {
+      const scanDeps = (): ScanDeps => ({
         transport: withRequestLogging(deps.transport, log),
         cacheStore: new DynamoCacheStore(deps.port, deps.environment.cacheTable, log),
         snapshotStore: new DynamoSnapshotStore(deps.port, deps.environment.snapshotsTable, deps.environment.seenIndex, log),
@@ -61,6 +58,21 @@ export function createScanHandler(deps: ScanHandlerDeps): ScanHandler {
         ...(deps.retry !== undefined ? { retry: deps.retry } : {}),
         ...(deps.intake !== undefined ? { intake: deps.intake } : {}),
       });
+      // GET /api/evidence on the same function (spec evidence-pack, Requirement 7.1). Every other path is the scan path.
+      if (event.rawPath === EVIDENCE_PATH) {
+        const evidenceRequest = parseEvidenceRequest(event);
+        if (!evidenceRequest.ok) {
+          log.info({ msg: "evidence", status: evidenceRequest.status, format: "none", packages: 0, bytes: 0, durationMs: 0 });
+          return errorResponse(evidenceRequestErrorSpec(evidenceRequest.code), requestId);
+        }
+        return await runEvidence(evidenceRequest, scanDeps(), requestId);
+      }
+      const request = parseScanRequest(event);
+      if (!request.ok) {
+        log.info({ msg: "scan", status: request.status, packages: 0, capped: false, unlocked: false, policySource: "none", durationMs: 0 });
+        return errorResponse(requestErrorSpec(request.code), requestId);
+      }
+      const outcome = await runScan(request.repoUrl, scanDeps());
       return outcome.ok ? okResponse(outcome.body, requestId) : errorResponse(outcome.response, requestId);
     } catch {
       return errorResponse(internalErrorSpec(), requestId);

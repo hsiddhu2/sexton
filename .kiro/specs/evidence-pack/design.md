@@ -417,10 +417,13 @@ Each is the choice that keeps the smallest surface.
 6. **The web load source.** A load through `?scan=` of the demo address itself is the demo (the existing `isDemo` rule), so it shows the demo links (Requirement 8.2); every other `?scan=` load shows none.
 7. **Fixture intake rows for the golden pack** are built as the demo builds them: `^installed`, dependencies, locked.
 8. **Manifest and policy digests over decoded text.** See Research finding 8.
-9. **Verification trial.** Filled in task 9 from the demo pack.
+9. **Verification trial, 21 Nov 2026.** `jq -cjS .body packages/web/public/demo/evidence.json | shasum -a 256` printed `14d4c984…952033e`, equal to `integrity.digest` of the demo pack, and the same command on the golden pack printed its digest `7043f538…baac33fc`. So `VERIFY_TEXT` keeps the jq command with its U+007F limit.
 10. **Hosted Markdown before the next deploy.** Until item 1 is deployed, CloudFront strips `format`, so the hosted Markdown link downloads JSON. The README says so. The local and demo paths are unaffected.
 11. **Evidence request errors carry their own fixed message.** `invalid-request` on `/api/evidence` reads "Send GET /api/evidence?repo=<public GitHub URL>&format=json or md." so the scan text never appears on the evidence path.
 12. **Each hosted download runs its own scan.** The pack can differ from the scan on screen (time, signals) and each download counts against the WAF rate rule. The README and the threat model say so.
 13. **Log entries sort by timestamp text.** `isValidLogEntry` admits offsets, so two instants with different offsets sort by text, not time. Entries written by 10b are UTC (`Z`), where text order is time order.
 14. **The golden files embed `ENGINE_VERSION`.** A version bump changes `expected-pack.json` and `expected-report.md`; the fixture README says so.
 15. **`evidence-too-large` is an API code only.** The web app never reads API error codes, so its validator does not change.
+16. **After the edge deploy, `/api/scan?repo=…&format=…` answers 400.** Today CloudFront strips `format` and the scan succeeds; once `format` is forwarded, `parseScanRequest` sees two parameters and refuses, as it refuses any extra parameter. The web app never sends `format` to the scan path. Code review 2, note 1.
+17. **Digest inputs are not re-checked as hex.** The builder checks the commit, because the handoff names a failure for it, and copies `policyDigest` and the manifest digests as given: every caller computes them with `sha256HexOfText`. The failure set stays the three handoff reasons. Code review 2, note 4; 09 and 10b keep using `sha256HexOfText`.
+18. **The verifier ignores extra top-level keys** beside `evidenceVersion`, `body` and `integrity`, because the digest covers `body` only and Requirement 4.3 names the malformed cases. Code review 2, note 3.

@@ -11,14 +11,17 @@ import {
   InMemorySnapshotStore,
   MemoryCacheStore,
   attachRemediations,
+  buildEvidencePack,
   bumpTargets,
   evaluatePolicy,
   gatherBumpData,
   gatherMigrationData,
   planRemediation,
   readPackageScripts,
+  renderEvidenceMarkdown,
   runMigrations,
   scorePackages,
+  serialiseEvidencePack,
 } from "@sexton/engine";
 import { fixtureRoutes, routedTransport } from "./lib/fixture-routes.mjs";
 import { hasRemediationFixture, remediationTransport } from "./lib/remediation-routes.mjs";
@@ -26,6 +29,9 @@ import { hasRemediationFixture, remediationTransport } from "./lib/remediation-r
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const DEFAULT_FIXTURES_DIR = join(HERE, "..", "..", "engine", "test", "fixtures");
 export const OUTPUT_PATH = join(HERE, "..", "..", "web", "public", "demo", "scan.json");
+// Spec evidence-pack, Requirement 8.1: the evidence pack of the same demo scan, beside scan.json.
+export const EVIDENCE_JSON_PATH = join(HERE, "..", "..", "web", "public", "demo", "evidence.json");
+export const EVIDENCE_MD_PATH = join(HERE, "..", "..", "web", "public", "demo", "evidence.md");
 export const DEMO_NOW = new Date("2026-11-12T00:00:00Z");
 const SEED_VERSION = "1.2.1";
 const SLSA_PROVENANCE_PREDICATE = "https://slsa.dev/provenance/v1";
@@ -91,7 +97,7 @@ export async function buildDemoScan({ fixturesDir = DEFAULT_FIXTURES_DIR, now = 
       unlockedPackages: [],
       lockfileVersion: 3,
       capped: false,
-      totalDirect: 11,
+      totalDirect: all.length,
       skipped: { peer: 0, optional: 0, invalidName: 0 },
       unresolved: [],
     },
@@ -99,6 +105,36 @@ export async function buildDemoScan({ fixturesDir = DEFAULT_FIXTURES_DIR, now = 
   const policy = evaluatePolicy(DEFAULT_POLICY, report, "default");
   const remediations = await demoRemediations(fixturesDir, report, policy, now);
   return { report, policy, remediations };
+}
+
+/** The demo intake list: each package declared as ^installed in dependencies, locked. The demo has no package.json. */
+export function demoIntake(report) {
+  return report.packages.map((p) => ({
+    name: p.name,
+    installedVersion: p.installedVersion,
+    declaredRange: `^${p.installedVersion}`,
+    origin: "dependencies",
+    resolution: "locked",
+  }));
+}
+
+/**
+ * The evidence pack of the demo scan through the engine. Spec evidence-pack, Requirement 8.1: commit null with the note,
+ * no manifest or policy digests (the demo has neither file), the demo remediations as plans, no remediation log.
+ */
+export async function buildDemoEvidence(scan) {
+  const result = await buildEvidencePack({
+    report: scan.report,
+    dependencies: demoIntake(scan.report),
+    policyResult: scan.policy,
+    policyDigest: null,
+    commit: null,
+    manifestDigests: { packageJson: null, packageLock: null },
+    remediations: scan.remediations,
+    remediationLog: null,
+  });
+  if (!result.ok) throw new Error(`demo evidence pack failed: ${result.reason}`);
+  return { pack: result.pack, json: serialiseEvidencePack(result.pack), markdown: renderEvidenceMarkdown(result.pack) };
 }
 
 /**
@@ -124,13 +160,7 @@ function sampleRepository(fixturesDir) {
 }
 
 async function demoRemediations(fixturesDir, report, policy, now) {
-  const intake = report.packages.map((p) => ({
-    name: p.name,
-    installedVersion: p.installedVersion,
-    declaredRange: `^${p.installedVersion}`,
-    origin: "dependencies",
-    resolution: "locked",
-  }));
+  const intake = demoIntake(report);
   const options = { intake };
   const targets = bumpTargets(report, options).filter((t) => hasRemediationFixture(fixturesDir, t.name));
   const { transport, unrouted } = remediationTransport(fixturesDir);
@@ -154,4 +184,8 @@ if (process.argv[1] !== undefined && fileURLToPath(import.meta.url) === process.
   mkdirSync(dirname(OUTPUT_PATH), { recursive: true });
   writeFileSync(OUTPUT_PATH, serialiseDemoScan(scan));
   console.log(`wrote ${OUTPUT_PATH}`);
+  const evidence = await buildDemoEvidence(scan);
+  writeFileSync(EVIDENCE_JSON_PATH, evidence.json);
+  writeFileSync(EVIDENCE_MD_PATH, evidence.markdown);
+  console.log(`wrote ${EVIDENCE_JSON_PATH} and ${EVIDENCE_MD_PATH}, digest ${evidence.pack.integrity.digest}`);
 }

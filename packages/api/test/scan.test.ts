@@ -167,7 +167,7 @@ describe("end to end over the engine fixtures", () => {
     await h.handle(scanEvent(url));
     const summaries = h.lines.filter((l) => l["msg"] === "scan");
     expect(summaries).toHaveLength(1);
-    expect(summaries[0]).toMatchObject({ status: 200, packages: 10, capped: false, unlocked: false, policySource: "default", correlationId: "lambda-req-1" });
+    expect(summaries[0]).toMatchObject({ status: 200, packages: 11, capped: false, unlocked: false, policySource: "default", correlationId: "lambda-req-1" });
     expect(typeof summaries[0]?.["durationMs"]).toBe("number");
     expect(JSON.stringify(summaries)).not.toContain(OWNER);
     expect(h.lines.filter((l) => l["msg"] === "upstream")).toHaveLength(h.calls.length);

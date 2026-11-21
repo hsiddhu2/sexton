@@ -7,7 +7,16 @@ import { loadScan } from "./load-scan.js";
 export type LoadState =
   | { readonly status: "loading"; readonly loadId: number }
   | { readonly status: "error"; readonly loadId: number; readonly error: LoadError }
-  | { readonly status: "ready"; readonly loadId: number; readonly response: ScanResponse; readonly isDemo: boolean };
+  | {
+      readonly status: "ready";
+      readonly loadId: number;
+      readonly response: ScanResponse;
+      readonly isDemo: boolean;
+      /** How the load started: the repository form (hosted) or an address. Spec evidence-pack, Requirement 8.2. */
+      readonly source: LoadSource;
+    };
+
+export type LoadSource = "hosted" | "address";
 
 export interface ScanLoader {
   readonly state: LoadState;
@@ -35,7 +44,7 @@ export function useScanLoader(deps: ScanLoaderDeps): ScanLoader {
   const idRef = useRef(0);
 
   const start = useCallback(
-    (address: string): void => {
+    (address: string, source: LoadSource = "address"): void => {
       idRef.current += 1;
       const loadId = idRef.current;
       controllerRef.current?.abort();
@@ -52,7 +61,7 @@ export function useScanLoader(deps: ScanLoaderDeps): ScanLoader {
         if (controllerRef.current !== controller) return;
         setState(
           result.ok
-            ? { status: "ready", loadId, response: result.value, isDemo }
+            ? { status: "ready", loadId, response: result.value, isDemo, source }
             : { status: "error", loadId, error: result.error },
         );
       });
@@ -74,7 +83,7 @@ export function useScanLoader(deps: ScanLoaderDeps): ScanLoader {
       if (apiBase === null) return HOSTED_UNAVAILABLE_TEXT;
       const trimmed = value.trim();
       if (trimmed === "" || trimmed.length > MAX_REPO_LENGTH) return REPO_INPUT_TEXT;
-      start(`${apiBase}/scan?repo=${encodeURIComponent(trimmed)}`);
+      start(`${apiBase}/scan?repo=${encodeURIComponent(trimmed)}`, "hosted");
       return null;
     },
     [apiBase, start],

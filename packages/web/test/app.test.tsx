@@ -183,12 +183,12 @@ describe("App demo scan", () => {
     return { fetchFn, urls };
   };
 
-  it("serves the Demo scan on the default load with eleven grave buttons and the demo label", async () => {
+  it("serves the Demo scan on the default load with twelve grave buttons and the demo label", async () => {
     const rec = demoRecorder();
     const { container } = mount(rec);
     await ready();
     expect(rec.urls).toEqual(["http://localhost/demo/scan.json"]);
-    expect(container.querySelectorAll("button[data-grave-index]").length).toBe(11);
+    expect(container.querySelectorAll("button[data-grave-index]").length).toBe(12);
     expect(container.querySelector("header")?.textContent).toContain("demo fixture, recorded data");
   });
 
@@ -197,7 +197,39 @@ describe("App demo scan", () => {
     const { container } = mount(rec, { search: "?scan=%2Fother.json" });
     await ready();
     expect(rec.urls).toEqual(["http://localhost/other.json"]);
-    expect(container.querySelectorAll("button[data-grave-index]").length).toBe(11);
+    expect(container.querySelectorAll("button[data-grave-index]").length).toBe(12);
     expect(container.textContent).not.toContain("demo fixture, recorded data");
+    expect(container.querySelector(".header-evidence")).toBeNull();
+  });
+
+  // Spec evidence-pack, Requirement 8.2: links per load source, and no fetch of the evidence.
+  it("links the demo evidence for the demo, also through ?scan=, and fetches no evidence", async () => {
+    for (const search of ["", "?scan=%2Fdemo%2Fscan.json"]) {
+      const rec = demoRecorder();
+      const { container, unmount } = mount(rec, { search });
+      await ready();
+      const links = [...container.querySelectorAll(".header-evidence a")].map((a) => a.getAttribute("href"));
+      expect(links).toEqual(["/demo/evidence.json", "/demo/evidence.md"]);
+      expect(rec.urls.some((u) => u.includes("evidence"))).toBe(false);
+      unmount();
+    }
+  });
+
+  it("links the API evidence endpoint for a scan requested through the form", async () => {
+    const rec = demoRecorder();
+    const { container } = mount(rec, { apiBase: API, search: "?scan=%2Fother.json" });
+    await ready();
+    expect(container.querySelector(".header-evidence")).toBeNull();
+    fireEvent.change(container.querySelector("input[name=repo]") as HTMLInputElement, { target: { value: "https://github.com/acme/app" } });
+    fireEvent.submit(container.querySelector("form") as HTMLFormElement);
+    await ready();
+    await waitFor(() => {
+      expect(container.querySelector(".header-evidence")).not.toBeNull();
+    });
+    // The demo body names sexton-demo/fixture in its scan metadata, so the link carries that canonical URL.
+    const repo = encodeURIComponent("https://github.com/sexton-demo/fixture");
+    const links = [...container.querySelectorAll(".header-evidence a")].map((a) => a.getAttribute("href"));
+    expect(links).toEqual([`${API}/evidence?repo=${repo}&format=json`, `${API}/evidence?repo=${repo}&format=md`]);
+    expect(rec.urls.some((u) => u.includes("evidence"))).toBe(false);
   });
 });

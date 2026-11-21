@@ -1,0 +1,13 @@
+{
+  "status": 200,
+  "body": {
+    "attestations": [
+      {
+        "predicateType": "https://github.com/npm/attestation/tree/main/specs/publish/v0.1"
+      },
+      {
+        "predicateType": "https://slsa.dev/provenance/v1"
+      }
+    ]
+  }
+}

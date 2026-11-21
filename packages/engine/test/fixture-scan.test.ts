@@ -1,4 +1,4 @@
-// Fixture scan of ten known packages against recorded upstream responses. Definition of done for spec 01.
+// Fixture scan of eleven known packages (ten from spec 01, semver from spec evidence-pack) against recorded upstream responses. Definition of done for spec 01.
 // Record fixtures with: node scripts/record-fixtures.mjs. Expected states are reviewed by hand in expected-states.json.
 
 import { existsSync, readFileSync } from "node:fs";
@@ -17,7 +17,7 @@ const expectedPath = join(FIXTURES_DIR, "expected-states.json");
 const recorded = manifest.every((p) => existsSync(join(fixtureDirFor(p.name), "packument.json"))) && existsSync(expectedPath);
 
 describe.skipIf(!recorded)("fixture scan", () => {
-  it("produces the expected state for each of the ten packages", async () => {
+  it("produces the expected state for each of the eleven packages", async () => {
     const expected = JSON.parse(readFileSync(expectedPath, "utf8")) as Record<string, { state: State; stateReason: string; missingSignals: string[] }>;
     const { transport, calls } = routedTransport(manifest.flatMap((p) => fixtureRoutes(p.name, p.installedVersion)));
     const report = await scorePackages(manifest, { transport, clock: () => NOW, retry: { sleep: () => Promise.resolve() } });
@@ -89,7 +89,7 @@ describe("seeded maintainer change", () => {
 });
 
 describe("fixture manifest", () => {
-  it("names the ten packages from the spec", () => {
-    expect(manifest.map((p) => p.name)).toEqual(["react", "lodash", "express", "request", "node-sass", "left-pad", "event-stream", "colors", "moment", "uuid"]);
+  it("names the ten packages from the spec and semver, the provenance package of spec evidence-pack", () => {
+    expect(manifest.map((p) => p.name)).toEqual(["react", "lodash", "express", "request", "node-sass", "left-pad", "event-stream", "colors", "moment", "uuid", "semver"]);
   });
 });
