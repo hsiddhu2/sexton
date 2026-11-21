@@ -3,7 +3,7 @@ import tseslint from "typescript-eslint";
 export default tseslint.config(
   {
     ignores: [
-      "**/dist/**", "**/node_modules/**", "private/**", "cdk.out/**", ".kiro/hooks/scripts/**",
+      "**/dist/**", "**/node_modules/**", "private/**", "cdk.out/**", "**/cdk.out/**", ".kiro/hooks/scripts/**",
       "packages/web/dist-e2e/**", "packages/web/dist-types/**", "packages/web/dist-types-node/**", "packages/web/test-results/**",
       "packages/web/playwright-report/**", "packages/web/e2e-artifacts/**", "packages/web/public/demo/**",
     ],
