@@ -9,7 +9,7 @@ import { FIXED_MESSAGES, type FunctionUrlResponse } from "../src/http/responses.
 import { createScanHandler, type ScanHandlerDeps } from "../src/scan-handler.js";
 import { CACHE_TABLE, MemoryDynamo, SEEN_INDEX, SNAPSHOTS_TABLE } from "./fakes/memory-dynamo.js";
 import { makeEvent } from "./support/events.js";
-import { FIXTURE_NOW, fixturePackages, packageRoutes, repoRoutes, routedTransport, type Route } from "./support/fixture-transport.js";
+import { FIXTURE_NOW, fixturePackages, packageRoutes, PLAN_ROUTES, repoRoutes, routedTransport, type Route } from "./support/fixture-transport.js";
 
 const OWNER = "sexton-demo";
 const REPO = "fixture";
@@ -41,6 +41,7 @@ const repoRoutesAll = () => repoRoutes(OWNER, REPO, packages);
 const allRoutes = (policy: Route = { url: POLICY_URL, status: 404, text: "" }): Route[] => [
   ...repoRoutesAll(),
   ...packages.flatMap((p) => packageRoutes(p.name, p.installedVersion)),
+  ...PLAN_ROUTES,
   policy,
 ];
 const query = (format?: string) => `repo=${encodeURIComponent(URL_REPO)}${format === undefined ? "" : `&format=${format}`}`;
@@ -65,7 +66,10 @@ describe("GET /api/evidence, JSON", () => {
     expect(pack.body.packages).toHaveLength(packages.length);
     expect(pack.body.sbom.components).toHaveLength(packages.length);
     expect(pack.body.scan).toMatchObject({ repository: URL_REPO, commit: null, policy: { version: 1, source: "default", digest: null } });
-    expect(pack.body.remediation).toEqual({ plans: [], log: { available: false, entries: [] } });
+    // The scan's plans reach the pack (spec hosted-plans, Requirement 7.2); no log until 10c (7.3).
+    expect(pack.body.remediation.plans.length).toBeGreaterThan(0);
+    expect(pack.body.remediation.plans.some((p) => p.kind === "remove")).toBe(false);
+    expect(pack.body.remediation.log).toEqual({ available: false, entries: [] });
   });
 
   it("records the manifest digests of the texts intake read, and the policy file digest", async () => {

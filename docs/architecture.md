@@ -36,8 +36,10 @@ Here is what happens when you paste a repository URL into the cemetery. Every st
 3. CloudFront forwards only the `repo` and `format` query parameters. It sends no cookies and no viewer headers. It signs the request with origin access control (OAC).
 4. The function URL uses IAM auth. It accepts the signed request from this distribution and rejects anything else with 403.
 5. The scan function checks the method, the path and the `repo` value before it does anything else. A bad request gets 400 and costs no upstream call.
-6. The engine reads `package.json` and `package-lock.json`, scores each direct dependency and evaluates the policy. Every upstream response goes through the DynamoDB cache for 24 hours.
-7. The function returns a `ScanResponse` with `Cache-Control: public, max-age=300` and an `x-sexton-request-id` header.
+6. The function reads the GitHub token from Secrets Manager, at most once every 15 minutes per container. With a token it asks api.github.com for the head commit of the default branch. Without a token, or when that read fails, it reads at `HEAD` and records no commit.
+7. The engine reads `package.json`, `package-lock.json` and `sexton.policy.yml` at that commit, scores each direct dependency and evaluates the policy. Every upstream response goes through the DynamoDB cache for 24 hours.
+8. The engine plans one remediation per Haunted, Dead or Possessed package: a bump for at most the first 25 bump targets, or a migration. A migration recipe that needs repository files gets a GitHub file source: the tree of the commit from api.github.com, then each file from raw.githubusercontent.com at the commit, without the token, for at most 15 seconds of reads. The hosted scan never proposes remove, because it cannot see the whole tree cheaply and a wrong removal costs more than a missing one. A failure in planning never fails the scan.
+9. The function returns a `ScanResponse` with `remediations` and `Cache-Control: public, max-age=300` and an `x-sexton-request-id` header.
 
 Why no API Gateway? A cold scan of 50 dependencies may take up to 60 seconds. An HTTP API stops waiting at 30 seconds. CloudFront can wait 60 seconds for a function URL with no quota increase. We also set CloudFront to try the API origin only once. A retry on a slow scan would start a second full scan.
 
@@ -48,7 +50,7 @@ The daily path is shorter, and it is built too. EventBridge Scheduler invokes th
 `GET /api/evidence?repo=<url>&format=json|md` runs on the same scan function, with the same role, WAF rule, cache and limits. There is no new function, table or permission. It runs the scan, then builds the pack in the engine:
 
 1. Intake also returns the `package.json` and `package-lock.json` texts it read. The API hashes them, and the policy file text when there is one, with SHA-256.
-2. The engine builds the body: scan metadata, a CycloneDX 1.5 SBOM of the direct dependencies, every package with its ten signals and their sources, the policy result, and the remediation plans and log. The hosted path has no remediation log and no head commit yet, and the pack says so.
+2. The engine builds the body: scan metadata, a CycloneDX 1.5 SBOM of the direct dependencies, every package with its ten signals and their sources, the policy result, and the remediation plans and log. The pack records the commit the scan read at, or says it was not recorded when the scan read `HEAD`, and carries the scan's plans. The remediation log arrives with the remediate endpoint.
 3. The engine takes the RFC 8785 canonical form of the body and puts its SHA-256 in `integrity.digest`.
 4. The function returns the JSON file, or the Markdown report rendered from it, as a download. The digest also goes in the `x-sexton-evidence-digest` header. A body over 5 MiB gets 422 `evidence-too-large`.
 
@@ -99,6 +101,7 @@ Each function has its own role with inline statements only. No managed policy is
 | scan role | `Query` | snapshots table | partition key starts with `snap#` |
 | scan role | `PutItem` | snapshots table | partition key starts with `seen#` |
 | scan role | `CreateLogStream`, `PutLogEvents` | its own log group | none |
+| scan role | `secretsmanager:GetSecretValue` | the GitHub token secret, by its exact ARN | none |
 | snapshotter role | `GetItem`, `PutItem` | cache table | none |
 | snapshotter role | `PutItem`, `Query` | snapshots table | none |
 | snapshotter role | `Query` | the `seen-by-time` index | none |

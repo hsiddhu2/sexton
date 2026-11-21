@@ -9,6 +9,7 @@ dist-types/
 dist-types-node/
 build/*
 !build/reviews/
+!build/infra/
 coverage/
 .turbo/
 # env and secrets

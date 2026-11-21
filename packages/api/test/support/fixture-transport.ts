@@ -122,3 +122,9 @@ export function routedTransport(routes: readonly Route[]): { transport: Transpor
   };
   return { transport, calls, unrouted };
 }
+
+/**
+ * Routes the hosted Plan stage adds over the fixtures (spec hosted-plans, Requirement 6): the fixture scan holds a Dead
+ * node-sass, so the plan stage asks for the sass packument. A 404 makes the migration unavailable, offline.
+ */
+export const PLAN_ROUTES: readonly Route[] = [{ url: "https://registry.npmjs.org/sass", accept: "application/json", status: 404, json: { error: "Not found" } }];

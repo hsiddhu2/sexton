@@ -15,6 +15,11 @@ const lock = JSON.parse(await readFile(new URL("package-lock.json", root), "utf8
 
 const workspaces = [];
 for (const entry of rootManifest.workspaces ?? []) {
+  // A plain directory entry, such as "infra", is one workspace.
+  if (/^[A-Za-z0-9_-][A-Za-z0-9._-]*(?:\/[A-Za-z0-9_-][A-Za-z0-9._-]*)*$/.test(entry)) {
+    workspaces.push({ dir: entry, manifest: JSON.parse(await readFile(new URL(`${entry}/package.json`, root), "utf8")) });
+    continue;
+  }
   const m = /^([A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*)\/\*$/.exec(entry);
   if (m === null) {
     console.error(`self-scan: unsupported workspaces entry ${JSON.stringify(entry)}`);

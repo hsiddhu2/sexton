@@ -723,7 +723,7 @@ cdk-nag 3 replaced `NagSuppressions` with CDK's `Validations.of(construct).ackno
 | AwsSolutions-CFR3 | | Distribution | Access logs are off in 0.1 for cost and to avoid storing viewer IP addresses; WAF sampled requests and Lambda logs cover operations. |
 | AwsSolutions-CFR4 | | Distribution | The default CloudFront certificate forces the TLSv1 security policy; TLS 1.2 minimum needs a custom domain, recorded in docs/threat-model.md. HSTS is set and modern clients negotiate TLS 1.3. |
 | AwsSolutions-S1 | | Web bucket | Server access logs are off in 0.1: the bucket is read only through CloudFront OAC and holds public build output. |
-| AwsSolutions-SMG4 | | GitHub token secret | The secret is an empty placeholder for spec 05; rotation is designed with the GitHub App flow in that spec. |
+| AwsSolutions-SMG4 | | GitHub token secret | The secret holds a fine-grained token HP created and rotates by hand before it expires (31 Jan 2027, runbook token rotation); a GitHub token cannot be rotated by a Lambda without a GitHub App, which 0.1 does not use. |
 | AwsSolutions-L1 | | Scan and snapshotter functions | tech.md fixes Node.js 22 for the whole repository; nodejs22.x is supported until 30 May 2027. |
 | AwsSolutions-IAM5 | `Resource::<SnapshotterFunction.Arn>:*` | Scheduler target role | CDK's scheduler target grants invoke on the snapshotter function and its versions (function ARN plus :*); it is one function and no other. |
 | AwsSolutions-L1 | | BucketDeployment handler | CDK-owned BucketDeployment custom resource: its runtime is chosen by CDK. |

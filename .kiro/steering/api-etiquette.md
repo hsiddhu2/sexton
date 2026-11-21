@@ -4,8 +4,9 @@ fileMatchPattern: "packages/engine/src/clients/**/*.ts"
 ---
 # Upstream etiquette
 
-Applies to every call to registry.npmjs.org, api.osv.dev, api.deps.dev, api.npmjs.org, api.scorecard.dev and raw.githubusercontent.com (no token, no cookies, HEAD ref only).
+Applies to every call to registry.npmjs.org, api.osv.dev, api.deps.dev, api.npmjs.org, api.scorecard.dev and raw.githubusercontent.com (no token, no cookies, HEAD or a 40 character commit SHA).
 
+- api.github.com: token in the Authorization header only, two read requests only: the head commit and the tree of a commit. No call without a token. No redirect followed.
 - Send User-Agent: sexton/<version> (+https://github.com/hsiddhu2/sexton) on every request.
 - Check the cache before every fetch. Cache key is source, package, version. TTL 24 hours.
 - On HTTP 429 or 503: exponential backoff from 500 ms with full jitter, at most 3 retries, then mark the signal unavailable with the status as reason.

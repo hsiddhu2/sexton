@@ -37,14 +37,14 @@ async function evidence(request: EvidenceRequestInput, deps: ScanDeps, requestId
     dependencies: scanned.dependencies,
     policyResult: scanned.body.policy,
     policyDigest: await hashOrNull(scanned.policyText),
-    // 10b resolves the head commit; until then the hosted pack says it was not recorded (handoff decision 13).
-    commit: null,
+    // The commit the scan read at, or null when it read HEAD (spec hosted-plans, Requirement 7.1).
+    commit: scanned.commit,
     manifestDigests: {
       packageJson: await hashOrNull(scanned.manifests?.packageJson),
       packageLock: await hashOrNull(scanned.manifests?.packageLock),
     },
-    // Nothing on the hosted scan path plans remediations or keeps a log yet (10b).
-    remediations: [],
+    // The scan's plans (7.2). The remediation log arrives with spec 10c (7.3).
+    remediations: scanned.body.remediations ?? [],
     remediationLog: null,
   });
   if (!built.ok) return errorResponse(internalErrorSpec(), requestId);
