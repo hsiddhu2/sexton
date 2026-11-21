@@ -28,3 +28,29 @@ Notes, and what was done:
 | Two bundled licences inside aws-cdk-lib: `case` (MIT or GPL-3.0-or-later) and `minimatch` (BlueOak-1.0.0) | Recorded in design.md, Dependencies. Both are permissive, and we take `case` under MIT |
 | HSTS `includeSubdomains` does nothing on a cloudfront.net host | Kept. It matters once a custom domain is added |
 | `LOG_RETENTION_DAYS` is checked with a throw rather than used | Kept. CDK takes an enum, and the check stops the constant and the enum from drifting |
+
+## Review 2: docs/architecture.md, docs/threat-model.md, docs/well-architected.md (task 12)
+
+Verdict: NOT READY, one defect, fixed.
+
+The reviewer checked the documents against the spec, the committed stacks and a fresh synth. Every IAM row, cost number, data-model detail, WAF rule, timeout, alarm and the append-only proof match. HP's TLSv1 limit and custom-domain path are recorded. Every section that requirement 12 asks for is present. There are no secrets, account IDs or local paths.
+
+Defect and fix:
+
+| Defect | Fix |
+|---|---|
+| threat-model.md promised that handler-level controls are marked "planned", but three were not: the 502 with no policy fallback, the shared 24-hour DynamoDB cache, and "no input comes back in a response". All three live in the unwritten packages/api | Each is now marked planned. The no-echo line says what the engine already does and what the API will add |
+
+Notes, and what was done:
+
+| Note | Action |
+|---|---|
+| "An upstream failure never fails the whole scan" was too broad | Now limited to scoring signals. It also says a missing manifest or an unreadable policy file fails the scan |
+| "Nothing bills by the hour except WAF" left out the secret | Now names WAF and the Secrets Manager placeholder as the fixed costs |
+| The request path and the snapshotter steps read as built | Both now say which steps are built and which are planned |
+| The architecture IAM table left out the CDK deploy handler | Row added, with its `*` invalidation grant explained |
+| Duplicate snapshots were filed under elevation of privilege | Moved to tampering |
+| The PITR citation is a PowerShell cmdlet page | Kept, and named as the RestoreTableToPointInTime reference. It is an AWS docs page and states the 35 days |
+| CI rows in the threat model are marked planned | Updated in the CI commit, once ci.yml is committed |
+| The 60% Graviton figure needs its citation checked | Checked in this session. The cited APN blog says Graviton uses "up to 60% less energy for the same performance compared to their x86 counterparts" |
+| HTTP to /api/* gets 403, not a redirect | Added to the threat model |
