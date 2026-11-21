@@ -17,6 +17,7 @@ import type {
   State,
   STATE_ORDER,
 } from "@sexton/engine";
+import type { RemediationEntry, REMEDIATION_STATUSES } from "@sexton/engine";
 
 export type {
   Advisory,
@@ -40,16 +41,10 @@ export type StateList = typeof STATE_ORDER;
 export type SeverityList = typeof SEVERITIES;
 export type RuleTypeList = typeof RULE_TYPES;
 
-export const REMEDIATION_KINDS = ["bump", "remove", "migrate"] as const;
-export type RemediationKind = (typeof REMEDIATION_KINDS)[number];
-
-/** Placeholder. A later remediation spec replaces it. */
-export interface RemediationEntry {
-  readonly packageName: string;
-  readonly kind: RemediationKind;
-  readonly title: string;
-  readonly prBody: string;
-}
+// Remediation shapes live in the engine (spec remediation, Requirement 7.1); the contract re-exports them.
+export type { PackageJsonEdit, PrIntent, RemediationEntry, RemediationKind, RemediationStatus } from "@sexton/engine";
+export { REMEDIATION_KINDS, REMEDIATION_STATUSES } from "@sexton/engine";
+export type RemediationStatusList = typeof REMEDIATION_STATUSES;
 
 export interface ScanResponse {
   readonly report: HealthReport;

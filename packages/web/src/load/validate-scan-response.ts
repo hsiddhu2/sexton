@@ -1,5 +1,5 @@
 import type { ScanResponse } from "@sexton/api";
-import { REMEDIATION_KINDS, RULE_TYPES, SEVERITIES, SIGNAL_NAMES, STATES } from "./lists.js";
+import { REMEDIATION_KINDS, REMEDIATION_STATUSES, RULE_TYPES, SEVERITIES, SIGNAL_NAMES, STATES } from "./lists.js";
 
 export const CONTRACT_ERROR_CODES = [
   "NOT_OBJECT",
@@ -296,8 +296,23 @@ function checkRemediations(w: Walk, root: Obj): void {
       else names.add(packageName);
     }
     w.str(entry, p, "title");
+    w.str(entry, p, "summary");
     w.str(entry, p, "prBody");
     w.oneOf(entry, p, "kind", REMEDIATION_KINDS);
+    w.oneOf(entry, p, "status", REMEDIATION_STATUSES);
+    if (has(entry, "chosenVersion")) w.str(entry, p, "chosenVersion");
+    if (has(entry, "majorUpgrade")) w.bool(entry, p, "majorUpgrade");
+    if (has(entry, "intent")) {
+      const intent = w.obj(entry, p, "intent");
+      if (intent !== undefined) {
+        const ip = `${p}/intent`;
+        w.str(intent, ip, "branch");
+        w.str(intent, ip, "title");
+        w.str(intent, ip, "body");
+        w.str(intent, ip, "baseRef");
+        w.arr(intent, ip, "files");
+      }
+    }
   }
 }
 
