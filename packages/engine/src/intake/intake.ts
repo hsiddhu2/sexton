@@ -3,6 +3,7 @@
 
 import { fetchManifest, type ManifestFile, type ManifestOutcome } from "../clients/github-raw.js";
 import type { ClientContext } from "../clients/context.js";
+import { HEAD_REF } from "../clients/github-ref.js";
 import { readFullPackument } from "../clients/npm.js";
 import { PACKAGE_CONCURRENCY, mapWithConcurrency } from "../score.js";
 import type { IntakeError, IntakePackage, IntakeResult, ParsedDependency, RepoRef, Resolution } from "../types.js";
@@ -77,18 +78,18 @@ export interface ManifestTexts {
   readonly packageLockText: string | null;
 }
 
-async function run(url: string, ctx: ClientContext): Promise<IntakeWithManifests> {
+async function run(url: string, ctx: ClientContext, ref: string): Promise<IntakeWithManifests> {
   const parsedUrl = parseRepoUrl(url);
   if (!parsedUrl.ok) return failed(parsedUrl);
   const repo: RepoRef = parsedUrl.repo;
 
-  const pkgOutcome = await fetchManifest(ctx, repo, "package.json");
+  const pkgOutcome = await fetchManifest(ctx, repo, "package.json", ref);
   if (pkgOutcome.kind !== "found") return failed(manifestError(pkgOutcome, "package.json"));
 
   // The lockfile is fetched only when package.json parses, as before (repo-intake Requirement 2.13).
   if (!parsePackageJson(pkgOutcome.text).ok) return fromManifests({ repo, packageJsonText: pkgOutcome.text, packageLockText: null }, ctx);
 
-  const lockOutcome = await fetchManifest(ctx, repo, "package-lock.json");
+  const lockOutcome = await fetchManifest(ctx, repo, "package-lock.json", ref);
   let lockText: string | null = null;
   if (lockOutcome.kind === "found") lockText = lockOutcome.text;
   else if (lockOutcome.kind !== "not-found") return failed(manifestError(lockOutcome, "package-lock.json"));
@@ -140,11 +141,12 @@ async function fromManifests(input: ManifestTexts, ctx: ClientContext): Promise<
 
 /**
  * Intake plus the manifest texts it read, so a caller can record their digests. Never rejects.
- * Spec evidence-pack, Requirement 6.1. IntakeSuccess does not change.
+ * Spec evidence-pack, Requirement 6.1. IntakeSuccess does not change. The optional Ref pins both reads to a commit
+ * (spec hosted-plans, Requirement 1.1); an invalid Ref fails as a fetch failure without a request.
  */
-export async function intakeRepoWithManifests(url: string, ctx: ClientContext): Promise<IntakeWithManifests> {
+export async function intakeRepoWithManifests(url: string, ctx: ClientContext, ref: string = HEAD_REF): Promise<IntakeWithManifests> {
   try {
-    return await run(url, ctx);
+    return await run(url, ctx, ref);
   } catch {
     return failed(INTERNAL_ERROR);
   }

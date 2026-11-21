@@ -12,6 +12,7 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as nodejs from "aws-cdk-lib/aws-lambda-nodejs";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import type * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as s3deploy from "aws-cdk-lib/aws-s3-deployment";
 import * as scheduler from "aws-cdk-lib/aws-scheduler";
 import * as schedulerTargets from "aws-cdk-lib/aws-scheduler-targets";
@@ -48,6 +49,8 @@ export interface DataRefs {
   readonly cacheTable: dynamodb.ITableV2;
   readonly snapshotsTable: dynamodb.ITableV2;
   readonly seenIndexName: string;
+  /** The GitHub token secret. Only the scan role reads it (spec hosted-plans, Requirement 8). */
+  readonly githubTokenSecret: secretsmanager.CfnSecret;
 }
 
 export interface SextonEdgeStackProps extends StackProps {
@@ -87,7 +90,7 @@ export class SextonEdgeStack extends Stack {
 
   constructor(scope: Construct, id: string, props: SextonEdgeStackProps) {
     super(scope, id, props);
-    const { cacheTable, snapshotsTable, seenIndexName } = props.data;
+    const { cacheTable, snapshotsTable, seenIndexName, githubTokenSecret } = props.data;
 
     const alarmEmail = new CfnParameter(this, "AlarmEmail", {
       type: "String",
@@ -130,6 +133,8 @@ export class SextonEdgeStack extends Stack {
         conditions: { "ForAllValues:StringLike": { "dynamodb:LeadingKeys": ["seen#*"] } },
       }),
     );
+    // The GitHub token, on its exact ARN (CfnSecret Ref is the ARN). Spec hosted-plans, Requirement 8.1.
+    this.scanRole.addToPolicy(new iam.PolicyStatement({ actions: ["secretsmanager:GetSecretValue"], resources: [githubTokenSecret.ref] }));
 
     this.snapshotterRole = new iam.Role(this, "SnapshotterRole", {
       assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
@@ -164,7 +169,8 @@ export class SextonEdgeStack extends Stack {
       memorySize: SCAN_MEMORY_MB,
       timeout: Duration.seconds(SCAN_TIMEOUT_SECONDS),
       reservedConcurrentExecutions: SCAN_RESERVED_CONCURRENCY,
-      environment,
+      // Only the scan function learns the secret ARN (spec hosted-plans, Requirements 8.2, 8.3).
+      environment: { ...environment, GITHUB_TOKEN_SECRET_ARN: githubTokenSecret.ref },
     });
     this.snapshotterFunction = makeFunction(this, "SnapshotterFunction", props.snapshotterCode, {
       description: "Sexton daily snapshotter",

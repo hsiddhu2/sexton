@@ -9,6 +9,7 @@ import { isValidOwner, isValidRepo } from "../intake/url.js";
 import type { RepoRef } from "../types.js";
 import type { ClientContext } from "./context.js";
 import { GITHUB_RAW_HOST, GITHUB_RAW_SOURCE } from "./github-raw.js";
+import { HEAD_REF, isValidRef, refCacheScope } from "./github-ref.js";
 
 export const POLICY_FILE = "sexton.policy.yml";
 export const MAX_POLICY_BYTES = 256 * 1024;
@@ -18,12 +19,13 @@ type CachedPolicy = { readonly kind: "found"; readonly text: string } | { readon
 
 const REQUEST: TransportRequest = { method: "GET", headers: { Accept: "text/plain" } };
 
-/** Re-checks the reference. Throws for an invalid one, so no request is ever built from it. */
-export function policyUrl(repo: Pick<RepoRef, "owner" | "repo">): string {
+/** Re-checks the reference and the Ref. Throws for an invalid one, so no request is ever built from it. */
+export function policyUrl(repo: Pick<RepoRef, "owner" | "repo">, ref: string = HEAD_REF): string {
   if (typeof repo.owner !== "string" || typeof repo.repo !== "string" || !isValidOwner(repo.owner) || !isValidRepo(repo.repo)) {
     throw new Error("invalid reference");
   }
-  return `${GITHUB_RAW_HOST}/${repo.owner}/${repo.repo}/HEAD/${POLICY_FILE}`;
+  if (!isValidRef(ref)) throw new Error("invalid reference");
+  return `${GITHUB_RAW_HOST}/${repo.owner}/${repo.repo}/${ref}/${POLICY_FILE}`;
 }
 
 async function download(ctx: ClientContext, url: string): Promise<CachedPolicy> {
@@ -37,15 +39,15 @@ async function download(ctx: ClientContext, url: string): Promise<CachedPolicy> 
 }
 
 /** Never rejects. */
-export async function fetchPolicyText(ctx: ClientContext, repo: Pick<RepoRef, "owner" | "repo">): Promise<PolicyText> {
+export async function fetchPolicyText(ctx: ClientContext, repo: Pick<RepoRef, "owner" | "repo">, ref: string = HEAD_REF): Promise<PolicyText> {
   let url: string;
   try {
-    url = policyUrl(repo);
+    url = policyUrl(repo, ref);
   } catch {
     return { kind: "failed" };
   }
   try {
-    return await ctx.cache.get<CachedPolicy>(cacheKey(GITHUB_RAW_SOURCE, `${repo.owner}/${repo.repo}`, POLICY_FILE), () => download(ctx, url));
+    return await ctx.cache.get<CachedPolicy>(cacheKey(GITHUB_RAW_SOURCE, refCacheScope(repo.owner, repo.repo, ref), POLICY_FILE), () => download(ctx, url));
   } catch {
     return { kind: "failed" };
   }

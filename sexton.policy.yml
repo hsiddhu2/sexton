@@ -8,15 +8,19 @@ rules:
       - Dead
   - name: No install scripts
     type: forbid_install_scripts
-    # Empty on purpose. The self-scan (npm run scan:self) covers the direct
-    # dependencies of the root and of every workspace under packages/. None
-    # declares an install, preinstall or postinstall script, or ships a
-    # binding.gyp. esbuild is not in the dependency tree: Vite 8 uses Rolldown.
-    # The only package in the lockfile with an install script is fsevents
-    # 2.3.3, which is optional and transitive, so it is not scanned.
+    # The self-scan (npm run scan:self) covers the direct dependencies of the
+    # root and of every workspace, packages/* and infra. Vite 8 uses Rolldown,
+    # so the web build needs no esbuild. fsevents 2.3.3 has an install script
+    # but is optional and transitive, so it is not scanned.
     # Add a package here, with a comment saying what its script does, only
     # when one is reviewed and accepted.
-    allow: []
+    allow:
+      # esbuild 0.28.2, a devDependency of infra only, used by CDK to bundle
+      # the Lambda functions. Its postinstall checks that the platform binary
+      # from its optional @esbuild/* dependency is present and runnable; it
+      # downloads nothing when that package installed. Accepted by HP on
+      # 20 Nov 2026. Never shipped to Lambda or the browser.
+      - esbuild
   - name: Published within 24 months
     type: max_age_months
     months: 24

@@ -260,3 +260,21 @@ export { cleanLine } from "./remediation/clean-line.js";
 export { countReferences, isCountedPath, COUNTED_EXTENSIONS } from "./remediation/count-references.js";
 export type { CapLimits } from "./remediation/capped-source.js";
 export { REMOVE_CHECK_LINE } from "./remediation/pr-body.js";
+
+// Spec hosted-plans: Refs, the two GitHub API reads and the GitHub File source.
+export { HEAD_REF, isCommitSha, isValidRef } from "./clients/github-ref.js";
+export {
+  GITHUB_API_ORIGIN,
+  GITHUB_API_VERSION,
+  MAX_TREE_BYTES,
+  MAX_TREE_ENTRIES,
+  TOKEN_PATTERN,
+  headCommitUrl,
+  isToken,
+  listTree,
+  resolveHeadCommit,
+  treeUrl,
+} from "./clients/github-api.js";
+export type { ApiFailure, ApiFailureReason, GithubAuth, HeadCommit, TreeListing, TreeOutcome } from "./clients/github-api.js";
+export { GithubFileSource, githubFileUrl, READ_BUDGET_MS } from "./clients/github-file-source.js";
+export type { GithubFileSourceOptions, GithubSourceCounts } from "./clients/github-file-source.js";

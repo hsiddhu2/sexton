@@ -55,7 +55,7 @@ export const NAG_SUPPRESSIONS: readonly NagSuppression[] = [
   {
     rule: "AwsSolutions-SMG4",
     targets: [{ stack: "data", child: "GithubTokenSecret" }],
-    reason: "The secret is an empty placeholder for spec 05; rotation is designed with the GitHub App flow in that spec.",
+    reason: "The secret holds a fine-grained token HP created and rotates by hand before it expires (31 Jan 2027, runbook token rotation); a GitHub token cannot be rotated by a Lambda without a GitHub App, which 0.1 does not use.",
   },
   {
     rule: "AwsSolutions-L1",

@@ -6,6 +6,8 @@ export interface TransportRequest {
   readonly method: "GET" | "POST";
   readonly headers: Readonly<Record<string, string>>;
   readonly body?: string;
+  /** "manual" turns redirect following off, so a 3xx is answered as itself (spec hosted-plans, Requirement 2.10). */
+  readonly redirect?: "manual";
 }
 
 export type TextBody =
@@ -55,6 +57,7 @@ export function createFetchTransport(fetchImpl: typeof fetch = fetch): Transport
       headers: { ...request.headers, "User-Agent": USER_AGENT },
     };
     if (request.body !== undefined) init.body = request.body;
+    if (request.redirect === "manual") init.redirect = "manual";
     const response = await fetchImpl(url, init);
     return {
       status: response.status,

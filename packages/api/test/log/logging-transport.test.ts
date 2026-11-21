@@ -123,3 +123,25 @@ describe("upstreamFields", () => {
     expect(upstreamFields("not a url SECRET", 0, 1)).toEqual({ msg: "upstream", host: "invalid-url", path: "", status: 0, latencyMs: 1 });
   });
 });
+
+describe("hosted-plans 9.2: an Authorization header never reaches a log line", () => {
+  it("logs host only for api.github.com, whatever the token, status or failure", async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.stringMatching(/^[A-Za-z0-9_]{20,60}$/).map((s) => ["github", "pat", s].join("_")),
+        fc.constantFrom(200, 301, 403, 404, 500),
+        fc.boolean(),
+        async (token, status, throws) => {
+          const inner: Transport = () => (throws ? Promise.reject(new Error(token)) : Promise.resolve({ status, json: () => Promise.resolve({ token }) }));
+          const { lines, transport } = harness(inner);
+          const request: TransportRequest = { method: "GET", headers: { Authorization: `Bearer ${token}` }, redirect: "manual" };
+          await transport("https://api.github.com/repos/o/r/commits/HEAD", request).catch(() => undefined);
+          expect(lines).toHaveLength(1);
+          expect(lines[0]).not.toContain(token);
+          expect(JSON.parse(lines[0] ?? "{}")).toMatchObject({ host: "api.github.com", path: "" });
+        },
+      ),
+      { numRuns: 1000 },
+    );
+  });
+});

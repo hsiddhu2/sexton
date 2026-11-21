@@ -6,6 +6,7 @@ import { isValidOwner, isValidRepo } from "../intake/url.js";
 import { parsePackageJson } from "../intake/manifest.js";
 import type { RepoRef } from "../types.js";
 import type { ClientContext } from "./context.js";
+import { HEAD_REF, isValidRef, refCacheScope } from "./github-ref.js";
 
 export const GITHUB_RAW_SOURCE = "github-raw";
 export const GITHUB_RAW_HOST = "https://raw.githubusercontent.com";
@@ -39,13 +40,14 @@ const FILE_NAMES: Readonly<Record<ManifestFile, string>> = {
 const REQUEST: TransportRequest = { method: "GET", headers: { Accept: "text/plain" } };
 const NOT_FOUND: CachedManifest = { kind: "not-found" };
 
-/** Builds the one URL shape this client may request. Throws on an invalid reference. */
-export function manifestUrl(reference: Pick<RepoRef, "owner" | "repo">, file: ManifestFile): string {
+/** Builds the one URL shape this client may request. Throws on an invalid reference or Ref (spec hosted-plans, 1.2). */
+export function manifestUrl(reference: Pick<RepoRef, "owner" | "repo">, file: ManifestFile, ref: string = HEAD_REF): string {
   const name = Object.hasOwn(FILE_NAMES, file) ? FILE_NAMES[file] : undefined;
   if (name === undefined) throw new Error("invalid manifest file");
   if (typeof reference.owner !== "string" || typeof reference.repo !== "string") throw new Error("invalid reference");
   if (!isValidOwner(reference.owner) || !isValidRepo(reference.repo)) throw new Error("invalid reference");
-  return `${GITHUB_RAW_HOST}/${reference.owner}/${reference.repo}/HEAD/${name}`;
+  if (!isValidRef(ref)) throw new Error("invalid reference");
+  return `${GITHUB_RAW_HOST}/${reference.owner}/${reference.repo}/${ref}/${name}`;
 }
 
 async function download(ctx: ClientContext, url: string): Promise<CachedManifest> {
@@ -70,15 +72,15 @@ function outcomeFromError(error: unknown): ManifestOutcome {
 }
 
 /** Fetches one Manifest through the Transport and the Cache. Never throws. */
-export async function fetchManifest(ctx: ClientContext, reference: RepoRef, file: ManifestFile): Promise<ManifestOutcome> {
+export async function fetchManifest(ctx: ClientContext, reference: RepoRef, file: ManifestFile, ref: string = HEAD_REF): Promise<ManifestOutcome> {
   let url: string;
   try {
-    url = manifestUrl(reference, file);
+    url = manifestUrl(reference, file, ref);
   } catch {
     return { kind: "failed", failure: "invalid-reference", status: null };
   }
   try {
-    const key = cacheKey(GITHUB_RAW_SOURCE, `${reference.owner}/${reference.repo}`, file);
+    const key = cacheKey(GITHUB_RAW_SOURCE, refCacheScope(reference.owner, reference.repo, ref), file);
     return await ctx.cache.get<CachedManifest>(key, () => download(ctx, url));
   } catch (error) {
     return outcomeFromError(error);
@@ -90,10 +92,11 @@ export async function fetchRepoManifests(
   ctx: ClientContext,
   reference: RepoRef,
   gate: (packageJsonText: string) => boolean = (text) => parsePackageJson(text).ok,
+  ref: string = HEAD_REF,
 ): Promise<{ readonly packageJson: ManifestOutcome; readonly lockfile: LockfileOutcome }> {
-  const packageJson = await fetchManifest(ctx, reference, "package.json");
+  const packageJson = await fetchManifest(ctx, reference, "package.json", ref);
   if (packageJson.kind !== "found" || !gate(packageJson.text)) {
     return { packageJson, lockfile: { kind: "not-attempted" } };
   }
-  return { packageJson, lockfile: await fetchManifest(ctx, reference, "package-lock.json") };
+  return { packageJson, lockfile: await fetchManifest(ctx, reference, "package-lock.json", ref) };
 }

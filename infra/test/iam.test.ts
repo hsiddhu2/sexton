@@ -132,7 +132,13 @@ describe("Feature: infra, Property 13: IAM policy shape", () => {
     const scan = statements.filter((s) => s.source.includes("ScanRoleDefaultPolicy"));
     const shape = scan.map((s) => ({
       actions: [...s.actions].sort(),
-      table: /CacheTable/.test(JSON.stringify(s.resources)) ? "cache" : /SnapshotsTable/.test(JSON.stringify(s.resources)) ? "snapshots" : "logs",
+      table: /CacheTable/.test(JSON.stringify(s.resources))
+        ? "cache"
+        : /SnapshotsTable/.test(JSON.stringify(s.resources))
+          ? "snapshots"
+          : /GithubTokenSecret/.test(JSON.stringify(s.resources))
+            ? "secret"
+            : "logs",
       condition: s.condition ?? null,
     }));
     expect(shape).toEqual([
@@ -140,6 +146,8 @@ describe("Feature: infra, Property 13: IAM policy shape", () => {
       { actions: ["dynamodb:GetItem", "dynamodb:PutItem"], table: "cache", condition: null },
       { actions: ["dynamodb:Query"], table: "snapshots", condition: { "ForAllValues:StringLike": { "dynamodb:LeadingKeys": ["snap#*"] } } },
       { actions: ["dynamodb:PutItem"], table: "snapshots", condition: { "ForAllValues:StringLike": { "dynamodb:LeadingKeys": ["seen#*"] } } },
+      // Spec hosted-plans, Requirement 8.1.
+      { actions: ["secretsmanager:GetSecretValue"], table: "secret", condition: null },
     ]);
   });
 
@@ -185,11 +193,17 @@ describe("Feature: infra, Property 13: IAM policy shape", () => {
     }
   });
 
-  it("grants no role access to the GitHub token secret (9.6)", () => {
-    for (const s of statements) {
-      for (const a of s.actions) expect(a.startsWith("secretsmanager:"), `${s.source} grants ${a}`).toBe(false);
-      expect(JSON.stringify(s.resources)).not.toContain("GithubTokenSecret");
-    }
+  // Superseded in part by spec hosted-plans, Requirement 8: the scan role, and only it, reads the secret on its exact ARN.
+  it("lets only the scan role read the GitHub token secret, with GetSecretValue on its exact ARN (hosted-plans 8.1, 8.3)", () => {
+    const secretStatements = statements.filter((s) => s.actions.some((a) => a.startsWith("secretsmanager:")) || JSON.stringify(s.resources).includes("GithubTokenSecret"));
+    expect(secretStatements).toHaveLength(1);
+    const [only] = secretStatements;
+    expect(only?.source).toMatch(/^edge\/ScanRole/);
+    expect(only?.actions).toEqual(["secretsmanager:GetSecretValue"]);
+    expect(only?.resources).toHaveLength(1);
+    expect(JSON.stringify(only?.resources[0])).toMatch(/GithubTokenSecret/);
+    expect(JSON.stringify(only?.resources)).not.toContain("*");
+    expect(only?.condition).toBeUndefined();
   });
 
   it("lets the scheduler invoke only the snapshotter", () => {

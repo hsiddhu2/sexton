@@ -8,7 +8,7 @@ Everything is code. One CDK app in `infra/` defines both stacks, and the tests s
 
 ## Security
 
-The public entry is CloudFront with WAF in front. WAF runs two AWS managed rule groups and a per-IP rate limit on the API. The function URL uses IAM auth, so only CloudFront can call it. Each function has its own role with inline statements only, and no role can update or delete a snapshot. Everything read from a scanned repository is treated as untrusted data. The trade-off is the TLS policy. With the default CloudFront certificate the minimum is TLS 1.0, and raising it needs a custom domain. We accepted that for release 0.1, and the threat model lists the steps to fix it.
+The public entry is CloudFront with WAF in front. WAF runs two AWS managed rule groups and a per-IP rate limit on the API. The function URL uses IAM auth, so only CloudFront can call it. Each function has its own role with inline statements only, and no role can update or delete a snapshot. Everything read from a scanned repository is treated as untrusted data. The GitHub token lives in Secrets Manager, and only the scan role can read it, by its exact ARN. The function keeps the answer for 15 minutes per container, as AWS recommends caching secrets on the client, so a burst of scans costs one Secrets Manager call. A missing or broken secret means no token, not a failed scan. The trade-off is the TLS policy. With the default CloudFront certificate the minimum is TLS 1.0, and raising it needs a custom domain. We accepted that for release 0.1, and the threat model lists the steps to fix it.
 
 ## Reliability
 

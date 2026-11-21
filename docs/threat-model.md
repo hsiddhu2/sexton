@@ -52,6 +52,7 @@ The policy file is parsed by the engine's YAML parser and checked against a JSON
 | Tampering | A hostile manifest tries prototype pollution or a URL in a version field | Own-property reads, validated names and versions, fixed URL hosts. Covered by property tests in the engine |
 | Information disclosure | Logs leak a token or a response body | Log lines hold scalars only: the host and path of each upstream call, never the query, a header or the body. For GitHub hosts no owner or repository is logged: raw file requests keep only the file path, and other GitHub hosts log no path. Property tests plant marker strings in the query, the body, and the owner and repository to prove it |
 | Denial of service | A huge repository or a very slow upstream | The 300-dependency cap, a 60-second timeout, one CloudFront attempt and reserved concurrency of 10 |
+| Information disclosure | The GitHub token leaves its one use | The token is read only by the scan role and only inside the scan function. It goes in the `Authorization` header of two read requests to `https://api.github.com`, the head commit and the tree of a commit, built from a validated owner, repository and commit SHA, and never follows a redirect. It is not part of the context other clients get, so no registry, OSV or raw read can carry it. It is never in a URL, a cache key or value, a log line, an error or a response body. A value that is not a GitHub token shape is never sent. Property tests check this at 1000 runs |
 | Elevation of privilege | A bug in scan code tries to rewrite history | The scan role cannot write any `snap#` item. It can only add `seen#` records |
 | Repudiation | Nobody can tell which request failed | Every response carries `x-sexton-request-id`, and every log line of that request carries the same ID |
 
@@ -141,6 +142,17 @@ The pack is built from untrusted text: package names, versions, advisory summari
 6. **Comment hijack.** The Action updates a marker comment only when `github-actions[bot]` wrote it, so nobody can plant a marker comment for Sexton to fill and then rewrite.
 7. **The limit of the remove check.** Sexton counts quoted references in source, config and style files and script commands. A package loaded by a computed name, or named only in a file type it does not read, is not seen. Also unseen: untracked files, files under `dist`, `build` or `coverage`, unquoted paths such as `node_modules/n/x.js` in a script or `/node_modules/n/` in HTML, a package used only through a binary of another name (such as `tsc` for `typescript`), and escaped quotes. Remove is offered only for `dependencies`, only when every file was read (a sparse checkout counts as not read), and the pull request body tells the reviewer to check.
 8. **The dogfood workflow builds pull request code**, as ci.yml does. Callers using the published Action build only the Action's own checkout.
+
+### The GitHub token on the hosted scan
+
+The hosted scan reads a fine-grained token that HP created. It can write to `hsiddhu2/sexton-demo` for the remediate endpoint, and like every fine-grained token it can read every public repository. This scan only reads, with two request shapes on one host.
+
+- Without a token the scan makes no api.github.com call at all. Lambda addresses are shared, and the anonymous limit is 60 requests an hour. The scan reads at `HEAD`, records no commit, and still plans.
+- With a token, the scan reads the manifests and the policy at one commit, so the evidence pack names exactly what was scanned. If the head commit read fails, the scan falls back to `HEAD` and logs one line with the status only.
+- Raw file reads never carry the token, pinned or not. If `sexton-demo` were private, the token could read it, but a hosted scan of it fails at intake before any tree read, because raw reads are anonymous.
+- The head commit read runs on every scan and every evidence download. The token's 5,000 requests an hour are shared with the remediate endpoint's writes. WAF and the reserved concurrency of 10 bound the rate; a flood of scans could still spend the budget for an hour.
+- A migration recipe on the hosted path reads up to 200 repository files. Each read logs one line with the file path, never the owner or the repository.
+- The hosted scan never proposes removing a package. It cannot see untracked or generated files, and reading a whole tree costs thousands of requests. A wrong removal breaks a build; a missing one only leaves a plan out.
 
 ### Other accepted limits
 

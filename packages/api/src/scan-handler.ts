@@ -39,6 +39,8 @@ export interface ScanHandlerDeps {
   readonly sink?: (line: string) => void;
   readonly retry?: RetryOptions;
   readonly intake?: ScanDeps["intake"];
+  /** One provider per container (spec hosted-plans, Requirement 4.4). Absent means no token. */
+  readonly githubToken?: ScanDeps["githubToken"];
 }
 
 export type ScanHandler = (event: LambdaFunctionURLEvent, context: { readonly awsRequestId: string }) => Promise<FunctionUrlResponse>;
@@ -57,6 +59,7 @@ export function createScanHandler(deps: ScanHandlerDeps): ScanHandler {
         log,
         ...(deps.retry !== undefined ? { retry: deps.retry } : {}),
         ...(deps.intake !== undefined ? { intake: deps.intake } : {}),
+        ...(deps.githubToken !== undefined ? { githubToken: deps.githubToken } : {}),
       });
       // GET /api/evidence on the same function (spec evidence-pack, Requirement 7.1). Every other path is the scan path.
       if (event.rawPath === EVIDENCE_PATH) {

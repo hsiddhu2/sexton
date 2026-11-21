@@ -14,7 +14,7 @@ import { createScanHandler, readScanEnvironment, type ScanHandlerDeps } from "..
 import { arbEvent, arbHostileRepo } from "./arbitraries.js";
 import { CACHE_TABLE, MemoryDynamo, SEEN_INDEX, SNAPSHOTS_TABLE } from "./fakes/memory-dynamo.js";
 import { makeEvent, repoQuery } from "./support/events.js";
-import { ENGINE_FIXTURES, FIXTURE_NOW, fixturePackages, packageRoutes, repoRoutes, routedTransport, type Route } from "./support/fixture-transport.js";
+import { ENGINE_FIXTURES, FIXTURE_NOW, fixturePackages, packageRoutes, PLAN_ROUTES, repoRoutes, routedTransport, type Route } from "./support/fixture-transport.js";
 
 const ENVIRONMENT = { cacheTable: CACHE_TABLE, snapshotsTable: SNAPSHOTS_TABLE, seenIndex: SEEN_INDEX };
 const CONTEXT = { awsRequestId: "lambda-req-1" };
@@ -54,7 +54,7 @@ function json(result: FunctionUrlResponse): Record<string, unknown> {
   return JSON.parse(result.body ?? "null") as Record<string, unknown>;
 }
 
-const allPackageRoutes = () => fixturePackages().flatMap((p) => packageRoutes(p.name, p.installedVersion));
+const allPackageRoutes = () => [...fixturePackages().flatMap((p) => packageRoutes(p.name, p.installedVersion)), ...PLAN_ROUTES];
 
 describe("Feature: infra, Property 9: Request validation is exclusive (handler)", () => {
   it("either rejects with no I/O, or calls intake exactly once with the Canonical URL", async () => {

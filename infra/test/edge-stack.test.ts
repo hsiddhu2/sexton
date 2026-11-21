@@ -43,10 +43,13 @@ describe("functions (5.6, 7.2, 6.6)", () => {
     });
   });
 
-  it("passes table names and the index name, and no secret, in the environment", () => {
+  it("passes table names, the index name and, to the scan function only, the secret ARN in the environment (hosted-plans 8.2, 8.3)", () => {
     const env = (fnProps("ScanFunction")["Environment"] as { Variables: Record<string, unknown> }).Variables;
-    expect(Object.keys(env).sort()).toEqual(["CACHE_TABLE", "NODE_OPTIONS", "SEEN_INDEX", "SNAPSHOTS_TABLE", "STAGE"]);
+    expect(Object.keys(env).sort()).toEqual(["CACHE_TABLE", "GITHUB_TOKEN_SECRET_ARN", "NODE_OPTIONS", "SEEN_INDEX", "SNAPSHOTS_TABLE", "STAGE"]);
     expect(env["SEEN_INDEX"]).toBe("seen-by-time");
+    expect(JSON.stringify(env["GITHUB_TOKEN_SECRET_ARN"])).toMatch(/GithubTokenSecret/);
+    const snapshotter = (fnProps("SnapshotterFunction")["Environment"] as { Variables: Record<string, unknown> }).Variables;
+    expect(Object.keys(snapshotter).sort()).toEqual(["CACHE_TABLE", "NODE_OPTIONS", "SEEN_INDEX", "SNAPSHOTS_TABLE", "STAGE"]);
   });
 
   it("creates one log group per function with 30 days retention", () => {
