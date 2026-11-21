@@ -54,3 +54,22 @@ Notes, and what was done:
 | CI rows in the threat model are marked planned | Updated in the CI commit, once ci.yml is committed |
 | The 60% Graviton figure needs its citation checked | Checked in this session. The cited APN blog says Graviton uses "up to 60% less energy for the same performance compared to their x86 counterparts" |
 | HTTP to /api/* gets 403, not a redirect | Added to the threat model |
+
+## Review 3: .github/workflows/ci.yml (task 11)
+
+Verdict: READY. No defects.
+
+The reviewer confirmed both action SHAs against their tags with `git ls-remote` (lightweight tags, so the SHA is the commit). There are no secrets, no AWS variables, no credentials step and no deploy, and the only permission is `contents: read`. The reviewer also checked that each job's commands work on a fresh runner. The self-scan builds the engine before it runs. The infra job finds the hoisted `cdk` and `tsx` after `npm ci`, and it synthesises with placeholder handlers and no web build, so it needs no Docker, no bundling and no credentials.
+
+Notes, and what was done:
+
+| Note | Action |
+|---|---|
+| The self-scan calls public APIs with no token, so shared runner IPs could hit rate limits | Kept. The self-scan reads local manifests and calls npm, OSV and deps.dev, with backoff on 429 and 503. Watch the first CI runs |
+| The infra job repeats the infra tests that gates already ran | Kept. The job's own value is the build plus a real `cdk synth` |
+| Once the API handlers exist, macOS gates will bundle with esbuild | esbuild is already a dev dependency of infra |
+| `on: push` plus `pull_request` runs twice on PR branches | Accepted |
+| When the web build joins, check it runs offline | To check when cemetery-ui is on main |
+| Task 11.2's local check is not a committed script | Recorded here instead. The check parsed the YAML, found 6 action uses and 0 unpinned, and found no `secrets.`, credentials step or `cdk deploy`. It then ran `npm run build`, `cdk synth -q` with AWS variables unset, and the infra tests (44 passed), plus `npm run scan:self` (policy passed) |
+| Tasks 12.1 to 12.3 are ticked in this commit | They were finished in the docs commit, 126bb27 |
+| A note from the session, not the reviewer: the self-scan reads only the root package.json, so infra's dependencies are not scanned. esbuild in infra has an install script | Raised with HP. The script is Kiro's (scripts/self-scan.mjs) |

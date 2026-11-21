@@ -449,11 +449,11 @@ export function runSnapshotJob(deps: { store: SnapshotStore; ctx: ClientContext;
 
 ### .github/workflows/ci.yml (Requirement 11)
 
-Three jobs, `permissions: contents: read`, actions pinned by full commit SHA, `concurrency` per ref with cancel-in-progress:
+Three jobs, `permissions: contents: read`, actions pinned by full commit SHA (actions/checkout v7.0.1 `3d3c42e5aac5ba805825da76410c181273ba90b1`, actions/setup-node v7.1.0 `949feb2413d6458794dcd2491c4babbbce0c15c1`), `persist-credentials: false` on checkout, `concurrency` per ref with cancel-in-progress:
 
 1. `gates`: matrix `macos-latest`, `ubuntu-latest`; `actions/setup-node` Node 22 with npm cache; `npm ci`; `npm run typecheck`; `npm run lint`; `npm test`.
 2. `self-scan` (ubuntu, needs gates): `npm ci`; `npm run build -w @sexton/engine`; `npm run scan:self`. This job has network. The script exits non-zero on a policy failure, which fails the build (N-7).
-3. `infra` (ubuntu, needs gates): `npm ci`; `npm run build -w @sexton/web` (needs the demo scan, offline); `npx cdk synth --all -q` in `infra/` with no AWS credentials; `npm test -w sexton-infra` (assertions, IAM test and cdk-nag test). No job has AWS credentials and no job deploys.
+3. `infra` (ubuntu, needs gates): `npm ci`; `npm run build` (every workspace with a build script; the web build joins once cemetery-ui is on main); `npx cdk synth -q` in `infra/` with no AWS credentials; `npm test -w sexton-infra` (assertions, IAM test and cdk-nag test). No job has AWS credentials and no job deploys.
 
 `cdk synth` with no credentials works because the stacks use only `env.region` and no context lookups (`fromLookup` is not used anywhere, a test asserts no `cdk.context.json` lookups are needed).
 

@@ -152,24 +152,24 @@ Ordering constraints, recorded here:
     - Property 14 (cdk-nag AwsSolutions is clean): zero error and warning annotations on both stacks; every applied suppression is in `NAG_SUPPRESSIONS`; every reason is at least 20 characters and appears verbatim in design.md. Also a scan of `infra/` and `packages/api/src` for strings that look like keys or tokens (AWS key ID pattern, `ghp_`, `github_pat_`, `-----BEGIN`).
     - _Requirements: 9.4, 10.3, 10.4_
 
-- [ ] 11. CI workflow
+- [x] 11. CI workflow
   - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5_
-  - [ ] 11.1 Write .github/workflows/ci.yml
-    - Jobs `gates` (matrix macos-latest and ubuntu-latest, Node 22), `self-scan` (ubuntu, `npm run build -w @sexton/engine` then `npm run scan:self`) and `infra` (ubuntu, web build, `cdk synth --all -q`, infra tests). `permissions: contents: read`, actions pinned by full SHA (looked up at task time and recorded with their tag in a comment), concurrency per ref, no secrets, no deploy.
+  - [x] 11.1 Write .github/workflows/ci.yml
+    - Jobs `gates` (matrix macos-latest and ubuntu-latest, Node 22), `self-scan` (ubuntu, `npm run build -w @sexton/engine` then `npm run scan:self`) and `infra` (ubuntu, `npm run build` for every workspace that has a build, `cdk synth -q` in infra/, infra tests). `permissions: contents: read`, actions pinned by full SHA (looked up at task time and recorded with their tag in a comment), concurrency per ref, no secrets, no deploy.
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5_
-  - [ ] 11.2 Check the workflow locally
+  - [x] 11.2 Check the workflow locally
     - Parse the YAML, assert every `uses:` has a 40-character SHA, no `secrets.` reference, no `aws-actions/configure-aws-credentials`, no `cdk deploy`. Run the `infra` job's commands locally with no AWS credentials in the environment.
     - _Requirements: 11.3, 11.4, 11.5_
 
-- [ ] 12. Documentation
+- [x] 12. Documentation
   - _Requirements: 10.1, 10.2, 12.1, 12.2, 12.3_
-  - [ ] 12.1 Write docs/architecture.md
+  - [x] 12.1 Write docs/architecture.md
     - One Mermaid diagram, the request path, the data model, the IAM table and the cost table, taken from design.md and kept in step with it.
     - _Requirements: 10.1, 10.2, 12.1_
-  - [ ] 12.2 Write docs/threat-model.md
+  - [x] 12.2 Write docs/threat-model.md
     - STRIDE per component (CloudFront and WAF, function URL, scan function, snapshotter, DynamoDB, web bucket, CI), the untrusted-input story from repo-intake, the append-only proof and its residual risk, and the abuse cases of the public endpoint (scan flooding, huge repositories, hostile manifests and policy files, cost exhaustion, direct function URL calls) with their controls.
     - _Requirements: 12.2_
-  - [ ] 12.3 Write docs/well-architected.md
+  - [x] 12.3 Write docs/well-architected.md
     - One paragraph each for operational excellence, security, reliability, performance efficiency, cost optimisation and sustainability, naming the trade-offs (default certificate, no access logs, WAF fixed cost, single region).
     - _Requirements: 12.3_
 

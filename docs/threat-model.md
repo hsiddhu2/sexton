@@ -82,8 +82,8 @@ The policy file is parsed by the engine's YAML parser and checked against a JSON
 
 | Threat | Example | Control |
 |---|---|---|
-| Elevation of privilege | A workflow change deploys to AWS or reads a secret | Planned: the workflow holds no AWS credentials and no secrets, asks only for `contents: read`, and never deploys |
-| Tampering | A third-party action is swapped for a bad version | Planned: every action is pinned to a full commit SHA |
+| Elevation of privilege | A workflow change deploys to AWS or reads a secret | The workflow in `.github/workflows/ci.yml` holds no AWS credentials and no secrets, asks only for `contents: read`, and never deploys |
+| Tampering | A third-party action is swapped for a bad version | Every action is pinned to a full commit SHA, and checkout keeps no credentials |
 
 ## The append-only proof and what it does not cover
 
