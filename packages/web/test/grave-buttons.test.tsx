@@ -4,6 +4,7 @@ import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 import { Cemetery } from "../src/Cemetery.js";
 import { graveLabel } from "../src/overlay/grave-label.js";
+import { planScene } from "../src/scene/layout.js";
 import { triageOrder } from "../src/triage/triage.js";
 import { arbGraveCount, cheapScan, scenePackage, type AdvisoryMode } from "./arbitraries.js";
 
@@ -99,5 +100,31 @@ describe("grave buttons", () => {
   it("renders no button for zero packages", () => {
     const { container } = render(<Cemetery response={cheapScan(0)} theme="light" reducedMotion={true} />);
     expect(buttons(container)).toHaveLength(0);
+  });
+});
+
+describe("Feature: cemetery-theme, Property 8: Overlay buttons follow the plan", () => {
+  it("gives each button the rectangle of its grave", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 1, max: 300 }), (count) => {
+        const response = cheapScan(count);
+        const { container, unmount } = render(<Cemetery response={response} theme="light" reducedMotion={true} />);
+        // jsdom reports no container width, so the layout clamps to the minimum width.
+        const plan = planScene({ packages: triageOrder(response.report.packages), width: 0, theme: "light", selectedIndex: null, ghostPhase: 0 });
+        const list = buttons(container);
+        expect(list).toHaveLength(count);
+        list.forEach((button, i) => {
+          const rect = plan.graves[i]?.rect;
+          expect([button.style.left, button.style.top, button.style.width, button.style.height]).toEqual([
+            `${String(rect?.x)}px`,
+            `${String(rect?.y)}px`,
+            `${String(rect?.w)}px`,
+            `${String(rect?.h)}px`,
+          ]);
+        });
+        unmount();
+      }),
+      { numRuns: 100 },
+    );
   });
 });

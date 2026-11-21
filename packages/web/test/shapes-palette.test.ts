@@ -1,10 +1,10 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { readdirSync, readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { STATES } from "../src/load/lists.js";
 import { hasGhost, planScene } from "../src/scene/layout.js";
-import { colourFor, cssVariables, PALETTE } from "../src/scene/palette.js";
+import { backdropStops, colourFor, cssVariables, PALETTE } from "../src/scene/palette.js";
 import { SHAPES, SHAPE_BY_STATE } from "../src/scene/shapes.js";
 import { arbAdvisoryMode, arbPackage, arbState, arbTheme, scenePackage } from "./arbitraries.js";
 
@@ -74,6 +74,8 @@ describe("shapes and palette examples", () => {
     expect(SHAPE_BY_STATE).toEqual({ Alive: "upright", Restless: "upright", Haunted: "cross", Dead: "cracked", Possessed: "open" });
     expect(SHAPES.cracked.tiltDegrees).not.toBe(0);
     for (const id of ["upright", "cross", "open"] as const) expect(SHAPES[id].tiltDegrees).toBe(0);
+    expect(SHAPES.open.pit).not.toBeNull();
+    for (const id of ["upright", "cross", "cracked"] as const) expect(SHAPES[id].pit).toBeNull();
   });
 
   it("has five pairwise distinct state colours per theme", () => {
@@ -88,7 +90,7 @@ describe("shapes and palette examples", () => {
     const known = new Set(Object.keys(cssVariables("light")));
     expect(Object.keys(cssVariables("dark"))).toEqual(Object.keys(cssVariables("light")));
     for (const match of css.matchAll(/var\((--[a-z-]+)/g)) expect(known.has(match[1] ?? "")).toBe(true);
-    expect(PALETTE.light.bg).not.toBe(PALETTE.dark.bg);
+    expect(PALETTE.light).toBe(PALETTE.dark);
   });
 });
 
@@ -111,6 +113,87 @@ const THEMES = ["light", "dark"] as const;
 const TEXT_MIN = 4.5;
 const NON_TEXT_MIN = 3;
 
+function sourceFiles(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? sourceFiles(join(dir, e.name)) : [join(dir, e.name)],
+  );
+}
+
+describe("Feature: cemetery-theme, Property 1: Palette contrast over every backdrop stop", () => {
+  it("holds for every token against every Backdrop stop, in both Theme keys", () => {
+    fc.assert(
+      fc.property(arbTheme, fc.nat({ max: 6 }), (theme, stopIndex) => {
+        const p = PALETTE[theme];
+        const stops = backdropStops(theme);
+        expect(stops).toHaveLength(7);
+        const stop = stops[stopIndex] as string;
+        expect(stop).toMatch(/^#[0-9a-f]{6}$/);
+        for (const fg of [p.text, p.muted]) expect(contrast(fg, stop), `${fg} on ${stop}`).toBeGreaterThanOrEqual(TEXT_MIN);
+        const nonText = [p.ghost, p.ring, p.focus, p.border, ...STATES.map((s) => colourFor(s, theme))];
+        for (const fg of nonText) expect(contrast(fg, stop), `${fg} on ${stop}`).toBeGreaterThanOrEqual(NON_TEXT_MIN);
+      }),
+      { numRuns: NUM_RUNS },
+    );
+  });
+
+  it("names the darkest and the lightest stop and meets the minimums on both", () => {
+    for (const theme of THEMES) {
+      const p = PALETTE[theme];
+      const stops = backdropStops(theme);
+      const byLuminance = [...stops].sort((a, b) => luminance(a) - luminance(b));
+      const darkest = byLuminance[0] as string;
+      const lightest = byLuminance[byLuminance.length - 1] as string;
+      expect(darkest).toBe(p.skyTop);
+      expect(lightest).toBe(stops[5]);
+      for (const stop of [darkest, lightest]) {
+        expect(contrast(p.text, stop)).toBeGreaterThanOrEqual(TEXT_MIN);
+        expect(contrast(p.muted, stop)).toBeGreaterThanOrEqual(TEXT_MIN);
+        for (const s of STATES) expect(contrast(colourFor(s, theme), stop)).toBeGreaterThanOrEqual(NON_TEXT_MIN);
+      }
+    }
+  });
+
+  it("holds for surface, ink, Alive against Restless, distinct states and six-digit hex tokens", () => {
+    for (const theme of THEMES) {
+      const p = PALETTE[theme];
+      for (const fg of [p.text, p.muted]) expect(contrast(fg, p.surface)).toBeGreaterThanOrEqual(TEXT_MIN);
+      for (const fg of [p.focus, p.border]) expect(contrast(fg, p.surface)).toBeGreaterThanOrEqual(NON_TEXT_MIN);
+      for (const s of STATES) expect(contrast(p.ink, colourFor(s, theme)), `ink on ${s}`).toBeGreaterThanOrEqual(TEXT_MIN);
+      expect(contrast(colourFor("Alive", theme), colourFor("Restless", theme))).toBeGreaterThanOrEqual(1.5);
+      expect(new Set(STATES.map((s) => colourFor(s, theme))).size).toBe(5);
+      const tokens = [
+        p.skyTop, p.skyMid, p.skyHorizon, p.groundTop, p.bg, p.horizon, p.moon, p.fog, p.surface, p.text,
+        p.muted, p.border, p.focus, p.ring, p.ghost, p.ink, p.pit, ...STATES.map((s) => colourFor(s, theme)),
+      ];
+      for (const t of tokens) expect(t).toMatch(/^#[0-9a-f]{6}$/);
+    }
+  });
+
+  it("keeps the Theme keys identical and the CSS free of scheme queries, url() and decoration tokens", () => {
+    expect(PALETTE.light).toBe(PALETTE.dark);
+    const css = readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
+    expect(css).not.toMatch(/prefers-color-scheme/);
+    expect(css).not.toMatch(/url\(/);
+    expect(css).not.toMatch(/--(horizon|moon|fog)\b/);
+    for (const file of sourceFiles(resolve(process.cwd(), "src"))) {
+      expect(readFileSync(file, "utf8"), file).not.toMatch(/prefers-color-scheme/);
+    }
+  });
+});
+
+describe("open grave contrast", () => {
+  it("reads the lid against the pit at least 3 to 1, and the pit rim (border) against the pit and the ground", () => {
+    for (const theme of THEMES) {
+      const p = PALETTE[theme];
+      expect(contrast(colourFor("Possessed", theme), p.pit)).toBeGreaterThanOrEqual(NON_TEXT_MIN);
+      expect(contrast(p.border, p.pit)).toBeGreaterThanOrEqual(NON_TEXT_MIN);
+      expect(contrast(p.border, p.groundTop)).toBeGreaterThanOrEqual(NON_TEXT_MIN);
+      expect(luminance(p.pit)).toBeLessThan(luminance(p.groundTop));
+      expect(luminance(p.pit)).toBeLessThan(luminance(p.bg));
+    }
+  });
+});
+
 describe("palette contrast (WCAG 2.1 relative luminance)", () => {
   it("every palette colour is a six digit hex", () => {
     for (const theme of THEMES) {
@@ -122,7 +205,7 @@ describe("palette contrast (WCAG 2.1 relative luminance)", () => {
     for (const theme of THEMES) {
       const p = PALETTE[theme];
       for (const fg of [p.text, p.muted]) {
-        for (const back of [p.bg, p.surface]) expect(contrast(fg, back)).toBeGreaterThanOrEqual(TEXT_MIN);
+        for (const back of [p.surface, ...backdropStops(theme)]) expect(contrast(fg, back)).toBeGreaterThanOrEqual(TEXT_MIN);
       }
     }
   });
@@ -133,7 +216,9 @@ describe("palette contrast (WCAG 2.1 relative luminance)", () => {
       const colours: Record<string, string> = { ghost: p.ghost, ring: p.ring, focus: p.focus, border: p.border };
       for (const state of STATES) colours[state] = colourFor(state, theme);
       for (const [name, colour] of Object.entries(colours)) {
-        expect(contrast(colour, p.bg), `${theme} ${name} on bg`).toBeGreaterThanOrEqual(NON_TEXT_MIN);
+        for (const back of backdropStops(theme)) {
+          expect(contrast(colour, back), `${theme} ${name} on ${back}`).toBeGreaterThanOrEqual(NON_TEXT_MIN);
+        }
       }
     }
   });
@@ -148,6 +233,16 @@ describe("palette contrast (WCAG 2.1 relative luminance)", () => {
   it("Alive against Restless is at least 1.5 to 1", () => {
     for (const theme of THEMES) {
       expect(contrast(colourFor("Alive", theme), colourFor("Restless", theme))).toBeGreaterThanOrEqual(1.5);
+    }
+  });
+
+  it("header gradient stops: text and muted at least 4.5, border at least 3 against skyTop, skyMid and bg", () => {
+    for (const theme of THEMES) {
+      const p = PALETTE[theme];
+      for (const stop of [p.skyTop, p.skyMid]) {
+        for (const fg of [p.text, p.muted]) expect(contrast(fg, stop), `${fg} on ${stop}`).toBeGreaterThanOrEqual(TEXT_MIN);
+      }
+      for (const back of [p.skyTop, p.bg]) expect(contrast(p.border, back)).toBeGreaterThanOrEqual(NON_TEXT_MIN);
     }
   });
 

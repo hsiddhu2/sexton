@@ -3,20 +3,22 @@ import react from "@vitejs/plugin-react";
 
 const CSP_PLACEHOLDER = "<!-- sexton:csp -->";
 
-/** Repeats the parseApiBase check (https, no credentials, query or fragment) without importing web source. */
-function apiOrigin(raw: string | undefined): string | null {
-  if (raw === undefined || raw === "" || raw.includes("?") || raw.includes("#")) return null;
+const CSP_ORIGIN = /^https:\/\/[A-Za-z0-9.-]+(:\d+)?$/;
+
+/** Exported for tests. Null for an absent, invalid or path value, and for an origin that fails the pattern. */
+export function apiOrigin(raw: string | undefined): string | null {
+  if (raw === undefined || raw === "" || raw.startsWith("/") || raw.includes("?") || raw.includes("#")) return null;
   try {
     const url = new URL(raw);
     if (url.protocol !== "https:" || url.username !== "" || url.password !== "") return null;
-    return url.origin;
+    return CSP_ORIGIN.test(url.origin) ? url.origin : null;
   } catch {
     return null;
   }
 }
 
 /** Build only: the dev server has no CSP because the React refresh runtime uses inline script. */
-function cspPlugin(raw: string | undefined): Plugin {
+export function cspPlugin(raw: string | undefined): Plugin {
   const origin = apiOrigin(raw);
   const connect = origin === null ? "'self'" : `'self' ${origin}`;
   const policy =

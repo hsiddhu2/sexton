@@ -310,4 +310,31 @@ describe("useScanLoader examples", () => {
     });
     expect(message).toBe("hosted scan arrives with release 0.1 infra");
   });
+
+  it("submits against a path base as one same-origin GET", async () => {
+    const record: Recorded[] = [];
+    const { result } = makeLoader(fetchReturning(() => new Response(VALID), record), { apiBase: "/api" });
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+    record.length = 0;
+    let message: string | null = "unset";
+    act(() => {
+      message = result.current.submitRepo("https://github.com/a/b");
+    });
+    expect(message).toBeNull();
+    await waitFor(() => expect(record).toHaveLength(1));
+    expect(record[0]?.url).toBe("https://sexton.example/api/scan?repo=https%3A%2F%2Fgithub.com%2Fa%2Fb");
+    expect(record[0]?.init?.method).toBe("GET");
+  });
+
+  it("accepts a same-origin scan parameter under a path base and rejects a foreign one", async () => {
+    const record: Recorded[] = [];
+    const good = makeLoader(fetchReturning(() => new Response(VALID), record), { apiBase: "/api", initialSearch: "?scan=/api/x.json" });
+    await waitFor(() => expect(good.result.current.state.status).toBe("ready"));
+    expect(record.map((r) => r.url)).toEqual(["https://sexton.example/api/x.json"]);
+    const bad = makeLoader(fetchReturning(() => new Response(VALID)), {
+      apiBase: "/api",
+      initialSearch: "?scan=https://evil.example/x.json",
+    });
+    await waitFor(() => expect(bad.result.current.state.status).toBe("error"));
+  });
 });

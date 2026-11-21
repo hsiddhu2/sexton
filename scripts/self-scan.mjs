@@ -1,22 +1,36 @@
 #!/usr/bin/env node
-// Sexton scans itself. Reads the root direct dependencies and their locked versions,
-// scores them live, evaluates sexton.policy.yml and exits non-zero on failure (N-7).
+// Sexton scans itself. Reads the direct dependencies of the root and of every workspace
+// with their locked versions, scores them live, evaluates sexton.policy.yml and exits
+// non-zero on failure (N-7).
 // Usage, from the repo root after `npm run build -w @sexton/engine`:
 //   node scripts/self-scan.mjs
 
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { scorePackages, parsePolicy, evaluatePolicy } from "../packages/engine/dist/index.js";
+import { collectDirect } from "./lib/collect-direct.mjs";
 
 const root = new URL("..", import.meta.url);
-const pkg = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
+const rootManifest = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
 const lock = JSON.parse(await readFile(new URL("package-lock.json", root), "utf8"));
 
-const names = [...Object.keys(pkg.dependencies ?? {}), ...Object.keys(pkg.devDependencies ?? {})];
-const packages = names.map((name) => {
-  const entry = lock.packages?.[`node_modules/${name}`];
-  if (entry?.version === undefined) throw new Error(`no locked version for ${name}`);
-  return { name, installedVersion: entry.version };
-});
+const workspaces = [];
+for (const entry of rootManifest.workspaces ?? []) {
+  const m = /^([A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*)\/\*$/.exec(entry);
+  if (m === null) {
+    console.error(`self-scan: unsupported workspaces entry ${JSON.stringify(entry)}`);
+    process.exit(2);
+  }
+  for (const d of await readdir(new URL(`${m[1]}/`, root), { withFileTypes: true })) {
+    if (!d.isDirectory()) continue;
+    const dir = `${m[1]}/${d.name}`;
+    try {
+      workspaces.push({ dir, manifest: JSON.parse(await readFile(new URL(`${dir}/package.json`, root), "utf8")) });
+    } catch (e) {
+      if (e?.code !== "ENOENT") throw e;
+    }
+  }
+}
+const packages = collectDirect({ root: rootManifest, workspaces, lock });
 
 const report = await scorePackages(packages);
 for (const p of report.packages) {
