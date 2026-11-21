@@ -33,7 +33,7 @@ The policy file is parsed by the engine's YAML parser and checked against a JSON
 | Threat | Example | Control |
 |---|---|---|
 | Spoofing | Someone serves a fake Sexton page | The site is served only from the CloudFront domain over HTTPS, with HSTS for two years |
-| Tampering | A proxy changes the page in transit | HTTPS only. HTTP redirects to HTTPS for the web app. An HTTP request to the API gets 403 from CloudFront |
+| Tampering | A proxy changes the page in transit | HTTPS only. HTTP redirects to HTTPS for the web app. An HTTP request to the API is refused with 403. The distribution maps 403 to `index.html`, so the visitor may see the page with status 200 instead. Either way, no API response is sent over plain HTTP |
 | Information disclosure | The page is framed or leaks the referrer | Response headers deny framing, set `nosniff` and send no referrer. A content security policy allows only the site itself plus `data:` images |
 | Denial of service | One client floods `/api/` | WAF blocks an IP after 100 requests in 5 minutes with HTTP 429 |
 | Denial of service | Known exploit payloads | AWS managed rule groups `AWSManagedRulesCommonRuleSet` and `AWSManagedRulesKnownBadInputsRuleSet` |

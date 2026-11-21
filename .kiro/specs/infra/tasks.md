@@ -193,7 +193,7 @@ Ordering constraints, recorded here:
 - [ ] 14. Deploy and verify (only after HP types `deploy` in the session)
   - _Requirements: 1.1, 1.2, 4.6, 5.1, 7.3, 10.2_
   - [ ] 14.1 Pre-deploy checks
-    - `aws cloudformation describe-stacks --stack-name CDKToolkit --region us-east-1`: bootstrap only if no stack exists, and say so. `aws lambda get-account-settings`: stop for HP if the account concurrency limit is below 21. `cdk diff` for both stacks.
+    - `aws cloudformation describe-stacks --stack-name CDKToolkit --region us-east-1`: bootstrap only if no stack exists, and say so. `aws lambda get-account-settings`: stop for HP if `UnreservedConcurrentExecutions` is below 111 (100 stay unreserved, 11 are reserved). `cdk diff` for both stacks. The steps are in build/infra/10-deploy.md.
     - _Requirements: 1.1, 1.2_
   - [ ] 14.2 Deploy
     - Build web with `VITE_SEXTON_API=/api`. Confirm `cdk synth` shows neither placeholder warning. Deploy `SextonData-dev`, then `SextonEdge-dev` with `--parameters AlarmEmail=<from HP>`. One pass.

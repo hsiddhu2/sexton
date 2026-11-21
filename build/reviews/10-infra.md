@@ -257,3 +257,30 @@ The docs that said handler controls were "planned" now say they are built and no
 |---|---|
 | Other GitHub hosts (gist, codeload, objects.githubusercontent.com) still log full paths | Kept. Nothing fetches them. A new client for one of them must add it to `GITHUB_HOSTS` |
 | Three descriptions said "file name only" | Reworded to match design.md item 14 |
+
+## Review 13: build/infra/10-deploy.md, the deploy runbook
+
+Verdict: NOT READY, six defects. Fixed and re-reviewed: READY.
+
+The reviewer synthesised the stacks to a directory outside the repository and checked every resource, setting, IAM statement, resource policy, parameter, output and deletion policy in the runbook against the templates.
+
+| Defect | Fix |
+|---|---|
+| The log group name in check 10 was wrong. The names are generated | Read from `get-function-configuration --query LoggingConfig.LogGroup` |
+| Step 3 ran `cd infra` again and needed `$OUT` from another step | One shell throughout, with `ROOT`, `WORK` and `OUT` set in step 1, and a manifest check before the deploy |
+| `cdk diff` with the default method creates and deletes a change set, which is a write | `--method template`. `--strict` was dropped from diff and deploy, where it means something else |
+| The Scheduler role's trust conditions were missing | Added: `aws:SourceAccount` and `aws:SourceArn` |
+| No rollback for a failed Data create, where the retained resources block a rerun | Rows added that stop for HP. Nobody deletes the table or the secret |
+| The rollback and destroy commands synthesised into `infra/cdk.out` | Both write to `$WORK` |
+
+The runbook needs at least 111 for unreserved concurrency, not the 110 in HP's brief. Lambda keeps 100 units unreserved, and these two functions reserve 11. The reviewer confirmed this, and design.md item 10 and task 14.1, which said 21, are corrected too.
+
+| Note | Action |
+|---|---|
+| The header check used HEAD, which gets 405 | It now reads the GET headers from check 4 |
+| The engine `dist/` is rebuilt only as a side effect of typecheck | Explicit engine build added as precondition 4 |
+| Precondition 1 should check `origin/main`, and HP merges, not the agent | Done |
+| `exit 1` in step 3 would close the shell | Replaced by a check that prints, and a "stop" instruction |
+| The redeploy row did not make a fresh `$WORK` or run the bundle check | Both added, plus a switch back to the branch afterwards |
+| docs/threat-model.md said an HTTP request to the API gets 403. The error mapping may turn it into `index.html` with 200 | Reworded |
+| 403/404 from `/api/*` reach clients as `index.html` with 200 | Recorded under "Known behaviour" in the runbook. It was already in the threat model |
