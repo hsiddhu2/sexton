@@ -139,3 +139,45 @@ export type {
 } from "./types.js";
 export { INTAKE_ERROR_CODES } from "./types.js";
 export type { TextBody } from "./http.js";
+
+// remediation
+export { planRemediation, REASON_INSTALLED_INVALID, REASON_NOT_GATHERED } from "./remediation/plan.js";
+export type { PlanOptions } from "./remediation/plan.js";
+export { selectBump, isPassing } from "./remediation/select-bump.js";
+export type { SelectBumpInput, SelectBumpResult } from "./remediation/select-bump.js";
+export { orderCandidates, hasPrereleaseComparator, MAX_CANDIDATES } from "./remediation/candidates.js";
+export type { Candidate } from "./remediation/candidates.js";
+export { rangeStyle, styledRange } from "./remediation/range-style.js";
+export type { RangeStyle } from "./remediation/range-style.js";
+export { isPublishedVersion, MAX_VERSION_LENGTH } from "./remediation/published-version.js";
+export { gatherBumpData, BUMP_CONCURRENCY } from "./remediation/gather-bump-data.js";
+export type { BumpTarget, BumpData, BumpFailure, BumpDataResult } from "./remediation/gather-bump-data.js";
+export { bumpTargets } from "./remediation/bump-targets.js";
+export { branchName, BRANCH_PREFIX, MAX_BRANCH_LENGTH } from "./remediation/branch-name.js";
+export { encodeName, decodeName } from "./remediation/encoded-name.js";
+export { isValidBranchName } from "./remediation/is-valid-branch-name.js";
+export { buildPrIntent, BASE_REF_DEFAULT } from "./remediation/pr-intent.js";
+export { buildPrBody, MAX_BODY_CHARS } from "./remediation/pr-body.js";
+export { escapeField } from "./remediation/escape-field.js";
+export { EMPTY_RECIPE_REGISTRY } from "./remediation/recipes.js";
+export type { RecipeRegistry } from "./remediation/recipes.js";
+export { createInMemoryRemediationLog } from "./remediation/in-memory-log.js";
+export { LOG_REJECTED_REASON } from "./remediation/remediation-log.js";
+export type { RemediationLog, AppendResult } from "./remediation/remediation-log.js";
+export { attachRemediations } from "./remediation/attach.js";
+export { failingRulesFor } from "./remediation/failing-rules.js";
+export { queryVulnIdsBatch, OSV_BATCH_SOURCE } from "./clients/osv.js";
+export { REMEDIATION_KINDS, REMEDIATION_STATUSES } from "./types.js";
+export type {
+  RemediationKind,
+  RemediationStatus,
+  UnhealthyState,
+  PackageJsonEdit,
+  RemediationPlan,
+  PrIntent,
+  RemediationEntry,
+  Recipe,
+  FailingRule,
+  PrContext,
+  RemediationLogEntry,
+} from "./types.js";

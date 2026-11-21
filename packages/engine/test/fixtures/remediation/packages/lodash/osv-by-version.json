@@ -1,0 +1,14 @@
+{
+  "name": "lodash",
+  "installedVersion": "4.17.21",
+  "ids": {
+    "4.17.23": [
+      "GHSA-f23m-r3pf-42rh",
+      "GHSA-r5fr-rjxr-66jc"
+    ],
+    "4.18.0": [
+      "GHSA-f23m-r3pf-42rh"
+    ],
+    "4.18.1": []
+  }
+}

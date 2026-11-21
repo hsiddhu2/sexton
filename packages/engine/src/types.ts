@@ -369,3 +369,99 @@ export interface ScanMetadata {
   readonly skipped: SkippedCounts;
   readonly unresolved: readonly string[];
 }
+
+// Types for the remediation spec (.kiro/specs/remediation).
+
+export const REMEDIATION_KINDS = ["bump", "remove", "migrate"] as const;
+export type RemediationKind = (typeof REMEDIATION_KINDS)[number];
+
+export const REMEDIATION_STATUSES = ["proposed", "no-safe-version", "unavailable"] as const;
+export type RemediationStatus = (typeof REMEDIATION_STATUSES)[number];
+
+/** Haunted, Dead or Possessed. Requirement 1.2. */
+export type UnhealthyState = "Possessed" | "Dead" | "Haunted";
+
+/**
+ * A structured change to package.json. Requirement 4.12, 4.13.
+ * set-range changes the entry of name in section. remove-dependency removes name from every
+ * dependency section that lists it; section records where intake found it (HP decision 7).
+ */
+export type PackageJsonEdit =
+  | {
+      readonly path: "package.json";
+      readonly op: "set-range";
+      readonly section: DependencyOrigin;
+      readonly name: string;
+      readonly range: string;
+    }
+  | { readonly path: "package.json"; readonly op: "remove-dependency"; readonly section: DependencyOrigin; readonly name: string };
+
+export interface RemediationPlan {
+  readonly packageName: string;
+  readonly installedVersion: string;
+  readonly state: UnhealthyState;
+  readonly stateReason: string;
+  readonly kind: RemediationKind;
+  readonly status: RemediationStatus;
+  readonly chosenVersion?: string;
+  readonly majorUpgrade?: boolean;
+  /** Fixed text from a closed set of templates. Present for no-safe-version and unavailable. */
+  readonly reason?: string;
+  readonly edit?: PackageJsonEdit;
+}
+
+export interface PrIntent {
+  readonly branch: string;
+  readonly title: string;
+  readonly body: string;
+  /** Exactly one Edit. No file text. */
+  readonly files: readonly [PackageJsonEdit];
+  /** BASE_REF_DEFAULT. Never a branch name. */
+  readonly baseRef: "@default";
+}
+
+export interface RemediationEntry {
+  readonly packageName: string;
+  readonly kind: RemediationKind;
+  readonly status: RemediationStatus;
+  readonly title: string;
+  /** One line, at most 200 characters, plain text. */
+  readonly summary: string;
+  readonly prBody: string;
+  readonly chosenVersion?: string;
+  readonly majorUpgrade?: boolean;
+  readonly intent?: PrIntent;
+}
+
+/** A migration description. The recipe spec extends it. */
+export interface Recipe {
+  readonly id: string;
+}
+
+export interface FailingRule {
+  readonly index: number;
+  readonly type: RuleType;
+  readonly name?: string;
+  readonly reason: string;
+}
+
+export interface PrContext {
+  readonly entry: PackageHealth;
+  readonly failingRules: readonly FailingRule[];
+  readonly generatedAt: string;
+  readonly engineVersion: string;
+}
+
+export interface RemediationLogEntry {
+  /** Canonical URL. */
+  readonly repository: string;
+  /** Begins with sexton/. */
+  readonly branch: string;
+  /** Begins with https://. */
+  readonly prUrl: string;
+  /** Valid package name. */
+  readonly package: string;
+  readonly kind: RemediationKind;
+  /** ISO 8601 instant. */
+  readonly timestamp: string;
+}

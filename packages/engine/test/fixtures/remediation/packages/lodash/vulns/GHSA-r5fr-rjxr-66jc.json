@@ -1,0 +1,13 @@
+{
+  "id": "GHSA-r5fr-rjxr-66jc",
+  "summary": "lodash vulnerable to Code Injection via `_.template` imports key names",
+  "severity": [
+    {
+      "type": "CVSS_V3",
+      "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H"
+    }
+  ],
+  "database_specific": {
+    "severity": "HIGH"
+  }
+}

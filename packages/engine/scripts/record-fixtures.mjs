@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 // Records trimmed upstream responses for the fixture scan. Run from packages/engine with network access.
-// Usage: node scripts/record-fixtures.mjs [--intake]
+// Usage: node scripts/record-fixtures.mjs [--intake | --remediation]
 // --intake records only the repo-intake fixtures (raw manifests and full packuments) and skips the package loop.
+// --remediation records only the remediation fixtures: every published version with its deprecation marker,
+// and the OSV advisory IDs and details for every release above the installed version.
 // Trimming keeps only the fields the engine reads so the fixtures stay small and reviewable.
 
 import { mkdir, writeFile, readFile } from "node:fs/promises";
@@ -9,6 +11,7 @@ import { dirname, join } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { TextEncoder } from "node:util";
+import semver from "semver";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixturesDir = join(here, "..", "test", "fixtures");
@@ -190,7 +193,80 @@ async function recordIntake() {
     console.log(`recorded packument ${name}: status ${result.status}`);
   }
 }
-if (process.argv.includes("--intake")) {
+// Packages whose remediation plans are checked by hand against the recorded data: the four named in the spec plus the
+// other unhealthy demo packages, so the demo scan has bump data for every Dead package. Installed versions come from packages.json.
+const REMEDIATION_PACKAGES = ["request", "uuid", "lodash", "event-stream", "node-sass", "left-pad", "colors"];
+const OSV_BATCH_LIMIT = 1000;
+const OSV_MAX_PAGES = 10;
+
+// Keeps every version key with only its deprecation marker, plus the publish times.
+function trimPackumentAllVersions(doc) {
+  const versions = {};
+  for (const [v, entry] of Object.entries(doc.versions ?? {})) {
+    versions[v] = typeof entry?.deprecated === "string" && entry.deprecated.length > 0 ? { deprecated: entry.deprecated } : {};
+  }
+  return { name: doc.name, time: doc.time ?? {}, versions };
+}
+
+// Releases above the installed version, ascending. A superset of the 20 candidates the engine evaluates for any declared range.
+function releasesAbove(versions, installed) {
+  return versions
+    .filter((v) => semver.valid(v) === v && semver.prerelease(v) === null && semver.gt(v, installed))
+    .sort(semver.compare);
+}
+
+// Advisory IDs per version through querybatch, following next_page_token for the queries that carry one.
+async function osvIdsByVersion(name, versions) {
+  const ids = Object.fromEntries(versions.map((v) => [v, []]));
+  for (let start = 0; start < versions.length; start += OSV_BATCH_LIMIT) {
+    let pending = versions.slice(start, start + OSV_BATCH_LIMIT).map((version) => ({ version }));
+    for (let page = 0; pending.length > 0; page++) {
+      if (page >= OSV_MAX_PAGES) throw new Error(`OSV pagination did not finish for ${name}`);
+      const batch = await getJson("https://api.osv.dev/v1/querybatch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          queries: pending.map((q) => ({ package: { name, ecosystem: "npm" }, version: q.version, ...(q.token ? { page_token: q.token } : {}) })),
+        }),
+      });
+      const next = [];
+      pending.forEach((q, i) => {
+        const result = batch.results?.[i] ?? {};
+        for (const vuln of result.vulns ?? []) if (!ids[q.version].includes(vuln.id)) ids[q.version].push(vuln.id);
+        if (typeof result.next_page_token === "string" && result.next_page_token.length > 0) next.push({ version: q.version, token: result.next_page_token });
+      });
+      pending = next;
+    }
+  }
+  return ids;
+}
+
+async function recordRemediation() {
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  for (const name of REMEDIATION_PACKAGES) {
+    const ref = manifest.find((p) => p.name === name);
+    if (ref === undefined) throw new Error(`${name} is not in packages.json`);
+    const dir = join(fixturesDir, "remediation", "packages", name.replace("/", "__"));
+    const full = await getJson(`https://registry.npmjs.org/${encodeName(name)}`);
+    const packument = trimPackumentAllVersions(full);
+    await write(join(dir, "packument.json"), packument);
+    const above = releasesAbove(Object.keys(packument.versions), ref.installedVersion);
+    const ids = await osvIdsByVersion(name, above);
+    await write(join(dir, "osv-by-version.json"), { name, installedVersion: ref.installedVersion, ids });
+    const distinct = [...new Set(Object.values(ids).flat())].sort();
+    for (const id of distinct) {
+      if (!/^[A-Za-z0-9._:-]{1,128}$/.test(id)) throw new Error(`implausible advisory ID from OSV for ${name}`);
+      const detail = await getJson(`https://api.osv.dev/v1/vulns/${encodeURIComponent(id)}`);
+      await write(join(dir, "vulns", `${id}.json`), trimVuln(detail));
+    }
+    console.log(`recorded remediation ${name}@${ref.installedVersion}: ${Object.keys(packument.versions).length} versions, ${above.length} releases above, ${distinct.length} advisories`);
+  }
+}
+
+if (process.argv.includes("--remediation")) {
+  await recordRemediation();
+  console.log(`recorded at ${new Date().toISOString()}`);
+} else if (process.argv.includes("--intake")) {
   await recordIntake();
   console.log(`recorded at ${new Date().toISOString()}`);
 } else {
