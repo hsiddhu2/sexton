@@ -88,3 +88,17 @@ The reviewer checked that the quoted N-7 matches the amended wording word for wo
 | cemetery-ui design.md expects the name `00NN-axe-core-dev-only.md` | Told Kiro the real path in build/handoffs/to-kiro.md |
 | The byline reads "Harpreet S. Siddhu" while requirements.md says "Harpreet Singh Siddhu" | Kept. The byline uses the published form of the name |
 | MPL-2.0 also requires source when a binary is distributed | Kept as written. Sexton distributes no form of axe-core |
+
+## Review 5: README.md rewritten as a product page
+
+Verdict: READY. No defects.
+
+The reviewer checked every claim against `main` and this branch. The problem statement matches requirements section 2. The ten signals and their source and fetch-time envelope match the engine. The five states match `evaluateState`. packages/cli and packages/action are empty, and `sexton` is not on npm, so the `npx` commands are marked as not published. The clone commands work: the tests passed, the engine built, and `scan:self` showed all eight root packages Alive with three rules passing. The self-scan story matches build/reviews/03-policy.md and commit 614ce5f. The competitor lines stay within requirements section 2 and GitHub's own description of Dependabot. The roadmap matches ROADMAP.md, with every 0.1 item labelled. There is no tool or vendor attribution.
+
+| Note | Action |
+|---|---|
+| "ten signals" next to the roadmap's "five signals" may read as a conflict | The bullet now says the ten measure the five product signals |
+| Intake caps a scan at 300 direct dependencies | Added "up to 300 direct dependencies per scan" |
+| "Alive: none of the above" skips the all-signals-unavailable case, which is Restless | Kept. It is a product page, and the full rule is in docs/requirements.md |
+| The docs linked at the end exist on spec/infra, not yet on main | Kept. The README lands with them on this branch |
+| "due on 4 Dec 2026" against "ships by" | Kept. Same meaning |
