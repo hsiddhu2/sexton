@@ -171,3 +171,23 @@ Checked and correct:
 | Snapshots from different store instances with equal capture times are ordered by the random part of the sequence | Accepted in design.md |
 | `ISO_UTC` copies the engine's rule | Kept. The engine does not export its validator. Raised as a possible engine export |
 | `recordSeen` rejects a time it cannot encode | Kept. The engine swallows `recordSeen` failures |
+
+## Review 9: task 5, logging, Property 11
+
+Verdict: READY. No defects.
+
+The reviewer checked:
+- Only the host and path are logged. The host never holds userinfo, and the query, fragment, headers and body are never read.
+- No log injection: every line goes through `JSON.stringify`, with scalars only and protected reserved keys.
+- The same response object is returned, and the same error is rethrown.
+- The correlation ID rule matches requirement 6.4.
+- Property 11 uses separate canaries for the query, fragment, body, error message and an Authorization header.
+- Logging the raw.githubusercontent.com path, which holds owner and repo, does not contradict a requirement. Requirement 6.5 limits only the end-of-scan line, and 6.1 requires `path`.
+
+| Note | Action |
+|---|---|
+| A sink that throws after a successful response would lose the response and log the request twice | Fixed. Each log call is wrapped, so a failing sink loses one line only. Test added |
+| An error whose `name` getter throws would replace the original error | Fixed. `errorName` returns `Error` in that case. Test added |
+| The throw line also carries `latencyMs`, which design.md did not list | design.md updated |
+| design.md typed the `upstreamFields` status as `number \| null` | design.md updated to `number` |
+| `fc.webUrl()` could in theory contain the canary | Kept. The odds are negligible |

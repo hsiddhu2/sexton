@@ -392,10 +392,10 @@ export type LogFields = Readonly<Record<string, string | number | boolean>>;
 export function createLogger(correlationId: string, sink: (line: string) => void = console.log): Logger;
 export function logLine(level: "info" | "warn" | "error", correlationId: string, fields: LogFields, now: Date): string;
 export function withRequestLogging(inner: Transport, log: Logger, clock: () => number): Transport;
-export function upstreamFields(url: string, status: number | null, latencyMs: number): LogFields;
+export function upstreamFields(url: string, status: number, latencyMs: number): LogFields;
 ```
 
-`logLine` is pure: `JSON.stringify({ level, time: now.toISOString(), correlationId, ...fields })` with keys from `fields` that are not `level`, `time` or `correlationId`. Values are scalars only, so no object or body can be logged by accident. `upstreamFields` takes `new URL(url).host` and `pathname` only, cut to 200 characters; the query and fragment are never read. `withRequestLogging` times each call, logs `{ msg: "upstream", host, path, status, latencyMs }` on return or `{ msg: "upstream", host, path, status: 0, error: errorName }` on throw, and rethrows. It never reads the body.
+`logLine` is pure: `JSON.stringify({ level, time: now.toISOString(), correlationId, ...fields })` with keys from `fields` that are not `level`, `time` or `correlationId`. Values are scalars only, so no object or body can be logged by accident. `upstreamFields` takes `new URL(url).host` and `pathname` only, cut to 200 characters; the query and fragment are never read. `withRequestLogging` times each call, logs `{ msg: "upstream", host, path, status, latencyMs }` on return or `{ msg: "upstream", host, path, status: 0, latencyMs, error: errorName }` on throw, and rethrows. A log sink that throws is swallowed, so logging never changes the response or the error. It never reads the body.
 
 The correlation ID is the `x-amz-cf-id` request header when it is 1 to 128 characters of `[A-Za-z0-9_=-]`, otherwise the Lambda `awsRequestId`. It is returned as `x-sexton-request-id`. For the snapshotter it is `snap-` plus the Lambda request ID.
 

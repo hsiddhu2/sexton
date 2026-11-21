@@ -79,12 +79,12 @@ Ordering constraints, recorded here:
     - Property 5 (key encoding is injective and round-trips), Property 6 (history order and equivalence with the in-memory store, with shuffled port results), Property 7 (append never replaces, numRuns 1000), Property 8 (Seen listing, numRuns 1000, with exact window boundaries). Examples: `InvalidCaptureTimeError` writes nothing; a forced collision retries once; a second collision rejects; the engine seed `seed-maintainer-change.json` scored with `scorePackages` over this store gives the same Possessed result as with `InMemorySnapshotStore`.
     - _Requirements: 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10_
 
-- [ ] 5. Logging with property 11
+- [x] 5. Logging with property 11
   - _Requirements: 6.1, 6.2, 6.3, 6.4_
-  - [ ] 5.1 Implement src/log/logger.ts and src/log/logging-transport.ts
+  - [x] 5.1 Implement src/log/logger.ts and src/log/logging-transport.ts
     - Pure `logLine` with scalar fields only, `createLogger` with an injectable sink, `upstreamFields` from host and path only, `withRequestLogging` that times, logs and rethrows, and the correlation ID rule.
     - _Requirements: 6.1, 6.2, 6.3, 6.4_
-  - [ ] 5.2 Write test/log/logger.test.ts and test/log/logging-transport.test.ts
+  - [x] 5.2 Write test/log/logger.test.ts and test/log/logging-transport.test.ts
     - Property 11 (upstream log lines carry no query and no body). Examples: exact key set, `status` 0 and error name on throw, the error is rethrown unchanged, correlation ID from a valid `x-amz-cf-id`, fallback for an absent, empty, 129-character or `/`-containing header.
     - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
