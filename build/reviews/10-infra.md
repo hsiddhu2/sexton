@@ -284,3 +284,28 @@ The runbook needs at least 111 for unreserved concurrency, not the 110 in HP's b
 | The redeploy row did not make a fresh `$WORK` or run the bundle check | Both added, plus a switch back to the branch afterwards |
 | docs/threat-model.md said an HTTP request to the API gets 403. The error mapping may turn it into `index.html` with 200 | Reworded |
 | 403/404 from `/api/*` reach clients as `index.html` with 200 | Recorded under "Known behaviour" in the runbook. It was already in the threat model |
+
+## Review 14: the Lambda bundles carry the pinned AWS SDK (HP decision)
+
+Verdict: READY. No defects.
+
+`externalModules: []` in the NodejsFunction bundling options. Without it, CDK leaves `@aws-sdk/*` out of the bundle by default on Node 18 and later, and the functions would use the SDK the Lambda runtime ships. That contradicts design.md, Security: "SDK bundled at a pinned version".
+
+The reviewer checked:
+- A real `cdk synth --strict` into a temp directory has no bare import or require of `@aws-sdk`, `@smithy` or `ajv` in either bundle.
+- The bundles carry `version:"3.1166.0"`.
+- Copies of both bundles load and export `handler` with no `node_modules` on any ancestor path, no credentials and `env -i`.
+- The scan handler answers a POST with 405 and does no I/O.
+- The new test fails without the change.
+- The nag, IAM and stack tests still pass, and lint is clean.
+
+| Function | index.mjs | Unzipped with map | Zipped |
+|---|---|---|---|
+| Scan | 665 KB | 3.5 MB | 846 KB |
+| Snapshotter | 633 KB | 3.4 MB | 815 KB |
+
+| Note | Action |
+|---|---|
+| The test left its temp directory behind | Removed in a `finally` |
+| The dynamic import in vitest goes through Vite's resolver, so the regex assertions are the real guard | Kept. The offline load is also checked in precondition 7 of the runbook, with plain node |
+| The source map is deployed with each function | Kept. It is a pre-existing choice and well within the size limits |

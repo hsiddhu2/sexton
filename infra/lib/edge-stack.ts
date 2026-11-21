@@ -338,6 +338,8 @@ function makeFunction(scope: Stack, id: string, code: HandlerCode, settings: Fun
       sourceMap: true,
       minify: true,
       mainFields: ["module", "main"],
+      // Bundle the pinned @aws-sdk packages instead of using the SDK the Lambda runtime ships (design.md, Security).
+      externalModules: [],
       banner: "import { createRequire } from 'module'; const require = createRequire(import.meta.url);",
       forceDockerBundling: false,
     },
