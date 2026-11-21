@@ -302,7 +302,7 @@ export const CACHE_TTL_SECONDS = 24 * 60 * 60;
 
 export function expiresAtSeconds(storedAtMs: number, ttlSeconds: number): number; // Math.floor(storedAtMs / 1000) + ttlSeconds
 export function encodeCacheItem(key: string, entry: CacheEntry<unknown>, ttlSeconds: number):
-  { readonly ok: true; readonly item: Item } | { readonly ok: false; readonly reason: "too-large" | "not-json" };
+  { readonly ok: true; readonly item: Item } | { readonly ok: false; readonly reason: "too-large" | "not-json" | "invalid-entry" };
 export function decodeCacheItem(item: Item): CacheEntry<unknown> | undefined;
 ```
 
@@ -322,7 +322,7 @@ export class DynamoCacheStore implements CacheStore {
 }
 ```
 
-`get`: `port.getItem`, then `decodeCacheItem`. Any error gives `undefined` and one log line `{ msg: "cache-get-failed", errorName }`. `set`: `encodeCacheItem`; on `too-large` or `not-json` it does nothing and logs `{ msg: "cache-skip", reason, bytes }`. Otherwise `port.putItem` without a condition (a cache entry may be replaced). Any error is logged and swallowed. The key is never logged (keys hold package names, which are public, but the rule "never log a URL query" is kept simple: no key, no value).
+`get`: `port.getItem`, then `decodeCacheItem`. Any error gives `undefined` and one log line `{ msg: "cache-get-failed", errorName }`. An item that does not decode also gives `undefined` and one line `{ msg: "cache-decode-failed" }`. A `storedAt` that is not a safe integer is skipped with reason `invalid-entry`. `set`: `encodeCacheItem`; on `too-large` or `not-json` it does nothing and logs `{ msg: "cache-skip", reason, bytes }`. Otherwise `port.putItem` without a condition (a cache entry may be replaced). Any error is logged and swallowed. The key is never logged (keys hold package names, which are public, but the rule "never log a URL query" is kept simple: no key, no value).
 
 ### packages/api/src/dynamo/snapshot-keys.ts (Requirements 3.1 to 3.4, pure)
 

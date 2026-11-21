@@ -125,3 +125,25 @@ The reviewer checked:
 | The design's Dependencies table did not list fast-check for packages/api | Row added |
 | 2.2 is ticked although it was skipped | Kept, with the note in tasks.md |
 | `arbOwner` and `arbRepo` are written locally rather than reused from the engine | Kept. The engine's test files are outside the API's tsconfig. `arbitraries.test.ts` checks them against `parseRepoUrl` |
+
+## Review 7: task 3, the DynamoDB cache store, Properties 1 to 4
+
+Verdict: READY. No defects.
+
+The reviewer checked:
+- the round trip
+- the TTL arithmetic
+- the 350 KB limit, applied to compressed bytes
+- the 1024-byte key limit
+- that `get` and `set` never reject, including thrown non-Errors and async rejections
+- that no key or value reaches a log line, and that `errorName` keeps only the class name
+- that freshness depends on `storedAt` alone, with two tests that would fail if decoding read `expiresAt`
+- the CachedFetcher behaviour across container instances
+
+| Note | Action |
+|---|---|
+| A corrupt item gave `undefined` with no log line, while the design asks for one line | Fixed. `cache-decode-failed`, with no key. Test added |
+| Property 3 built values with `crypto.randomBytes`, so a failure could not be replayed from its seed | Fixed. It now uses `fc.uint8Array` as hex |
+| A `storedAt` that is not a safe integer was logged as `not-json` | Now `invalid-entry`. Test added, and design.md updated |
+| Decoding does not check that `pk` equals the requested key | Kept. GetItem reads by that key |
+| The `expiresAt` example test depends on the wall clock | Kept. The CachedFetcher test with a 1-second TTL covers the same rule without the wall clock |

@@ -53,17 +53,18 @@ Ordering constraints, recorded here:
     - `arbCacheKey`, `arbJsonValue`, `arbStoredAt`, `arbTtlSeconds`, `arbPackageName`, `arbIsoUtc`, `arbSequence`, `arbSnapshot`, `arbSeenSet`, `arbEvent`, `arbHostileRepo`, as in design.md.
     - _Requirements: 2.2, 3.3, 3.9, 4.1_
 
-- [ ] 3. Cache store with properties 1 to 4
+- [x] 3. Cache store with properties 1 to 4
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7_
-  - [ ] 3.1 Implement src/dynamo/cache-item.ts
+  - [x] 3.1 Implement src/dynamo/cache-item.ts
     - `expiresAtSeconds`, `encodeCacheItem` (JSON in try/catch, gzip level 6, 350 KB limit on compressed bytes, key length check), `decodeCacheItem` (never throws, ignores `expiresAt`).
     - _Requirements: 2.2, 2.3, 2.4_
-  - [ ] 3.2 Implement src/dynamo/cache-store.ts
+  - [x] 3.2 Implement src/dynamo/cache-store.ts
     - `get` and `set` never reject; one log line per failure or skip, with no key or value.
     - _Requirements: 2.1, 2.4, 2.5, 2.6, 2.7_
-  - [ ] 3.3 Write test/dynamo/cache-item.test.ts and test/dynamo/cache-store.test.ts
+  - [x] 3.3 Write test/dynamo/cache-item.test.ts and test/dynamo/cache-store.test.ts
     - Property 1 (cache round trip), Property 2 (TTL arithmetic), Property 3 (oversize values are never stored, numRuns 20 stated in the test), Property 4 (store failures never reject). Examples: corrupt gzip, missing `storedAt`, non-JSON value, `CachedFetcher` with this store makes no fetch inside 24 hours and refetches after, an item past `expiresAt` that DynamoDB has not yet deleted is still judged by `storedAt`.
     - Tags: `Feature: infra, Property 1: Cache round trip` and so on.
+    - Done with two details: Property 3 draws 400 KB to 600 KB of random bytes as hex (360 KB can compress to just under the limit), and `src/log/logger.ts` gets the `Logger` type and `errorName` here, because the store needs them. Task 5 adds the rest of the logger.
     - _Requirements: 2.2, 2.3, 2.4, 2.5, 2.6, 2.7_
 
 - [ ] 4. Snapshot store with properties 5 to 8
