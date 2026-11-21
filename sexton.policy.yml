@@ -8,8 +8,12 @@ rules:
       - Dead
   - name: No install scripts
     type: forbid_install_scripts
-    # Empty on purpose: none of the root direct dependencies declares an
-    # install, preinstall or postinstall script, or ships a binding.gyp.
+    # Empty on purpose. The self-scan (npm run scan:self) covers the direct
+    # dependencies of the root and of every workspace under packages/. None
+    # declares an install, preinstall or postinstall script, or ships a
+    # binding.gyp. esbuild is not in the dependency tree: Vite 8 uses Rolldown.
+    # The only package in the lockfile with an install script is fsevents
+    # 2.3.3, which is optional and transitive, so it is not scanned.
     # Add a package here, with a comment saying what its script does, only
     # when one is reviewed and accepted.
     allow: []

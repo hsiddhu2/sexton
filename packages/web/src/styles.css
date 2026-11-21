@@ -1,4 +1,8 @@
 /* Layout only. Colours come from custom properties written by applyPalette. */
+:root {
+  color-scheme: dark;
+}
+
 html,
 body,
 #root {
@@ -57,6 +61,19 @@ main {
   padding: 16px;
 }
 
+header {
+  background: linear-gradient(to bottom, var(--sky-top), var(--sky-mid));
+  color: var(--text);
+  border-bottom: 2px solid var(--border);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
 .backdrop {
   position: fixed;
   inset: 0;
@@ -77,11 +94,13 @@ main {
   background: var(--surface);
   color: var(--text);
   border-left: 2px solid var(--border);
+  box-shadow: -8px 0 24px var(--bg);
 }
 
 .drawer-close {
   align-self: flex-end;
   padding: 8px 12px;
+  border-radius: 4px;
   border: 2px solid var(--border);
   background: var(--surface);
   color: var(--text);
@@ -127,6 +146,7 @@ body {
 .legend-toggle,
 .repo-form button {
   padding: 8px 12px;
+  border-radius: 4px;
   border: 2px solid var(--border);
   background: var(--surface);
   color: var(--text);
@@ -136,6 +156,7 @@ body {
 .repo-form input {
   margin-left: 8px;
   padding: 6px;
+  border-radius: 4px;
   border: 2px solid var(--border);
   background: var(--surface);
   color: var(--text);

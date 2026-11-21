@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { chromium, expect, test } from "@playwright/test";
+import { chromium, expect, test, type Page } from "@playwright/test";
 
 test.skip(!existsSync(chromium.executablePath()), "chromium is not installed");
 
@@ -14,6 +14,15 @@ interface TimingWindow {
 interface DemoPackage {
   name: string;
   signals: { advisories: { available: boolean; value: unknown[] } };
+}
+
+/** Resolves once the scene canvas holds a painted pixel: the sky fill makes device pixel (2, 2) opaque. */
+async function waitForFirstPaint(page: Page): Promise<void> {
+  await page.waitForFunction(() => {
+    const canvas = document.querySelector("canvas");
+    const data = canvas?.getContext("2d")?.getImageData(2, 2, 1, 1).data;
+    return data !== undefined && data[3] === 255;
+  });
 }
 
 function median(values: readonly number[]): number {
@@ -34,6 +43,8 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
     else await route.abort();
   });
 
+  // Reduced motion keeps the Ghost phase at 0, so the screenshot is repeatable.
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await expect(page.locator("header")).toBeVisible();
   await expect(page.locator("header")).toContainText("demo fixture, recorded data");
@@ -44,7 +55,15 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
   expect(csp).toContain("script-src 'self'");
   expect(csp).toContain("object-src 'none'");
   expect(csp).not.toContain("unsafe-inline");
+
+  // left-padder is the first Possessed grave in triage order, so it is the first button.
+  await page.locator('button[data-grave-index][aria-label^="left-padder"]').click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await waitForFirstPaint(page);
   await page.screenshot({ path: SCREENSHOT });
+
+  // Let the Ghost drift timer run during the timing, which is the worst case.
+  await page.emulateMedia({ reducedMotion: "no-preference" });
 
   // A 300-package response built from the demo scan: every package copies one that carries advisories.
   const demo = (await (await request.get(`${origin}/demo/scan.json`)).json()) as {
@@ -65,6 +84,7 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
   await page.goto("/?scan=/test/scan-300.json");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(300);
   await page.waitForFunction(() => (window as unknown as TimingWindow).__sextonTiming !== undefined);
+  await waitForFirstPaint(page);
   const times = await page.evaluate(() => (window as unknown as TimingWindow).__sextonTiming?.redraw(30) ?? []);
   expect(times).toHaveLength(30);
   const med = median(times);

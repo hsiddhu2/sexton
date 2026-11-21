@@ -15,9 +15,8 @@ export interface AppProps {
 
 export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
   const loader = useScanLoader({ fetchFn, pageOrigin, apiBase, initialSearch });
-  const dark = useMediaQuery("(prefers-color-scheme: dark)");
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
-  const theme: Theme = dark ? "dark" : "light";
+  const theme: Theme = "dark";
   const [drawerOpen, setDrawerOpen] = useState(false);
   useLayoutEffect(() => {
     applyPalette(document.documentElement, theme);

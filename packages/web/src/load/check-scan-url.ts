@@ -7,11 +7,12 @@ export function checkScanUrl(input: string, pageOrigin: string, apiBaseUrl: stri
   if (input === "") return REJECTED;
   try {
     const page = new URL(pageOrigin);
+    const crossOrigin = apiBaseUrl !== null && !apiBaseUrl.startsWith("/") ? new URL(apiBaseUrl).origin : null;
     const u = new URL(input, page.origin + "/");
     if (u.protocol !== "http:" && u.protocol !== "https:") return REJECTED;
     if (u.username !== "" || u.password !== "") return REJECTED;
     if (u.origin === page.origin) return { ok: true, url: u.href };
-    if (u.protocol === "https:" && apiBaseUrl !== null && u.origin === new URL(apiBaseUrl).origin) {
+    if (u.protocol === "https:" && crossOrigin !== null && u.origin === crossOrigin) {
       return { ok: true, url: u.href };
     }
     return REJECTED;
