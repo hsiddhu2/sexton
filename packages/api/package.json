@@ -11,6 +11,7 @@
     }
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "3.1166.0",
     "@sexton/engine": "0.1.0"
   },
   "scripts": {
@@ -19,5 +20,9 @@
     "test": "vitest run",
     "predemo:generate": "tsc -b",
     "demo:generate": "node scripts/generate-demo-scan.mjs"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "8.10.164",
+    "fast-check": "3.23.1"
   }
 }
