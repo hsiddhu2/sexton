@@ -30,6 +30,8 @@ cdk.out/
 *.timestamp-*.mjs
 # cemetery-ui generated and test outputs
 packages/web/public/demo/scan.json
+packages/web/public/demo/evidence.json
+packages/web/public/demo/evidence.md
 packages/web/dist-e2e
 packages/web/dist-types
 packages/web/test-results

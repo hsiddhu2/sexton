@@ -12,7 +12,7 @@ import { CachedFetcher, MemoryCacheStore } from "../../src/cache.js";
 import type { ClientContext } from "../../src/clients/context.js";
 import { GITHUB_RAW_HOST, MAX_MANIFEST_BYTES } from "../../src/clients/github-raw.js";
 import { packumentUrl } from "../../src/clients/npm.js";
-import { intakeRepo } from "../../src/intake/intake.js";
+import { intakeRepo, intakeRepoWithManifests } from "../../src/intake/intake.js";
 import { parseManifests } from "../../src/intake/manifest.js";
 import { UNRESOLVED_VERSION } from "../../src/intake/resolve.js";
 import type { IntakeResult, IntakeSuccess } from "../../src/types.js";
@@ -159,5 +159,31 @@ describe("synthetic fixtures (hand-written, not recorded)", () => {
       expect(result.code).toBe("manifest-too-large");
       expect(result.file).toBe("package.json");
     }
+  });
+});
+
+// Spec evidence-pack, Requirements 6.1, 6.2: the manifest texts intake read, beside an unchanged result.
+describe("intakeRepoWithManifests over the recorded repositories", () => {
+  for (const [owner, repo] of REPOS) {
+    it(`${owner}/${repo} gives the intakeRepo result and the recorded texts`, async () => {
+      const names = candidateNames(owner, repo);
+      const url = `https://github.com/${owner}/${repo}`;
+      const plain = await intakeRepo(url, makeCtx(recordedRoutes(owner, repo, names)).ctx);
+      const { result, manifests } = await intakeRepoWithManifests(url, makeCtx(recordedRoutes(owner, repo, names)).ctx);
+      expect(result).toEqual(plain);
+      const dir = join(FIXTURES, "repos", `${owner}__${repo}`);
+      const pkg = readJson(join(dir, "package.json.json")) as RecordedFile;
+      const lock = readJson(join(dir, "package-lock.json.json")) as RecordedFile;
+      expect(manifests).toEqual({ packageJson: pkg.body, packageLock: lock.status === 200 ? lock.body : null });
+    });
+  }
+
+  it("gives null manifests when intake fails, and strips a byte order mark as the transport does", async () => {
+    const missing = makeCtx({});
+    expect(await intakeRepoWithManifests("https://github.com/o/r", missing.ctx)).toEqual({ result: await intakeRepo("https://github.com/o/r", makeCtx({}).ctx), manifests: null });
+    const text = '{"dependencies":{}}';
+    const withBom = makeCtx({ [`${GITHUB_RAW_HOST}/o/r/HEAD/package.json`]: { status: 200, body: `\ufeff${text}` } });
+    const { manifests } = await intakeRepoWithManifests("https://github.com/o/r", withBom.ctx);
+    expect(manifests).toEqual({ packageJson: text, packageLock: null });
   });
 });

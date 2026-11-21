@@ -153,7 +153,7 @@ describe("validateScanResponse demo scan", () => {
   it("accepts the generated Demo scan", () => {
     const result = validateScanResponse(readDemoScan());
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.value.report.packages).toHaveLength(11);
+    if (result.ok) expect(result.value.report.packages).toHaveLength(12);
   });
 });
 

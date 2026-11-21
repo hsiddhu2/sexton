@@ -47,6 +47,9 @@ export type { PackageJsonEdit, PrIntent, RemediationEntry, RemediationKind, Reme
 export { REMEDIATION_KINDS, REMEDIATION_STATUSES } from "@sexton/engine";
 export type RemediationStatusList = typeof REMEDIATION_STATUSES;
 
+// The evidence pack lives in the engine (spec evidence-pack, decision 2); the contract re-exports it.
+export type { EvidencePack, EvidenceBody, EvidenceIntegrity, EvidenceScan, EvidencePlan, CycloneDxBom } from "@sexton/engine";
+
 export interface ScanResponse {
   readonly report: HealthReport;
   readonly policy: PolicyResult;

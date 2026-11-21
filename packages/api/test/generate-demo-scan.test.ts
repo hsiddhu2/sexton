@@ -6,9 +6,10 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 // @ts-expect-error plain JavaScript module without declarations
-import { buildDemoScan, DEFAULT_FIXTURES_DIR, serialiseDemoScan } from "../scripts/generate-demo-scan.mjs";
+import { buildDemoEvidence, buildDemoScan, DEFAULT_FIXTURES_DIR, serialiseDemoScan } from "../scripts/generate-demo-scan.mjs";
 import { validateScanResponse } from "../../web/src/load/validate-scan-response.js";
-import type { ScanResponse } from "../src/contract.js";
+import type { EvidencePack, ScanResponse } from "../src/contract.js";
+import { COMMIT_NOTE, LOG_NOT_CONNECTED, renderEvidenceMarkdown, serialiseEvidencePack, verifyEvidencePack } from "@sexton/engine";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(here, "..", "..", "engine", "test", "fixtures");
@@ -22,8 +23,8 @@ beforeAll(async () => {
 });
 
 describe("demo scan generator", () => {
-  it("scores eleven packages", () => {
-    expect(scan.report.packages).toHaveLength(11);
+  it("scores twelve packages (eleven fixtures and the seed)", () => {
+    expect(scan.report.packages).toHaveLength(12);
   });
 
   it("matches expected-states.json for the ten fixture packages", () => {
@@ -107,5 +108,27 @@ describe("unrouted URL", () => {
 
   it("makes the build fail", async () => {
     await expect(buildDemoScan({ fixturesDir: copy })).rejects.toThrow(/unrouted URLs/);
+  });
+});
+
+// Spec evidence-pack, Requirement 8.1.
+describe("demo evidence pack", () => {
+  it("is built from the same scan, verifies, and carries the demo remediations as plans with no log", async () => {
+    const { pack, json, markdown } = (await buildDemoEvidence(scan)) as { pack: EvidencePack; json: string; markdown: string };
+    expect(await verifyEvidencePack(JSON.parse(json))).toEqual({ ok: true });
+    expect(json).toBe(serialiseEvidencePack(pack));
+    expect(markdown).toBe(renderEvidenceMarkdown(pack));
+    expect(markdown).toContain(LOG_NOT_CONNECTED);
+    expect(pack.body.scan).toMatchObject({ repository: "https://github.com/sexton-demo/fixture", commit: null, commitNote: COMMIT_NOTE, totalDirect: 12 });
+    expect(pack.body.packages).toHaveLength(scan.report.packages.length);
+    expect(pack.body.remediation.log).toEqual({ available: false, entries: [] });
+    expect(pack.body.remediation.plans.map((p) => p.packageName)).toEqual((scan.remediations ?? []).map((r) => r.packageName));
+    expect(pack.body.remediation.plans.find((p) => p.packageName === "node-sass")).toMatchObject({ kind: "migrate", status: "proposed", title: "Sexton: migrate node-sass to sass" });
+  });
+
+  it("is deterministic", async () => {
+    const a = (await buildDemoEvidence(scan)) as { json: string };
+    const b = (await buildDemoEvidence(structuredClone(scan))) as { json: string };
+    expect(b.json).toBe(a.json);
   });
 });

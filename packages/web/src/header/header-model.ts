@@ -3,6 +3,13 @@ import type { ScanResponse } from "@sexton/api";
 export const NO_SCAN_METADATA_TEXT = "no scan metadata in this response";
 export const DEMO_LABEL_TEXT = "demo fixture, recorded data";
 export const MAX_LISTED_UNLOCKED = 20;
+export const DEMO_EVIDENCE_LINKS: EvidenceLinks = { json: "/demo/evidence.json", markdown: "/demo/evidence.md" };
+
+/** Download addresses of the evidence pack. Spec evidence-pack, Requirement 8.2. */
+export interface EvidenceLinks {
+  readonly json: string;
+  readonly markdown: string;
+}
 
 export interface HeaderModel {
   readonly repoText: string;
@@ -13,6 +20,7 @@ export interface HeaderModel {
   readonly policyStatus: "pass" | "fail";
   readonly policyLabel: "default policy" | "policy file";
   readonly failingRules: number;
+  readonly evidenceLinks: EvidenceLinks | null;
 }
 
 function unlockedNoticeFor(unlocked: boolean, names: readonly string[]): string | null {
@@ -23,8 +31,20 @@ function unlockedNoticeFor(unlocked: boolean, names: readonly string[]): string 
   return `unlocked: ${String(names.length)} packages resolved from declared ranges: ${listed}${rest}`;
 }
 
+/**
+ * Demo links for the demo, API links for a scan requested through the repository form (hostedApiBase set), else none.
+ * The repository URL in an API link is the canonical URL from the scan metadata, encoded. Pure, no fetch.
+ */
+function evidenceLinksFor(response: ScanResponse, isDemo: boolean, hostedApiBase: string | null): EvidenceLinks | null {
+  if (isDemo) return DEMO_EVIDENCE_LINKS;
+  const scan = response.report.scan;
+  if (hostedApiBase === null || scan === undefined) return null;
+  const base = `${hostedApiBase}/evidence?repo=${encodeURIComponent(scan.repo.url)}`;
+  return { json: `${base}&format=json`, markdown: `${base}&format=md` };
+}
+
 /** Pure. The demo label comes from isDemo only and never from the repository name. */
-export function headerModel(response: ScanResponse, isDemo: boolean): HeaderModel {
+export function headerModel(response: ScanResponse, isDemo: boolean, hostedApiBase: string | null = null): HeaderModel {
   const { report, policy } = response;
   const scan = report.scan;
   return {
@@ -39,5 +59,6 @@ export function headerModel(response: ScanResponse, isDemo: boolean): HeaderMode
     policyStatus: policy.pass ? "pass" : "fail",
     policyLabel: policy.source === "default" ? "default policy" : "policy file",
     failingRules: policy.rules.filter((rule) => !rule.pass).length,
+    evidenceLinks: evidenceLinksFor(response, isDemo, hostedApiBase),
   };
 }

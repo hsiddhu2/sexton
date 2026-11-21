@@ -139,8 +139,14 @@ body {
 .notice,
 .header-repo,
 .header-time,
-.header-policy {
+.header-policy,
+.header-evidence {
   margin: 4px 0;
+}
+
+.header-evidence a {
+  color: var(--text);
+  text-decoration: underline;
 }
 
 .legend-toggle,

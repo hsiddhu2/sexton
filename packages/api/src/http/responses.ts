@@ -20,6 +20,7 @@ export const API_ERROR_CODES = [
   "invalid-policy",
   "fetch-failed",
   "internal-error",
+  "evidence-too-large",
 ] as const;
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
 
@@ -53,10 +54,22 @@ export const FIXED_MESSAGES = {
   "invalid-policy": `${POLICY_FILE} is not valid.`,
   "policy-fetch-failed": `${POLICY_FILE} could not be fetched.`,
   "internal-error": "The scan failed unexpectedly.",
+  "invalid-evidence-request": "Send GET /api/evidence?repo=<public GitHub URL>&format=json or md.",
+  "evidence-too-large": "The evidence pack is larger than 5 MiB.",
 } as const;
 
 export function requestErrorSpec(code: "method-not-allowed" | "invalid-request" | "invalid-url"): ErrorSpec {
   return { status: code === "method-not-allowed" ? 405 : 400, body: { code, message: FIXED_MESSAGES[code] } };
+}
+
+/** The evidence path's request errors. invalid-request carries the evidence text, never the scan text. Spec evidence-pack, decision 11. */
+export function evidenceRequestErrorSpec(code: "method-not-allowed" | "invalid-request" | "invalid-url"): ErrorSpec {
+  if (code !== "invalid-request") return requestErrorSpec(code);
+  return { status: 400, body: { code, message: FIXED_MESSAGES["invalid-evidence-request"] } };
+}
+
+export function evidenceTooLargeSpec(): ErrorSpec {
+  return { status: 422, body: { code: "evidence-too-large", message: FIXED_MESSAGES["evidence-too-large"] } };
 }
 
 export function internalErrorSpec(): ErrorSpec {

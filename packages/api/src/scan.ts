@@ -7,11 +7,14 @@ import {
   DEFAULT_POLICY,
   evaluatePolicy,
   intakeRepo,
+  intakeRepoWithManifests,
   parsePolicy,
   scanMetadata,
   scorePackages,
   type CacheStore,
   type ClientContext,
+  type IntakeManifests,
+  type IntakePackage,
   type Policy,
   type PolicySource,
   type RetryOptions,
@@ -39,7 +42,20 @@ export interface ScanDeps {
 
 export type ScanOutcome = { readonly ok: true; readonly body: ScanResponse } | { readonly ok: false; readonly response: ErrorSpec };
 
-interface Summary {
+/** The scan body plus what the evidence pack needs. Spec evidence-pack, Requirement 7.3. Internal to the API. */
+export type ScanWithInputs =
+  | {
+      readonly ok: true;
+      readonly body: ScanResponse;
+      readonly dependencies: readonly IntakePackage[];
+      /** Null when an injected intake ran, so the texts are unknown. */
+      readonly manifests: IntakeManifests | null;
+      /** The policy file text, null for the default policy. */
+      readonly policyText: string | null;
+    }
+  | { readonly ok: false; readonly response: ErrorSpec };
+
+export interface Summary {
   status: number;
   packages: number;
   capped: boolean;
@@ -67,6 +83,12 @@ export async function runScan(repoUrl: string, deps: ScanDeps): Promise<ScanOutc
 }
 
 async function scan(repoUrl: string, deps: ScanDeps, summary: Summary): Promise<ScanOutcome> {
+  const outcome = await scanWithInputs(repoUrl, deps, summary);
+  return outcome.ok ? { ok: true, body: outcome.body } : outcome;
+}
+
+/** The scan, keeping the intake packages, manifest texts and policy text. Never hashes: only the evidence path does. */
+export async function scanWithInputs(repoUrl: string, deps: ScanDeps, summary: Summary): Promise<ScanWithInputs> {
   const retry = deps.retry !== undefined ? { retry: deps.retry } : {};
   const ctx: ClientContext = {
     transport: deps.transport,
@@ -74,7 +96,8 @@ async function scan(repoUrl: string, deps: ScanDeps, summary: Summary): Promise<
     cache: new CachedFetcher({ store: deps.cacheStore, clock: deps.clock, ttlMs: SCAN_CACHE_TTL_MS }),
     ...retry,
   };
-  const intake = await (deps.intake ?? intakeRepo)(repoUrl, ctx);
+  const { result: intake, manifests } =
+    deps.intake !== undefined ? { result: await deps.intake(repoUrl, ctx), manifests: null } : await intakeRepoWithManifests(repoUrl, ctx);
   if (!intake.ok) return { ok: false, response: intakeErrorSpec(intake) };
   summary.packages = intake.packages.length;
   summary.capped = intake.capped;
@@ -107,5 +130,11 @@ async function scan(repoUrl: string, deps: ScanDeps, summary: Summary): Promise<
   }
   summary.policySource = source;
   const report = attachScan(scored, scanMetadata(intake));
-  return { ok: true, body: { report, policy: evaluatePolicy(policy, report, source) } };
+  return {
+    ok: true,
+    body: { report, policy: evaluatePolicy(policy, report, source) },
+    dependencies: intake.packages,
+    manifests,
+    policyText: policyText.kind === "found" ? policyText.text : null,
+  };
 }

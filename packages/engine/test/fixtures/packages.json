@@ -8,5 +8,6 @@
   { "name": "event-stream", "installedVersion": "3.3.6" },
   { "name": "colors", "installedVersion": "1.4.0" },
   { "name": "moment", "installedVersion": "2.29.4" },
-  { "name": "uuid", "installedVersion": "9.0.1" }
+  { "name": "uuid", "installedVersion": "9.0.1" },
+  { "name": "semver", "installedVersion": "7.8.6" }
 ]

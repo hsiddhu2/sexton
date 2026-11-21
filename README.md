@@ -16,7 +16,7 @@ Supply-chain attacks arrive through packages that looked fine in the lockfile. T
 - **History.** It keeps a dated snapshot of each package's maintainers, install scripts and attestations, because no registry API keeps that history. A maintainer change or lost provenance is computed from the history, not from one read. The snapshot engine is on `main`. The hosted daily job is in progress.
 - **Policy.** You commit a `sexton.policy.yml` with four rule types and package matchers. Sexton evaluates it and fails CI when a rule breaks. The policy engine is on `main`. The CI command arrives with the CLI.
 - **Remediation pull requests.** For each dangerous package it proposes one fix: a version bump, a removal, or a migration such as node-sass to sass. The pull request carries its evidence. Planned for 0.1.
-- **Evidence pack.** It writes a CycloneDX SBOM, the policy results and the remediation log as JSON and Markdown. A SHA-256 hash lets a reviewer check it. Planned for 0.1.
+- **Evidence pack.** It writes a CycloneDX 1.5 SBOM, every signal with its source, the policy results and the remediation plans and log as one JSON file, and a Markdown report rendered from it. A SHA-256 digest over the canonical JSON body lets a reviewer check it against a digest they got separately. The digest is not a signature. On `main` today: the engine, `GET /api/evidence?repo=<url>&format=json|md`, and the demo download links in the cemetery header. Each hosted download runs its own scan. The hosted Markdown link needs the next deploy; until then it returns JSON.
 
 ## The five states
 
@@ -77,7 +77,7 @@ Releases are sequenced, not promised by date. Release 0.1 lists each item's stat
 - Daily snapshotter for maintainers and attestations. The engine is on `main`, and the hosted schedule is in progress.
 - Policy file with four rule types and packageRules matchers. On `main`.
 - Remediation pull requests: bump, remove, and one migration (node-sass to sass), planned
-- Evidence pack: CycloneDX JSON SBOM, policy results, remediation log, hash, planned
+- Evidence pack: CycloneDX JSON SBOM, policy results, remediation log, hash. On `main`. The CLI command arrives with the CLI
 - Cemetery UI, in progress
 - CLI, planned
 - GitHub Action, planned
@@ -101,6 +101,7 @@ Releases are sequenced, not promised by date. Release 0.1 lists each item's stat
 
 - Maven, Go, Cargo
 - Team accounts and audit retention
+- Signed evidence packs
 - Evidence pack export for SOC 2, DORA and CRA reporting
 
 ## Documentation

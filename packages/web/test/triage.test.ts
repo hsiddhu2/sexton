@@ -228,7 +228,7 @@ describe("triage demo scan", () => {
     if (!result.ok) throw new Error("demo scan failed validation");
     // Possessed: left-padder. Dead: event-stream (Critical), uuid (Moderate, reach 2), request (Moderate, reach 1),
     // then no advisories by name: colors, left-pad, node-sass. Haunted: lodash. Restless: express, moment
-    // (both Moderate, reach 0, by name). Alive: react.
+    // (both Moderate, reach 0, by name). Alive: semver (reach 9, spec evidence-pack), react.
     expect(triageOrder(result.value.report.packages).map((p) => p.name)).toEqual([
       "left-padder",
       "event-stream",
@@ -240,6 +240,7 @@ describe("triage demo scan", () => {
       "lodash",
       "express",
       "moment",
+      "semver",
       "react",
     ]);
   });

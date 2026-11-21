@@ -55,7 +55,14 @@ describe("Property 14: Header values follow the response exactly", () => {
         expect(text).toContain(model.policyLabel);
         if (model.unlockedNotice !== null) expect(text).toContain(model.unlockedNotice);
         expect(text.includes("demo fixture, recorded data")).toBe(isDemo);
-        expect(container.querySelector("a")).toBeNull();
+        // Spec evidence-pack: the only links are the two evidence links, with fixed demo addresses here.
+        const links = [...container.querySelectorAll("a")];
+        if (isDemo) {
+          expect(links.map((a) => [a.getAttribute("href"), a.getAttribute("aria-label"), a.hasAttribute("download")])).toEqual([
+            ["/demo/evidence.json", "Download evidence pack as JSON", true],
+            ["/demo/evidence.md", "Download evidence pack as Markdown", true],
+          ]);
+        } else expect(links).toHaveLength(0);
         unmount();
       }),
       { numRuns: 100 },
@@ -195,5 +202,40 @@ describe("Header failing rules text", () => {
     const { container } = renderHeader(cheapScan(1), false);
     const model = headerModel(cheapScan(1), false);
     expect(container.querySelector(".header-policy")?.textContent).toContain(failingRulesText(model.failingRules));
+  });
+});
+
+// Spec evidence-pack, Requirements 8.2 and 8.3.
+describe("evidence links", () => {
+  it("builds hosted links from the canonical repository URL, encoded, only for a hosted load with scan metadata", () => {
+    fc.assert(
+      fc.property(arbHeaderResponse, fc.constantFrom("/api", "https://api.example.test/api"), ({ response }, base) => {
+        const model = headerModel(response, false, base);
+        const scan = response.report.scan;
+        if (scan === undefined) {
+          expect(model.evidenceLinks).toBeNull();
+          return;
+        }
+        const repo = encodeURIComponent(scan.repo.url);
+        expect(model.evidenceLinks).toEqual({
+          json: `${base}/evidence?repo=${repo}&format=json`,
+          markdown: `${base}/evidence?repo=${repo}&format=md`,
+        });
+        expect(headerModel(response, false).evidenceLinks).toBeNull();
+        expect(headerModel(response, true, base).evidenceLinks).toEqual({ json: "/demo/evidence.json", markdown: "/demo/evidence.md" });
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  it("renders the line after the policy line with download links", () => {
+    const { container } = render(
+      <Header model={headerModel(cheapScan(1), true)} theme="light" apiConfigured={true} onSubmit={noSubmit} />,
+    );
+    const paragraphs = [...container.querySelectorAll("header > p")].map((p) => p.className);
+    expect(paragraphs.indexOf("header-evidence")).toBe(paragraphs.indexOf("header-policy") + 1);
+    const evidence = container.querySelector(".header-evidence");
+    expect(evidence?.textContent).toBe("evidence pack: JSON, Markdown");
+    for (const a of evidence?.querySelectorAll("a") ?? []) expect(a.hasAttribute("download")).toBe(true);
   });
 });

@@ -1,0 +1,14 @@
+{
+  "status": 200,
+  "body": {
+    "nodes": [
+      {
+        "versionKey": {
+          "name": "semver",
+          "version": "7.8.6"
+        }
+      }
+    ],
+    "edges": []
+  }
+}

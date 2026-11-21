@@ -53,24 +53,40 @@ async function resolveOne(ctx: ClientContext, dependency: ParsedDependency): Pro
   }
 }
 
-async function run(url: string, ctx: ClientContext): Promise<IntakeResult> {
+/** The manifest texts intake read. Spec evidence-pack, Requirement 6.1. */
+export interface IntakeManifests {
+  readonly packageJson: string;
+  readonly packageLock: string | null;
+}
+
+export interface IntakeWithManifests {
+  readonly result: IntakeResult;
+  /** Null when the result is not a success. */
+  readonly manifests: IntakeManifests | null;
+}
+
+function failed(result: IntakeResult): IntakeWithManifests {
+  return { result, manifests: null };
+}
+
+async function run(url: string, ctx: ClientContext): Promise<IntakeWithManifests> {
   const parsedUrl = parseRepoUrl(url);
-  if (!parsedUrl.ok) return parsedUrl;
+  if (!parsedUrl.ok) return failed(parsedUrl);
   const repo: RepoRef = parsedUrl.repo;
 
   const pkgOutcome = await fetchManifest(ctx, repo, "package.json");
-  if (pkgOutcome.kind !== "found") return manifestError(pkgOutcome, "package.json");
+  if (pkgOutcome.kind !== "found") return failed(manifestError(pkgOutcome, "package.json"));
 
   const parsed = parsePackageJson(pkgOutcome.text);
-  if (!parsed.ok) return parsed;
+  if (!parsed.ok) return failed(parsed);
 
   const lockOutcome = await fetchManifest(ctx, repo, "package-lock.json");
   let lockText: string | null = null;
   if (lockOutcome.kind === "found") lockText = lockOutcome.text;
-  else if (lockOutcome.kind !== "not-found") return manifestError(lockOutcome, "package-lock.json");
+  else if (lockOutcome.kind !== "not-found") return failed(manifestError(lockOutcome, "package-lock.json"));
 
   const manifests = applyLockfile(parsed, lockText);
-  if (!manifests.ok) return manifests;
+  if (!manifests.ok) return failed(manifests);
 
   const capped = applyCap(manifests.dependencies);
   const installed = await mapWithConcurrency(capped.packages, PACKAGE_CONCURRENCY, (dependency) =>
@@ -90,7 +106,7 @@ async function run(url: string, ctx: ClientContext): Promise<IntakeResult> {
     };
   });
 
-  return {
+  const result: IntakeResult = {
     ok: true,
     repo,
     packages,
@@ -102,13 +118,22 @@ async function run(url: string, ctx: ClientContext): Promise<IntakeResult> {
     skipped: manifests.skipped,
     unresolved: packages.filter((p) => p.resolution === "unresolved").map((p) => p.name),
   };
+  return { result, manifests: { packageJson: pkgOutcome.text, packageLock: lockText } };
+}
+
+/**
+ * Intake plus the manifest texts it read, so a caller can record their digests. Never rejects.
+ * Spec evidence-pack, Requirement 6.1. IntakeSuccess does not change.
+ */
+export async function intakeRepoWithManifests(url: string, ctx: ClientContext): Promise<IntakeWithManifests> {
+  try {
+    return await run(url, ctx);
+  } catch {
+    return failed(INTERNAL_ERROR);
+  }
 }
 
 /** Never rejects. Any unexpected exception becomes internal-error. */
 export async function intakeRepo(url: string, ctx: ClientContext): Promise<IntakeResult> {
-  try {
-    return await run(url, ctx);
-  } catch {
-    return INTERNAL_ERROR;
-  }
+  return (await intakeRepoWithManifests(url, ctx)).result;
 }

@@ -36,6 +36,18 @@ export function Header({ model, theme, apiConfigured, onSubmit }: HeaderProps) {
           <p className="header-policy">
             policy: <strong>{model.policyStatus}</strong>, {model.policyLabel}, {failingRulesText(model.failingRules)}
           </p>
+          {model.evidenceLinks === null ? null : (
+            <p className="header-evidence">
+              evidence pack:{" "}
+              <a href={model.evidenceLinks.json} download aria-label="Download evidence pack as JSON">
+                JSON
+              </a>
+              ,{" "}
+              <a href={model.evidenceLinks.markdown} download aria-label="Download evidence pack as Markdown">
+                Markdown
+              </a>
+            </p>
+          )}
         </>
       )}
       <Legend theme={theme} />

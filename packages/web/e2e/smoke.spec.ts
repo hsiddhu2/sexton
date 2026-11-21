@@ -48,7 +48,20 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
   await page.goto("/");
   await expect(page.locator("header")).toBeVisible();
   await expect(page.locator("header")).toContainText("demo fixture, recorded data");
-  await expect(page.locator("button[data-grave-index]")).toHaveCount(11);
+  await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
+
+  // Spec evidence-pack, Requirement 8.4: both demo evidence links are in the header and both files download.
+  for (const [name, path, file] of [
+    ["Download evidence pack as JSON", "/demo/evidence.json", "evidence.json"],
+    ["Download evidence pack as Markdown", "/demo/evidence.md", "evidence.md"],
+  ] as const) {
+    const link = page.getByRole("link", { name });
+    await expect(link).toHaveAttribute("href", path);
+    await expect(link).toHaveAttribute("download", "");
+    const [download] = await Promise.all([page.waitForEvent("download"), link.click()]);
+    expect(download.suggestedFilename()).toBe(file);
+    expect((await request.get(`${origin}${path}`)).status()).toBe(200);
+  }
 
   const csp = await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute("content");
   expect(csp).not.toBeNull();

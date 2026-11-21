@@ -125,6 +125,12 @@ The path to TLS 1.2 minimum needs a domain we own. The steps are short.
 
 Sources: the TLSv1 limit is in https://repost.aws/knowledge-center/cloudfront-security-protocols-ciphers, and the us-east-1 rule for CloudFront certificates is in https://aws.amazon.com/certificate-manager/faqs/.
 
+### The evidence digest is not a signature
+
+The evidence pack carries a SHA-256 digest over the RFC 8785 canonical form of its body. It shows an edit only to a reviewer who got the digest from somewhere else, such as the `x-sexton-evidence-digest` header of the download or a CI log. Anyone who can change the file can recompute the digest, so it proves nothing on its own. Signed evidence packs are on the roadmap.
+
+The pack is built from untrusted text: package names, versions, advisory summaries, maintainer names and reasons all come from upstream or the repository. The Markdown report writes every such string only inside an escaped inline code span (`escapeField`), so none of them can open a heading, a link, HTML or a table cell. A property test plants Markdown, HTML and a marker in every field and checks that no marker is left outside a code span. The download file name is built from the parsed owner and repository and filtered to letters, digits, dot, hyphen and underscore. Each evidence download runs a full scan, so it counts against the same rate rule as a scan.
+
 ### Other accepted limits
 
 1. CloudFront access logs and S3 server access logs are off, for cost and to avoid storing visitor IP addresses. WAF sampled requests and Lambda logs cover day-to-day operations.
