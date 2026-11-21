@@ -194,7 +194,7 @@ describe("engine public surface (remediation)", () => {
   });
 
   it("keeps the internal helpers internal", () => {
-    for (const name of ["cleanLine", "precheck", "chooseKind", "readPublished", "buildPrContext", "isValidLogEntry"]) {
+    for (const name of ["precheck", "chooseKind", "readPublished", "buildPrContext", "isValidLogEntry"]) {
       expect(Object.keys(engine)).not.toContain(name);
     }
   });
@@ -254,5 +254,21 @@ describe("engine public surface (evidence-pack)", () => {
     expect(engine.EVIDENCE_VERIFY_FAILURES).toEqual(["malformed", "unsupported-version", "digest-mismatch"]);
     expect(engine.COMMIT_NOTE).toBe("commit not recorded, the scan read the default branch head");
     expect(Object.keys(engine.SIGNAL_SUMMARIES).sort()).toEqual([...engine.SIGNAL_NAMES].sort());
+  });
+});
+
+// cli-and-action task 2.2. Public surface added for the CLI.
+describe("engine public surface (cli-and-action)", () => {
+  it.each(["intakeFromManifests", "fetchPolicyText", "policyUrl", "neutralise", "cleanLine", "countReferences", "isCountedPath", "capFileSource"] as const)(
+    "exports %s as a function",
+    (name) => {
+      expect(typeof engine[name]).toBe("function");
+    },
+  );
+
+  it("exports the policy file constants and the remove check line", () => {
+    expect(engine.POLICY_FILE).toBe("sexton.policy.yml");
+    expect(engine.MAX_POLICY_BYTES).toBe(256 * 1024);
+    expect(engine.REMOVE_CHECK_LINE).toContain("Check before merging.");
   });
 });

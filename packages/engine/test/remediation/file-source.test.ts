@@ -82,6 +82,24 @@ describe("InMemoryFileSource and paths", () => {
   });
 });
 
+describe("capFileSource limits (spec cli-and-action, Requirement 1.5)", () => {
+  it("keeps the recipe defaults and takes larger limits for import counting", async () => {
+    const files = new Map(Array.from({ length: 600 }, (_, i) => [`f${String(i).padStart(4, "0")}.js`, "x"] as const));
+    const plain = capFileSource(new InMemoryFileSource(files));
+    expect(await plain.source.listFiles()).toHaveLength(500);
+    expect(plain.counts().capped).toBe(true);
+    const wide = capFileSource(new InMemoryFileSource(files), { maxListed: 20000, maxRead: 5000 });
+    const listed = await wide.source.listFiles();
+    expect(listed).toHaveLength(600);
+    for (const p of listed) expect(await wide.source.readFile(p)).toBe("x");
+    expect(wide.counts()).toEqual({ performed: true, listed: 600, read: 600, skipped: 0, capped: false });
+    const small = capFileSource(new InMemoryFileSource({ "a.js": "xx" }), { maxFileBytes: 1 });
+    await small.source.listFiles();
+    expect(await small.source.readFile("a.js")).toBeUndefined();
+    expect(small.counts().skipped).toBe(1);
+  });
+});
+
 describe("capFileSource", () => {
   it("Feature: migration-node-sass, Property 24: Caps hold for any file set", async () => {
     await fc.assert(

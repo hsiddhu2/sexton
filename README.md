@@ -14,9 +14,9 @@ Supply-chain attacks arrive through packages that looked fine in the lockfile. T
 
 - **Signals.** It scores up to 300 direct dependencies per scan on ten signals. These ten measure the five product signals in the roadmap, from last publish date and known advisories to maintainer change, provenance and transitive reach. Every signal carries its source URL and fetch time. On `main` today.
 - **History.** It keeps a dated snapshot of each package's maintainers, install scripts and attestations, because no registry API keeps that history. A maintainer change or lost provenance is computed from the history, not from one read. The snapshot engine is on `main`. The hosted daily job is in progress.
-- **Policy.** You commit a `sexton.policy.yml` with four rule types and package matchers. Sexton evaluates it and fails CI when a rule breaks. The policy engine is on `main`. The CI command arrives with the CLI.
+- **Policy.** You commit a `sexton.policy.yml` with four rule types and package matchers. Sexton evaluates it and fails CI when a rule breaks. The policy engine, `sexton check` and the GitHub Action are on `main`.
 - **Remediation pull requests.** For each dangerous package it proposes one fix: a version bump, a removal, or a migration such as node-sass to sass. The pull request carries its evidence. Planned for 0.1.
-- **Evidence pack.** It writes a CycloneDX 1.5 SBOM, every signal with its source, the policy results and the remediation plans and log as one JSON file, and a Markdown report rendered from it. A SHA-256 digest over the canonical JSON body lets a reviewer check it against a digest they got separately. The digest is not a signature. On `main` today: the engine, `GET /api/evidence?repo=<url>&format=json|md`, and the demo download links in the cemetery header. Each hosted download runs its own scan. The hosted Markdown link needs the next deploy; until then it returns JSON.
+- **Evidence pack.** It writes a CycloneDX 1.5 SBOM, every signal with its source, the policy results and the remediation plans and log as one JSON file, and a Markdown report rendered from it. A SHA-256 digest over the canonical JSON body lets a reviewer check it against a digest they got separately. The digest is not a signature. On `main` today: the engine, `GET /api/evidence?repo=<url>&format=json|md`, and the demo download links in the cemetery header. Each hosted download runs its own scan. The hosted site gains the evidence endpoint and the header links at its next deploy.
 
 ## The five states
 
@@ -32,12 +32,12 @@ Each package gets exactly one state. The rules run in this order, and the first 
 
 ## Quick start
 
-These commands arrive with the 0.1 CLI. They are not published yet.
+The CLI is on `main`. It is not published to npm yet, so run it from a clone (see "CLI" below).
 
 ```sh
-npx sexton scan https://github.com/<owner>/<repo>   # score every direct dependency and write scan.json
-npx sexton check                                    # evaluate sexton.policy.yml, exit non-zero on failure
-npx sexton evidence                                 # write the evidence pack
+sexton scan https://github.com/<owner>/<repo>   # score every direct dependency and write scan.json
+sexton check                                    # evaluate sexton.policy.yml, exit non-zero on failure
+sexton evidence                                 # write the evidence pack
 ```
 
 Hosted demo: the link arrives with the first deploy.
@@ -52,6 +52,45 @@ npm run scan:self                   # score Sexton's own dependencies live and c
 ```
 
 The last command calls the npm registry, OSV and deps.dev, so it needs network. It exits non-zero when the policy fails.
+
+## CLI
+
+Not published to npm yet, run it from a clone with Node.js 22:
+
+```sh
+npm ci && npx tsc -b packages/cli
+node packages/cli/dist/bin.js scan <repo-or-path> [--repo <url>] [--out <file>]
+node packages/cli/dist/bin.js check [repo-or-path] [--repo <url>] [--summary <file>]
+node packages/cli/dist/bin.js evidence [repo-or-path] [--repo <url>] [--out-dir <dir>]
+node packages/cli/dist/bin.js evidence --verify <file>
+```
+
+- A target that is a GitHub repository URL is read from GitHub. Any other target is a local directory, default the current one. A local directory needs its repository name: `--repo`, or an `origin` remote on github.com.
+- `scan` prints a table and writes `scan.json`. `check` prints every rule and exits non-zero when one fails. `evidence` writes `sexton-evidence.json` and `sexton-evidence.md` and prints the digest. `--verify` checks a pack.
+- Exit codes: 0 success, 1 the policy failed or the pack did not verify, 2 anything else (a usage error, a missing or invalid file, an invalid policy).
+- For a local directory Sexton also counts references to each dependency in the working tree, and proposes removing a package from `dependencies` only when it found none and read every file. A package loaded by a computed name at run time is not detected, and the pull request body says so.
+
+## GitHub Action
+
+`packages/action` is a composite action. It builds the CLI from its own checkout, runs `sexton check` on your checkout, writes the job summary and posts one summary comment on the pull request. It never installs or runs code from your repository.
+
+```yaml
+on:
+  pull_request:          # never pull_request_target
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  sexton:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<commit SHA>   # pin to a full commit SHA
+        with:
+          persist-credentials: false
+      - uses: hsiddhu2/sexton/packages/action@<PLACEHOLDER: commit SHA of a Sexton release>
+```
+
+Inputs: `path` (default `.`), `comment` (default `true`), `token` (default the workflow token). On a pull request from a fork the token is read-only, so the comment is skipped with a warning and the check still decides the job. The comment is updated only when `github-actions[bot]` wrote it; with a personal token each run adds a new comment.
 
 ## Sexton scans itself
 
@@ -79,8 +118,8 @@ Releases are sequenced, not promised by date. Release 0.1 lists each item's stat
 - Remediation pull requests: bump, remove, and one migration (node-sass to sass), planned
 - Evidence pack: CycloneDX JSON SBOM, policy results, remediation log, hash. On `main`. The CLI command arrives with the CLI
 - Cemetery UI, in progress
-- CLI, planned
-- GitHub Action, planned
+- CLI with scan, check and evidence. On `main`, not published to npm yet
+- GitHub Action. On `main`
 - Scheduled re-scan agent that judges changes against the policy, planned
 
 ### 0.2
@@ -89,6 +128,8 @@ Releases are sequenced, not promised by date. Release 0.1 lists each item's stat
 - Typosquat distance and license drift signals
 - Private repositories through a GitHub App
 - Two more migration recipes
+- Workspace scanning in the CLI
+- CLI published to npm
 
 ### 0.3
 

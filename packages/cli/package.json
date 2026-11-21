@@ -1,0 +1,20 @@
+{
+  "name": "@sexton/cli",
+  "version": "0.1.0",
+  "description": "Sexton command line: scan, check and evidence.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "sexton": "dist/bin.js"
+  },
+  "main": "dist/run-cli.js",
+  "types": "dist/run-cli.d.ts",
+  "dependencies": {
+    "@sexton/engine": "0.1.0"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "pretest": "tsc -b",
+    "test": "vitest run"
+  }
+}

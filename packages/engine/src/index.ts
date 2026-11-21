@@ -250,3 +250,13 @@ export type {
   EvidenceVerifyFailure,
   EvidenceVerifyResult,
 } from "./types.js";
+// cli-and-action
+export { intakeFromManifests } from "./intake/intake.js";
+export type { ManifestTexts } from "./intake/intake.js";
+export { fetchPolicyText, MAX_POLICY_BYTES, POLICY_FILE, policyUrl } from "./clients/github-policy.js";
+export type { PolicyText } from "./clients/github-policy.js";
+export { neutralise } from "./remediation/escape-field.js";
+export { cleanLine } from "./remediation/clean-line.js";
+export { countReferences, isCountedPath, COUNTED_EXTENSIONS } from "./remediation/count-references.js";
+export type { CapLimits } from "./remediation/capped-source.js";
+export { REMOVE_CHECK_LINE } from "./remediation/pr-body.js";

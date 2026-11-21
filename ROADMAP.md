@@ -18,6 +18,8 @@ Sexton is a product with a long road. Release 0.1 is the Kiroween 2026 slice. Ev
 - Typosquat distance and license drift signals
 - Private repositories through a GitHub App
 - Two more migration recipes
+- Workspace scanning in the CLI
+- CLI published to npm
 
 ## 0.3
 

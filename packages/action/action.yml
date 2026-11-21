@@ -1,0 +1,77 @@
+# Sexton GitHub Action. Spec: .kiro/specs/cli-and-action, Requirement 9.
+# Builds the Sexton CLI from this action's own checkout, runs `sexton check` on the caller's workspace, writes the job
+# summary and posts or updates one pull request comment. Use it on pull_request, never on pull_request_target.
+# The caller grants: permissions: { contents: read, pull-requests: write }.
+# Every input reaches a script through env; no expression appears inside a run block.
+
+name: Sexton check
+description: Scores the repository's direct npm dependencies, evaluates sexton.policy.yml and fails the job when the policy fails.
+author: Harpreet Singh Siddhu
+
+inputs:
+  path:
+    description: Directory of the repository to check, relative to the workspace.
+    required: false
+    default: "."
+  comment:
+    description: Post or update one summary comment on the pull request ("true" or "false").
+    required: false
+    default: "true"
+  token:
+    description: Token for the pull request comment.
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: 22
+
+    - name: Build the Sexton CLI from the action's own checkout
+      shell: bash
+      run: |
+        set -euo pipefail
+        cd "$GITHUB_ACTION_PATH/../.."
+        npm ci --ignore-scripts --no-audit --no-fund --include-workspace-root -w @sexton/engine -w @sexton/cli -w @sexton/action
+        npx tsc -b packages/cli packages/action
+
+    - id: check
+      name: sexton check
+      shell: bash
+      env:
+        SEXTON_PATH: ${{ inputs.path }}
+      run: |
+        set -uo pipefail
+        summary="$RUNNER_TEMP/sexton-summary.md"
+        rm -f "$summary"
+        set +e
+        node "$GITHUB_ACTION_PATH/../cli/dist/bin.js" check --repo "https://github.com/$GITHUB_REPOSITORY" --summary "$summary" -- "$SEXTON_PATH"
+        code=$?
+        set -e
+        echo "code=$code" >> "$GITHUB_OUTPUT"
+        echo "summary=$summary" >> "$GITHUB_OUTPUT"
+
+    - name: Job summary
+      shell: bash
+      env:
+        SEXTON_SUMMARY: ${{ steps.check.outputs.summary }}
+      run: |
+        if [ -f "$SEXTON_SUMMARY" ]; then cat "$SEXTON_SUMMARY" >> "$GITHUB_STEP_SUMMARY"; fi
+
+    - name: Pull request comment
+      shell: bash
+      env:
+        SEXTON_SUMMARY: ${{ steps.check.outputs.summary }}
+        SEXTON_COMMENT: ${{ inputs.comment }}
+        SEXTON_TOKEN: ${{ inputs.token }}
+      run: |
+        if [ -f "$SEXTON_SUMMARY" ]; then node "$GITHUB_ACTION_PATH/dist/post-comment.js"; else echo "sexton: no summary, comment not posted"; fi
+
+    - name: Result
+      shell: bash
+      env:
+        SEXTON_CODE: ${{ steps.check.outputs.code }}
+      run: |
+        exit "$SEXTON_CODE"

@@ -69,6 +69,14 @@ function failed(result: IntakeResult): IntakeWithManifests {
   return { result, manifests: null };
 }
 
+/** The two manifest texts of a repository, read by the caller. Spec cli-and-action, Requirement 1.1. */
+export interface ManifestTexts {
+  readonly repo: RepoRef;
+  readonly packageJsonText: string;
+  /** null when the repository has no lockfile. */
+  readonly packageLockText: string | null;
+}
+
 async function run(url: string, ctx: ClientContext): Promise<IntakeWithManifests> {
   const parsedUrl = parseRepoUrl(url);
   if (!parsedUrl.ok) return failed(parsedUrl);
@@ -77,13 +85,22 @@ async function run(url: string, ctx: ClientContext): Promise<IntakeWithManifests
   const pkgOutcome = await fetchManifest(ctx, repo, "package.json");
   if (pkgOutcome.kind !== "found") return failed(manifestError(pkgOutcome, "package.json"));
 
-  const parsed = parsePackageJson(pkgOutcome.text);
-  if (!parsed.ok) return failed(parsed);
+  // The lockfile is fetched only when package.json parses, as before (repo-intake Requirement 2.13).
+  if (!parsePackageJson(pkgOutcome.text).ok) return fromManifests({ repo, packageJsonText: pkgOutcome.text, packageLockText: null }, ctx);
 
   const lockOutcome = await fetchManifest(ctx, repo, "package-lock.json");
   let lockText: string | null = null;
   if (lockOutcome.kind === "found") lockText = lockOutcome.text;
   else if (lockOutcome.kind !== "not-found") return failed(manifestError(lockOutcome, "package-lock.json"));
+
+  return fromManifests({ repo, packageJsonText: pkgOutcome.text, packageLockText: lockText }, ctx);
+}
+
+async function fromManifests(input: ManifestTexts, ctx: ClientContext): Promise<IntakeWithManifests> {
+  const { repo } = input;
+  const lockText = input.packageLockText;
+  const parsed = parsePackageJson(input.packageJsonText);
+  if (!parsed.ok) return failed(parsed);
 
   const manifests = applyLockfile(parsed, lockText);
   if (!manifests.ok) return failed(manifests);
@@ -118,7 +135,7 @@ async function run(url: string, ctx: ClientContext): Promise<IntakeWithManifests
     skipped: manifests.skipped,
     unresolved: packages.filter((p) => p.resolution === "unresolved").map((p) => p.name),
   };
-  return { result, manifests: { packageJson: pkgOutcome.text, packageLock: lockText } };
+  return { result, manifests: { packageJson: input.packageJsonText, packageLock: lockText } };
 }
 
 /**
@@ -128,6 +145,18 @@ async function run(url: string, ctx: ClientContext): Promise<IntakeWithManifests
 export async function intakeRepoWithManifests(url: string, ctx: ClientContext): Promise<IntakeWithManifests> {
   try {
     return await run(url, ctx);
+  } catch {
+    return failed(INTERNAL_ERROR);
+  }
+}
+
+/**
+ * Intake from manifest texts the caller already holds, such as a working copy. Never rejects, reads nothing itself
+ * except the registry for unlocked ranges. Spec cli-and-action, Requirement 1.1.
+ */
+export async function intakeFromManifests(input: ManifestTexts, ctx: ClientContext): Promise<IntakeWithManifests> {
+  try {
+    return await fromManifests(input, ctx);
   } catch {
     return failed(INTERNAL_ERROR);
   }
