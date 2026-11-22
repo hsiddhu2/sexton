@@ -2,7 +2,7 @@
 
 ## Integrity
 
-- Digest: `7043f538bbc8a15e465c3c6bdb239d648b4312968f51be67f855f776baac33fc`
+- Digest: `d797b6ec90836aa7c2f3fb030dce8e308fae006568121f48223604b852ae3ae7`
 - Algorithm: `SHA-256` over the `RFC 8785` canonical form of `body`, UTF-8 encoded
 
 This digest shows an edit only to a reviewer who got it from somewhere else. It is not a signature.
@@ -38,42 +38,26 @@ Failures:
 - `request` `2.88.2`: `state is Dead: installed version is deprecated`
 - `node-sass` `7.0.3`: `state is Dead: installed version is deprecated`
 - `left-pad` `1.3.0`: `state is Dead: installed version is deprecated`
-- `event-stream` `3.3.6`: `state is Dead: last publish more than 24 months ago`
-- `colors` `1.4.0`: `state is Dead: last publish more than 24 months ago`
+- `event-stream` `3.3.6`: `state is Dead: no release in 24 months and an open advisory`
 - `uuid` `9.0.1`: `state is Dead: installed version is deprecated`
 
 ## Packages
 
 | Package | Version | State | Reason |
 |---|---|---|---|
-| `colors` | `1.4.0` | `Dead` | `last publish more than 24 months ago` |
-| `event-stream` | `3.3.6` | `Dead` | `last publish more than 24 months ago` |
+| `event-stream` | `3.3.6` | `Dead` | `no release in 24 months and an open advisory` |
 | `left-pad` | `1.3.0` | `Dead` | `installed version is deprecated` |
 | `node-sass` | `7.0.3` | `Dead` | `installed version is deprecated` |
 | `request` | `2.88.2` | `Dead` | `installed version is deprecated` |
 | `uuid` | `9.0.1` | `Dead` | `installed version is deprecated` |
 | `lodash` | `4.17.21` | `Haunted` | `advisory of severity High or Critical` |
+| `colors` | `1.4.0` | `Restless` | `no release in 24 months` |
 | `express` | `4.18.2` | `Restless` | `advisory of severity Moderate or Low` |
 | `moment` | `2.29.4` | `Restless` | `advisory of severity Moderate or Low` |
 | `react` | `18.3.1` | `Alive` | `no rule matched` |
 | `semver` | `7.8.6` | `Alive` | `no rule matched` |
 
 ## Signals
-
-### `colors` `1.4.0`
-
-| Signal | Value | Source | Fetched at |
-|---|---|---|---|
-| lastPublish | `2022-01-09T19:35:35.048Z` | `https://registry.npmjs.org/colors` | `2026-11-12T00:00:00.000Z` |
-| deprecated | no | `https://registry.npmjs.org/colors` | `2026-11-12T00:00:00.000Z` |
-| hasInstallScript | no | `https://registry.npmjs.org/colors` | `2026-11-12T00:00:00.000Z` |
-| advisories | none | `https://api.osv.dev/v1/querybatch` | `2026-11-12T00:00:00.000Z` |
-| maintainers | 1: `marak` | `https://registry.npmjs.org/colors` | `2026-11-12T00:00:00.000Z` |
-| provenance | absent | `https://registry.npmjs.org/-/npm/v1/attestations/colors@1.4.0` | `2026-11-12T00:00:00.000Z` |
-| transitiveReach | reach 0, graphs missing 1 | `https://api.deps.dev/v3/systems/npm/packages/colors/versions/1.4.0:dependencies` | `2026-11-12T00:00:00.000Z` |
-| maintainerChange | history insufficient | `https://registry.npmjs.org/colors` | `2026-11-12T00:00:00.000Z` |
-| provenanceRegression | history insufficient: `history is empty` | `https://registry.npmjs.org/-/npm/v1/attestations/colors@1.4.0` | `2026-11-12T00:00:00.000Z` |
-| newInstallScript | none | `https://registry.npmjs.org/colors` | `2026-11-12T00:00:00.000Z` |
 
 ### `event-stream` `3.3.6`
 
@@ -178,6 +162,21 @@ Advisories:
 - `GHSA-r5fr-rjxr-66jc` `High`: `lodash vulnerable to Code Injection via '_.template' imports key names`
 - `GHSA-xxjr-mmjv-4gpg` `Moderate`: `Lodash has Prototype Pollution Vulnerability in '_.unset', '_.omit', and '_.pullAt' functions`
 
+### `colors` `1.4.0`
+
+| Signal | Value | Source | Fetched at |
+|---|---|---|---|
+| lastPublish | `2022-01-09T19:35:35.048Z` | `https://registry.npmjs.org/colors` | `2026-11-12T00:00:00.000Z` |
+| deprecated | no | `https://registry.npmjs.org/colors` | `2026-11-12T00:00:00.000Z` |
+| hasInstallScript | no | `https://registry.npmjs.org/colors` | `2026-11-12T00:00:00.000Z` |
+| advisories | none | `https://api.osv.dev/v1/querybatch` | `2026-11-12T00:00:00.000Z` |
+| maintainers | 1: `marak` | `https://registry.npmjs.org/colors` | `2026-11-12T00:00:00.000Z` |
+| provenance | absent | `https://registry.npmjs.org/-/npm/v1/attestations/colors@1.4.0` | `2026-11-12T00:00:00.000Z` |
+| transitiveReach | reach 0, graphs missing 1 | `https://api.deps.dev/v3/systems/npm/packages/colors/versions/1.4.0:dependencies` | `2026-11-12T00:00:00.000Z` |
+| maintainerChange | history insufficient | `https://registry.npmjs.org/colors` | `2026-11-12T00:00:00.000Z` |
+| provenanceRegression | history insufficient: `history is empty` | `https://registry.npmjs.org/-/npm/v1/attestations/colors@1.4.0` | `2026-11-12T00:00:00.000Z` |
+| newInstallScript | none | `https://registry.npmjs.org/colors` | `2026-11-12T00:00:00.000Z` |
+
 ### `express` `4.18.2`
 
 | Signal | Value | Source | Fetched at |
@@ -248,7 +247,7 @@ Advisories:
 ## SBOM
 
 - Spec version: `1.5`
-- Serial number: `urn:uuid:f3a9dfe0-f163-8ba7-8d86-42ed888cc9da`
+- Serial number: `urn:uuid:63dcdc93-2b6d-8586-ac76-079a30b0e8b8`
 - Components: 11
 
 - `pkg:npm/colors@1.4.0`

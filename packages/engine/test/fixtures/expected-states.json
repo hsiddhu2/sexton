@@ -5,8 +5,8 @@
   "request": { "state": "Dead", "stateReason": "installed version is deprecated", "missingSignals": [] },
   "node-sass": { "state": "Dead", "stateReason": "installed version is deprecated", "missingSignals": [] },
   "left-pad": { "state": "Dead", "stateReason": "installed version is deprecated", "missingSignals": [] },
-  "event-stream": { "state": "Dead", "stateReason": "last publish more than 24 months ago", "missingSignals": ["hasInstallScript"] },
-  "colors": { "state": "Dead", "stateReason": "last publish more than 24 months ago", "missingSignals": [] },
+  "event-stream": { "state": "Dead", "stateReason": "no release in 24 months and an open advisory", "missingSignals": ["hasInstallScript"] },
+  "colors": { "state": "Restless", "stateReason": "no release in 24 months", "missingSignals": [] },
   "moment": { "state": "Restless", "stateReason": "advisory of severity Moderate or Low", "missingSignals": [] },
   "uuid": { "state": "Dead", "stateReason": "installed version is deprecated", "missingSignals": [] },
   "semver": { "state": "Alive", "stateReason": "no rule matched", "missingSignals": [] }

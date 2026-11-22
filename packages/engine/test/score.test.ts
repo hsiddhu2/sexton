@@ -42,7 +42,7 @@ describe("scorePackages", () => {
     expect(report.generatedAt).toBe("2026-11-12T00:00:00.000Z");
     expect(report.packages.map((p) => [p.name, p.state])).toEqual([
       ["fresh", "Alive"],
-      ["old", "Dead"],
+      ["old", "Restless"],
     ]);
     expect(report.packages[1]?.signals.hasInstallScript.value).toBe(true);
     expect(originalOnly(report.packages[0]?.missingSignals ?? [])).toEqual([]);

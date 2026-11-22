@@ -14,9 +14,9 @@ A sexton keeps the churchyard: buries the dead, keeps the grounds, tolls the bel
 
 ## States, assigned in this order, first match wins
 - Possessed: maintainer changed in 90 days, or provenance regressed, or a new install script appeared.
-- Dead: deprecated, or last publish more than 24 months ago.
+- Dead: deprecated, or last publish more than 24 months ago and at least one advisory of any severity.
 - Haunted: any High or Critical advisory.
-- Restless: last publish 12 to 24 months ago, or any Low or Moderate advisory.
+- Restless: last publish more than 24 months ago, or any Low or Moderate advisory.
 - Alive: none of the above.
 - When lastPublish, deprecated and advisories are all unavailable and no Possessed rule matched, the state is Restless.
 

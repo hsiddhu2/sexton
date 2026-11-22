@@ -14,8 +14,8 @@ import {
 
 export { STATE_ORDER };
 
-export const DEAD_AFTER_MONTHS = 24;
-export const RESTLESS_AFTER_MONTHS = 12;
+/** A last publish strictly older than this many months is stale. Spec state-age-rule. */
+export const STALE_AFTER_MONTHS = 24;
 
 /** Health rank: Possessed 0, Dead 1, Haunted 2, Restless 3, Alive 4. Requirement 13.1. */
 export function healthRank(state: State): number {
@@ -50,7 +50,9 @@ export function monthsBefore(now: Date, months: number): Date {
 
 /**
  * Evaluates the state rules in order, first match wins: Possessed, Dead, Haunted, Restless, Alive.
- * Rules only use conditions whose signals are available. Requirement 9, 11, 14.
+ * Age alone never gives Dead: Dead needs deprecation, or staleness together with an advisory.
+ * Rules only use conditions whose signals are available. Requirement 9, 11, 14, as corrected
+ * by spec state-age-rule.
  * Possessed comes only from the three Possession inputs. Requirement 9.8.
  */
 export function evaluateState(inputs: StateInputs, now: Date): StateResult {
@@ -81,17 +83,18 @@ export function evaluateState(inputs: StateInputs, now: Date): StateResult {
   const publish = inputs.lastPublish ?? null;
   const advisories = inputs.advisories ?? [];
   const nowMs = now.getTime();
-  const deadBefore = monthsBefore(now, DEAD_AFTER_MONTHS).getTime();
-  const restlessBefore = monthsBefore(now, RESTLESS_AFTER_MONTHS).getTime();
+  const staleBefore = monthsBefore(now, STALE_AFTER_MONTHS).getTime();
   const publishMs = publish === null ? null : publish.getTime();
   const ageKnown = publishMs !== null && Number.isFinite(publishMs) && publishMs <= nowMs;
+  const stale = ageKnown && publishMs < staleBefore;
+  const hasAdvisory = hasAdvisories && advisories.length > 0;
 
-  // Dead. Requirement 11.3.
+  // Dead: deprecated, or stale with an open advisory of any severity. Requirement 11.3 as corrected.
   if (hasDeprecated && inputs.deprecated === true) {
     return { state: "Dead", stateReason: "installed version is deprecated" };
   }
-  if (ageKnown && publishMs < deadBefore) {
-    return { state: "Dead", stateReason: `last publish more than ${DEAD_AFTER_MONTHS} months ago` };
+  if (stale && hasAdvisory) {
+    return { state: "Dead", stateReason: `no release in ${STALE_AFTER_MONTHS} months and an open advisory` };
   }
 
   // Haunted. Requirement 11.4.
@@ -99,9 +102,9 @@ export function evaluateState(inputs: StateInputs, now: Date): StateResult {
     return { state: "Haunted", stateReason: "advisory of severity High or Critical" };
   }
 
-  // Restless. Requirement 11.5.
-  if (ageKnown && publishMs <= restlessBefore) {
-    return { state: "Restless", stateReason: `last publish between ${RESTLESS_AFTER_MONTHS} and ${DEAD_AFTER_MONTHS} months ago` };
+  // Restless: stale on its own, or a Moderate or Low advisory. Requirement 11.5 as corrected.
+  if (stale) {
+    return { state: "Restless", stateReason: `no release in ${STALE_AFTER_MONTHS} months` };
   }
   if (hasAdvisories && advisories.some((a) => a.severity === "Moderate" || a.severity === "Low")) {
     return { state: "Restless", stateReason: "advisory of severity Moderate or Low" };

@@ -1,6 +1,6 @@
 # Sexton: Product Requirements
 
-Version 0.2, 20 Nov 2026. Owner: Harpreet Singh Siddhu. This document is the single source of truth for what Sexton is and is not. Every spec, every design decision and every line of the write-up traces back to a numbered requirement here. If something is not in this document, it is not in scope. Changes to this document are versioned and dated.
+Version 0.3, 21 Nov 2026. Owner: Harpreet Singh Siddhu. This document is the single source of truth for what Sexton is and is not. Every spec, every design decision and every line of the write-up traces back to a numbered requirement here. If something is not in this document, it is not in scope. Changes to this document are versioned and dated.
 
 ## 1. Product statement
 
@@ -90,10 +90,11 @@ R-SN-3. THE SYSTEM SHALL expose a package's snapshot history to the signals engi
 R-ST-1. THE SYSTEM SHALL assign exactly one state to each direct dependency from this set: Alive, Restless, Haunted, Dead, Possessed.
 R-ST-2. State rules, evaluated in order, first match wins:
 - Possessed: a maintainer change event in the last 90 days, OR a provenance regression, OR a new install script appeared in a version published in the last 90 days.
-- Dead: deprecated flag set on the installed version, OR last publish more than 24 months ago.
+- Dead: deprecated flag set on the installed version, OR (last publish more than 24 months ago AND one or more advisories of any severity on the installed version).
 - Haunted: one or more advisories of severity High or Critical on the installed version.
-- Restless: last publish between 12 and 24 months ago, OR one or more advisories of severity Low or Moderate.
+- Restless: last publish more than 24 months ago, OR one or more advisories of severity Low or Moderate.
 - Alive: none of the above.
+- When the advisories signal is unavailable, the Dead rule for a stale package with an advisory does not match, so a package with a last publish more than 24 months ago and advisories unavailable is Restless.
 R-ST-3. The state function SHALL be deterministic: the same inputs always produce the same state.
 R-ST-4. The state function SHALL be monotonic in age: holding all else equal, an older last-publish date never produces a healthier state.
 
@@ -195,3 +196,4 @@ Every Kiro spec names the requirements it implements. Every PR names the spec. T
 
 0.1, 7 Nov 2026. First version. Policy file renamed from graveyard.policy.yml to sexton.policy.yml.
 0.2, 20 Nov 2026. R-UI-3 triage order adds state rank after Possessed. N-7 limited to runtime dependencies, dev-only weak copyleft recorded in docs/adr.
+0.3, 21 Nov 2026. R-ST-2: age alone gives Restless, Dead needs deprecation or age with an open advisory.
