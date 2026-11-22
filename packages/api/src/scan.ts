@@ -34,6 +34,8 @@ import type { ScanResponse } from "./contract.js";
 import { intakeErrorSpec, internalErrorSpec, policyErrorSpec, policyFetchFailedSpec, type ErrorSpec } from "./http/responses.js";
 import { errorName, type Logger } from "./log/logger.js";
 import { planStage } from "./plan-stage.js";
+import { isAllowed } from "./remediate/allowlist.js";
+import type { RemediationLogReader } from "./remediate/log-store.js";
 import { fetchPolicyText } from "./policy-source.js";
 
 export const SCAN_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -50,6 +52,10 @@ export interface ScanDeps {
   readonly intake?: typeof intakeRepo;
   /** The GitHub token provider. Absent means no token, so no api.github.com call (hosted-plans, Requirement 5.1). */
   readonly githubToken?: () => Promise<string | null>;
+  /** The remediate allowlist; absent allows nothing (spec remediate, Requirement 7.2). */
+  readonly allowlist?: ReadonlySet<string>;
+  /** The remediation log, read by the evidence path only (spec remediate, Requirement 7.1). */
+  readonly remediationLog?: RemediationLogReader;
 }
 
 export type ScanOutcome = { readonly ok: true; readonly body: ScanResponse } | { readonly ok: false; readonly response: ErrorSpec };
@@ -185,7 +191,12 @@ export async function scanWithInputs(repoUrl: string, deps: ScanDeps, summary: S
 
   return {
     ok: true,
-    body: { report, policy: policyResult, remediations: planned.remediations },
+    body: {
+      report,
+      policy: policyResult,
+      remediations: planned.remediations,
+      actions: { remediate: deps.allowlist !== undefined && isAllowed(deps.allowlist, intake.repo) },
+    },
     dependencies: intake.packages,
     manifests,
     policyText: policyText.kind === "found" ? policyText.text : null,

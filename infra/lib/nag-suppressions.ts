@@ -62,6 +62,7 @@ export const NAG_SUPPRESSIONS: readonly NagSuppression[] = [
     targets: [
       { stack: "edge", child: "ScanFunction" },
       { stack: "edge", child: "SnapshotterFunction" },
+      { stack: "edge", child: "RemediateFunction" },
     ],
     reason: "tech.md fixes Node.js 22 for the whole repository; nodejs22.x is supported until 30 May 2027.",
   },

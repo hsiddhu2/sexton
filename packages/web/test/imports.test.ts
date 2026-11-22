@@ -81,7 +81,12 @@ describe("static checks over packages/web/src", () => {
 
   it("has no registry, osv, deps.dev or github host string (2.18)", () => {
     const re = /registry\.npmjs|npmjs\.(org|com)|osv\.dev|deps\.dev|github\.com|githubusercontent|api\.github/i;
-    expect(FILES.filter((f) => re.test(f.text)).map((f) => f.rel)).toEqual([]);
+    // One exception, spec remediate design decision 14: the pull request link prefix, which only checks a URL
+    // before it is shown as a link. No request goes to it; fetch is only called with the API base.
+    const PR_PREFIX_LINE = 'export const PR_PREFIX = "https://github.com/hsiddhu2/sexton-demo/pull/";';
+    const text = (f: { rel: string; text: string }) => (f.rel === "load/remediate-client.ts" ? f.text.replace(PR_PREFIX_LINE, "") : f.text);
+    expect(FILES.filter((f) => re.test(text(f))).map((f) => f.rel)).toEqual([]);
+    expect(FILES.find((f) => f.rel === "load/remediate-client.ts")?.text).toContain(PR_PREFIX_LINE);
   });
 });
 

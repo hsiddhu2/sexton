@@ -1,10 +1,50 @@
-import { useLayoutEffect, useRef, type KeyboardEvent, type MouseEvent } from "react";
+import { useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { hasPrPrefix, type RemediateView } from "../load/remediate-client.js";
 import type { DrawerModel } from "./drawer-model.js";
 import { trapStep } from "./focus-trap.js";
 
 export interface DrawerProps {
   readonly model: DrawerModel;
   readonly onClose: () => void;
+  /** Present only for a hosted scan with actions.remediate true (spec remediate, Requirement 9.2). */
+  readonly onRemediate?: (packageName: string) => Promise<RemediateView>;
+}
+
+export const DEMO_ONLY_TEXT = "Pull requests are opened only on the demo repository";
+export const OPEN_PR_TEXT = "Open pull request";
+export const PR_LINK_TEXT = "View the pull request on GitHub";
+
+function RemediateAction({ packageName, onRemediate }: { readonly packageName: string; readonly onRemediate: DrawerProps["onRemediate"] }) {
+  const [busy, setBusy] = useState(false);
+  const [view, setView] = useState<RemediateView | null>(null);
+  if (onRemediate === undefined) return <p className="drawer-remediate-note">{DEMO_ONLY_TEXT}</p>;
+  const onClick = (): void => {
+    if (busy) return;
+    setBusy(true);
+    setView(null);
+    void onRemediate(packageName).then((result) => {
+      setView(result);
+      setBusy(false);
+    });
+  };
+  // aria-disabled, not disabled: focus stays on the button inside the focus trap while the request runs.
+  return (
+    <div className="drawer-remediate">
+      <button type="button" className="drawer-remediate-button" aria-disabled={busy} onClick={onClick}>
+        {OPEN_PR_TEXT}
+      </button>
+      <p role="status" className="drawer-remediate-status">
+        {busy ? "Opening the pull request." : (view?.text ?? "")}
+      </p>
+      {view !== null && view.prUrl !== null && hasPrPrefix(view.prUrl) ? (
+        <p>
+          <a href={view.prUrl} target="_blank" rel="noopener noreferrer">
+            {PR_LINK_TEXT}
+          </a>
+        </p>
+      ) : null}
+    </div>
+  );
 }
 
 const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
@@ -15,7 +55,7 @@ function focusables(root: HTMLElement): HTMLElement[] {
   );
 }
 
-export function Drawer({ model, onClose }: DrawerProps) {
+export function Drawer({ model, onClose, onRemediate }: DrawerProps) {
   const dialogRef = useRef<HTMLElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
 
@@ -123,6 +163,9 @@ export function Drawer({ model, onClose }: DrawerProps) {
               <p>Kind: {model.remediation.kind}</p>
               <p>Title: {model.remediation.title}</p>
               <pre className="drawer-prbody">{model.remediation.prBody}</pre>
+              {model.remediation.status === "proposed" && model.remediation.intent !== undefined ? (
+                <RemediateAction packageName={model.remediation.packageName} onRemediate={onRemediate} />
+              ) : null}
             </div>
           )}
         </div>

@@ -90,7 +90,7 @@ export class AwsDynamoPort implements DynamoPort {
   async putItem(table: string, item: Item, options: PutOptions = {}): Promise<void> {
     const input: PutItemCommandInput =
       options.ifNotExists === true
-        ? { TableName: table, Item: toSdk(item), ConditionExpression: NOT_EXISTS_CONDITION, ExpressionAttributeNames: { "#pk": "pk" } }
+        ? { TableName: table, Item: toSdk(item), ConditionExpression: NOT_EXISTS_CONDITION, ExpressionAttributeNames: { "#pk": options.conditionKey ?? "pk" } }
         : { TableName: table, Item: toSdk(item) };
     try {
       await this.sender.putItem(input);

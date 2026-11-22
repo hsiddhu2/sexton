@@ -3,7 +3,7 @@
 import { USER_AGENT } from "./version.js";
 
 export interface TransportRequest {
-  readonly method: "GET" | "POST";
+  readonly method: "GET" | "POST" | "PUT";
   readonly headers: Readonly<Record<string, string>>;
   readonly body?: string;
   /** "manual" turns redirect following off, so a 3xx is answered as itself (spec hosted-plans, Requirement 2.10). */

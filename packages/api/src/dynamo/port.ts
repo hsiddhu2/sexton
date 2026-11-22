@@ -7,6 +7,8 @@ export type Item = Readonly<Record<string, AttrValue>>;
 export interface PutOptions {
   /** Adds the condition attribute_not_exists(pk). */
   readonly ifNotExists?: boolean;
+  /** The partition key the not-exists condition names. Default "pk" (spec remediate, design decision 4). */
+  readonly conditionKey?: string;
 }
 
 export interface QueryInput {

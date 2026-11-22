@@ -3,6 +3,7 @@ import { Cemetery } from "./Cemetery.js";
 import { Header } from "./header/Header.js";
 import { headerModel } from "./header/header-model.js";
 import { useMediaQuery } from "./hooks/use-media-query.js";
+import { requestRemediation, type RemediateView } from "./load/remediate-client.js";
 import { useScanLoader } from "./load/use-scan-loader.js";
 import { applyPalette, type Theme } from "./scene/palette.js";
 
@@ -26,6 +27,13 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
     () => (state.status === "ready" ? headerModel(state.response, state.isDemo, state.source === "hosted" ? apiBase : null) : null),
     [state, apiBase],
   );
+  // The button exists only for a hosted scan whose response says the repository is on the allowlist.
+  const onRemediate = useMemo(() => {
+    if (state.status !== "ready" || state.source !== "hosted" || apiBase === null || state.response.actions?.remediate !== true) return undefined;
+    const repo = state.response.report.scan?.repo.url;
+    if (repo === undefined) return undefined;
+    return (packageName: string): Promise<RemediateView> => requestRemediation(fetchFn, apiBase, repo, packageName);
+  }, [state, apiBase, fetchFn]);
   return (
     <>
       {/* The header joins the Cemetery's inert region while the drawer is open; the drawer stays outside both. */}
@@ -61,6 +69,7 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
           theme={theme}
           reducedMotion={reducedMotion}
           onDrawerOpenChange={setDrawerOpen}
+          {...(onRemediate !== undefined ? { onRemediate } : {})}
         />
       )}
     </>

@@ -22,5 +22,6 @@ buildApp({
   region,
   scanCode: handlerCode("packages/api/src/handlers/scan.ts"),
   snapshotterCode: handlerCode("packages/api/src/handlers/snapshotter.ts"),
+  remediateCode: handlerCode("packages/api/src/handlers/remediate.ts"),
   webAssetPath: existsSync(`${webDist}/index.html`) ? webDist : null,
 }).app.synth();

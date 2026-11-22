@@ -14,7 +14,8 @@ It has termination protection, so `cdk destroy` cannot remove it by accident.
 |---|---|---|
 | DynamoDB table (`TableV2`) | `sexton-cache-dev` | Key `pk` (S), on demand, AWS owned key, TTL attribute `expiresAt`. Removal policy DELETE: it holds only cached upstream responses |
 | DynamoDB table (`TableV2`) | `sexton-snapshots-dev` | Keys `pk` (S) and `sk` (S), on demand, AWS owned key, no TTL, point-in-time recovery, deletion protection, removal policy RETAIN. GSI `seen-by-time`: `gpk` (S) and `seenAt` (N), projects `name` |
-| Secrets Manager secret | `sexton/github-token-dev` | Empty placeholder for spec 05. No role can read it. RETAIN |
+| DynamoDB table (`TableV2`) | `sexton-remediation-log-dev` | Keys `repository` (S) and `sk` (S, time#branch), on demand, AWS owned key, point-in-time recovery, deletion protection, RETAIN. Append-only remediation log (spec remediate) |
+| Secrets Manager secret | `sexton/github-token-dev` | Holds the fine-grained token since 21 Nov (its description is out of date on purpose). The scan and remediate roles read it. RETAIN |
 | Outputs | `GithubTokenSecretArn`, plus four exports the Edge stack imports | Table names and ARNs |
 
 ### SextonEdge-dev
@@ -23,12 +24,13 @@ It has termination protection, so `cdk destroy` cannot remove it by accident.
 |---|---|
 | Lambda `ScanFunction` | Node.js 22 (`nodejs22.x`), arm64, 1024 MB, 60 s timeout, reserved concurrency 10. Code from `packages/api/src/handlers/scan.ts`, bundled with esbuild as ESM |
 | Lambda function URL | Auth type `AWS_IAM`, invoke mode BUFFERED. Reached only through CloudFront |
+| Lambda `RemediateFunction` | Node.js 22, arm64, 1024 MB, 60 s timeout, reserved concurrency 2. Code from `packages/api/src/handlers/remediate.ts`. Its own function URL with `AWS_IAM` auth (spec remediate) |
 | Lambda `SnapshotterFunction` | Node.js 22, arm64, 1024 MB, 600 s timeout, reserved concurrency 1. Code from `packages/api/src/handlers/snapshotter.ts` |
-| 2 log groups | One per function, 30-day retention. Names are generated; find one with `aws lambda get-function-configuration --query LoggingConfig.LogGroup` |
+| 3 log groups | One per function, 30-day retention. Names are generated; find one with `aws lambda get-function-configuration --query LoggingConfig.LogGroup` |
 | S3 web bucket | Private, Block Public Access, SSL enforced, versioned, S3-managed keys, RETAIN. Filled from `packages/web/dist` |
 | CloudFront distribution | Default certificate with HSTS. The default behaviour serves the bucket through OAC (s3). `/api/*` goes to the function URL through OAC (lambda), with caching disabled, only the `repo` query string forwarded, a 60 s read timeout, a 65 s completion timeout and 1 connection attempt. 403 and 404 map to `/index.html` with 200 |
-| 2 origin access controls | Type `s3` and type `lambda`, always sign, SigV4 |
-| Origin request policy | Forwards the `repo` query string only, no cookies, no headers |
+| 3 origin access controls | Type `s3` and two of type `lambda` (scan, remediate), always sign, SigV4. `/api/remediate` comes before `/api/*`, all methods, no cache |
+| Origin request policies | API: forwards the `repo` and `format` query strings only, no cookies, no headers. Remediate: no query string, no cookies, the `content-type` and `x-amz-content-sha256` headers only |
 | Response headers policy | CSP, HSTS (2 years), `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` |
 | WAF web ACL (scope CLOUDFRONT) | `AWSManagedRulesCommonRuleSet`, `AWSManagedRulesKnownBadInputsRuleSet`, and a rate rule of 100 requests per 300 s per IP on paths starting `/api/`, answered with 429 and a JSON body |
 | EventBridge Scheduler schedule | `cron(17 3 * * ? *)` in UTC, no retries, invokes the snapshotter |
@@ -37,16 +39,18 @@ It has termination protection, so `cdk destroy` cannot remove it by accident.
 | 5 CloudWatch alarms | `ScanErrorRate`, `ScanDurationP95`, `ScanThrottles`, `SnapshotterProblems`, `DynamoThrottles` (construct IDs; CloudFormation generates the alarm names) |
 | SNS topic and subscription | SSL-only publish policy. One email subscription to `AlarmEmail` |
 | Parameter | `AlarmEmail` |
-| Outputs | `DistributionDomainName`, `DistributionId`, `WebBucketName`, `ScanFunctionName`, `SnapshotterFunctionName` |
+| WAF rate rule `RemediateRateLimit` | 10 requests per 300 s per IP on paths starting with `/api/remediate`, 429 JSON (spec remediate) |
+| Outputs | `DistributionDomainName`, `DistributionId`, `WebBucketName`, `ScanFunctionName`, `SnapshotterFunctionName`, `RemediateFunctionName` |
 
 The last `cdk synth --strict` produced 4 resources in the Data stack and 37 in the Edge stack, with no warnings. The Edge stack has 3 Lambda functions: scan, snapshotter and the CDK BucketDeployment handler.
 
 ## IAM roles and their statements
 
-All four roles have inline policies only. No AWS managed policy is attached, except to the CDK-owned BucketDeployment role.
+All five roles have inline policies only. No AWS managed policy is attached, except to the CDK-owned BucketDeployment role.
 
 | Role | Trusted by | Statements |
 |---|---|---|
+| Remediate role (spec remediate) | `lambda.amazonaws.com` | 1. `logs:CreateLogStream`, `logs:PutLogEvents` on the remediate log group ARN. 2. `secretsmanager:GetSecretValue` on the GitHub token secret's exact ARN. 3. `dynamodb:GetItem`, `dynamodb:PutItem` on the cache table. 4. `dynamodb:Query` on the snapshots table with `LeadingKeys ["snap#*"]`. 5. `dynamodb:PutItem` on the snapshots table with `LeadingKeys ["seen#*"]`. 6. `dynamodb:PutItem` on the remediation log table |
 | Scan role | `lambda.amazonaws.com` | 1. `logs:CreateLogStream`, `logs:PutLogEvents` on the scan log group ARN (`…:log-group:<name>:*`). 2. `dynamodb:GetItem`, `dynamodb:PutItem` on the cache table. 3. `dynamodb:Query` on the snapshots table, with the condition `ForAllValues:StringLike dynamodb:LeadingKeys ["snap#*"]`. 4. `dynamodb:PutItem` on the snapshots table, with the condition `ForAllValues:StringLike dynamodb:LeadingKeys ["seen#*"]`. 5. `secretsmanager:GetSecretValue` on the GitHub token secret's exact ARN (spec hosted-plans) |
 | Snapshotter role | `lambda.amazonaws.com` | 1. `logs:CreateLogStream`, `logs:PutLogEvents` on the snapshotter log group ARN (`…:log-group:<name>:*`). 2. `dynamodb:GetItem`, `dynamodb:PutItem` on the cache table. 3. `dynamodb:PutItem`, `dynamodb:Query` on the snapshots table. 4. `dynamodb:Query` on `{snapshots table ARN}/index/seen-by-time` |
 | Scheduler role | `scheduler.amazonaws.com`, on the conditions `aws:SourceAccount` = this account and `aws:SourceArn` = `arn:aws:scheduler:us-east-1:{account}:schedule-group/default` | `lambda:InvokeFunction` on the snapshotter function ARN and `{ARN}:*` |
@@ -82,7 +86,7 @@ Stop if any check fails. Each one is read-only.
 6. **No warnings under `--strict`.** `cdk synth --strict` succeeds, so there is no placeholder handler and no missing web build.
 7. **The bundles load.** Each bundled handler imports offline with no error at init.
 8. **CDKToolkit is present** in `us-east-1` with status `CREATE_COMPLETE` or `UPDATE_COMPLETE`. If it is absent, stop. Bootstrapping changes the account, so it waits for HP's word, and the check that it is absent is reported first.
-9. **Lambda concurrency.** Before the first deploy, `AccountLimit.UnreservedConcurrentExecutions` in `us-east-1` is at least **111**. Lambda keeps 100 units unreserved for functions without reserved concurrency, and these functions reserve 11 (10 for scan, 1 for the snapshotter). At 110 the snapshotter's reservation fails. Source: https://docs.aws.amazon.com/lambda/latest/dg/configuration-concurrency.html ("You can reserve up to the Unreserved account concurrency value minus 100"). Later deploys have the 11 deducted already, so the value then only needs to stay at least 100.
+9. **Lambda concurrency.** Before the first deploy, `AccountLimit.UnreservedConcurrentExecutions` in `us-east-1` is at least **113**. Lambda keeps 100 units unreserved for functions without reserved concurrency, and these functions reserve 13 (10 for scan, 1 for the snapshotter, 2 for remediate, spec remediate). On a stack that already has scan and the snapshotter, the remediate deploy needs at least 102. Source: https://docs.aws.amazon.com/lambda/latest/dg/configuration-concurrency.html ("You can reserve up to the Unreserved account concurrency value minus 100"). Later deploys have the reservations deducted already, so the value then only needs to stay at least 100.
 10. **The diff is what you expect.** `cdk diff` shows only the intended changes. On a first deploy, every resource is new.
 
 ## Commands, in order
@@ -115,7 +119,7 @@ VITE_SEXTON_API=/api npm run build -w @sexton/web
 aws cloudformation describe-stacks --stack-name CDKToolkit --region us-east-1 \
   --query 'Stacks[0].StackStatus' --output text              # CREATE_COMPLETE or UPDATE_COMPLETE
 aws lambda get-account-settings --region us-east-1 \
-  --query 'AccountLimit.UnreservedConcurrentExecutions'      # at least 111 before the first deploy
+  --query 'AccountLimit.UnreservedConcurrentExecutions'      # at least 102 before the remediate deploy (113 on an empty account)
 
 cd "$ROOT/infra"
 npx cdk synth --strict -q -o "$OUT"                          # must succeed with no warnings
@@ -208,6 +212,38 @@ EXPRESS="https://$DOMAIN/api/scan?repo=https%3A%2F%2Fgithub.com%2Fexpressjs%2Fex
     - Pass: 40 lower-case hex characters. `null` means the token is missing or rejected: check the scan logs for `github-api-unavailable` and its status.
 
 The path without a token is proven by tests only. The live secret is never emptied for a check.
+
+Checks 14 to 19 (spec remediate) run after HP has pushed the demo repository to `hsiddhu2/sexton-demo`. They open one real pull request there.
+
+```sh
+REMEDIATE_FN="$(output RemediateFunctionName)"
+REMEDIATE_LOGS="$(aws lambda get-function-configuration --function-name "$REMEDIATE_FN" --region us-east-1 --query LoggingConfig.LogGroup --output text)"
+remediate() { BODY="{\"repo\":\"$1\",\"package\":\"$2\"}"; HASH="$(printf %s "$BODY" | shasum -a 256 | cut -d' ' -f1)";
+  curl -sS -X POST "https://$DOMAIN/api/remediate" -H 'content-type: application/json' -H "x-amz-content-sha256: $HASH" --data-binary "$BODY" -w '\n%{http_code}\n'; }
+DEMO_REPO="https://github.com/hsiddhu2/sexton-demo"
+```
+
+14. **A scan of the demo repository offers pull requests.**
+    - Command: `curl -sS "https://$DOMAIN/api/scan?repo=https%3A%2F%2Fgithub.com%2Fhsiddhu2%2Fsexton-demo" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const b=JSON.parse(s);console.log(JSON.stringify(b.actions),(b.remediations||[]).map(r=>r.packageName+":"+r.kind+":"+r.status).join(" "))})'`
+    - Pass: `{"remediate":true}`, a proposed migrate for node-sass, and the bump plans.
+15. **POST remediate opens the node-sass pull request.**
+    - Command: `remediate "$DEMO_REPO" node-sass`
+    - Pass: `{"status":"opened","prUrl":"https://github.com/hsiddhu2/sexton-demo/pull/<n>","logged":true,"reviewSites":{"posted":<n>,"dropped":0}}` and 200. On GitHub: the pull request changes package.json only, base `main`, branch `sexton/migrate-node-sass`, and has one comment that links each review site.
+    - If it answers the web page with 200 instead of JSON, the payload hash did not reach Lambda: check the `remediate` log line's `bodyHash`, and the origin request policy (design decision 2).
+16. **The same POST again answers existing.**
+    - Command: `remediate "$DEMO_REPO" node-sass`
+    - Pass: `{"status":"existing","prUrl":<the same URL>}`.
+17. **Another repository is refused.**
+    - Command: `remediate https://github.com/expressjs/express debug`
+    - Pass: 422 with `"code":"repository-not-allowed"`. (Not 403: the distribution would turn a 403 into the web page.)
+18. **The demo evidence pack shows the log.**
+    - Command: `curl -sS "https://$DOMAIN/api/evidence?repo=https%3A%2F%2Fgithub.com%2Fhsiddhu2%2Fsexton-demo&format=json" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.stringify(JSON.parse(s).body.remediation.log)))'`
+    - Pass: `"available":true` and one entry for node-sass with the pull request URL.
+19. **No GitHub path, owner, repository or token in the logs.**
+    - Command: `aws logs tail "$REMEDIATE_LOGS" --region us-east-1 --since 15m | grep -E 'api.github.com' | head`, then `aws logs tail "$REMEDIATE_LOGS" --region us-east-1 --since 15m | grep -ciE 'sexton-demo|github_pat_|/pull/'`
+    - Pass: the api.github.com lines have `"path":""`, and the count is 0.
+
+The remediate deploy moves the scan function's CloudFront origin from Origin2 to Origin3 (spec remediate, design decision 13). cdk diff shows two Lambda permissions replaced. Run checks 3 and 13 right after the deploy to confirm the scan still answers.
 
 ## GitHub token rotation
 

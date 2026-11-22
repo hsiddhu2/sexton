@@ -318,6 +318,14 @@ function checkRemediations(w: Walk, root: Obj): void {
   }
 }
 
+/** Spec remediate, Requirement 9.1: exactly { remediate: boolean }. An extra key is reported at /actions, never by name. */
+function checkActions(w: Walk, root: Obj): void {
+  const actions = w.obj(root, "", "actions");
+  if (actions === undefined) return;
+  w.bool(actions, "/actions", "remediate");
+  if (Object.keys(actions).some((k) => k !== "remediate")) w.add("/actions", "UNKNOWN_VALUE");
+}
+
 function compareErrors(a: ContractError, b: ContractError): number {
   if (a.path !== b.path) return a.path < b.path ? -1 : 1;
   if (a.code !== b.code) return a.code < b.code ? -1 : 1;
@@ -335,6 +343,7 @@ export function validateScanResponse(input: unknown): ValidationResult {
     if (report !== undefined) checkReport(w, report);
     if (policy !== undefined) checkPolicy(w, policy);
     if (has(input, "remediations")) checkRemediations(w, input);
+    if (has(input, "actions")) checkActions(w, input);
   }
   const [first, ...rest] = w.errors.slice().sort(compareErrors).slice(0, MAX_CONTRACT_ERRORS);
   if (first === undefined) return { ok: true, value: input as ScanResponse };

@@ -128,26 +128,52 @@ describe("Feature: infra, Property 13: IAM policy shape", () => {
     for (const s of statements) for (const a of s.actions) if (a.startsWith("dynamodb:")) expect(a.endsWith("*"), s.source).toBe(false);
   });
 
+  const shapeOf = (role: string) =>
+    statements
+      .filter((s) => s.source.includes(role))
+      .map((s) => ({
+        actions: [...s.actions].sort(),
+        table: /CacheTable/.test(JSON.stringify(s.resources))
+          ? "cache"
+          : /SnapshotsTable/.test(JSON.stringify(s.resources))
+            ? "snapshots"
+            : /GithubTokenSecret/.test(JSON.stringify(s.resources))
+              ? "secret"
+              : /RemediationLogTable/.test(JSON.stringify(s.resources))
+                ? "log"
+                : "logs",
+        condition: s.condition ?? null,
+      }));
+
   it("limits the scan role exactly as design.md says (8.4)", () => {
-    const scan = statements.filter((s) => s.source.includes("ScanRoleDefaultPolicy"));
-    const shape = scan.map((s) => ({
-      actions: [...s.actions].sort(),
-      table: /CacheTable/.test(JSON.stringify(s.resources))
-        ? "cache"
-        : /SnapshotsTable/.test(JSON.stringify(s.resources))
-          ? "snapshots"
-          : /GithubTokenSecret/.test(JSON.stringify(s.resources))
-            ? "secret"
-            : "logs",
-      condition: s.condition ?? null,
-    }));
-    expect(shape).toEqual([
+    expect(shapeOf("ScanRoleDefaultPolicy")).toEqual([
       { actions: ["logs:CreateLogStream", "logs:PutLogEvents"], table: "logs", condition: null },
       { actions: ["dynamodb:GetItem", "dynamodb:PutItem"], table: "cache", condition: null },
       { actions: ["dynamodb:Query"], table: "snapshots", condition: { "ForAllValues:StringLike": { "dynamodb:LeadingKeys": ["snap#*"] } } },
       { actions: ["dynamodb:PutItem"], table: "snapshots", condition: { "ForAllValues:StringLike": { "dynamodb:LeadingKeys": ["seen#*"] } } },
       // Spec hosted-plans, Requirement 8.1.
       { actions: ["secretsmanager:GetSecretValue"], table: "secret", condition: null },
+      // Spec remediate, Requirement 5.4: the evidence path reads the log.
+      { actions: ["dynamodb:Query"], table: "log", condition: null },
+    ]);
+  });
+
+  it("limits the remediate role to a scan's statements, the secret and PutItem on the log (remediate 8.2, 5.4)", () => {
+    expect(shapeOf("RemediateRoleDefaultPolicy")).toEqual([
+      { actions: ["logs:CreateLogStream", "logs:PutLogEvents"], table: "logs", condition: null },
+      { actions: ["secretsmanager:GetSecretValue"], table: "secret", condition: null },
+      { actions: ["dynamodb:GetItem", "dynamodb:PutItem"], table: "cache", condition: null },
+      { actions: ["dynamodb:Query"], table: "snapshots", condition: { "ForAllValues:StringLike": { "dynamodb:LeadingKeys": ["snap#*"] } } },
+      { actions: ["dynamodb:PutItem"], table: "snapshots", condition: { "ForAllValues:StringLike": { "dynamodb:LeadingKeys": ["seen#*"] } } },
+      { actions: ["dynamodb:PutItem"], table: "log", condition: null },
+    ]);
+  });
+
+  it("gives no role anything on the log table but the remediate PutItem and the scan Query", () => {
+    const onLog = statements.filter((s) => JSON.stringify(s.resources).includes("RemediationLogTable"));
+    expect(onLog.map((s) => `${s.source.replace(/DefaultPolicy.*$/, "")} ${s.actions.join(",")}`).sort()).toEqual([
+      "edge/RemediateRole dynamodb:PutItem",
+      "edge/ScanRole dynamodb:Query",
     ]);
   });
 
@@ -194,16 +220,17 @@ describe("Feature: infra, Property 13: IAM policy shape", () => {
   });
 
   // Superseded in part by spec hosted-plans, Requirement 8: the scan role, and only it, reads the secret on its exact ARN.
-  it("lets only the scan role read the GitHub token secret, with GetSecretValue on its exact ARN (hosted-plans 8.1, 8.3)", () => {
+  // Superseded in part by spec remediate, Requirement 8.5: the scan and remediate roles read the secret; the snapshotter never.
+  it("lets only the scan and remediate roles read the GitHub token secret, with GetSecretValue on its exact ARN (hosted-plans 8.1, remediate 8.2)", () => {
     const secretStatements = statements.filter((s) => s.actions.some((a) => a.startsWith("secretsmanager:")) || JSON.stringify(s.resources).includes("GithubTokenSecret"));
-    expect(secretStatements).toHaveLength(1);
-    const [only] = secretStatements;
-    expect(only?.source).toMatch(/^edge\/ScanRole/);
-    expect(only?.actions).toEqual(["secretsmanager:GetSecretValue"]);
-    expect(only?.resources).toHaveLength(1);
-    expect(JSON.stringify(only?.resources[0])).toMatch(/GithubTokenSecret/);
-    expect(JSON.stringify(only?.resources)).not.toContain("*");
-    expect(only?.condition).toBeUndefined();
+    expect(secretStatements.map((s) => s.source.replace(/DefaultPolicy.*$/, "")).sort()).toEqual(["edge/RemediateRole", "edge/ScanRole"]);
+    for (const s of secretStatements) {
+      expect(s.actions).toEqual(["secretsmanager:GetSecretValue"]);
+      expect(s.resources).toHaveLength(1);
+      expect(JSON.stringify(s.resources[0])).toMatch(/GithubTokenSecret/);
+      expect(JSON.stringify(s.resources)).not.toContain("*");
+      expect(s.condition).toBeUndefined();
+    }
   });
 
   it("lets the scheduler invoke only the snapshotter", () => {

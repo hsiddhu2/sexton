@@ -28,6 +28,12 @@ import {
   ORIGIN_CONNECTION_ATTEMPTS,
   ORIGIN_READ_TIMEOUT_SECONDS,
   RATE_LIMIT,
+  REMEDIATE_ALLOWLIST,
+  REMEDIATE_MEMORY_MB,
+  REMEDIATE_PATH,
+  REMEDIATE_RATE_LIMIT,
+  REMEDIATE_RESERVED_CONCURRENCY,
+  REMEDIATE_TIMEOUT_SECONDS,
   SCAN_DURATION_P95_MS,
   SCAN_ERROR_RATE_PERCENT,
   SCAN_MEMORY_MB,
@@ -49,8 +55,10 @@ export interface DataRefs {
   readonly cacheTable: dynamodb.ITableV2;
   readonly snapshotsTable: dynamodb.ITableV2;
   readonly seenIndexName: string;
-  /** The GitHub token secret. Only the scan role reads it (spec hosted-plans, Requirement 8). */
+  /** The GitHub token secret. The scan and remediate roles read it; the snapshotter never does (spec remediate, 8.5). */
   readonly githubTokenSecret: secretsmanager.CfnSecret;
+  /** The remediation log (spec remediate, Requirement 5). */
+  readonly remediationLogTable: dynamodb.ITableV2;
 }
 
 export interface SextonEdgeStackProps extends StackProps {
@@ -58,6 +66,7 @@ export interface SextonEdgeStackProps extends StackProps {
   readonly data: DataRefs;
   readonly scanCode: HandlerCode;
   readonly snapshotterCode: HandlerCode;
+  readonly remediateCode: HandlerCode;
   /** Directory holding the built web app, or null when it has not been built. */
   readonly webAssetPath: string | null;
 }
@@ -80,6 +89,8 @@ export class SextonEdgeStack extends Stack {
   readonly scanFunction: lambda.Function;
   readonly snapshotterFunction: lambda.Function;
   readonly scanRole: iam.Role;
+  readonly remediateFunction: lambda.Function;
+  readonly remediateRole: iam.Role;
   readonly snapshotterRole: iam.Role;
   readonly webBucket: s3.Bucket;
   readonly distribution: cloudfront.Distribution;
@@ -90,7 +101,7 @@ export class SextonEdgeStack extends Stack {
 
   constructor(scope: Construct, id: string, props: SextonEdgeStackProps) {
     super(scope, id, props);
-    const { cacheTable, snapshotsTable, seenIndexName, githubTokenSecret } = props.data;
+    const { cacheTable, snapshotsTable, seenIndexName, githubTokenSecret, remediationLogTable } = props.data;
 
     const alarmEmail = new CfnParameter(this, "AlarmEmail", {
       type: "String",
@@ -105,6 +116,10 @@ export class SextonEdgeStack extends Stack {
       removalPolicy: RemovalPolicy.DESTROY,
     });
     const snapshotterLogs = new logs.LogGroup(this, "SnapshotterLogs", {
+      retention: logs.RetentionDays.ONE_MONTH,
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+    const remediateLogs = new logs.LogGroup(this, "RemediateLogs", {
       retention: logs.RetentionDays.ONE_MONTH,
       removalPolicy: RemovalPolicy.DESTROY,
     });
@@ -135,6 +150,34 @@ export class SextonEdgeStack extends Stack {
     );
     // The GitHub token, on its exact ARN (CfnSecret Ref is the ARN). Spec hosted-plans, Requirement 8.1.
     this.scanRole.addToPolicy(new iam.PolicyStatement({ actions: ["secretsmanager:GetSecretValue"], resources: [githubTokenSecret.ref] }));
+    // The evidence path reads the remediation log (spec remediate, Requirement 5.4).
+    this.scanRole.addToPolicy(new iam.PolicyStatement({ actions: ["dynamodb:Query"], resources: [remediationLogTable.tableArn] }));
+
+    // Remediate role: what a scan needs, the secret, and PutItem on the log. Nothing else (spec remediate, 8.2).
+    this.remediateRole = new iam.Role(this, "RemediateRole", {
+      assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
+      description: "Sexton remediate function",
+    });
+    this.remediateRole.addToPolicy(logStatement(remediateLogs));
+    this.remediateRole.addToPolicy(new iam.PolicyStatement({ actions: ["secretsmanager:GetSecretValue"], resources: [githubTokenSecret.ref] }));
+    this.remediateRole.addToPolicy(
+      new iam.PolicyStatement({ actions: ["dynamodb:GetItem", "dynamodb:PutItem"], resources: [cacheTable.tableArn] }),
+    );
+    this.remediateRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: ["dynamodb:Query"],
+        resources: [snapshotsTable.tableArn],
+        conditions: { "ForAllValues:StringLike": { "dynamodb:LeadingKeys": ["snap#*"] } },
+      }),
+    );
+    this.remediateRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: ["dynamodb:PutItem"],
+        resources: [snapshotsTable.tableArn],
+        conditions: { "ForAllValues:StringLike": { "dynamodb:LeadingKeys": ["seen#*"] } },
+      }),
+    );
+    this.remediateRole.addToPolicy(new iam.PolicyStatement({ actions: ["dynamodb:PutItem"], resources: [remediationLogTable.tableArn] }));
 
     this.snapshotterRole = new iam.Role(this, "SnapshotterRole", {
       assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
@@ -162,6 +205,11 @@ export class SextonEdgeStack extends Stack {
       STAGE: props.stage,
     };
 
+    const remediateEnvironment = {
+      REMEDIATE_ALLOWLIST: REMEDIATE_ALLOWLIST.join(","),
+      REMEDIATION_LOG_TABLE: remediationLogTable.tableName,
+    };
+
     this.scanFunction = makeFunction(this, "ScanFunction", props.scanCode, {
       description: "Sexton GET /api/scan",
       role: this.scanRole,
@@ -169,8 +217,17 @@ export class SextonEdgeStack extends Stack {
       memorySize: SCAN_MEMORY_MB,
       timeout: Duration.seconds(SCAN_TIMEOUT_SECONDS),
       reservedConcurrentExecutions: SCAN_RESERVED_CONCURRENCY,
-      // Only the scan function learns the secret ARN (spec hosted-plans, Requirements 8.2, 8.3).
-      environment: { ...environment, GITHUB_TOKEN_SECRET_ARN: githubTokenSecret.ref },
+      // The secret ARN goes to the scan and remediate functions only (hosted-plans 8.2, remediate 8.5).
+      environment: { ...environment, ...remediateEnvironment, GITHUB_TOKEN_SECRET_ARN: githubTokenSecret.ref },
+    });
+    this.remediateFunction = makeFunction(this, "RemediateFunction", props.remediateCode, {
+      description: "Sexton POST /api/remediate",
+      role: this.remediateRole,
+      logGroup: remediateLogs,
+      memorySize: REMEDIATE_MEMORY_MB,
+      timeout: Duration.seconds(REMEDIATE_TIMEOUT_SECONDS),
+      reservedConcurrentExecutions: REMEDIATE_RESERVED_CONCURRENCY,
+      environment: { ...environment, ...remediateEnvironment, GITHUB_TOKEN_SECRET_ARN: githubTokenSecret.ref },
     });
     this.snapshotterFunction = makeFunction(this, "SnapshotterFunction", props.snapshotterCode, {
       description: "Sexton daily snapshotter",
@@ -184,6 +241,11 @@ export class SextonEdgeStack extends Stack {
 
     // Function URL, IAM auth: only signed requests from CloudFront (OAC) get through.
     const scanUrl = this.scanFunction.addFunctionUrl({
+      authType: lambda.FunctionUrlAuthType.AWS_IAM,
+      invokeMode: lambda.InvokeMode.BUFFERED,
+    });
+
+    const remediateUrl = this.remediateFunction.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.AWS_IAM,
       invokeMode: lambda.InvokeMode.BUFFERED,
     });
@@ -221,6 +283,15 @@ export class SextonEdgeStack extends Stack {
       cookieBehavior: cloudfront.OriginRequestCookieBehavior.none(),
     });
 
+    // POST /api/remediate: no query string; content-type for the handler, x-amz-content-sha256 for the OAC
+    // signature (spec remediate, Requirement 8.3, design decision 2).
+    const remediateOriginRequestPolicy = new cloudfront.OriginRequestPolicy(this, "RemediateOriginRequestPolicy", {
+      comment: "Sexton remediate: forward content-type and x-amz-content-sha256 only",
+      queryStringBehavior: cloudfront.OriginRequestQueryStringBehavior.none(),
+      headerBehavior: cloudfront.OriginRequestHeaderBehavior.allowList("content-type", "x-amz-content-sha256"),
+      cookieBehavior: cloudfront.OriginRequestCookieBehavior.none(),
+    });
+
     this.webAcl = buildWebAcl(this);
 
     this.distribution = new cloudfront.Distribution(this, "Distribution", {
@@ -237,7 +308,21 @@ export class SextonEdgeStack extends Stack {
         responseHeadersPolicy: headers,
         compress: true,
       },
+      // Insertion order is precedence: /api/remediate before /api/*.
       additionalBehaviors: {
+        [REMEDIATE_PATH]: {
+          origin: origins.FunctionUrlOrigin.withOriginAccessControl(remediateUrl, {
+            readTimeout: Duration.seconds(ORIGIN_READ_TIMEOUT_SECONDS),
+            responseCompletionTimeout: Duration.seconds(ORIGIN_COMPLETION_TIMEOUT_SECONDS),
+            connectionAttempts: ORIGIN_CONNECTION_ATTEMPTS,
+          }),
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.HTTPS_ONLY,
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+          cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
+          originRequestPolicy: remediateOriginRequestPolicy,
+          responseHeadersPolicy: headers,
+          compress: true,
+        },
         [`${API_PATH_PREFIX}*`]: {
           origin: origins.FunctionUrlOrigin.withOriginAccessControl(scanUrl, {
             readTimeout: Duration.seconds(ORIGIN_READ_TIMEOUT_SECONDS),
@@ -303,6 +388,7 @@ export class SextonEdgeStack extends Stack {
     new CfnOutput(this, "WebBucketName", { value: this.webBucket.bucketName });
     new CfnOutput(this, "ScanFunctionName", { value: this.scanFunction.functionName });
     new CfnOutput(this, "SnapshotterFunctionName", { value: this.snapshotterFunction.functionName });
+    new CfnOutput(this, "RemediateFunctionName", { value: this.remediateFunction.functionName });
   }
 }
 
@@ -400,6 +486,28 @@ function buildWebAcl(scope: Stack): wafv2.CfnWebACL {
           },
         },
         visibilityConfig: { cloudWatchMetricsEnabled: true, sampledRequestsEnabled: true, metricName: "ApiRateLimit" },
+      },
+      {
+        // Spec remediate, Requirement 8.4: 10 per 5 minutes per IP on /api/remediate, beside the API rule.
+        name: "RemediateRateLimit",
+        priority: 3,
+        action: { block: { customResponse: { responseCode: 429, customResponseBodyKey: RATE_LIMITED_BODY_KEY } } },
+        statement: {
+          rateBasedStatement: {
+            limit: REMEDIATE_RATE_LIMIT.limit,
+            evaluationWindowSec: REMEDIATE_RATE_LIMIT.windowSeconds,
+            aggregateKeyType: "IP",
+            scopeDownStatement: {
+              byteMatchStatement: {
+                fieldToMatch: { uriPath: {} },
+                positionalConstraint: "STARTS_WITH",
+                searchString: REMEDIATE_PATH,
+                textTransformations: [{ priority: 0, type: "NONE" }],
+              },
+            },
+          },
+        },
+        visibilityConfig: { cloudWatchMetricsEnabled: true, sampledRequestsEnabled: true, metricName: "RemediateRateLimit" },
       },
     ],
   });
