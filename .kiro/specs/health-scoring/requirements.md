@@ -200,3 +200,21 @@ This spec implements R-SG-1, R-SG-2, R-SG-3, R-SG-7, R-SG-8, R-SG-9, R-ST-1, R-S
 3. THE Engine SHALL assign a State to every package, including packages with one or more unavailable signals.
 4. WHEN the last-publish signal is unavailable, the Engine SHALL skip the age-based conditions of the Dead and Restless rules and SHALL continue evaluating the advisory-based conditions and all other state rules.
 5. WHEN every signal that the state rules depend on is unavailable for a package, THE Engine SHALL assign Restless and SHALL list all four signal names in missingSignals, so that a package with no data is never shown as healthy.
+
+## Correction, 21 Nov 2026 (spec state-age-rule)
+
+Criteria 11.3 and 11.5 above stated a rule that rated a package Dead from age alone. Spec `.kiro/specs/state-age-rule` replaces them. The original text is left as written.
+
+Old criterion 11.3, verbatim:
+
+> 3. IF the deprecated flag is set on the installed version or the last publish date is more than 24 months before the reference time, THEN THE Engine SHALL assign Dead.
+
+Old criterion 11.5, verbatim:
+
+> 5. IF the last publish date is at least 12 months and not more than 24 months before the reference time, or one or more advisories of Severity Low or Moderate apply to the installed version, THEN THE Engine SHALL assign Restless.
+
+New 11.3: IF the deprecated flag is set on the installed version, or the last publish date is more than 24 months before the reference time and one or more advisories of any Severity apply to the installed version, THEN THE Engine SHALL assign Dead. A last publish exactly 24 months before the reference time is not more than 24 months.
+
+New 11.5: IF the last publish date is more than 24 months before the reference time, or one or more advisories of Severity Low or Moderate apply to the installed version, THEN THE Engine SHALL assign Restless. The 12 to 24 month band no longer assigns Restless. When the advisories signal is unavailable, the Dead condition that needs an advisory does not match and age alone gives Restless.
+
+Still in force: criterion 11.2 (rule order, with Possessed first), criterion 11.10 (an earlier last publish never gives a healthier State) and requirement 13 (monotonicity in age) hold under the new rule. The spec's design checks this by cases, and its properties test it.

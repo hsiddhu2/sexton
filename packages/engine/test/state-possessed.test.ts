@@ -133,14 +133,14 @@ describe("Possessed ordering", () => {
 
   it("a non-matching possession input leaves the lower rules in charge", () => {
     const inputs: StateInputs = { lastPublish: OLD, deprecated: false, advisories: [], maintainerChange: change(event(false)) };
-    expect(evaluateState(inputs, NOW).state).toBe("Dead");
+    expect(evaluateState(inputs, NOW)).toEqual({ state: "Restless", stateReason: "no release in 24 months" });
   });
 });
 
 describe("no possession inputs: existing behaviour (9.11, 10.6)", () => {
   it("gives Alive, Restless, Haunted and Dead as before", () => {
     expect(evaluateState(HEALTHY, NOW).state).toBe("Alive");
-    expect(evaluateState({ ...HEALTHY, lastPublish: new Date("2025-06-01T00:00:00Z") }, NOW).state).toBe("Restless");
+    expect(evaluateState({ ...HEALTHY, lastPublish: OLD }, NOW).state).toBe("Restless");
     expect(evaluateState({ ...HEALTHY, advisories: [adv("High")] }, NOW).state).toBe("Haunted");
     expect(evaluateState({ ...HEALTHY, deprecated: true }, NOW).state).toBe("Dead");
   });

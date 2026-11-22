@@ -32,7 +32,7 @@
       "bomFormat": "CycloneDX",
       "specVersion": "1.5",
       "version": 1,
-      "serialNumber": "urn:uuid:f3a9dfe0-f163-8ba7-8d86-42ed888cc9da",
+      "serialNumber": "urn:uuid:63dcdc93-2b6d-8586-ac76-079a30b0e8b8",
       "metadata": {
         "timestamp": "2026-11-12T00:00:00.000Z",
         "tools": {
@@ -78,7 +78,7 @@
           "properties": [
             {
               "name": "sexton:state",
-              "value": "Dead"
+              "value": "Restless"
             },
             {
               "name": "sexton:resolution",
@@ -828,7 +828,7 @@
         "name": "event-stream",
         "installedVersion": "3.3.6",
         "state": "Dead",
-        "stateReason": "last publish more than 24 months ago",
+        "stateReason": "no release in 24 months and an open advisory",
         "signals": {
           "lastPublish": {
             "value": "2018-09-29T06:55:49.107Z",
@@ -919,8 +919,8 @@
       {
         "name": "colors",
         "installedVersion": "1.4.0",
-        "state": "Dead",
-        "stateReason": "last publish more than 24 months ago",
+        "state": "Restless",
+        "stateReason": "no release in 24 months",
         "signals": {
           "lastPublish": {
             "value": "2022-01-09T19:35:35.048Z",
@@ -1313,16 +1313,7 @@
               "value": "Dead",
               "source": null,
               "fetchedAt": "2026-11-12T00:00:00.000Z",
-              "reason": "state is Dead: last publish more than 24 months ago"
-            },
-            {
-              "name": "colors",
-              "installedVersion": "1.4.0",
-              "signal": "state",
-              "value": "Dead",
-              "source": null,
-              "fetchedAt": "2026-11-12T00:00:00.000Z",
-              "reason": "state is Dead: last publish more than 24 months ago"
+              "reason": "state is Dead: no release in 24 months and an open advisory"
             },
             {
               "name": "uuid",
@@ -1350,6 +1341,6 @@
   "integrity": {
     "algorithm": "SHA-256",
     "canonicalization": "RFC 8785",
-    "digest": "7043f538bbc8a15e465c3c6bdb239d648b4312968f51be67f855f776baac33fc"
+    "digest": "d797b6ec90836aa7c2f3fb030dce8e308fae006568121f48223604b852ae3ae7"
   }
 }

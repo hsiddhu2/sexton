@@ -16,7 +16,7 @@ export type {
 export { RULE_TYPES, SEVERITIES, SIGNAL_NAMES, STATE_ORDER } from "./types.js";
 
 export { available, unavailable, cleanReason, fromIso, toIso, isAvailable, MAX_REASON_LENGTH } from "./signal.js";
-export { evaluateState, stateFromSignals, healthRank, monthsBefore, DEAD_AFTER_MONTHS, RESTLESS_AFTER_MONTHS } from "./state.js";
+export { evaluateState, stateFromSignals, healthRank, monthsBefore, STALE_AFTER_MONTHS } from "./state.js";
 export type { StateInputs, StateResult } from "./state.js";
 export { normaliseSeverity, severityFromScore, severityFromOsv, isSeverity } from "./severity.js";
 export type { OsvSeverityFields } from "./severity.js";

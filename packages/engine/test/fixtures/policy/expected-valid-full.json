@@ -51,16 +51,7 @@
           "value": "Dead",
           "source": null,
           "fetchedAt": "2026-11-12T00:00:00.000Z",
-          "reason": "state is Dead: last publish more than 24 months ago"
-        },
-        {
-          "name": "colors",
-          "installedVersion": "1.4.0",
-          "signal": "state",
-          "value": "Dead",
-          "source": null,
-          "fetchedAt": "2026-11-12T00:00:00.000Z",
-          "reason": "state is Dead: last publish more than 24 months ago"
+          "reason": "state is Dead: no release in 24 months and an open advisory"
         },
         {
           "name": "uuid",

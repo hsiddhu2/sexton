@@ -1,12 +1,12 @@
-// FROZEN health-scoring rule table. This is a verbatim copy of evaluateState from
-// src/state.ts as it was before the Possessed rule was added. It must never change.
+// Health-scoring rule table. It follows the state rules without the Possessed rules.
+// It was rewritten for spec state-age-rule, because the rule it mirrors changed
+// (age alone gives Restless, Dead needs deprecation or age with an advisory).
 // Test support only, not production code. Used by Property 12 (task 4.4).
 // Requirements 10.6, 9.11.
 
 import type { Advisory, State } from "../../src/types.js";
 
-export const DEAD_AFTER_MONTHS = 24;
-export const RESTLESS_AFTER_MONTHS = 12;
+export const STALE_AFTER_MONTHS = 24;
 
 /**
  * Inputs to the state function. A field set to undefined means the signal is unavailable.
@@ -47,33 +47,29 @@ export function evaluateState(inputs: StateInputs, now: Date): StateResult {
   const publish = inputs.lastPublish ?? null;
   const advisories = inputs.advisories ?? [];
   const nowMs = now.getTime();
-  const deadBefore = monthsBefore(now, DEAD_AFTER_MONTHS).getTime();
-  const restlessBefore = monthsBefore(now, RESTLESS_AFTER_MONTHS).getTime();
+  const staleBefore = monthsBefore(now, STALE_AFTER_MONTHS).getTime();
   const publishMs = publish === null ? null : publish.getTime();
-  const ageKnown = publishMs !== null && Number.isFinite(publishMs) && publishMs <= nowMs;
+  const stale =
+    publishMs !== null && Number.isFinite(publishMs) && publishMs <= nowMs && publishMs < staleBefore;
+  const anyAdvisory = hasAdvisories && advisories.length > 0;
+  const severe = hasAdvisories && advisories.some((a) => a.severity === "Critical" || a.severity === "High");
+  const mild = hasAdvisories && advisories.some((a) => a.severity === "Moderate" || a.severity === "Low");
 
-  // Dead. Requirement 11.3.
   if (hasDeprecated && inputs.deprecated === true) {
     return { state: "Dead", stateReason: "installed version is deprecated" };
   }
-  if (ageKnown && publishMs < deadBefore) {
-    return { state: "Dead", stateReason: `last publish more than ${DEAD_AFTER_MONTHS} months ago` };
+  if (stale && anyAdvisory) {
+    return { state: "Dead", stateReason: "no release in 24 months and an open advisory" };
   }
-
-  // Haunted. Requirement 11.4.
-  if (hasAdvisories && advisories.some((a) => a.severity === "Critical" || a.severity === "High")) {
+  if (severe) {
     return { state: "Haunted", stateReason: "advisory of severity High or Critical" };
   }
-
-  // Restless. Requirement 11.5.
-  if (ageKnown && publishMs <= restlessBefore) {
-    return { state: "Restless", stateReason: `last publish between ${RESTLESS_AFTER_MONTHS} and ${DEAD_AFTER_MONTHS} months ago` };
+  if (stale) {
+    return { state: "Restless", stateReason: "no release in 24 months" };
   }
-  if (hasAdvisories && advisories.some((a) => a.severity === "Moderate" || a.severity === "Low")) {
+  if (mild) {
     return { state: "Restless", stateReason: "advisory of severity Moderate or Low" };
   }
-
-  // Alive. Requirement 11.6.
   return { state: "Alive", stateReason: "no rule matched" };
 }
 

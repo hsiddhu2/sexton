@@ -19,9 +19,12 @@ describe("evaluateState rules", () => {
     expect(evaluateState({ lastPublish: NOW, deprecated: true, advisories: [] }, NOW).state).toBe("Dead");
   });
 
-  it("publish older than 24 months gives Dead", () => {
+  it("publish older than 24 months with no advisory gives Restless", () => {
     const old = new Date("2024-10-01T00:00:00Z");
-    expect(evaluateState({ lastPublish: old, deprecated: false, advisories: [] }, NOW).state).toBe("Dead");
+    expect(evaluateState({ lastPublish: old, deprecated: false, advisories: [] }, NOW)).toEqual({
+      state: "Restless",
+      stateReason: "no release in 24 months",
+    });
   });
 
   it("High advisory gives Haunted even when recently published", () => {
@@ -32,23 +35,23 @@ describe("evaluateState rules", () => {
     expect(evaluateState({ lastPublish: NOW, deprecated: true, advisories: [adv("Critical")] }, NOW).state).toBe("Dead");
   });
 
-  it("publish between 12 and 24 months gives Restless", () => {
-    const stale = new Date("2025-06-01T00:00:00Z");
-    expect(evaluateState({ lastPublish: stale, deprecated: false, advisories: [] }, NOW).state).toBe("Restless");
+  it("publish between 12 and 24 months gives Alive", () => {
+    const aging = new Date("2025-06-01T00:00:00Z");
+    expect(evaluateState({ lastPublish: aging, deprecated: false, advisories: [] }, NOW).state).toBe("Alive");
   });
 
-  it("exactly 12 months ago gives Restless, one millisecond newer gives Alive", () => {
+  it("exactly 12 months ago gives Alive, one millisecond newer gives Alive", () => {
     const boundary = monthsBefore(NOW, 12);
-    expect(evaluateState({ lastPublish: boundary, deprecated: false, advisories: [] }, NOW).state).toBe("Restless");
+    expect(evaluateState({ lastPublish: boundary, deprecated: false, advisories: [] }, NOW).state).toBe("Alive");
     const newer = new Date(boundary.getTime() + 1);
     expect(evaluateState({ lastPublish: newer, deprecated: false, advisories: [] }, NOW).state).toBe("Alive");
   });
 
-  it("exactly 24 months ago gives Restless, one millisecond older gives Dead", () => {
+  it("exactly 24 months ago gives Alive, one millisecond older gives Restless", () => {
     const boundary = monthsBefore(NOW, 24);
-    expect(evaluateState({ lastPublish: boundary, deprecated: false, advisories: [] }, NOW).state).toBe("Restless");
+    expect(evaluateState({ lastPublish: boundary, deprecated: false, advisories: [] }, NOW).state).toBe("Alive");
     const older = new Date(boundary.getTime() - 1);
-    expect(evaluateState({ lastPublish: older, deprecated: false, advisories: [] }, NOW).state).toBe("Dead");
+    expect(evaluateState({ lastPublish: older, deprecated: false, advisories: [] }, NOW).state).toBe("Restless");
   });
 
   it("Low or Moderate advisory gives Restless", () => {
@@ -93,7 +96,7 @@ describe("evaluateState degradation", () => {
       },
       NOW,
     );
-    expect(r.state).toBe("Dead");
+    expect(r.state).toBe("Restless");
   });
 });
 

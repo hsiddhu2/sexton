@@ -67,7 +67,7 @@ describe("scan", () => {
     const scan = JSON.parse(h.writes.get(`${ROOT}/scan.json`) ?? "{}") as { remediations: { packageName: string; kind: string }[] };
     const kind = (name: string) => scan.remediations.find((r) => r.packageName === name)?.kind;
     expect(kind("left-pad")).toBe("remove");
-    expect(kind("colors")).toBe("remove");
+    expect(kind("colors")).toBeUndefined();
     expect(kind("request")).toBe("bump");
     expect(kind("uuid")).toBe("bump");
     expect(kind("node-sass")).toBe("migrate");
