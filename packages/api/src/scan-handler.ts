@@ -12,6 +12,7 @@ import { errorResponse, evidenceRequestErrorSpec, internalErrorSpec, okResponse,
 import { parseScanRequest } from "./http/scan-request.js";
 import { correlationId, createLogger } from "./log/logger.js";
 import { withRequestLogging } from "./log/logging-transport.js";
+import { DynamoRemediationLog } from "./remediate/log-store.js";
 import { runScan, type ScanDeps } from "./scan.js";
 
 export interface ScanEnvironment {
@@ -41,6 +42,10 @@ export interface ScanHandlerDeps {
   readonly intake?: ScanDeps["intake"];
   /** One provider per container (spec hosted-plans, Requirement 4.4). Absent means no token. */
   readonly githubToken?: ScanDeps["githubToken"];
+  /** The remediate allowlist (spec remediate, Requirement 7.2). */
+  readonly allowlist?: ReadonlySet<string>;
+  /** The remediation log table; absent means the evidence pack says no log is connected. */
+  readonly remediationLogTable?: string;
 }
 
 export type ScanHandler = (event: LambdaFunctionURLEvent, context: { readonly awsRequestId: string }) => Promise<FunctionUrlResponse>;
@@ -60,6 +65,8 @@ export function createScanHandler(deps: ScanHandlerDeps): ScanHandler {
         ...(deps.retry !== undefined ? { retry: deps.retry } : {}),
         ...(deps.intake !== undefined ? { intake: deps.intake } : {}),
         ...(deps.githubToken !== undefined ? { githubToken: deps.githubToken } : {}),
+        ...(deps.allowlist !== undefined ? { allowlist: deps.allowlist } : {}),
+        ...(deps.remediationLogTable !== undefined ? { remediationLog: new DynamoRemediationLog(deps.port, deps.remediationLogTable) } : {}),
       });
       // GET /api/evidence on the same function (spec evidence-pack, Requirement 7.1). Every other path is the scan path.
       if (event.rawPath === EVIDENCE_PATH) {

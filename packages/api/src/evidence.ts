@@ -7,7 +7,7 @@ import type { EvidenceFormat } from "./http/evidence-request.js";
 import { errorResponse, evidenceTooLargeSpec, internalErrorSpec, type FunctionUrlResponse } from "./http/responses.js";
 import { errorName } from "./log/logger.js";
 import { scanWithInputs, type ScanDeps, type Summary } from "./scan.js";
-import type { RepoRef } from "@sexton/engine";
+import type { RemediationLogEntry, RepoRef } from "@sexton/engine";
 
 export interface EvidenceRequestInput {
   readonly repoUrl: string;
@@ -24,6 +24,17 @@ interface EvidenceSummary {
 
 async function hashOrNull(text: string | null | undefined): Promise<string | null> {
   return typeof text === "string" ? sha256HexOfText(text) : null;
+}
+
+/** The log entries of the repository, or null when no log is connected or the read fails (one warn line). */
+async function readLog(deps: ScanDeps, repository: string): Promise<readonly RemediationLogEntry[] | null> {
+  if (deps.remediationLog === undefined) return null;
+  try {
+    return await deps.remediationLog.list(repository);
+  } catch (error) {
+    deps.log.warn({ msg: "remediation-log-unavailable", errorName: errorName(error) });
+    return null;
+  }
 }
 
 async function evidence(request: EvidenceRequestInput, deps: ScanDeps, requestId: string, summary: EvidenceSummary): Promise<FunctionUrlResponse> {
@@ -43,9 +54,10 @@ async function evidence(request: EvidenceRequestInput, deps: ScanDeps, requestId
       packageJson: await hashOrNull(scanned.manifests?.packageJson),
       packageLock: await hashOrNull(scanned.manifests?.packageLock),
     },
-    // The scan's plans (7.2). The remediation log arrives with spec 10c (7.3).
+    // The scan's plans (hosted-plans 7.2) and the remediation log of this repository (remediate 7.1).
     remediations: scanned.body.remediations ?? [],
-    remediationLog: null,
+    // The log partition uses the lower-cased URL (spec remediate, design decision 9).
+    remediationLog: await readLog(deps, request.repoUrl.toLowerCase()),
   });
   if (!built.ok) return errorResponse(internalErrorSpec(), requestId);
 

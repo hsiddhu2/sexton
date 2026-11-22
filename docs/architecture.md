@@ -58,6 +58,20 @@ Every download runs its own scan, so the pack can differ from the scan on screen
 
 The `format` parameter reaches the function only after the next deploy of the edge stack. Until then CloudFront drops it, and the Markdown link returns JSON.
 
+## Opening a pull request
+
+`POST /api/remediate` runs on its own function, `RemediateFunction`, with its own role, log group and function URL behind origin access control. CloudFront routes `/api/remediate` before `/api/*`, with caching off, and forwards only `content-type` and `x-amz-content-sha256`. A POST through origin access control needs the SHA-256 of the body in that header; the web app computes it.
+
+1. The body is `{"repo": <canonical URL>, "package": <name>}` and nothing else, at most 2 KiB. Anything else gets 400.
+2. Only a repository on the allowlist goes further. The allowlist is a constant in `infra/lib/config.ts`, today exactly `hsiddhu2/sexton-demo`. Every other repository gets 422 before any scan or GitHub request. (403 would be rewritten to the web page by the distribution's error mapping.)
+3. The function reads the token and runs the hosted scan again, with the head commit. It takes the plan for the package from its own scan. The client never sends a branch, a title, a body or an edit.
+4. The executor talks to api.github.com through eight fixed requests: read the repository, list `sexton/` branches, list pull requests for one branch, read package.json at the commit, create the branch at the commit, put package.json on it, open the pull request against the default branch, and comment on it. It never deletes and never touches the default branch.
+5. If a branch for the package already exists, it answers with the open pull request, or refuses until someone deletes the branch. So each package gets at most one open pull request.
+6. A migration's review sites are not in the pull request's diff, so they go in one comment with links to each line at the scanned commit.
+7. Each new pull request is appended to the `sexton-remediation-log-dev` table: repository, branch, pull request URL, package, kind and time. The hosted evidence pack reads that table, so its log is available.
+
+WAF allows 10 requests to `/api/remediate` per IP every 5 minutes, and the function's reserved concurrency is 2. The drawer shows "Open pull request" only for a hosted scan whose response says `actions.remediate` is true.
+
 ## The CLI and the Action
 
 The CLI (`packages/cli`) runs the same engine as the API on the user's machine. It never calls the Sexton API.
@@ -102,6 +116,13 @@ Each function has its own role with inline statements only. No managed policy is
 | scan role | `PutItem` | snapshots table | partition key starts with `seen#` |
 | scan role | `CreateLogStream`, `PutLogEvents` | its own log group | none |
 | scan role | `secretsmanager:GetSecretValue` | the GitHub token secret, by its exact ARN | none |
+| scan role | `Query` | remediation log table | none |
+| remediate role | `GetItem`, `PutItem` | cache table | none |
+| remediate role | `Query` | snapshots table | partition key starts with `snap#` |
+| remediate role | `PutItem` | snapshots table | partition key starts with `seen#` |
+| remediate role | `PutItem` | remediation log table | none |
+| remediate role | `secretsmanager:GetSecretValue` | the GitHub token secret, by its exact ARN | none |
+| remediate role | `CreateLogStream`, `PutLogEvents` | its own log group | none |
 | snapshotter role | `GetItem`, `PutItem` | cache table | none |
 | snapshotter role | `PutItem`, `Query` | snapshots table | none |
 | snapshotter role | `Query` | the `seen-by-time` index | none |

@@ -1,6 +1,7 @@
 import type { ScanResponse } from "@sexton/api";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Drawer } from "./drawer/Drawer.js";
+import type { RemediateView } from "./load/remediate-client.js";
 import { drawerModel } from "./drawer/drawer-model.js";
 import { useContainerWidth } from "./hooks/use-container-width.js";
 import { useGhostPhase } from "./hooks/use-ghost-phase.js";
@@ -15,9 +16,11 @@ export interface CemeteryProps {
   readonly reducedMotion: boolean;
   /** Called with true while the drawer is open, so the page header can be made inert too. */
   readonly onDrawerOpenChange?: (open: boolean) => void;
+  /** Opens a pull request; present only for a hosted scan with actions.remediate true (spec remediate, 9.2). */
+  readonly onRemediate?: (packageName: string) => Promise<RemediateView>;
 }
 
-export function Cemetery({ response, theme, reducedMotion, onDrawerOpenChange }: CemeteryProps) {
+export function Cemetery({ response, theme, reducedMotion, onDrawerOpenChange, onRemediate }: CemeteryProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const order = useMemo(() => triageOrder(response.report.packages), [response]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(() => (order.length > 0 ? 0 : null));
@@ -74,7 +77,7 @@ export function Cemetery({ response, theme, reducedMotion, onDrawerOpenChange }:
           </div>
         </main>
       </div>
-      {openPackage === undefined ? null : <Drawer model={drawerModel(response, openPackage)} onClose={onClose} />}
+      {openPackage === undefined ? null : <Drawer model={drawerModel(response, openPackage)} onClose={onClose} {...(onRemediate !== undefined ? { onRemediate } : {})} />}
     </>
   );
 }

@@ -5,7 +5,7 @@ export const REGION = "us-east-1";
 export const STAGE = "dev";
 
 export type StackBase = "SextonData" | "SextonEdge";
-export type TableBase = "sexton-cache" | "sexton-snapshots";
+export type TableBase = "sexton-cache" | "sexton-snapshots" | "sexton-remediation-log";
 
 export function stackName(base: StackBase, stage: string): string {
   return `${base}-${stage}`;
@@ -40,6 +40,18 @@ export const RATE_LIMIT = { limit: 100, windowSeconds: 300 } as const;
 export const API_PATH_PREFIX = "/api/";
 
 export const LOG_RETENTION_DAYS = 30;
+
+/**
+ * Repositories that may receive a Sexton pull request (spec remediate, handoff decision 1). Lower-case owner/repo.
+ * Changing it is a code change and a deploy.
+ */
+export const REMEDIATE_ALLOWLIST: readonly string[] = ["hsiddhu2/sexton-demo"];
+export const REMEDIATE_PATH = "/api/remediate";
+export const REMEDIATE_TIMEOUT_SECONDS = 60;
+export const REMEDIATE_MEMORY_MB = 1024;
+export const REMEDIATE_RESERVED_CONCURRENCY = 2;
+/** 10 is the lowest limit WAF accepts (waf-rule-statement-type-rate-based-high-level-settings). */
+export const REMEDIATE_RATE_LIMIT = { limit: 10, windowSeconds: 300 } as const;
 
 /** Error-rate alarm threshold in percent, over 5 minutes. */
 export const SCAN_ERROR_RATE_PERCENT = 5;

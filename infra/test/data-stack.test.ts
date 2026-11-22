@@ -26,6 +26,24 @@ describe("SextonData-dev", () => {
     });
   });
 
+  it("creates the remediation log table: repository and sk keys, on demand, PITR, deletion protection, retain (remediate 5.1)", () => {
+    built.dataTemplate.hasResource("AWS::DynamoDB::GlobalTable", {
+      DeletionPolicy: "Retain",
+      UpdateReplacePolicy: "Retain",
+      Properties: Match.objectLike({
+        TableName: "sexton-remediation-log-dev",
+        KeySchema: [
+          { AttributeName: "repository", KeyType: "HASH" },
+          { AttributeName: "sk", KeyType: "RANGE" },
+        ],
+        BillingMode: "PAY_PER_REQUEST",
+        TimeToLiveSpecification: Match.absent(),
+        Replicas: [Match.objectLike({ DeletionProtectionEnabled: true, PointInTimeRecoverySpecification: { PointInTimeRecoveryEnabled: true } })],
+      }),
+    });
+    expect(resourcesOfType(built.dataTemplate, "AWS::DynamoDB::GlobalTable")).toHaveLength(3);
+  });
+
   it("creates the snapshots table with the GSI, PITR, deletion protection, retain and no TTL (3.1)", () => {
     built.dataTemplate.hasResource("AWS::DynamoDB::GlobalTable", {
       DeletionPolicy: "Retain",

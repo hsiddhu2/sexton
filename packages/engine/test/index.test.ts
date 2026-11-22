@@ -194,7 +194,8 @@ describe("engine public surface (remediation)", () => {
   });
 
   it("keeps the internal helpers internal", () => {
-    for (const name of ["precheck", "chooseKind", "readPublished", "buildPrContext", "isValidLogEntry"]) {
+    // isValidLogEntry is public since spec remediate (design decision 8): the API log store checks entries with it.
+    for (const name of ["precheck", "chooseKind", "readPublished", "buildPrContext"]) {
       expect(Object.keys(engine)).not.toContain(name);
     }
   });

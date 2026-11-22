@@ -6,6 +6,8 @@ import { createFetchTransport } from "@sexton/engine";
 import { AwsSecretPort } from "../aws-secret-port.js";
 import { AwsDynamoPort, sdkSender } from "../dynamo/aws-port.js";
 import { createTokenProvider, tokenSecretArn } from "../github-token.js";
+import { ALLOWLIST_VARIABLE, parseAllowlist } from "../remediate/allowlist.js";
+import { LOG_TABLE_VARIABLE } from "../remediate/log-store.js";
 import { createScanHandler, readScanEnvironment } from "../scan-handler.js";
 
 const environment = readScanEnvironment(process.env);
@@ -18,4 +20,6 @@ export const handler = createScanHandler({
   port: new AwsDynamoPort(sdkSender(client)),
   transport: createFetchTransport(),
   githubToken,
+  allowlist: parseAllowlist(process.env[ALLOWLIST_VARIABLE]),
+  ...(process.env[LOG_TABLE_VARIABLE] ? { remediationLogTable: process.env[LOG_TABLE_VARIABLE] } : {}),
 });

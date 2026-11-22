@@ -192,6 +192,7 @@ export type {
 } from "./types.js";
 export type { RecipeRegistry } from "./remediation/recipes.js";
 export { createInMemoryRemediationLog } from "./remediation/in-memory-log.js";
+export { isValidLogEntry, LOG_FIELDS } from "./remediation/log-entry.js";
 export { LOG_REJECTED_REASON } from "./remediation/remediation-log.js";
 export type { RemediationLog, AppendResult } from "./remediation/remediation-log.js";
 export { attachRemediations } from "./remediation/attach.js";
@@ -278,3 +279,7 @@ export {
 export type { ApiFailure, ApiFailureReason, GithubAuth, HeadCommit, TreeListing, TreeOutcome } from "./clients/github-api.js";
 export { GithubFileSource, githubFileUrl, READ_BUDGET_MS } from "./clients/github-file-source.js";
 export type { GithubFileSourceOptions, GithubSourceCounts } from "./clients/github-file-source.js";
+
+// Spec remediate: structured package.json edits for the Executor.
+export { applyPackageJsonEdits, detectIndent, DEPENDENCY_SECTIONS } from "./remediation/apply-edits.js";
+export type { ApplyFailure, ApplyResult } from "./remediation/apply-edits.js";

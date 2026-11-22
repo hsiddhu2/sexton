@@ -13,6 +13,8 @@ export interface BuildAppOptions {
   readonly stage?: string;
   readonly scanCode: HandlerCode;
   readonly snapshotterCode: HandlerCode;
+  /** Absent means a placeholder (tests). */
+  readonly remediateCode?: HandlerCode;
   readonly webAssetPath: string | null;
   readonly outdir?: string;
 }
@@ -38,6 +40,7 @@ export function buildApp(options: BuildAppOptions): SextonApp {
     data,
     scanCode: options.scanCode,
     snapshotterCode: options.snapshotterCode,
+    remediateCode: options.remediateCode ?? { kind: "placeholder" },
     webAssetPath: options.webAssetPath,
   });
   edge.addStackDependency(data);

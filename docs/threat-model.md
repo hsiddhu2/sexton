@@ -154,6 +154,18 @@ The hosted scan reads a fine-grained token that HP created. It can write to `hsi
 - A migration recipe on the hosted path reads up to 200 repository files. Each read logs one line with the file path, never the owner or the repository.
 - The hosted scan never proposes removing a package. It cannot see untracked or generated files, and reading a whole tree costs thousands of requests. A wrong removal breaks a build; a missing one only leaves a plan out.
 
+### Opening pull requests
+
+- **Who can press the button.** Anyone who can load the site, but only for the demo repository. The allowlist is a code constant, so adding a repository is a code change and a deploy. A request for any other repository is refused before any scan or GitHub request.
+- **What the token can write.** The fine-grained token can write only to `hsiddhu2/sexton-demo`. The code enforces the allowlist as well, in the handler and again in the one function that builds every GitHub request.
+- **What a request can change.** The client sends a URL and a package name. The branch, title, body, edits and review comments come from the server's own scan. A request cannot choose a file, a branch or text.
+- **How many pull requests.** One branch per package. While it exists, a new request answers with its pull request, or refuses. WAF allows 10 requests per IP every 5 minutes on `/api/remediate`, and the function runs at most 2 at a time.
+- **Nothing is deleted.** The request builder has no DELETE and refuses any branch outside `sexton/`, including the default branch. A failed run leaves its branch, which then blocks new pull requests for that package until a person deletes it.
+- **Cross-site requests.** The endpoint needs `content-type: application/json` and the `x-amz-content-sha256` header, and it sends no CORS headers. A cross-site page cannot send that request without a preflight, and the preflight fails, so another site cannot make a visitor's browser open a pull request. The endpoint has no credentials, so anyone can still send the request directly, with curl for example. What bounds them is the allowlist, one branch per package, the WAF rule and the reserved concurrency.
+- **The OAC payload hash.** CloudFront signs the POST with the hash the browser sends. A wrong or missing hash makes Lambda refuse the request, and the distribution turns that 403 into the web page; the web app reports it as failed.
+- **GitHub answers.** Only the fields the executor checks are used. A pull request URL is passed on only when it starts with `https://github.com/hsiddhu2/sexton-demo/pull/` and ends in digits, and the web app checks that prefix again before it shows the link.
+- **Log lines.** One `remediate` line per request with the outcome, the step and counts, never the repository, the branch, a URL or the token. GitHub request lines carry the host only.
+
 ### Other accepted limits
 
 1. CloudFront access logs and S3 server access logs are off, for cost and to avoid storing visitor IP addresses. WAF sampled requests and Lambda logs cover day-to-day operations.

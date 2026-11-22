@@ -8,7 +8,7 @@ beforeAll(() => {
   built = build();
 });
 
-const fnProps = (name: "ScanFunction" | "SnapshotterFunction") => {
+const fnProps = (name: "ScanFunction" | "SnapshotterFunction" | "RemediateFunction") => {
   const found = resourcesOfType(built.edgeTemplate, "AWS::Lambda::Function").find(([id]) => id.startsWith(name));
   if (found === undefined) throw new Error(`${name} not found`);
   return found[1].Properties ?? {};
@@ -19,8 +19,19 @@ describe("functions (5.6, 7.2, 6.6)", () => {
     const warnings = Annotations.fromStack(built.edge).findWarning("*", Match.stringLikeRegexp("placeholder code that answers 503"));
     expect(warnings.map((w) => String(w.entry.data))).toEqual([
       expect.stringContaining("ScanFunction:"),
+      expect.stringContaining("RemediateFunction:"),
       expect.stringContaining("SnapshotterFunction:"),
     ]);
+  });
+
+  it("runs remediate on nodejs22.x arm64, 1024 MB, 60 s, reserved concurrency 2 (remediate 8.1)", () => {
+    expect(fnProps("RemediateFunction")).toMatchObject({
+      Runtime: "nodejs22.x",
+      Architectures: ["arm64"],
+      MemorySize: 1024,
+      Timeout: 60,
+      ReservedConcurrentExecutions: 2,
+    });
   });
 
   it("runs scan on nodejs22.x arm64, 1024 MB, 60 s, reserved concurrency 10", () => {
@@ -43,9 +54,13 @@ describe("functions (5.6, 7.2, 6.6)", () => {
     });
   });
 
-  it("passes table names, the index name and, to the scan function only, the secret ARN in the environment (hosted-plans 8.2, 8.3)", () => {
+  it("passes table names, the index name and, to the scan and remediate functions only, the secret ARN, the allowlist and the log table (hosted-plans 8.2, remediate 8.5)", () => {
     const env = (fnProps("ScanFunction")["Environment"] as { Variables: Record<string, unknown> }).Variables;
-    expect(Object.keys(env).sort()).toEqual(["CACHE_TABLE", "GITHUB_TOKEN_SECRET_ARN", "NODE_OPTIONS", "SEEN_INDEX", "SNAPSHOTS_TABLE", "STAGE"]);
+    const keys = ["CACHE_TABLE", "GITHUB_TOKEN_SECRET_ARN", "NODE_OPTIONS", "REMEDIATE_ALLOWLIST", "REMEDIATION_LOG_TABLE", "SEEN_INDEX", "SNAPSHOTS_TABLE", "STAGE"];
+    expect(Object.keys(env).sort()).toEqual(keys);
+    expect(env["REMEDIATE_ALLOWLIST"]).toBe("hsiddhu2/sexton-demo");
+    const remediateEnv = (fnProps("RemediateFunction")["Environment"] as { Variables: Record<string, unknown> }).Variables;
+    expect(Object.keys(remediateEnv).sort()).toEqual(keys);
     expect(env["SEEN_INDEX"]).toBe("seen-by-time");
     expect(JSON.stringify(env["GITHUB_TOKEN_SECRET_ARN"])).toMatch(/GithubTokenSecret/);
     const snapshotter = (fnProps("SnapshotterFunction")["Environment"] as { Variables: Record<string, unknown> }).Variables;
@@ -54,9 +69,9 @@ describe("functions (5.6, 7.2, 6.6)", () => {
 
   it("creates one log group per function with 30 days retention", () => {
     const groups = resourcesOfType(built.edgeTemplate, "AWS::Logs::LogGroup");
-    expect(groups).toHaveLength(2);
+    expect(groups).toHaveLength(3);
     for (const [, g] of groups) expect(g.Properties?.["RetentionInDays"]).toBe(30);
-    for (const name of ["ScanFunction", "SnapshotterFunction"] as const) {
+    for (const name of ["ScanFunction", "SnapshotterFunction", "RemediateFunction"] as const) {
       expect(fnProps(name)["LoggingConfig"]).toMatchObject({ LogGroup: { Ref: expect.stringMatching(/Logs/) } });
     }
   });
@@ -100,8 +115,22 @@ describe("distribution (5.3, 5.4, 5.7, 5.8, 5.9)", () => {
 
   it("routes /api/* to the function URL: GET/HEAD, HTTPS only, no cache, repo-only origin request policy", () => {
     const behaviours = config()["CacheBehaviors"] as Record<string, unknown>[];
-    expect(behaviours).toHaveLength(1);
+    expect(behaviours).toHaveLength(2);
+    // Spec remediate, Requirement 8.3: /api/remediate comes first, all methods, no cache.
     expect(behaviours[0]).toMatchObject({
+      PathPattern: "/api/remediate",
+      AllowedMethods: ["GET", "HEAD", "OPTIONS", "PUT", "PATCH", "POST", "DELETE"],
+      ViewerProtocolPolicy: "https-only",
+      CachePolicyId: "4135ea2d-6df8-44a3-9df3-4b5a84be39ad",
+    });
+    built.edgeTemplate.hasResourceProperties("AWS::CloudFront::OriginRequestPolicy", {
+      OriginRequestPolicyConfig: Match.objectLike({
+        QueryStringsConfig: { QueryStringBehavior: "none" },
+        HeadersConfig: { HeaderBehavior: "whitelist", Headers: ["content-type", "x-amz-content-sha256"] },
+        CookiesConfig: { CookieBehavior: "none" },
+      }),
+    });
+    expect(behaviours[1]).toMatchObject({
       PathPattern: "/api/*",
       AllowedMethods: ["GET", "HEAD"],
       ViewerProtocolPolicy: "https-only",
@@ -203,8 +232,22 @@ describe("WAF (5.5)", () => {
     expect(props["Scope"]).toBe("CLOUDFRONT");
     expect(props["DefaultAction"]).toEqual({ Allow: {} });
     const rules = props["Rules"] as Record<string, unknown>[];
-    expect(rules.map((r) => r["Name"])).toEqual(["AWSManagedRulesCommonRuleSet", "AWSManagedRulesKnownBadInputsRuleSet", "ApiRateLimit"]);
-    expect(rules.map((r) => r["Priority"])).toEqual([0, 1, 2]);
+    expect(rules.map((r) => r["Name"])).toEqual(["AWSManagedRulesCommonRuleSet", "AWSManagedRulesKnownBadInputsRuleSet", "ApiRateLimit", "RemediateRateLimit"]);
+    expect(rules.map((r) => r["Priority"])).toEqual([0, 1, 2, 3]);
+    // Spec remediate, Requirement 8.4: 10 per 5 minutes, the lowest limit WAF accepts.
+    expect(rules[3]).toMatchObject({
+      Action: { Block: { CustomResponse: { ResponseCode: 429, CustomResponseBodyKey: "rate-limited" } } },
+      Statement: {
+        RateBasedStatement: {
+          Limit: 10,
+          EvaluationWindowSec: 300,
+          AggregateKeyType: "IP",
+          ScopeDownStatement: {
+            ByteMatchStatement: { FieldToMatch: { UriPath: {} }, PositionalConstraint: "STARTS_WITH", SearchString: "/api/remediate" },
+          },
+        },
+      },
+    });
     expect(rules[2]).toMatchObject({
       Action: { Block: { CustomResponse: { ResponseCode: 429, CustomResponseBodyKey: "rate-limited" } } },
       Statement: {

@@ -54,4 +54,6 @@ export interface ScanResponse {
   readonly report: HealthReport;
   readonly policy: PolicyResult;
   readonly remediations?: readonly RemediationEntry[];
+  /** Spec remediate, Requirement 7.2: true only for a repository on the remediate allowlist. */
+  readonly actions?: { readonly remediate: boolean };
 }

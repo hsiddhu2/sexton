@@ -24,9 +24,12 @@ export interface TableSchema {
 export const CACHE_TABLE = "sexton-cache-test";
 export const SNAPSHOTS_TABLE = "sexton-snapshots-test";
 export const SEEN_INDEX = "seen-by-time";
+export const LOG_TABLE = "sexton-remediation-log-test";
 
 export const SEXTON_TABLES: Readonly<Record<string, TableSchema>> = {
   [CACHE_TABLE]: { partitionKey: "pk" },
+  // Spec remediate, Requirement 5.1.
+  [LOG_TABLE]: { partitionKey: "repository", sortKey: "sk" },
   [SNAPSHOTS_TABLE]: {
     partitionKey: "pk",
     sortKey: "sk",

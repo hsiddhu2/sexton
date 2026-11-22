@@ -16,6 +16,7 @@ export class SextonDataStack extends Stack {
   readonly snapshotsTable: dynamodb.TableV2;
   readonly seenIndexName = SEEN_INDEX_NAME;
   readonly githubTokenSecret: secretsmanager.CfnSecret;
+  readonly remediationLogTable: dynamodb.TableV2;
 
   constructor(scope: Construct, id: string, props: SextonDataStackProps) {
     super(scope, id, { ...props, terminationProtection: true });
@@ -47,6 +48,18 @@ export class SextonDataStack extends Stack {
           nonKeyAttributes: ["name"],
         },
       ],
+    });
+
+    // Append-only remediation log (spec remediate, Requirement 5.1). Retained, deletion protection, PITR.
+    this.remediationLogTable = new dynamodb.TableV2(this, "RemediationLogTable", {
+      tableName: tableName("sexton-remediation-log", props.stage),
+      partitionKey: { name: "repository", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "sk", type: dynamodb.AttributeType.STRING },
+      billing: dynamodb.Billing.onDemand(),
+      encryption: dynamodb.TableEncryptionV2.dynamoOwnedKey(),
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
+      deletionProtection: true,
+      removalPolicy: RemovalPolicy.RETAIN,
     });
 
     // L1 on purpose: the L2 Secret generates a value when none is given. Omitting both
