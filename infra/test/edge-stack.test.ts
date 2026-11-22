@@ -126,7 +126,7 @@ describe("distribution (5.3, 5.4, 5.7, 5.8, 5.9)", () => {
     built.edgeTemplate.hasResourceProperties("AWS::CloudFront::OriginRequestPolicy", {
       OriginRequestPolicyConfig: Match.objectLike({
         QueryStringsConfig: { QueryStringBehavior: "none" },
-        HeadersConfig: { HeaderBehavior: "whitelist", Headers: ["content-type", "x-amz-content-sha256"] },
+        HeadersConfig: { HeaderBehavior: "whitelist", Headers: ["content-type"] },
         CookiesConfig: { CookieBehavior: "none" },
       }),
     });

@@ -283,12 +283,13 @@ export class SextonEdgeStack extends Stack {
       cookieBehavior: cloudfront.OriginRequestCookieBehavior.none(),
     });
 
-    // POST /api/remediate: no query string; content-type for the handler, x-amz-content-sha256 for the OAC
-    // signature (spec remediate, Requirement 8.3, design decision 2).
+    // POST /api/remediate: no query string; content-type for the handler. CloudFront refuses x-amz-content-sha256
+    // in an origin request policy ("not allowed", deploy 3); OAC signs with the viewer's header without it
+    // (spec remediate, Requirement 8.3, design decision 2).
     const remediateOriginRequestPolicy = new cloudfront.OriginRequestPolicy(this, "RemediateOriginRequestPolicy", {
-      comment: "Sexton remediate: forward content-type and x-amz-content-sha256 only",
+      comment: "Sexton remediate: forward content-type only",
       queryStringBehavior: cloudfront.OriginRequestQueryStringBehavior.none(),
-      headerBehavior: cloudfront.OriginRequestHeaderBehavior.allowList("content-type", "x-amz-content-sha256"),
+      headerBehavior: cloudfront.OriginRequestHeaderBehavior.allowList("content-type"),
       cookieBehavior: cloudfront.OriginRequestCookieBehavior.none(),
     });
 
