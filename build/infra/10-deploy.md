@@ -30,7 +30,7 @@ It has termination protection, so `cdk destroy` cannot remove it by accident.
 | S3 web bucket | Private, Block Public Access, SSL enforced, versioned, S3-managed keys, RETAIN. Filled from `packages/web/dist` |
 | CloudFront distribution | Default certificate with HSTS. The default behaviour serves the bucket through OAC (s3). `/api/*` goes to the function URL through OAC (lambda), with caching disabled, only the `repo` query string forwarded, a 60 s read timeout, a 65 s completion timeout and 1 connection attempt. 403 and 404 map to `/index.html` with 200 |
 | 3 origin access controls | Type `s3` and two of type `lambda` (scan, remediate), always sign, SigV4. `/api/remediate` comes before `/api/*`, all methods, no cache |
-| Origin request policies | API: forwards the `repo` and `format` query strings only, no cookies, no headers. Remediate: no query string, no cookies, the `content-type` and `x-amz-content-sha256` headers only |
+| Origin request policies | API: forwards the `repo` and `format` query strings only, no cookies, no headers. Remediate: no query string, no cookies, the `content-type` header only (CloudFront refuses `x-amz-content-sha256` in a policy; the viewer sends it to CloudFront for the OAC signature) |
 | Response headers policy | CSP, HSTS (2 years), `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` |
 | WAF web ACL (scope CLOUDFRONT) | `AWSManagedRulesCommonRuleSet`, `AWSManagedRulesKnownBadInputsRuleSet`, and a rate rule of 100 requests per 300 s per IP on paths starting `/api/`, answered with 429 and a JSON body |
 | EventBridge Scheduler schedule | `cron(17 3 * * ? *)` in UTC, no retries, invokes the snapshotter |
@@ -229,7 +229,7 @@ DEMO_REPO="https://github.com/hsiddhu2/sexton-demo"
 15. **POST remediate opens the node-sass pull request.**
     - Command: `remediate "$DEMO_REPO" node-sass`
     - Pass: `{"status":"opened","prUrl":"https://github.com/hsiddhu2/sexton-demo/pull/<n>","logged":true,"reviewSites":{"posted":<n>,"dropped":0}}` and 200. On GitHub: the pull request changes package.json only, base `main`, branch `sexton/migrate-node-sass`, and has one comment that links each review site.
-    - If it answers the web page with 200 instead of JSON, the payload hash did not reach Lambda: check the `remediate` log line's `bodyHash`, and the origin request policy (design decision 2).
+    - If it answers the web page with 200 instead of JSON, Lambda refused the signature: check that the curl sent `x-amz-content-sha256` with the SHA-256 of the exact body. The `remediate` log line's `bodyHash` shows whether the header reached the function: it is not in the policy, but OAC signing may add it; record what the first deploy shows.
 16. **The same POST again answers existing.**
     - Command: `remediate "$DEMO_REPO" node-sass`
     - Pass: `{"status":"existing","prUrl":<the same URL>}`.

@@ -18,10 +18,11 @@ const FORMS: readonly ((n: string) => { path: string; text: string } | { script:
   (n) => ({ path: "src/a.less", text: `@import "~${n}";` }),
   (n) => ({ path: "src/b.scss", text: `@import '~${n}';` }),
   (n) => ({ path: "src/c.sass", text: "@use `~" + n + "`" }),
-  (n) => ({ path: "config/jest.config.json", text: `{ "preset": "${n}" }` }),
+  // Fixed words are upper-case or not name-shaped, so a generated name (lower-case, starting with a letter) never matches them.
+  (n) => ({ path: "config/jest.config.json", text: `{ "Preset": "${n}" }` }),
   (n) => ({ path: ".github/w.yml", text: `run: npx '${n}'` }),
   (n) => ({ script: `${n} --flag` }),
-  (n) => ({ script: `npm run a && ${n}` }),
+  (n) => ({ script: `X=1 && ${n}` }),
 ];
 
 function run(form: { path: string; text: string } | { script: string }, name: string): number {

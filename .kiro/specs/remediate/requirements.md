@@ -126,7 +126,7 @@ It does not include any repository other than `hsiddhu2/sexton-demo`, merging, p
 
 1. THE Edge stack SHALL add `RemediateFunction` (Node 22, arm64, 60 s, reserved concurrency 2) with its own role, log group and IAM-auth function URL behind OAC.
 2. THE remediate role SHALL have exactly: log write on its log group, GetSecretValue on the secret ARN, the cache table and snapshots table statements the scan role has, and PutItem on the log table.
-3. CloudFront SHALL route `/api/remediate` before `/api/*`, all methods, caching disabled, forwarding no query string and the `content-type` and `x-amz-content-sha256` headers.
+3. CloudFront SHALL route `/api/remediate` before `/api/*`, all methods, caching disabled, forwarding no query string and only the `content-type` header (CloudFront refuses `x-amz-content-sha256` in an origin request policy; design decision 2).
 4. WAF SHALL add a rate rule of 10 requests per 300 seconds per IP scoped to paths starting with `/api/remediate`, answering 429 JSON; the existing rule SHALL stay.
 5. THE scan and remediate functions SHALL receive `REMEDIATE_ALLOWLIST` from the config constant and `REMEDIATION_LOG_TABLE`; the remediate function SHALL also receive `GITHUB_TOKEN_SECRET_ARN`, `CACHE_TABLE`, `SNAPSHOTS_TABLE` and `SEEN_INDEX`. This supersedes hosted-plans 8.2 and 8.3 ("only the scan function"): the scan and remediate roles read the secret, the snapshotter never does.
 6. THE GithubTokenSecret resource SHALL not change; WHEN cdk diff shows a change to it, the work SHALL stop.

@@ -60,7 +60,7 @@ The `format` parameter reaches the function only after the next deploy of the ed
 
 ## Opening a pull request
 
-`POST /api/remediate` runs on its own function, `RemediateFunction`, with its own role, log group and function URL behind origin access control. CloudFront routes `/api/remediate` before `/api/*`, with caching off, and forwards only `content-type` and `x-amz-content-sha256`. A POST through origin access control needs the SHA-256 of the body in that header; the web app computes it.
+`POST /api/remediate` runs on its own function, `RemediateFunction`, with its own role, log group and function URL behind origin access control. CloudFront routes `/api/remediate` before `/api/*`, with caching off, and its origin request policy forwards only `content-type`. A POST through origin access control needs the SHA-256 of the body in the `x-amz-content-sha256` header on the request to CloudFront, which signs with it; the web app computes it. CloudFront does not allow that header in an origin request policy.
 
 1. The body is `{"repo": <canonical URL>, "package": <name>}` and nothing else, at most 2 KiB. Anything else gets 400.
 2. Only a repository on the allowlist goes further. The allowlist is a constant in `infra/lib/config.ts`, today exactly `hsiddhu2/sexton-demo`. Every other repository gets 422 before any scan or GitHub request. (403 would be rewritten to the web page by the distribution's error mapping.)
