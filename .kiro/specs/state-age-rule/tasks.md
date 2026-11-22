@@ -1,0 +1,127 @@
+# Implementation Plan
+Run the exploration test on the UNFIXED `state.ts` before any fix. All paths are under packages/engine unless stated. No network in tests, and no fixture is re-recorded. Do not deploy.
+- [ ] 1. Write bug condition exploration test
+  - **Property 1: Bug Condition** - Age alone never gives Dead
+  - **Property 2: Fix Checking** - Stale with any advisory gives Dead, written in the same file
+  - **CRITICAL**: This test MUST FAIL on unfixed code. Failure confirms the bug exists.
+  - **DO NOT attempt to fix the test or the code when it fails**
+  - **GOAL**: Surface the counterexample that shows a depd-like input rated Dead from age alone
+  - **Scoped PBT Approach**: Scope the property to the bug condition: no Possessed input, `deprecated` false or undefined, last publish more than 24 months before the fixed reference time `2026-11-12T00:00:00Z`, `advisories` `[]` or undefined
+  - _Bug_Condition: isBugCondition(X) where NOT possessedRuleMatches AND deprecated IS NOT true AND ageKnown AND lastPublish < monthsBefore(now, 24) AND (advisories IS undefined OR length = 0)_
+  - _Expected_Behavior: state = Restless AND stateReason = "no release in 24 months"_
+  - _Requirements: 1.1, 1.2, 2.1, 2.2_
+  - [ ] 1.1 Write the exploration test in test/state-age-rule.test.ts
+    - Import `evaluateState` from `../src/state.js` and use `dateArb` from `test/arbitraries.ts` or a bounded date arbitrary for the scoped property. `numRuns` 1000.
+    - Include the depd-like example as its own case: `lastPublish` `new Date("2018-10-01T00:00:00Z")`, `deprecated` false, `advisories` `[]`. Assert it gives `{ state: "Restless", stateReason: "no release in 24 months" }`.
+    - Include the same input with `advisories` undefined.
+    - Include stale with one advisory of each severity, Unknown included, and assert `{ state: "Dead", stateReason: "no release in 24 months and an open advisory" }` (Property 2).
+    - _Requirements: 1.1, 1.4, 2.1, 2.2, 2.3_
+  - [ ] 1.2 Run on unfixed code and record the counterexample
+    - Run `npm test -w @sexton/engine -- state-age-rule`. **EXPECTED OUTCOME**: the Restless cases FAIL, and the stale-with-advisory cases FAIL on the reason text only.
+    - Record in the task notes the counterexample, for example `evaluateState({ lastPublish: 2018-10-01, deprecated: false, advisories: [] }, 2026-11-12)` returns `{ state: "Dead", stateReason: "last publish more than 24 months ago" }`.
+    - If the depd-like case already gives Restless, stop and re-hypothesize before going on.
+    - _Requirements: 1.1, 1.4_
+- [ ] 2. Fix for age alone giving Dead and Restless
+  - [ ] 2.1 Implement the rule in src/state.ts
+    - Rename `DEAD_AFTER_MONTHS` to `STALE_AFTER_MONTHS` (24) and delete `RESTLESS_AFTER_MONTHS`. Compute `stale = ageKnown && publishMs < monthsBefore(now, STALE_AFTER_MONTHS)` and `hasAdvisory = hasAdvisories && advisories.length > 0`. Delete the `restlessBefore` computation.
+    - Order after the all-unavailable shortcut: Dead if deprecated ("installed version is deprecated"); Dead if `stale && hasAdvisory` ("no release in 24 months and an open advisory"); Haunted for High or Critical (reason unchanged); Restless if `stale` ("no release in 24 months"); Restless for Moderate or Low (reason unchanged); Alive. Build the two new reasons from `STALE_AFTER_MONTHS`.
+    - Update the header and rule comments.
+    - _Bug_Condition: isBugCondition(X) from design_
+    - _Expected_Behavior: Properties 1, 2 and 10 from design_
+    - _Preservation: Properties 3 to 9 from design_
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4, 3.5_
+  - [ ] 2.2 Rename the constant across the importers
+    - In src/index.ts line 19, export `STALE_AFTER_MONTHS` in place of `DEAD_AFTER_MONTHS, RESTLESS_AFTER_MONTHS`.
+    - In test/support/health-scoring-oracle.ts, rename its own constant to `STALE_AFTER_MONTHS`, delete `RESTLESS_AFTER_MONTHS`, and rewrite its Dead, Haunted, Restless and Alive branches by hand as the new rule with literal reason strings. Change the header from "FROZEN ... must never change" to say it follows the state rules without the Possessed rules and was rewritten for spec state-age-rule.
+    - Re-run `grep -rnE "DEAD_AFTER_MONTHS|RESTLESS_AFTER_MONTHS"` over the repository, excluding node_modules, .git, dist, cdk.out and private. **EXPECTED OUTCOME**: no match.
+    - _Requirements: 2.5_
+- [ ] 3. Write preservation property tests and rerun the exploration test
+  - **Property 3: Preservation** - Every rule that is not age alone is unchanged (Properties 3 to 10 of the design)
+  - **IMPORTANT**: Follow observation-first methodology. The domains below exclude the bug condition and the two changed-by-design groups, so the old branches give the same results on them. Check this by reading the old branches in the design under Bug Details, not by running the unfixed code, because the fix is task 2.
+  - _Preservation: Properties 3 to 9 from design_
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
+  - [ ] 3.1 Write the preservation properties in test/state-age-rule.test.ts
+    - Property 3: a Possessed trigger with any stale, deprecated and advisories gives Possessed with the first matching rule's reason. Use `tenSignalInputsArb`.
+    - Property 4: not Possessed, `deprecated` true, any age and advisories gives Dead "installed version is deprecated".
+    - Property 5: not Possessed, not deprecated, not stale, a High or Critical advisory gives Haunted "advisory of severity High or Critical".
+    - Property 6: not Possessed, not deprecated, not stale, Moderate or Low and no High or Critical gives Restless "advisory of severity Moderate or Low"; Unknown only gives Alive "no rule matched".
+    - Property 7: `lastPublish`, `deprecated` and `advisories` all undefined, no Possessed trigger, gives Restless "all state signals unavailable".
+    - Property 8: determinism on equal inputs and equal reference time.
+    - Property 9: monotonic in age for the three-signal and the ten-signal inputs.
+    - Property 10: not Possessed, not deprecated, not stale, the result is the same for a last publish 12 to 24 months ago, exactly 24 months ago, null and a future date.
+    - `numRuns` 1000 for each. Keep the existing properties in test/state.test.ts and test/state-possessed.test.ts, at their current `numRuns`.
+    - _Requirements: 2.4, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
+  - [ ] 3.2 Update the engine state tests that assert the old rule
+    - In test/state.test.ts change only these cases: "publish older than 24 months gives Dead" to Restless with "no release in 24 months"; "publish between 12 and 24 months gives Restless" to Alive; "exactly 12 months ago" to Alive on both sides; "exactly 24 months ago" to Alive at the boundary and Restless one millisecond older; the `stateFromSignals` mapping case (2024-01-01, no advisories) to Restless. Rename the titles to match.
+    - In test/score.test.ts change the "old" package (2020, no advisories) from Dead to Restless.
+    - List each changed test and its old and new value in the task notes.
+    - _Requirements: 1.3, 2.1, 2.4_
+  - [ ] 3.3 Rerun the exploration test and the preservation properties
+    - **Property 1: Expected Behavior** - Age alone never gives Dead. **IMPORTANT**: re-run the SAME exploration test from task 1. Do NOT write a new test.
+    - **Property 3: Preservation** - re-run the SAME properties from 3.1.
+    - Run `npm test -w @sexton/engine -- state`. **EXPECTED OUTCOME**: all PASS, including `state-possessed.test.ts` Property 12 against the rewritten oracle and the 1000-run monotonic property.
+    - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
+- [ ] 4. Recompute fixtures and derived files from the recorded data
+  - No network and no `fixtures:record`. Check every changed line by hand against the recorded packuments and OSV files.
+  - _Requirements: 2.6, 2.7, 3.9_
+  - [ ] 4.1 Recompute test/fixtures/expected-states.json
+    - Expected diff: colors from Dead "last publish more than 24 months ago" to Restless "no release in 24 months"; event-stream stays Dead with reason "no release in 24 months and an open advisory", `missingSignals` unchanged. The other nine entries are unchanged.
+    - Run `npm test -w @sexton/engine -- fixture-scan`.
+    - _Requirements: 2.6_
+  - [ ] 4.2 Rewrite the golden evidence files
+    - From packages/engine run `SEXTON_WRITE_GOLDEN=1 npx vitest run test/evidence/golden.test.ts`, then rerun without the variable.
+    - Check the diff by hand: colors becomes Restless, the packages table follows STATE_ORDER then name, event-stream carries the new reason, the policy result still fails on the remaining Dead packages, the SBOM still has eleven components, and the integrity digest matches `jq -cjS .body expected-pack.json | shasum -a 256`.
+    - Update test/fixtures/evidence/README.md where it says six Dead packages, the table order and the digest prefix.
+    - _Requirements: 2.6_
+  - [ ] 4.3 Edit the policy fixture results by hand
+    - In test/fixtures/policy/expected-default.json and expected-valid-full.json remove colors from the Dead failures and change the event-stream reason to "state is Dead: no release in 24 months and an open advisory". Keep the `max_age_months` failures. Run `npm test -w @sexton/engine -- policy`.
+    - _Requirements: 2.6, 3.8_
+  - [ ] 4.4 Regenerate the demo files
+    - Run `npm run demo:generate -w @sexton/api`. It rewrites packages/web/public/demo/scan.json, evidence.json and evidence.md. Check the diff by hand: colors is Restless and has no plan, event-stream has the new reason, and the plan list is one entry per Haunted, Dead or Possessed package.
+    - Do not edit packages/web/dist-e2e by hand.
+    - _Requirements: 2.6, 2.7_
+  - [ ] 4.5 Update the tests that pin an old state, reason or plan count
+    - packages/cli/test/commands.test.ts: colors no longer gets a remove plan (line 70). Leave the row-one regex on line 18.
+    - packages/web/test/triage.test.ts: colors moves to the Restless group after express and moment, ahead of semver and react. Update the comment and the expected order.
+    - Run the api, cli and web test suites and fix only the assertions that fail because of the new rule. List each changed test with its old and new value in the task notes.
+    - _Requirements: 2.6, 2.7, 3.9_
+- [ ] 5. Update the text that states the rule
+  - _Requirements: 2.8, 3.8_
+  - [ ] 5.1 README state table
+    - Dead: "The installed version is deprecated, or the last publish was more than 24 months ago and it has an advisory". Restless: "The last publish was more than 24 months ago, or it has a Low or Moderate advisory".
+    - _Requirements: 2.8_
+  - [ ] 5.2 docs/requirements.md
+    - Rewrite the Dead and Restless lines of R-ST-2 and add a line for the unavailable advisories signal. Leave R-ST-4. Set the header to "Version 0.3, 21 Nov 2026" and add the change log line "0.3, 21 Nov 2026. R-ST-2: age alone gives Restless, Dead needs deprecation or age with an open advisory."
+    - _Requirements: 2.8_
+  - [ ] 5.3 Health-scoring Correction section
+    - Append "Correction, 21 Nov 2026 (spec state-age-rule)" to .kiro/specs/health-scoring/requirements.md. Quote the old criteria 11.3 and 11.5, give the new text, and say 11.2, 11.10 and requirement 13 still hold. Do not edit the old criteria.
+    - _Requirements: 2.8_
+  - [ ] 5.4 .kiro/steering/product.md
+    - Rewrite the Dead and Restless lines of the States section.
+    - _Requirements: 2.8_
+  - [ ] 5.5 build/infra/10-deploy.md smoke check 12
+    - The command prints the plan count, whether any plan is a remove, and whether every plan is for a package whose state is Haunted, Dead or Possessed. Pass: a number 0 or above, then `false`, then `true`.
+    - _Requirements: 2.7, 2.8_
+  - [ ] 5.6 Check that no text states the old rule
+    - Run `grep -rnE "12 to 24|between 12 and 24|more than 24 months ago" README.md docs .kiro/steering build/infra` and confirm each remaining match is the policy rule, the Correction section or this spec.
+    - _Requirements: 2.8_
+- [ ] 6. Checkpoint - Ensure all gates pass
+  - [ ] 6.1 Run `npm run typecheck` at the repository root
+    - Confirm no importer of the removed constants remains.
+    - _Requirements: 2.5_
+  - [ ] 6.2 Run `npm run lint` at the repository root
+    - Zero warnings allowed.
+    - _Requirements: 3.9_
+  - [ ] 6.3 Run `npm test` at the repository root
+    - Ensure all tests pass, ask the user if questions arise.
+    - _Requirements: 2.6, 3.6, 3.7, 3.9_
+- [ ] 7. Run the built CLI against express and write the report
+  - Orchestrator-run: this needs the network.
+  - _Requirements: 1.2, 2.1, 2.3_
+  - [ ] 7.1 Build and scan
+    - Run `npm run build`, then the cli's scan against https://github.com/expressjs/express with the built CLI.
+    - _Requirements: 2.1, 2.3_
+  - [ ] 7.2 Write build/kiro-reports/13-state-age-rule.md
+    - Record the state counts, every Dead package with its reason, the count of packages Restless with "no release in 24 months", and the number of remediation plans. Compare with the 21 Nov figure of 16 Dead of 44.
+    - List every fixture whose state changed, with old and new state and reason. `build/*` is git-ignored, so the report is not committed.
+    - _Requirements: 1.2, 2.1, 2.3, 2.6_
