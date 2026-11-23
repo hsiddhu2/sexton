@@ -1,5 +1,6 @@
-import { useLayoutEffect, useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import { Cemetery } from "./Cemetery.js";
+import { LoadingCard } from "./LoadingCard.js";
 import { Header } from "./header/Header.js";
 import { headerModel } from "./header/header-model.js";
 import { useMediaQuery } from "./hooks/use-media-query.js";
@@ -18,7 +19,7 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
   const loader = useScanLoader({ fetchFn, pageOrigin, apiBase, initialSearch });
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const theme: Theme = "dark";
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const repoFieldRef = useRef<HTMLInputElement | null>(null);
   useLayoutEffect(() => {
     applyPalette(document.documentElement, theme);
   }, [theme]);
@@ -36,20 +37,15 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
   }, [state, apiBase, fetchFn]);
   return (
     <>
-      {/* The header joins the Cemetery's inert region while the drawer is open; the drawer stays outside both. */}
-      <div inert={drawerOpen}>
-        <Header model={model} theme={theme} apiConfigured={apiBase !== null} onSubmit={loader.submitRepo} />
-      </div>
+      <Header model={model} theme={theme} apiConfigured={apiBase !== null} onSubmit={loader.submitRepo} fieldRef={repoFieldRef} />
       {state.status === "loading" ? (
-        <main>
-          <p role="status">loading scan</p>
-        </main>
+        <LoadingCard />
       ) : state.status === "error" ? (
-        <main>
+        <main className="panel-main">
           <section role="alert" className="load-error">
             <h2>Scan could not be loaded</h2>
             <p>
-              {state.error.code}: {state.error.message}
+              <code>{state.error.code}</code>: {state.error.message}
             </p>
             {state.error.contractErrors === undefined ? null : (
               <ul>
@@ -68,7 +64,7 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
           response={state.response}
           theme={theme}
           reducedMotion={reducedMotion}
-          onDrawerOpenChange={setDrawerOpen}
+          repoFieldRef={repoFieldRef}
           {...(onRemediate !== undefined ? { onRemediate } : {})}
         />
       )}

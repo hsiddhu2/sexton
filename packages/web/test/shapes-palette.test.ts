@@ -122,15 +122,46 @@ function sourceFiles(dir: string): string[] {
 describe("Feature: cemetery-theme, Property 1: Palette contrast over every backdrop stop", () => {
   it("holds for every token against every Backdrop stop, in both Theme keys", () => {
     fc.assert(
-      fc.property(arbTheme, fc.nat({ max: 6 }), (theme, stopIndex) => {
+      fc.property(arbTheme, fc.nat({ max: 9 }), (theme, stopIndex) => {
         const p = PALETTE[theme];
         const stops = backdropStops(theme);
-        expect(stops).toHaveLength(7);
+        expect(stops).toHaveLength(10);
         const stop = stops[stopIndex] as string;
         expect(stop).toMatch(/^#[0-9a-f]{6}$/);
-        for (const fg of [p.text, p.muted]) expect(contrast(fg, stop), `${fg} on ${stop}`).toBeGreaterThanOrEqual(TEXT_MIN);
+        for (const fg of [p.text, p.muted, p.wordmark]) expect(contrast(fg, stop), `${fg} on ${stop}`).toBeGreaterThanOrEqual(TEXT_MIN);
         const nonText = [p.ghost, p.ring, p.focus, p.border, ...STATES.map((s) => colourFor(s, theme))];
         for (const fg of nonText) expect(contrast(fg, stop), `${fg} on ${stop}`).toBeGreaterThanOrEqual(NON_TEXT_MIN);
+      }),
+      { numRuns: NUM_RUNS },
+    );
+  });
+
+  // Feature: cemetery-polish, Property 1: Palette contrast over every backdrop stop
+  it("Feature: cemetery-polish, Property 1: Palette contrast over every backdrop stop", () => {
+    fc.assert(
+      fc.property(arbTheme, fc.nat({ max: 9 }), (theme, stopIndex) => {
+        const p = PALETTE[theme];
+        const stops = backdropStops(theme);
+        expect(stops).toHaveLength(10);
+        const stop = stops[stopIndex] as string;
+        for (const fg of [p.text, p.muted, p.wordmark]) {
+          expect(contrast(fg, stop), `${fg} on ${stop}`).toBeGreaterThanOrEqual(TEXT_MIN);
+          for (const back of [p.surface, p.field]) expect(contrast(fg, back)).toBeGreaterThanOrEqual(TEXT_MIN);
+        }
+        for (const fg of [...STATES.map((s) => colourFor(s, theme)), p.ghost, p.ring, p.focus, p.border]) {
+          expect(contrast(fg, stop), `${fg} on ${stop}`).toBeGreaterThanOrEqual(NON_TEXT_MIN);
+        }
+        for (const fg of [p.focus, p.border]) expect(contrast(fg, p.field)).toBeGreaterThanOrEqual(NON_TEXT_MIN);
+        expect(contrast(p.accentText, p.accentBg)).toBeGreaterThanOrEqual(TEXT_MIN);
+        for (const back of [p.skyTop, p.skyMid]) expect(contrast(p.accentBg, back)).toBeGreaterThanOrEqual(NON_TEXT_MIN);
+        for (const star of [p.star, p.starFar]) {
+          for (const back of [p.skyTop, p.skyMid, p.skyHorizon]) expect(contrast(star, back)).toBeGreaterThanOrEqual(NON_TEXT_MIN);
+        }
+        for (const s of STATES) expect(contrast(p.ink, colourFor(s, theme))).toBeGreaterThanOrEqual(TEXT_MIN);
+        for (const t of [p.star, p.starFar, p.grassDark, p.grassLight, p.field, p.accentBg, p.accentText, p.wordmark]) {
+          expect(t).toMatch(/^#[0-9a-f]{6}$/);
+        }
+        expect(luminance(stops[9] as string)).toBeLessThanOrEqual(luminance(p.groundTop));
       }),
       { numRuns: NUM_RUNS },
     );
@@ -163,7 +194,8 @@ describe("Feature: cemetery-theme, Property 1: Palette contrast over every backd
       expect(new Set(STATES.map((s) => colourFor(s, theme))).size).toBe(5);
       const tokens = [
         p.skyTop, p.skyMid, p.skyHorizon, p.groundTop, p.bg, p.horizon, p.moon, p.fog, p.surface, p.text,
-        p.muted, p.border, p.focus, p.ring, p.ghost, p.ink, p.pit, ...STATES.map((s) => colourFor(s, theme)),
+        p.muted, p.border, p.focus, p.ring, p.ghost, p.ink, p.pit, p.star, p.starFar, p.grassDark,
+        p.grassLight, p.field, p.accentBg, p.accentText, p.wordmark, ...STATES.map((s) => colourFor(s, theme)),
       ];
       for (const t of tokens) expect(t).toMatch(/^#[0-9a-f]{6}$/);
     }
@@ -174,7 +206,7 @@ describe("Feature: cemetery-theme, Property 1: Palette contrast over every backd
     const css = readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
     expect(css).not.toMatch(/prefers-color-scheme/);
     expect(css).not.toMatch(/url\(/);
-    expect(css).not.toMatch(/--(horizon|moon|fog)\b/);
+    expect(css).not.toMatch(/--(horizon|moon|fog|star|star-far|grass-dark|grass-light)\b/);
     for (const file of sourceFiles(resolve(process.cwd(), "src"))) {
       expect(readFileSync(file, "utf8"), file).not.toMatch(/prefers-color-scheme/);
     }

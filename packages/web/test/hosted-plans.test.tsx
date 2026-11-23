@@ -60,7 +60,7 @@ describe("hosted scan response with remediations (9.3)", () => {
     render(<Drawer model={drawerModel(response, bumped)} onClose={() => undefined} />);
     const dialog = screen.getByRole("dialog");
     expect(dialog.textContent).toContain(`Sexton: bump ${bumped.name} to 9.9.9`);
-    expect(dialog.querySelector(".drawer-prbody")?.textContent).toContain(`## Sexton: bump ${bumped.name}`);
+    expect(dialog.querySelector(".pr-preview h5")?.textContent).toBe(`Sexton: bump ${bumped.name}`);
   });
 
   it("renders the no-change plan for the other package", () => {

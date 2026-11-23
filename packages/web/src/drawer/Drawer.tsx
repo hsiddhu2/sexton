@@ -1,13 +1,18 @@
 import { useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { hasPrPrefix, type RemediateView } from "../load/remediate-client.js";
 import type { DrawerModel } from "./drawer-model.js";
+import { ScanTime } from "../header/ScanTime.js";
 import { trapStep } from "./focus-trap.js";
+import { displayValue } from "./format-value.js";
+import { PrPreview } from "./PrPreview.js";
 
 export interface DrawerProps {
   readonly model: DrawerModel;
   readonly onClose: () => void;
   /** Present only for a hosted scan with actions.remediate true (spec remediate, Requirement 9.2). */
   readonly onRemediate?: (packageName: string) => Promise<RemediateView>;
+  /** A press on the backdrop at (x, y). Returns true when it moved focus to the Repository URL box and closed the drawer. */
+  readonly onDismissToField?: (x: number, y: number) => boolean;
 }
 
 export const DEMO_ONLY_TEXT = "Pull requests are opened only on the demo repository";
@@ -55,7 +60,12 @@ function focusables(root: HTMLElement): HTMLElement[] {
   );
 }
 
-export function Drawer({ model, onClose, onRemediate }: DrawerProps) {
+function SignalValue({ valueText }: { readonly valueText: string }) {
+  const v = displayValue(valueText);
+  return v.kind === "block" ? <pre className="signal-value">{v.text}</pre> : <code className="signal-value">{v.text}</code>;
+}
+
+export function Drawer({ model, onClose, onRemediate, onDismissToField }: DrawerProps) {
   const dialogRef = useRef<HTMLElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
 
@@ -65,6 +75,11 @@ export function Drawer({ model, onClose, onRemediate }: DrawerProps) {
 
   const onBackdropClick = (event: MouseEvent<HTMLDivElement>): void => {
     if (event.target === event.currentTarget) onClose();
+  };
+
+  const onBackdropMouseDown = (event: MouseEvent<HTMLDivElement>): void => {
+    if (event.target !== event.currentTarget || onDismissToField === undefined) return;
+    if (onDismissToField(event.clientX, event.clientY)) event.preventDefault();
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLElement>): void => {
@@ -83,7 +98,7 @@ export function Drawer({ model, onClose, onRemediate }: DrawerProps) {
   };
 
   return (
-    <div className="backdrop" onClick={onBackdropClick}>
+    <div className="backdrop" onClick={onBackdropClick} onMouseDown={onBackdropMouseDown}>
       <section
         ref={dialogRef}
         className="drawer"
@@ -109,9 +124,11 @@ export function Drawer({ model, onClose, onRemediate }: DrawerProps) {
               <li key={s.name}>
                 <h4>{s.name}</h4>
                 <p>Source: {s.source}</p>
-                <p>Fetched at: {s.fetchedAt}</p>
-                {s.available ? (
-                  <pre>{s.valueText}</pre>
+                <p>
+                  Fetched at: <ScanTime iso={s.fetchedAt} />
+                </p>
+                {s.available && s.valueText !== null ? (
+                  <SignalValue valueText={s.valueText} />
                 ) : (
                   <p>
                     unavailable: {s.reason}
@@ -146,7 +163,9 @@ export function Drawer({ model, onClose, onRemediate }: DrawerProps) {
                       <li key={i}>
                         <p>Reason: {f.reason}</p>
                         <p>Source: {f.source}</p>
-                        <p>Fetched at: {f.fetchedAt}</p>
+                        <p>
+                          Fetched at: <ScanTime iso={f.fetchedAt} />
+                        </p>
                       </li>
                     ))}
                   </ul>
@@ -162,13 +181,15 @@ export function Drawer({ model, onClose, onRemediate }: DrawerProps) {
             <div>
               <p>Kind: {model.remediation.kind}</p>
               <p>Title: {model.remediation.title}</p>
-              <pre className="drawer-prbody">{model.remediation.prBody}</pre>
-              {model.remediation.status === "proposed" && model.remediation.intent !== undefined ? (
-                <RemediateAction packageName={model.remediation.packageName} onRemediate={onRemediate} />
-              ) : null}
+              <PrPreview source={model.remediation.prBody} />
             </div>
           )}
         </div>
+        {model.remediation !== null && model.remediation.status === "proposed" && model.remediation.intent !== undefined ? (
+          <div className="drawer-result">
+            <RemediateAction packageName={model.remediation.packageName} onRemediate={onRemediate} />
+          </div>
+        ) : null}
       </section>
     </div>
   );

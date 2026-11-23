@@ -1,5 +1,6 @@
 import type { PackageHealth, State } from "@sexton/api";
 import { colourFor, type Theme } from "./palette.js";
+import { unitStars, unitTufts } from "./scenery-seed.js";
 import { SHAPE_BY_STATE, type ShapeId } from "./shapes.js";
 
 export type { Theme } from "./palette.js";
@@ -48,12 +49,33 @@ export interface GravePlan {
   readonly inscription: string | null;
 }
 
+export const STAR_AREA = 800;
+export const GRASS_STEP = 14;
+export const GRASS_TILE_HEIGHT = 224;
+
+export interface Star {
+  readonly x: number;
+  readonly y: number;
+  readonly size: 1 | 2;
+  readonly layer: "far" | "near";
+}
+
+/** Tile-relative: y is measured from the top of the Tile. */
+export interface Tuft {
+  readonly x: number;
+  readonly y: number;
+  readonly h: number;
+  readonly tone: "dark" | "light";
+}
+
 export interface Scenery {
   readonly skyHeight: number;
   readonly horizonY: number;
   readonly moon: { readonly x: number; readonly y: number; readonly r: number };
   readonly fog: { readonly y: number; readonly h: number };
   readonly groundFade: number;
+  readonly stars: readonly Star[];
+  readonly grass: readonly Tuft[];
 }
 
 export interface ScenePlan {
@@ -83,14 +105,41 @@ export function ghostOffset(phase: number): number {
 
 /** Pure. Decoration that depends on the layout width only. */
 export function sceneryFor(width: number): Scenery {
-  return {
+  if (lastScenery !== null && lastScenery.width === width) return lastScenery.scenery;
+  // The backing store never exceeds MAX_BACKING CSS pixels, so decoration is capped there too.
+  const w = Number.isNaN(width) ? 0 : Math.min(width, MAX_BACKING);
+  const span = Math.max(w - 1, 0);
+  const stars = unitStars(Math.floor((w * SKY_HEIGHT) / STAR_AREA)).map((s, i): Star => {
+    const near = i % 3 === 0;
+    return {
+      x: Math.floor(s.u * span),
+      y: 4 + Math.floor(s.v * 69),
+      size: near ? 2 : 1,
+      layer: near ? "near" : "far",
+    };
+  });
+  const grass = unitTufts(Math.floor(w / GRASS_STEP)).map(
+    (t): Tuft => ({
+      x: Math.floor(t.u * span),
+      y: Math.floor(t.v * (GRASS_TILE_HEIGHT - t.h + 1)),
+      h: t.h,
+      tone: t.tone,
+    }),
+  );
+  const scenery: Scenery = {
     skyHeight: SKY_HEIGHT,
     horizonY: SKY_HEIGHT,
     moon: { x: Math.floor(width / 6), y: 40, r: 20 },
     fog: { y: 56, h: 96 },
     groundFade: 640,
+    stars,
+    grass,
   };
+  lastScenery = { width, scenery };
+  return scenery;
 }
+
+let lastScenery: { readonly width: number; readonly scenery: Scenery } | null = null;
 
 /** A ghost means one or more advisories, and nothing else (5.1). */
 export function hasGhost(pkg: PackageHealth): boolean {

@@ -60,7 +60,7 @@ describe("App", () => {
   it("loads the demo address by default and labels it as the demo", async () => {
     const rec = recorder(() => cheapScan(2));
     const { container } = mount(rec);
-    expect(screen.getByRole("status").textContent).toBe("loading scan");
+    expect(screen.getByRole("status").textContent).toBe("Loading the scan");
     expect(container.querySelector("canvas")).toBeNull();
     await ready();
     expect(rec.urls).toEqual(["http://localhost/demo/scan.json"]);
@@ -107,7 +107,7 @@ describe("App", () => {
     expect(container.textContent).toContain("hosted scan arrives with release 0.1 infra");
   });
 
-  it("makes the header inert with the page while the drawer is open, and keeps the drawer outside", async () => {
+  it("keeps the header live and the page inert while the drawer is open", async () => {
     const rec = recorder(() => cheapScan(2));
     const { container } = mount(rec);
     await ready();
@@ -115,7 +115,7 @@ describe("App", () => {
     expect(header.closest("[inert]")).toBeNull();
     fireEvent.click(container.querySelector("button[data-grave-index]") as HTMLElement);
     const dialog = screen.getByRole("dialog");
-    expect(header.closest("[inert]")).not.toBeNull();
+    expect(header.closest("[inert]")).toBeNull();
     expect(container.querySelector("main")?.closest("[inert]")).not.toBeNull();
     expect(dialog.closest("[inert]")).toBeNull();
     fireEvent.keyDown(dialog, { key: "Escape" });
@@ -231,5 +231,36 @@ describe("App demo scan", () => {
     const links = [...container.querySelectorAll(".header-evidence a")].map((a) => a.getAttribute("href"));
     expect(links).toEqual([`${API}/evidence?repo=${repo}&format=json`, `${API}/evidence?repo=${repo}&format=md`]);
     expect(rec.urls.some((u) => u.includes("evidence"))).toBe(false);
+  });
+});
+
+describe("App loading, error and empty states (cemetery-polish task 8)", () => {
+  it("shows a loading card with a hidden spinner, removes it after the load and keeps the header summary", async () => {
+    const rec = recorder(() => cheapScan(2));
+    const { container } = mount(rec);
+    const card = screen.getByRole("status");
+    expect(card.classList.contains("loading-card")).toBe(true);
+    expect(card.querySelector(".loading-spinner")?.getAttribute("aria-hidden")).toBe("true");
+    expect(container.querySelector(".header-summary")).not.toBeNull();
+    await ready();
+    expect(container.querySelector(".loading-card")).toBeNull();
+    expect(container.querySelector(".header-summary")).not.toBeNull();
+  });
+
+  it("shows the error panel with an alert, the heading and the code in a code element", async () => {
+    const rec = recorder(() => cheapScan(1));
+    const { container } = mount(rec, { search: "?scan=https%3A%2F%2Fevil.example%2Fx" });
+    const alert = await screen.findByRole("alert");
+    expect(alert.querySelector("h2")?.textContent).toBe("Scan could not be loaded");
+    expect(alert.querySelector("code")?.textContent).toBe("scan-url-rejected");
+    expect(container.querySelector("main.panel-main")).not.toBeNull();
+  });
+
+  it("shows the empty state text and no canvas for a scan with no packages", async () => {
+    const rec = recorder(() => cheapScan(0));
+    const { container } = mount(rec);
+    await ready();
+    expect(container.querySelector(".cemetery-empty")?.textContent).toBe("no direct dependencies in this scan");
+    expect(container.querySelector("canvas")).toBeNull();
   });
 });

@@ -82,7 +82,7 @@ describe("Drawer component", () => {
     const dialog = screen.getByRole("dialog", { name: `${pkg.name} ${pkg.installedVersion}` });
     expect(dialog.getAttribute("aria-modal")).toBe("true");
     expect(document.activeElement).toBe(within(dialog).getByRole("button", { name: "Close" }));
-    const names = [...dialog.querySelectorAll("h4")].map((h) => h.textContent);
+    const names = [...dialog.querySelectorAll(".drawer-signals h4")].map((h) => h.textContent);
     expect(names).toEqual([...SIGNAL_NAMES]);
     expect(dialog.textContent).toContain(`State: ${pkg.state}`);
     expect(dialog.textContent).toContain(pkg.stateReason);
@@ -93,8 +93,10 @@ describe("Drawer component", () => {
     expect(dialog.textContent).toContain("not recorded");
     expect(dialog.textContent).not.toContain("no failing policy rules for this package");
     // Remediation is text, in a pre, with no injected elements and no pull request control.
-    expect(dialog.querySelector(".drawer-prbody")?.tagName).toBe("PRE");
-    expect(dialog.querySelector(".drawer-prbody")?.textContent).toBe("<img src=x onerror=alert(1)>\n# not markdown");
+    const preview = dialog.querySelector(".pr-preview");
+    expect(preview?.tagName).toBe("DIV");
+    expect(preview?.querySelector("h4")?.textContent).toBe("not markdown");
+    expect(preview?.textContent).toContain("<img src=x onerror=alert(1)>");
     expect(container.querySelector("img, b, h1")).toBeNull();
     expect(dialog.textContent).toContain("Bump <b>it</b>");
     expect(within(dialog).queryByRole("button", { name: /pull|branch|open pr/i })).toBeNull();
