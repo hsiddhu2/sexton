@@ -6,9 +6,11 @@ Requirement: R-UI-5 (docs/requirements.md) and Requirement 10.9 of the cemetery-
 
 ## Setup
 
-- Viewport: 1280 by 800
+- Viewport: 1440 by 900
 - Legend: closed
+- Drawer: closed
 - Explanation given to the reviewer: none
+- Scan shown: the Demo scan
 
 ## Record
 

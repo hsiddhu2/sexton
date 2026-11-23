@@ -29,6 +29,63 @@ export const SHAPES: Record<ShapeId, ShapeDef> = {
   },
 };
 
+export interface SolidBox {
+  readonly x: number;
+  readonly y: number;
+  readonly w: number;
+  readonly h: number;
+}
+
+export interface Speck {
+  readonly x: number;
+  readonly y: number;
+}
+
+/** Axis-aligned rectangles that lie inside each shape. Every speck sits inside one. */
+export const SOLID_BOXES: Record<ShapeId, readonly SolidBox[]> = {
+  upright: [{ x: 12, y: 26, w: 40, h: 34 }],
+  cross: [
+    { x: 26, y: 6, w: 12, h: 54 },
+    { x: 10, y: 26, w: 44, h: 12 },
+  ],
+  cracked: [{ x: 12, y: 26, w: 40, h: 34 }],
+  open: [{ x: 10, y: 40, w: 14, h: 14 }],
+};
+
+/** Stone texture: 1 by 1 shape unit squares, the same for every grave of a shape. */
+export const SPECKS: Record<ShapeId, readonly Speck[]> = {
+  upright: [
+    { x: 18, y: 34 },
+    { x: 40, y: 32 },
+    { x: 28, y: 42 },
+    { x: 44, y: 48 },
+    { x: 20, y: 52 },
+    { x: 34, y: 54 },
+  ],
+  cross: [
+    { x: 30, y: 12 },
+    { x: 33, y: 20 },
+    { x: 28, y: 44 },
+    { x: 34, y: 52 },
+    { x: 14, y: 30 },
+    { x: 46, y: 32 },
+  ],
+  cracked: [
+    { x: 16, y: 32 },
+    { x: 44, y: 30 },
+    { x: 18, y: 48 },
+    { x: 42, y: 44 },
+    { x: 46, y: 54 },
+    { x: 36, y: 36 },
+  ],
+  open: [
+    { x: 12, y: 42 },
+    { x: 18, y: 44 },
+    { x: 14, y: 48 },
+    { x: 20, y: 50 },
+  ],
+};
+
 export const SHAPE_BY_STATE: Record<State, ShapeId> = {
   Alive: "upright",
   Restless: "upright",

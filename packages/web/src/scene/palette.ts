@@ -20,6 +20,14 @@ export interface PaletteTheme {
   readonly ghost: string;
   readonly ink: string;
   readonly pit: string;
+  readonly star: string;
+  readonly starFar: string;
+  readonly grassDark: string;
+  readonly grassLight: string;
+  readonly field: string;
+  readonly accentBg: string;
+  readonly accentText: string;
+  readonly wordmark: string;
   readonly states: Readonly<Record<State, string>>;
 }
 
@@ -41,6 +49,14 @@ const NIGHT: PaletteTheme = {
   ghost: "#c7d0e6",
   ink: "#0b0e16",
   pit: "#04060a",
+  star: "#f4f1de",
+  starFar: "#aeb8dc",
+  grassDark: "#24362b",
+  grassLight: "#2f4a3a",
+  field: "#0e1322",
+  accentBg: "#3f64d8",
+  accentText: "#ffffff",
+  wordmark: "#efe6c4",
   states: {
     Alive: "#43a857",
     Restless: "#f2d060",
@@ -57,6 +73,8 @@ export const PALETTE: Record<Theme, PaletteTheme> = { light: NIGHT, dark: NIGHT 
 export const FOG_PEAK_ALPHA_BYTE = "34";
 export const ALPHA_ZERO_BYTE = "00";
 export const MOON_HALO_ALPHA_BYTE = "40";
+export const SHADOW_ALPHA_BYTE = "80";
+export const STONE_ALPHA_BYTE = "40";
 
 const FOG_PEAK = 52;
 
@@ -88,6 +106,14 @@ export function cssVariables(theme: Theme): Record<string, string> {
     "--moon": p.moon,
     "--fog": p.fog,
     "--ink": p.ink,
+    "--star": p.star,
+    "--star-far": p.starFar,
+    "--grass-dark": p.grassDark,
+    "--grass-light": p.grassLight,
+    "--field": p.field,
+    "--accent-bg": p.accentBg,
+    "--accent-text": p.accentText,
+    "--wordmark": p.wordmark,
   };
 }
 
@@ -106,7 +132,7 @@ function mix(under: string, over: string, alpha: number): string {
   return out;
 }
 
-/** The seven Backdrop stops: five tokens and the fog composites over skyHorizon and groundTop at 52/255. */
+/** The ten Backdrop stops: five tokens, the fog composites over skyHorizon and groundTop at 52/255, the two grass tokens and the shadow (pit at 128/255 over groundTop). */
 export function backdropStops(theme: Theme): readonly string[] {
   const p = PALETTE[theme];
   return [
@@ -117,5 +143,8 @@ export function backdropStops(theme: Theme): readonly string[] {
     p.bg,
     mix(p.skyHorizon, p.fog, FOG_PEAK),
     mix(p.groundTop, p.fog, FOG_PEAK),
+    p.grassDark,
+    p.grassLight,
+    mix(p.groundTop, p.pit, 128),
   ];
 }

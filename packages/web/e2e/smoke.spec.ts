@@ -69,15 +69,13 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
   expect(csp).toContain("object-src 'none'");
   expect(csp).not.toContain("unsafe-inline");
 
-  // left-padder is the first Possessed grave in triage order, so it is the first button.
-  await page.locator('button[data-grave-index][aria-label^="left-padder"]').click();
-  await expect(page.getByRole("dialog")).toBeVisible();
+  // Task 10.2: the README screenshot is the closed cemetery at 1440 by 900 with Reduced motion on.
+  await page.setViewportSize({ width: 1440, height: 900 });
   await waitForFirstPaint(page);
   await page.screenshot({ path: SCREENSHOT });
-
-  // Let the Ghost drift timer run during the timing, which is the worst case.
+  // Back to the configured viewport, and let the Ghost drift timer run during the timing, which is the worst case.
+  await page.setViewportSize({ width: 1280, height: 800 });
   await page.emulateMedia({ reducedMotion: "no-preference" });
-
   // A 300-package response built from the demo scan: every package copies one that carries advisories.
   const demo = (await (await request.get(`${origin}/demo/scan.json`)).json()) as {
     report: { packages: DemoPackage[] };

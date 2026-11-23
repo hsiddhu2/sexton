@@ -79,6 +79,31 @@ describe("axe-core, wcag2a/aa and wcag21a/aa, color-contrast off (Requirement 10
     expect(await violations()).toEqual([]);
   });
 
+  it("has no violations with a grave focused and its tooltip shown", async () => {
+    const { container } = mount();
+    await ready();
+    fireEvent.focus(container.querySelector("button[data-grave-index]") as HTMLElement);
+    expect(container.querySelector('[role="tooltip"]')).not.toBeNull();
+    expect(await violations()).toEqual([]);
+  });
+
+  it("has no violations with the Drawer open on a package whose PR body holds a table", async () => {
+    const { container } = mount();
+    await ready();
+    const buttons = [...container.querySelectorAll<HTMLElement>("button[data-grave-index]")];
+    let found = false;
+    for (const b of buttons) {
+      fireEvent.click(b);
+      if (screen.getByRole("dialog").querySelector(".pr-table-wrap") !== null) {
+        found = true;
+        break;
+      }
+      fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    }
+    expect(found).toBe(true);
+    expect(await violations()).toEqual([]);
+  });
+
   it("has no violations with the repository field disabled", async () => {
     mount({ apiBase: null });
     await ready();
@@ -222,6 +247,9 @@ describe("focus indicator (Requirement 10.7)", () => {
       ".legend-toggle:focus-visible",
       ".repo-form button:focus-visible",
       ".repo-form input:focus-visible",
+      ".evidence-link:focus-visible",
+      ".drawer a:focus-visible",
+      ".pr-table-wrap:focus-visible",
     ]) {
       const rule = focusRules.find((r) => r.selectors.includes(selector));
       expect(rule, selector).toBeDefined();

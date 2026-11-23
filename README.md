@@ -2,7 +2,7 @@
 
 Sexton finds the dependencies that will hurt you, proves it, and opens the pull request that fixes it.
 
-Screenshot placeholder: the cemetery view, `docs/cemetery.png`, arrives with the cemetery UI.
+![The Sexton cemetery for the demo scan. Each grave is one dependency. Its shape and colour show its state.](docs/cemetery.png)
 
 Status: pre-release. Release 0.1 is due on 4 Dec 2026. Each feature below says whether it is on `main` today, in progress, or planned.
 
@@ -104,6 +104,16 @@ It rated eslint 9.17.0 Dead, as that version is deprecated on npm. It rated vite
 - **Renovate** keeps versions current, and its replacement pull requests swap one package name for another. Sexton's migration recipes are planned to change the code that uses the package too.
 - **OSV-Scanner** finds known vulnerabilities, and its fix command opens no pull requests. Sexton is planned to open one pull request per fix, carrying its evidence.
 - **Socket's** open CLI sends data to a hosted service. Sexton scores locally against public sources, and its engine needs no Sexton service.
+
+## Sexton and Dependabot
+
+Sexton and Dependabot do different jobs. They run side by side, not as rivals.
+
+[Dependabot](https://docs.github.com/en/code-security/dependabot/ecosystems-supported-by-dependabot/supported-ecosystems-and-repositories) gives you alerts, security updates and version updates. It has alerted on [malware in npm packages since 17 March 2026](https://github.blog/changelog/2026-03-17-dependabot-now-detects-malware-in-npm-dependencies/). Since 28 July 2026 it also [alerts on malicious packages in more ecosystems](https://github.blog/changelog/2026-07-28-dependabot-alerts-on-malicious-packages-across-more-ecosystems), using OpenSSF data.
+
+So Dependabot tells you that a package is known to be bad. Sexton tells you which packages are likely to go bad, and why. It shows the signal, where it came from and when it was read. It then proposes the pull request that fixes the package.
+
+Keep Dependabot on and run Sexton beside it.
 
 ## Roadmap
 

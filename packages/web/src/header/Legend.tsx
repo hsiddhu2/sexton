@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { STATES } from "../load/lists.js";
-import { colourFor, type Theme } from "../scene/palette.js";
+import type { Theme } from "../scene/palette.js";
 import { GHOST_PATH, SHAPES, SHAPE_BY_STATE } from "../scene/shapes.js";
 
 export const TRIAGE_ORDER_TEXT =
@@ -10,10 +10,11 @@ export interface LegendProps {
   readonly theme: Theme;
 }
 
+// Colour comes from the CSS classes below, keyed by the Theme on the container.
 export function Legend({ theme }: LegendProps) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="legend">
+    <div className="legend" data-theme={theme}>
       <button
         type="button"
         className="legend-toggle"
@@ -30,23 +31,30 @@ export function Legend({ theme }: LegendProps) {
           {STATES.map((state) => {
             const shape = SHAPES[SHAPE_BY_STATE[state]];
             return (
-              <li key={state}>
-                <svg viewBox="0 0 64 64" width="32" height="32" aria-hidden="true" focusable="false">
-                  <path d={shape.d} fill={colourFor(state, theme)} />
-                  {shape.detail === null ? null : <path d={shape.detail} fill="none" stroke="currentColor" />}
+              <li key={state} className="legend-chip">
+                <svg
+                  className={`legend-shape legend-shape-${state.toLowerCase()}`}
+                  viewBox="0 0 64 64"
+                  width="32"
+                  height="32"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path d={shape.d} />
+                  {shape.detail === null ? null : <path className="legend-detail" d={shape.detail} fill="none" />}
                 </svg>{" "}
                 <span>{state}</span>
               </li>
             );
           })}
-          <li>
-            <svg viewBox="0 0 12 14" width="24" height="28" aria-hidden="true" focusable="false">
-              <path d={GHOST_PATH} fill="currentColor" />
+          <li className="legend-chip legend-chip-ghost">
+            <svg className="legend-ghost" viewBox="0 0 12 14" width="24" height="28" aria-hidden="true" focusable="false">
+              <path d={GHOST_PATH} />
             </svg>{" "}
             <span>Ghost: one or more advisories</span>
           </li>
         </ul>
-        <p>{TRIAGE_ORDER_TEXT}</p>
+        <p className="legend-triage">{TRIAGE_ORDER_TEXT}</p>
       </div>
     </div>
   );

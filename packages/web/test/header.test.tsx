@@ -6,6 +6,7 @@ import { Cemetery } from "../src/Cemetery.js";
 import { Header } from "../src/header/Header.js";
 import { failingRulesText } from "../src/header/failing-rules-text.js";
 import { headerModel } from "../src/header/header-model.js";
+import { scanTimeView } from "../src/header/format-scan-time.js";
 import { arbHeaderResponse, arbHostilePair, cheapScan, mapFreeText } from "./arbitraries.js";
 
 afterEach(cleanup);
@@ -50,7 +51,7 @@ describe("Property 14: Header values follow the response exactly", () => {
         const { container, unmount } = renderHeader(response, isDemo);
         const text = container.textContent ?? "";
         expect(text).toContain(model.repoText);
-        expect(text).toContain(model.scanTime);
+        expect(text).toContain(scanTimeView(model.scanTime).text);
         expect(text).toContain(model.policyStatus);
         expect(text).toContain(model.policyLabel);
         if (model.unlockedNotice !== null) expect(text).toContain(model.unlockedNotice);
@@ -74,7 +75,7 @@ function tags(root: Element): string[] {
   return [...root.querySelectorAll("*")].map((el) => el.tagName);
 }
 
-function view(response: ScanResponse): { header: string[]; overlay: string[]; drawer: string[]; text: string } {
+function view(response: ScanResponse): { header: string[]; overlay: string[]; drawer: string[]; preview: string[]; previewLinks: (string | null)[]; text: string } {
   const h = renderHeader(response, false);
   const header = tags(h.container);
   const headerText = h.container.textContent ?? "";
@@ -83,15 +84,24 @@ function view(response: ScanResponse): { header: string[]; overlay: string[]; dr
   const overlay = tags(c.container);
   const first = c.container.querySelector<HTMLButtonElement>("button[data-grave-index]");
   let drawer: string[] = [];
+  let preview: string[] = [];
+  let previewLinks: (string | null)[] = [];
   let drawerText = "";
   if (first !== null) {
     fireEvent.click(first);
     const dialog = screen.getByRole("dialog");
-    drawer = tags(dialog);
+    const previewEl = dialog.querySelector(".pr-preview");
+    if (previewEl !== null) {
+      preview = tags(previewEl);
+      previewLinks = [...previewEl.querySelectorAll("a")].map((a) => a.getAttribute("href"));
+    }
+    const clone = dialog.cloneNode(true) as Element;
+    clone.querySelector(".pr-preview")?.remove();
+    drawer = tags(clone);
     drawerText = dialog.textContent ?? "";
   }
   c.unmount();
-  return { header, overlay, drawer, text: headerText + drawerText };
+  return { header, overlay, drawer, preview, previewLinks, text: headerText + drawerText };
 }
 
 describe("Property 22: Untrusted strings are rendered only as text", () => {
@@ -106,7 +116,9 @@ describe("Property 22: Untrusted strings are rendered only as text", () => {
         for (const bad of ["SCRIPT", "IMG", "A", "IFRAME", "SVG"]) {
           expect(hostile.header.includes(bad) && !plain.header.includes(bad)).toBe(false);
           expect(hostile.drawer.includes(bad)).toBe(false);
+          if (bad !== "A") expect(hostile.preview.includes(bad)).toBe(false);
         }
+        for (const href of hostile.previewLinks) expect(href?.startsWith("https://") ?? false).toBe(true);
         const repo = response.report.scan?.repo.url;
         if (repo !== undefined) expect(hostile.text).toContain(`${prefix}${repo}`);
       }),
@@ -120,7 +132,8 @@ describe("Header examples", () => {
     const response = cheapScan(1);
     const { container } = renderHeader(response, false);
     expect(container.textContent).toContain("no scan metadata in this response");
-    expect(container.textContent).toContain("2026-11-12T00:00:00.000Z");
+    expect(container.textContent).toContain("12 Nov 2026, 00:00 UTC");
+    expect(container.querySelector("time")?.getAttribute("datetime")).toBe("2026-11-12T00:00:00.000Z");
   });
 
   it("disables the field and the submit control with the exact text when no API is configured", () => {
@@ -232,10 +245,41 @@ describe("evidence links", () => {
     const { container } = render(
       <Header model={headerModel(cheapScan(1), true)} theme="light" apiConfigured={true} onSubmit={noSubmit} />,
     );
-    const paragraphs = [...container.querySelectorAll("header > p")].map((p) => p.className);
-    expect(paragraphs.indexOf("header-evidence")).toBe(paragraphs.indexOf("header-policy") + 1);
     const evidence = container.querySelector(".header-evidence");
-    expect(evidence?.textContent).toBe("evidence pack: JSON, Markdown");
-    for (const a of evidence?.querySelectorAll("a") ?? []) expect(a.hasAttribute("download")).toBe(true);
+    expect(evidence?.tagName).toBe("DIV");
+    expect(evidence?.previousElementSibling?.classList.contains("header-top")).toBe(true);
+    const links = [...(evidence?.querySelectorAll("a") ?? [])];
+    expect(links.map((a) => a.textContent)).toEqual(["JSON", "Markdown"]);
+    for (const a of links) expect(a.hasAttribute("download")).toBe(true);
+  });
+});
+
+describe("Header bar (cemetery-polish task 8)", () => {
+  it("has the title text 'Sexton cemetery', a placeholder without a host name and one Legend chip per State plus the Ghost", () => {
+    const { container } = render(
+      <Header model={headerModel(cheapScan(1), true)} theme="dark" apiConfigured={true} onSubmit={noSubmit} />,
+    );
+    expect(container.querySelector("h1")?.textContent).toBe("Sexton cemetery");
+    expect(container.querySelector("h1 svg")?.getAttribute("aria-hidden")).toBe("true");
+    const placeholder = (screen.getByLabelText("Repository URL") as HTMLInputElement).placeholder;
+    expect(placeholder).toBe("Paste a public repository URL");
+    expect(placeholder).not.toMatch(/\.(com|org|io)/);
+    const chips = container.querySelectorAll("#legend-panel .legend-chip");
+    expect(chips).toHaveLength(6);
+    expect(container.querySelectorAll("#legend-panel .legend-chip-ghost")).toHaveLength(1);
+  });
+
+  it("orders the controls evidence JSON, evidence Markdown, Legend, input, Scan in the DOM", () => {
+    const { container } = render(
+      <Header model={headerModel(cheapScan(1), true)} theme="dark" apiConfigured={true} onSubmit={noSubmit} />,
+    );
+    const controls = [...container.querySelectorAll<HTMLElement>("a[href], button, input")];
+    expect(controls.map((el) => el.getAttribute("aria-label") ?? el.getAttribute("name") ?? el.textContent)).toEqual([
+      "Download evidence pack as JSON",
+      "Download evidence pack as Markdown",
+      "Legend",
+      "repo",
+      "Scan",
+    ]);
   });
 });

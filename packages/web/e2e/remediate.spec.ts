@@ -42,6 +42,8 @@ test("a hosted scan of the demo repository opens a pull request from the drawer"
   const link = dialog.getByRole("link", { name: "View the pull request on GitHub" });
   await expect(link).toHaveAttribute("href", PR_URL);
   await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  await expect(link).toBeInViewport();
+  await expect(dialog.getByRole("status")).toBeInViewport();
   expect(sent).toHaveLength(1);
   expect(sent[0]?.headers["content-type"]).toBe("application/json");
   expect(sent[0]?.headers["x-amz-content-sha256"]).toMatch(/^[0-9a-f]{64}$/);

@@ -1,5 +1,5 @@
 import type { ScanResponse } from "@sexton/api";
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Drawer } from "./drawer/Drawer.js";
 import type { RemediateView } from "./load/remediate-client.js";
 import { drawerModel } from "./drawer/drawer-model.js";
@@ -14,13 +14,13 @@ export interface CemeteryProps {
   readonly response: ScanResponse;
   readonly theme: Theme;
   readonly reducedMotion: boolean;
-  /** Called with true while the drawer is open, so the page header can be made inert too. */
-  readonly onDrawerOpenChange?: (open: boolean) => void;
+  /** The Repository URL box in the header; a press on it while the drawer is open closes the drawer and focuses it. */
+  readonly repoFieldRef?: RefObject<HTMLInputElement | null>;
   /** Opens a pull request; present only for a hosted scan with actions.remediate true (spec remediate, 9.2). */
   readonly onRemediate?: (packageName: string) => Promise<RemediateView>;
 }
 
-export function Cemetery({ response, theme, reducedMotion, onDrawerOpenChange, onRemediate }: CemeteryProps) {
+export function Cemetery({ response, theme, reducedMotion, repoFieldRef, onRemediate }: CemeteryProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const order = useMemo(() => triageOrder(response.report.packages), [response]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(() => (order.length > 0 ? 0 : null));
@@ -49,16 +49,23 @@ export function Cemetery({ response, theme, reducedMotion, onDrawerOpenChange, o
   }, [openIndex]);
   const openPackage = openIndex === null ? undefined : order[openIndex];
   const drawerOpen = openPackage !== undefined;
-  useLayoutEffect(() => {
-    onDrawerOpenChange?.(drawerOpen);
-    return () => {
-      onDrawerOpenChange?.(false);
-    };
-  }, [drawerOpen, onDrawerOpenChange]);
+  const onDismissToField = useCallback(
+    (x: number, y: number): boolean => {
+      const field = repoFieldRef?.current;
+      if (field == null || field.disabled) return false;
+      const r = field.getBoundingClientRect();
+      if (r.width === 0 || x < r.left || x > r.right || y < r.top || y > r.bottom) return false;
+      returnFocusTo.current = null; // focus stays in the field
+      field.focus();
+      setOpenIndex(null);
+      return true;
+    },
+    [repoFieldRef],
+  );
   return (
     <>
       <div inert={openPackage !== undefined}>
-        <main>
+        <main className="scene-main">
           <div ref={containerRef} className="scene-container">
             {order.length === 0 ? (
               <p className="cemetery-empty">no direct dependencies in this scan</p>
@@ -71,13 +78,14 @@ export function Cemetery({ response, theme, reducedMotion, onDrawerOpenChange, o
                   packages={order}
                   onSelect={setSelectedIndex}
                   onOpen={onOpen}
+                  suppressTooltip={drawerOpen}
                 />
               </>
             )}
           </div>
         </main>
       </div>
-      {openPackage === undefined ? null : <Drawer model={drawerModel(response, openPackage)} onClose={onClose} {...(onRemediate !== undefined ? { onRemediate } : {})} />}
+      {openPackage === undefined ? null : <Drawer model={drawerModel(response, openPackage)} onClose={onClose} onDismissToField={onDismissToField} {...(onRemediate !== undefined ? { onRemediate } : {})} />}
     </>
   );
 }
