@@ -220,30 +220,37 @@ Run-time notes for the agents:
     - _Requirements: 11.5_
     - Review notes: READY, no defect. Acted on: the test now checks "Press Play" instead of any "Play". The opening claim was checked against both fixtures.
 
-- [ ] 9. Root gates and the final fresh-clone run
+- [x] 9. Root gates and the final fresh-clone run
   - Runs every gate once on the final tree, then proves the fresh clone again.
   - _Requirements: 1.1, 1.2, 1.8, 11.1, 11.2, 11.3, 11.4, 11.5_
-  - [ ] 9.1 Orchestrator runs typecheck
+  - [x] 9.1 Orchestrator runs typecheck
     - `npm run typecheck` at the root, zero errors.
     - _Requirements: 11.4_
-  - [ ] 9.2 Orchestrator runs lint
+    - Notes: `npm run typecheck` exit 0.
+  - [x] 9.2 Orchestrator runs lint
     - `npm run lint` at the root, zero errors and zero warnings. Confirm no file under `build/` is reported.
     - _Requirements: 1.7, 11.4_
-  - [ ] 9.3 Orchestrator runs the test suites
+    - Notes: `npm run lint` exit 0, zero warnings, no file under build/ reported.
+  - [x] 9.3 Orchestrator runs the test suites
     - `npm test -w @sexton/engine`, `-w @sexton/api`, `-w @sexton/web`, `-w @sexton/cli`, `-w @sexton/action`, `-w sexton-infra`, one at a time, then `npm test` at the root. Every existing test is green apart from the Deliberate test changes, which pass in their new form. No test is skipped and none timed out.
     - _Requirements: 11.3, 11.4_
-  - [ ] 9.4 Orchestrator runs the end-to-end tests
+    - Notes: one at a time, all exit 0: engine 78 files 1059 tests, api 33 files 296, web 41 files 395, cli 4 files 60, action 2 files 12, infra 6 files 51. Root `npm test` exit 0, 1873 tests (1829 before the spec). None skipped, none timed out.
+  - [x] 9.4 Orchestrator runs the end-to-end tests
     - `npm run test:e2e -w @sexton/web`. Confirm the specs ran and were not skipped, the 300-grave medians are at most 16 ms, the canvas top and the 360 px checks pass, the Play test passes, and there is no CSP violation.
     - _Requirements: 7.1, 7.3, 11.3, 11.4_
-  - [ ] 9.5 Orchestrator checks the scope of the change
+    - Notes: `npm run test:e2e -w @sexton/web` 22 passed, none skipped. 300-grave medians 1.90 ms and 1.60 ms after a scrubber move. Canvas top 163.6 px, 360 px checks pass, Play test passes, no CSP violation (the smoke and time specs assert none). Both screenshots came out byte-identical to the committed ones.
+  - [x] 9.5 Orchestrator checks the scope of the change
     - List the changed and untracked files. Confirm every path is under `packages/engine`, `packages/api`, `packages/web`, `.kiro/specs/cemetery-time-fixes`, or is `README.md`, `docs/cemetery.png`, `docs/replay-axios.png` or `.kiro/steering/web.md`. Nothing under `infra`, `packages/cli`, `packages/action` or `.github`, and no `package.json` or `package-lock.json`. Confirm `packages/web/package.json` and `packages/api/package.json` show no runtime dependency change. Run `npm run build -w @sexton/web` and confirm its bundle check passes.
     - _Requirements: 11.1, 11.2_
-  - [ ] 9.6 Orchestrator runs the fresh-clone proof on the final tree
+    - Notes: 43 paths changed since 6f00200, all under packages/api, packages/web, .kiro/specs/cemetery-time-fixes, or README.md, docs/cemetery.png, docs/replay-axios.png, .kiro/steering/web.md. Nothing under infra, packages/cli, packages/action, .github or packages/engine. No package.json or package-lock.json change. `npm run build -w @sexton/web` exit 0, check-bundle: 8 files clean.
+  - [x] 9.6 Orchestrator runs the fresh-clone proof on the final tree
     - Commit, then repeat 1.6 and 1.5 in a new `build/fresh-clone`. Record the results in design.md "Notes and open items" ("Fresh-clone proof on the final tree"). Remove `build/fresh-clone`.
     - _Requirements: 1.1, 1.2, 1.4, 1.8_
-  - [ ] 9.7 Security review of the whole change
+    - Notes: commit bee8968. api alone exit 0 (33 files, 296 tests, no demo folder created), root `npm test` exit 0 (1873 tests), bare web Vitest with the demo folder deleted exit 0 (41 files, 395 tests, demo files written by the global setup). Counts in design.md "Notes and open items". Clone removed.
+  - [x] 9.7 Security review of the whole change
     - Invoke the security-reviewer agent on the whole branch against this spec's requirements and the security steering. Record the findings in "Review notes". Fix every defect before the spec is closed.
     - _Requirements: 11.5_
+    - Review notes: READY, no defect, over the whole branch (8 commits, 43 paths). Checked: no secret, no network in tests, Engine untouched, no new fetch, no shell, no innerHTML, demo generator path untouched, every changed line of a pre-existing test maps to Deliberate test changes 1 to 19, numRuns and the 16 ms budget kept, all paths allowed, no trailers and no attribution. Notes kept: the 1 px vertical overflow of decision 6; the guard measures a body without timelines for a byte count only its tests read; a body still over the limit without timelines is not capped, as 5.4 allows; Property 4's model shares the generator's rules, and the EXPECTED rows and the literal facts test pin the values.
 
 ## Notes
 
