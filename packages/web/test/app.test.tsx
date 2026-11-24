@@ -264,3 +264,28 @@ describe("App loading, error and empty states (cemetery-polish task 8)", () => {
     expect(container.querySelector("canvas")).toBeNull();
   });
 });
+
+// Spec cemetery-time-fixes, task 4.6: an omitted history (requirements 6.4, 6.5).
+describe("App omitted history", () => {
+  it("shows the omitted line directly under the header in place of the scrubber, and no slider", async () => {
+    const rec = recorder(() => ({ ...cheapScan(3), timelinesOmitted: "too-large" }));
+    const { container } = mount(rec);
+    await ready();
+    const lines = container.querySelectorAll("p.history-omitted");
+    expect(lines).toHaveLength(1);
+    expect(lines[0]?.textContent).toBe("History is not shown for this scan because it is too large.");
+    expect(lines[0]?.previousElementSibling?.matches("header.site-header")).toBe(true);
+    expect(screen.queryByRole("slider")).toBeNull();
+    expect(container.querySelector(".scrub")).toBeNull();
+    expect(lines[0]?.getAttribute("aria-live")).toBeNull();
+  });
+
+  it("shows neither the scrubber nor the omitted line for a response with neither field", async () => {
+    const rec = recorder(() => cheapScan(3));
+    const { container } = mount(rec);
+    await ready();
+    expect(screen.queryByRole("slider")).toBeNull();
+    expect(container.querySelector(".history-omitted")).toBeNull();
+    expect(screen.queryByText("History is not shown for this scan because it is too large.")).toBeNull();
+  });
+});

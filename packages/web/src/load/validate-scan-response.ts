@@ -462,6 +462,12 @@ function reportNames(input: Obj): Set<string> {
   return names;
 }
 
+/** Spec cemetery-time-fixes, 6.2, 6.3: exactly "too-large", and never together with timelines. The value is never echoed. */
+function checkTimelinesOmitted(w: Walk, root: Obj): void {
+  const value = Object.getOwnPropertyDescriptor(root, "timelinesOmitted")?.value as unknown;
+  if (value !== "too-large" || has(root, "timelines")) w.add("/timelinesOmitted", "UNKNOWN_VALUE");
+}
+
 function compareErrors(a: ContractError, b: ContractError): number {
   if (a.path !== b.path) return a.path < b.path ? -1 : 1;
   if (a.code !== b.code) return a.code < b.code ? -1 : 1;
@@ -486,6 +492,7 @@ export function validateScanResponse(input: unknown): ValidationResult {
       if (has(input, "pullRequests")) checkPullRequests(w, input, names);
     }
     if (has(input, "replay")) checkReplay(w, input);
+    if (has(input, "timelinesOmitted")) checkTimelinesOmitted(w, input);
   }
   const [first, ...rest] = w.errors.slice().sort(compareErrors).slice(0, MAX_CONTRACT_ERRORS);
   if (first === undefined) return { ok: true, value: input as ScanResponse };

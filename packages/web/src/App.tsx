@@ -8,7 +8,7 @@ import { requestRemediation, type RemediateView } from "./load/remediate-client.
 import { useScanLoader } from "./load/use-scan-loader.js";
 import { replayAddress, type ReplayId } from "./replay/replay-ids.js";
 import { applyPalette, type Theme } from "./scene/palette.js";
-import { Scrubber } from "./time/Scrubber.js";
+import { HISTORY_OMITTED_TEXT, Scrubber } from "./time/Scrubber.js";
 import { stopsFor } from "./time/stops.js";
 import { usePlay } from "./time/use-play.js";
 
@@ -80,6 +80,8 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
           onPause={player.pause}
           announce={player.announce}
         />
+      ) : state.status === "ready" && state.response.timelinesOmitted === "too-large" ? (
+        <p className="history-omitted">{HISTORY_OMITTED_TEXT}</p>
       ) : null}
       {state.status === "loading" ? (
         <LoadingCard />

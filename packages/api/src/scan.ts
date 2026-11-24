@@ -38,6 +38,7 @@ import { planStage } from "./plan-stage.js";
 import { pullRequestMarks } from "./pull-requests.js";
 import { isAllowed } from "./remediate/allowlist.js";
 import type { RemediationLogReader } from "./remediate/log-store.js";
+import { applySizeGuard } from "./timelines-guard.js";
 import { fetchPolicyText } from "./policy-source.js";
 import { buildTimelines } from "./timelines.js";
 
@@ -107,7 +108,8 @@ export async function runScan(repoUrl: string, deps: ScanDeps): Promise<ScanOutc
 
 async function scan(repoUrl: string, deps: ScanDeps, summary: Summary): Promise<ScanOutcome> {
   const outcome = await scanWithInputs(repoUrl, deps, summary, { timelines: true });
-  return outcome.ok ? { ok: true, body: outcome.body } : outcome;
+  // Spec cemetery-time-fixes, 5.1 to 5.6: the hosted scan path only.
+  return outcome.ok ? { ok: true, body: applySizeGuard(outcome.body, deps.log) } : outcome;
 }
 
 /** The scan, keeping the intake packages, manifest texts and policy text. Never hashes: only the evidence path does. */

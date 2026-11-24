@@ -162,6 +162,15 @@ describe("end to end over the engine fixtures", () => {
     expect(validator.validateScanResponse(JSON.parse(result.body ?? "null"))).toMatchObject({ ok: true });
   });
 
+  it("a hosted scan carries timelines and no timelinesOmitted (spec cemetery-time-fixes, 5.2)", async () => {
+    const h = harness([...repoRoutes(OWNER, REPO, packages), ...allPackageRoutes(), { url: POLICY_URL(OWNER, REPO), status: 404, text: "" }]);
+    const result = await h.handle(scanEvent(url));
+    expect(result.statusCode).toBe(200);
+    const body = json(result) as unknown as ScanResponse;
+    expect(Object.keys(body.timelines ?? {}).length).toBeGreaterThan(0);
+    expect("timelinesOmitted" in body).toBe(false);
+  });
+
   it("writes one summary line with counts and no repository, and one line per upstream request", async () => {
     const h = harness([...repoRoutes(OWNER, REPO, packages), ...allPackageRoutes(), { url: POLICY_URL(OWNER, REPO), status: 404, text: "" }]);
     await h.handle(scanEvent(url));

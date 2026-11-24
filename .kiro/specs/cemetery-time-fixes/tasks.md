@@ -115,35 +115,42 @@ Run-time notes for the agents:
     - _Requirements: 11.5_
     - Review notes: READY, no defect. Acted on: an event that changes nothing no longer clears the live line; the axe-while-playing example now holds the timer with fake timers so no tick lands during axe. Recorded as design decisions 1 and 2: the hook keys its state by load and takes the Stops. Notes kept: reduced motion is checked for timing only, and the play path has no animation code.
 
-- [ ] 4. The timelines size guard (F4)
+- [x] 4. The timelines size guard (F4)
   - Drops `timelines` from a hosted scan body over 5 MiB and names the reason in the contract, the Validator and the web app.
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 6.1, 6.2, 6.3, 6.4, 6.5_
-  - [ ] 4.1 Create `packages/api/src/timelines-guard.ts` and update `packages/api/src/scan.ts`
+  - [x] 4.1 Create `packages/api/src/timelines-guard.ts` and update `packages/api/src/scan.ts`
     - `TIMELINES_SIZE_LIMIT`, `responseBytes`, `guardTimelinesSize` and `applySizeGuard` as in design.md "F4". `scan()` returns `applySizeGuard(outcome.body, deps.log)`. `scanWithInputs` and the evidence path do not change.
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6_
-  - [ ] 4.2 Update `packages/api/src/contract.ts` and `packages/web/src/load/validate-scan-response.ts`
+    - Notes: `guardTimelinesSize` is pure and returns the input object when it has no timelines or fits. `applySizeGuard` writes `{ msg: "timelines-omitted", bytes }`. `scan()` applies it; `scanWithInputs` and the evidence path are unchanged.
+  - [x] 4.2 Update `packages/api/src/contract.ts` and `packages/web/src/load/validate-scan-response.ts`
     - `timelinesOmitted?: "too-large"` on `ScanResponse`. `checkTimelinesOmitted`: exactly `"too-large"` and no `timelines`, else `UNKNOWN_VALUE` at `/timelinesOmitted`. No new error code.
     - _Requirements: 6.1, 6.2, 6.3_
-  - [ ] 4.3 Update `packages/web/src/App.tsx`, `packages/web/src/time/Scrubber.tsx` and `styles.css`
+    - Notes: `timelinesOmitted?: "too-large"` on ScanResponse. `checkTimelinesOmitted` gives UNKNOWN_VALUE at /timelinesOmitted for any other value or the pair with timelines, with the fixed message.
+  - [x] 4.3 Update `packages/web/src/App.tsx`, `packages/web/src/time/Scrubber.tsx` and `styles.css`
     - Export `HISTORY_OMITTED_TEXT` ("History is not shown for this scan because it is too large."). App renders `<p className="history-omitted">` in place of the scrubber when `timelinesOmitted === "too-large"`. CSS: the band style of `.scrub`, no colour literal.
     - _Requirements: 6.4, 6.5_
-  - [ ] 4.4 Write `packages/api/test/timelines-guard.test.ts`: Property 1, and extend `timeline-size.test.ts`
+    - Notes: `HISTORY_OMITTED_TEXT` in Scrubber.tsx. App renders `p.history-omitted` in the scrubber's place for a ready response with `timelinesOmitted` "too-large". CSS uses the band tokens of `.scrub`.
+  - [x] 4.4 Write `packages/api/test/timelines-guard.test.ts`: Property 1, and extend `timeline-size.test.ts`
     - **Property 1: The size guard bounds the response and keeps every other field**
     - **Validates: Requirements 5.1, 5.2, 5.3, 5.4**
     - Generated bodies from `test/arbitraries.ts` with and without `timelines`, limits 1 to 200,000. Examples of design.md "Testing Strategy" (the exact limit, one byte over, UTF-8 counting, the warn line). In `timeline-size.test.ts` add the 300 by 64 example at the real limit (omitted) and the 80 character case (kept), with no Generated file.
     - Tag: `Feature: cemetery-time-fixes, Property 1: The size guard bounds the response and keeps every other field`.
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.7_
-  - [ ] 4.5 Extend `packages/web/test/validate-scan-response.test.ts`: Property 2
+    - Notes: Property 1, 100 runs, bodies up to about 90 KB against limits 1 to 200,000, so both branches run. Examples: the limit constant, exactly at and one byte over, UTF-8 counting, the warn line and no line under the limit. timeline-size: the 300 by 64 case at 200 characters is omitted and still validates, the 80 character case is kept, all in memory.
+  - [x] 4.5 Extend `packages/web/test/validate-scan-response.test.ts`: Property 2
     - **Property 2: The validator accepts the omitted reason only as "too-large" and never with timelines**
     - **Validates: Requirements 6.2, 6.3**
     - Tag: `Feature: cemetery-time-fixes, Property 2: The validator accepts the omitted reason only as "too-large" and never with timelines`.
     - _Requirements: 6.2, 6.3_
-  - [ ] 4.6 Extend `packages/web/test/app.test.tsx` and `packages/api/test/scan.test.ts`
+    - Notes: Property 2, 100 runs, strings with case and padding variants, numbers, booleans, null, arrays and objects, with and without timelines, against the oracle `v === "too-large"` and no timelines.
+  - [x] 4.6 Extend `packages/web/test/app.test.tsx` and `packages/api/test/scan.test.ts`
     - App: the omitted line and no slider for `timelinesOmitted`, neither for a response with neither field. Scan: a hosted scan on the fixture transport carries `timelines` and no `timelinesOmitted`, and the evidence digest test of `generate-demo-scan.test.ts` still passes unedited.
     - _Requirements: 5.2, 5.6, 6.4, 6.5_
-  - [ ] 4.7 Security review of task 4
+    - Notes: App: the omitted line sits directly after the header, no slider, no live region; neither shows for a response with neither field. Scan: a hosted scan on the fixture transport carries timelines and no timelinesOmitted. generate-demo-scan.test.ts passes unedited. api 33 files, 296 tests. web 40 files, 391 tests.
+  - [x] 4.7 Security review of task 4
     - Invoke the security-reviewer agent on the files of 4.1 to 4.6. Record the findings in "Review notes". Fix every defect in this task.
     - _Requirements: 11.5_
+    - Review notes: READY, no defect. Notes kept: no handler-level test drives a hosted scan over 5 MiB (the fixtures cannot reach it, the guard is unit tested and wired in one line); the 80 character case asserts no margin; the body is serialised twice on the hosted path, once by the guard and once by the handler.
 
 - [ ] 5. Compact header and the "Replay an attack" group (F5)
   - Puts the form and the Replay group on one row and the scrubber on one row at 960 px and wider, labels the group, and renames the buttons.

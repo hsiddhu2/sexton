@@ -717,6 +717,15 @@ pre.signal-value {
   color: var(--text);
   font-size: 0.875rem;
 }
+.history-omitted {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 8px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.875rem;
+}
 .scrub-row {
   display: flex;
   flex-wrap: wrap;

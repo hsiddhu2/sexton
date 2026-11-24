@@ -2,6 +2,8 @@ import type { ChangeEvent, RefObject } from "react";
 import { scanTimeView } from "../header/format-scan-time.js";
 export const SCRUB_NOTE_TEXT = "Before the scan date Sexton uses only dated facts. Deprecation, undated advisories and snapshot history are unknown.";
 export const DRAWER_SCAN_DATE_TEXT = "The drawer shows the scan date.";
+/** Shown in place of the scrubber when the size guard omitted the Timelines (spec cemetery-time-fixes, 6.4). */
+export const HISTORY_OMITTED_TEXT = "History is not shown for this scan because it is too large.";
 export interface ScrubberProps {
   readonly stops: readonly number[];
   readonly index: number;

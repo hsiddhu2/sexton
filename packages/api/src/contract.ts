@@ -65,6 +65,8 @@ export interface ScanResponse {
   readonly pullRequests?: readonly PullRequestMark[];
   /** Spec cemetery-time, 17: set only on a replay fixture. */
   readonly replay?: ReplayInfo;
+  /** Spec cemetery-time-fixes, 6.1: set by the hosted scan's size guard in place of timelines. */
+  readonly timelinesOmitted?: "too-large";
 }
 
 export interface PullRequestMark {
