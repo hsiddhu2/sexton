@@ -718,19 +718,63 @@ Each item is the question, the call, and the reason.
 ## Notes and open items
 
 - **Measured for A7 (23 Nov 2026, each test alone).** api `cache-store` Property 3 "set resolves, writes nothing, and leaves an earlier entry unchanged": 3384 ms. engine `verify-pack` Property 32 "returns digest-mismatch after one leaf of the body changes": 7319 ms. engine `pr-body` "Property 7: PR body signal coverage and no echo": 5196 ms. The task records the other tests above 5000 ms and every before and after time here.
+- **A7 measurements, 23 Nov 2026.** `verify-pack` Property 32, final: 1000 fresh packs, no pool. Before: 10855 ms in suite, 7319 ms alone. After: 6536, 6942, 6537 ms alone, 10036 ms in the engine suite. It is still over 5 s because the generator costs about 5.5 ms a run (see the table), so its timeout is raised on that one test to 60000 ms (the engine default is 20000 ms; the api test that failed on 20000 ms did so at 24522 ms under load). Engine suite after: 1028 tests, 1028 passed, 0 failed, 0 skipped.
+- **A7 measurements, 23 Nov 2026 (package runs).** One package at a time, `npx vitest run --reporter=json --outputFile=../../build/ct-a7-<pkg>.json`, tests with a duration over 5000 ms listed, each then rerun with its file alone (`build/ct-alone-*.json`). Counts of that full run: engine 1028 tests, api 257, web 310 (before this task's own web fixes), cli 60, action 12, infra 51. Times "in suite" are from the full package run (loaded by the other files of the package). "Alone" is the file run by itself on the same machine.
+
+  | Test | Package | Before (in suite / alone) | Cause | Fix | After (alone) |
+  |------|---------|---------------------------|-------|-----|---------------|
+  | `verify-pack` Property 32 "returns digest-mismatch after one leaf of the body changes" | engine | 10855 ms / 7319 ms | Profiled over 200 packs (scratch test, deleted): generating the pack from `arbPack` took 1101 ms (about 5.5 ms a run), building the pack 91 ms, canonical form 23 ms, hashing and verify 34 ms, serialise 9 ms, parse 9 ms, leaf paths 10 ms, leaf generator 2 ms. Generation is about 85% of the time and cannot go down without changing the distribution. | A fixed pool of packs was tried and rejected as a weakened check. The test is back to the original: every one of the 1000 runs draws a fresh pack from `arbPack`, the leaf path and the leaf from `arbJsonValue`. Nothing else was worth cutting: each run already serialises and parses once (the parsed copy is edited, so there is no further clone), walks the leaf paths once, computes each canonical form once, and verifies (one hash) with one `expect`. Timeout set to 60000 ms on this test alone (see A7 measurements below). | 6536, 6942 and 6537 ms alone (three runs), 10036 ms in the engine suite (`build/ct-engine-t2b.json`) |
+  | `pr-body` Property 7 "PR body signal coverage and no echo" | engine | 10490 ms / 5196 ms (5269 ms on rerun) | 5000 bodies (1000 outer runs by 5 inner), each checked with about 100 `expect` calls (three per signal row, one per block line, one per code span). Hoisting the context and the regular expressions alone did not change the time (5269 ms). The cost is the `expect` calls. | The context, the row prefixes and the escaped source and time strings are built once per outer run. Each body's checks are collected into one list of problems and asserted once with `expect(problems).toEqual([])`. The same conditions are checked, with the regular expressions compiled once. Outer 1000 and inner 5 runs unchanged. | under 1500 ms |
+  | `cache-store` Property 3 "set resolves, writes nothing, and leaves an earlier entry unchanged" | api | failed with the 20000 ms timeout under load (24522 ms, `build/cp-g-test-run1.txt`) / 3384 ms | 20 runs, each drew a `fc.uint8Array` of 400 to 600 KB (half a million generated elements), turned it into 1.2 MB of hex text, and then the store gzipped it. | A seed (`fc.integer`) and a length (`fc.integer`, 400 to 600 KiB) are expanded to incompressible bytes by the seeded `mulberry32` in `test/support/incompressible.ts`. The values are still incompressible, the run count stays 20. | under 1500 ms; 257 api tests passed with no test over 5000 ms in the full run |
+  | `file-source` Property 23 "Review sites come only from listed, non-ignored files" | engine | 5069 ms / 2731 ms | 1000 runs of the recipe over generated file sets. It is over 5 s only under load. | None needed, it is under 5 s alone. Recorded as a watch item. | 2731 ms (unchanged) |
+  | `draw` Property 2 "draws tufts after the fog, inside the ground, once per line, with one fillStyle per tone" | web | 6749 ms / 4692 ms | New in task 1: it paints 300 graves at several widths with a recording canvas. Under 5 s alone. | None needed. Watch item. | 4692 ms (unchanged) |
+  | Lambda bundling "bundles @aws-sdk/client-dynamodb into the handler, so the bundle loads with no node_modules" | infra | 5662 ms | esbuild bundling. | Out of scope: `infra` is read only for this spec. Not changed. | not changed |
+
+  Final full runs after the last edit (`build/ct-<pkg>-t2.json`): engine 1028 passed, api 257 passed, web 314 passed, no failure, no timeout. In those loaded runs three tests were still over 5000 ms, and each is under 5000 ms alone: engine `pr-body` Property 12 (5276 ms in suite, 2790 ms alone), web `draw` Property 2 (8090 ms in suite, 4692 ms alone) and web `scenery-seed` cemetery-polish Property 2 (5673 ms in suite, 2996 ms alone). They are watch items for task 10. No other test in engine, api, web, cli or action took more than 5000 ms. The infra test "Property 14: cdk-nag AwsSolutions is clean" took 4433 ms (under 5 s). No `numRuns` was lowered, no test was skipped, no timeout was raised. The three `numRuns` of the changed tests are as before: 1000, 1000 outer and 5 inner, and 20.
+- **A4 design call.** A programmatic `.focus()` on return from the drawer is told apart from a key-driven focus by the `quietFocus` ref that `Cemetery` sets before the call (and clears after it, because focus events are synchronous). A key-driven focus is any focus after a `keydown` on the document (capture) and with no `pointerdown` since, so Tab from the header into a grave counts, which a `keydown` handler on the grave button alone would miss. `escape` while quiet keeps the quiet state. The reducer holds the last pointer position (`pos`) so Property 4 can test it.
 - **CLI output size on `https://github.com/expressjs/express` (requirement 24.6).** The orchestrator built the CLI and ran it once right after the spec commit and before task 1, writing `build/ct-express-before/scan.json`. Task 10.6 runs it again after all changes, writing `build/ct-express-after/scan.json`, and records the numbers in this table. `packages/cli` is not changed by this spec, so the CLI output may not carry timelines. The sizes are recorded as measured, whatever they show.
 
   | Output | Bytes | Bytes after gzip |
   |--------|-------|------------------|
-  | before (`build/ct-express-before/scan.json`) | recorded by task 10.6 | recorded by task 10.6 |
-  | after (`build/ct-express-after/scan.json`) | recorded by task 10.6 | recorded by task 10.6 |
+  | before (`build/ct-express-before/scan.json`) | 137678 | 7297 (`gzip -c`); 7056 (zlib level 9) |
+  | after (`build/ct-express-after/scan.json`) | 137678 | 7308 (`gzip -c`); 7072 (zlib level 9) |
 
+  Measured in task 10.6 (23 Nov 2026). Both outputs have the top-level keys `report`, `policy`, `remediations`, no `timelines` key, and 44 packages in `report.packages`. The raw size is identical. The gzip size differs by 11 bytes (`gzip -c`) because the fetch timestamps differ between runs. The CLI exit code was 0.
+
+- **Task 10 gates (23 Nov 2026).** typecheck 0, lint 0 (no output, so no `build/` path reported), tests: engine 1059, api 279, web 368, cli 60, action 12, infra 51 (1829 total, 0 failed, 0 skipped), each package exit 0 and root `npm test` exit 0, no timeout. `a11y.test.tsx` (19 tests) and `imports.test.ts` (9) pass. Under the JSON runs these tests took over 5000 ms and all passed: engine `verify-pack` Property 32 (10135 ms, timeout already 60000), engine `pr-body` Property 12 (5872 ms), api Property 52 authorization (6365 ms), web `draw` Property 2 (7127 ms), web replay Property 21 (8948 ms), web `scenery-seed` cemetery-polish Property 2 (6222 ms). Nothing was changed for them. e2e: 17 passed, none skipped; median redraw of 300 graves 2.00 ms initial and 1.70 ms after a scrubber move; digest unchanged. `npm run build -w @sexton/web` exit 0, check-bundle clean.
 - **Replay Stops.** Task 7.1 records the Stops of both fixtures here and checks them against the tables of "Replay facts" (marked expected, confirmed by task 7).
+- **Replay Stops as generated (task 7, 23 Nov 2026).** Written by `npm run demo:generate -w @sexton/api` into `packages/web/public/replay/axios.json` and `keyv.json`. Every row equals the expected tables of "Replay facts", so no table was changed.
+
+  | Replay | Stop (instant, UTC) | version | state | reason | ghost |
+  |--------|---------------------|---------|-------|--------|-------|
+  | axios | 2026-03-30T23:21:00.000Z | 1.14.0 | Restless | all state signals unavailable | false |
+  | axios | 2026-03-31T00:21:00.000Z | 1.14.1 | Possessed | provenance regression: 1.14.1 has no provenance, 1.14.0 had it | false |
+  | axios | 2026-03-31T03:29:00.000Z | 1.14.0 | Restless | all state signals unavailable | false |
+  | keyv | 2026-08-04T08:35:00.000Z | 5.6.0 | Restless | all state signals unavailable | false |
+  | keyv | 2026-08-04T09:35:00.000Z | 6.0.0 | Possessed | install script added in 6.0.0 | false |
+
+  Reports at the Scan date: axios 1.14.0 Restless "all state signals unavailable" (default policy passes), keyv 6.0.0 Possessed "install script added in 6.0.0" (default policy fails). Both equal the last Segment.
+
+### Task 9 e2e run (23 Nov 2026)
+- `npm run test:e2e -w @sexton/web`: 17 passed, none skipped, exit 0, no source change. Demo digest c8fb6cab465d46ca92cf83dbc10022b6a662c8fad68ec8f64d827ef16f43344d.
+- Median redraw of 300 graves over 30 paints: 2.35 ms. After a scrubber move: 1.70 ms. Budget 16 ms unchanged.
+- 360 px: scrollWidth 360 with the drawer closed, the drawer open and the legend open; drawer width 360.
+- Header gap: `.repo-text` and `.demo-label` do not touch at 360, 768, 1280 and 1920 px. The canvas reaches the bottom at 1440 by 900.
+
+## Task 7 divergences (23 Nov 2026)
+
+- The generator writes each Segment with `replaySegments(replay)`, a function exported so that the api test runs the versioned half of Property 13 over generated per-version facts through the same code path.
+- Signals of the installed version at the Scan date: `lastPublish`, `hasInstallScript` and `provenance` are available only where the facts give a value. `provenanceRegression` is available when the version has a provenance fact (axios 1.14.0: `no-regression`, keyv 6.0.0: `no-regression`). `newInstallScript` is available when the version has an install script fact (keyv 6.0.0: one event; axios 1.14.0: unknown, so unavailable). Each available signal cites the source of its fact in `factSources` of `replay-facts.mjs`: trendmicro for axios publish time and install script, npm-trusted for axios provenance, snyk for all three keyv facts. `predicateType` is null (no source gives it). `snapshotCaptureTime` is required by the contract and no source gives one. It is derived (the publish time, else the instant asked about), commented in the generator, and changes no state.
+- A rejected `replay` value calls `start("")`, which `checkScanUrl` rejects before any request. This gives the existing `scan-url-rejected` path with no new branch in the loader.
+- The banner sits in the header (after the Replay buttons), not between the header and the scene. It is in the header area and above the scene, as requirement 19.1 says.
+- `replay-facts.test.ts` imports the web validator, as `generate-demo-scan.test.ts` does on main. It is added to the `exclude` list of `packages/api/tsconfig.test.json` the same way.
+- Test edit outside the Deliberate list: `scrubber.test.tsx` "is reachable by Tab" (a task 5 test, new in this spec) presses Tab 6 times, not 4. The counted thing grew: the two Replay buttons now sit before the slider.
 - **Demo Step marks.** The task replaces the estimates of "Data findings and consequences" with the exact Stops of the generated demo timelines.
 - **R-UI-5.** The sign-off for the new scene is owed by the user as before. No task asks for it.
 - **The advisory list in hosted scans** is non-null only when OSV returns `published` for every advisory of the installed version. The recorded demo has none, so the demo shows no Ghost change before the scan date.
 - **Alternative not chosen.** Raw facts in the response and the rules in web (decision 1 above).
 - **Reduced motion.** Affects the Ghost drift (unchanged), the spinner (unchanged) and the burial. The scrubber has no animation in any mode.
+- **Task 1 painter cost (23 Nov 2026).** Tuft rectangles are built once per width in `sceneryFor` and flattened per tone once per Scenery list in `draw.ts` (`WeakMap`). A repaint sets `fillStyle` twice for grass and allocates nothing for tufts. Calls: 11,700 `fillRect` at width 1280 and 10,836 at width 224 for 300 graves (the unit tests bound them at 12,000 and 13,000). The 16 ms median is measured by the Playwright smoke run (orchestrator, task 5.8). No performance change to the budget was made and no offscreen fallback was needed in code.
 
 ### Infra needed (not designed)
 
@@ -745,3 +789,36 @@ Two watch items. Each is flagged, not designed.
 
 1. **Response size.** The scan response grows by the timelines. The estimate is under 3 MB for 300 packages in the worst case and a few hundred KB typically, under the 6 MB limit of a buffered Lambda function URL response. The task `timeline-size.test.ts` asserts under 4 MB for the largest allowed response. If a real response ever neared 6 MB, response streaming or a separate route would be an infra change. Not designed.
 2. **Scan time.** The timeline build adds cache reads for OSV documents and in-memory work. `SCAN_TIMEOUT_SECONDS` is 60 (`infra/lib/config.ts` line 24). If measurement shows the scan near that limit, a longer timeout would be an infra change. Not designed.
+
+- **Task 3 (Engine timeline), 23 Nov 2026. Divergences from the text above.** (1) `timelineFacts` takes one input object `{ fullPackument, abbreviatedPackument, installed, provenance, advisories, advisoryDates, scanDate }`; `scanDate` is the clock that drops versions published later. (2) Staleness candidates: besides `addMonths(s, 24) + 1 ms` and the UTC midnights within 3 days, each of the 7 days also gets `day + timeOfDay(s)` and that plus 1 ms, because the stale test flips at the time of day of the publish time on each day of a clamped 29 February window. The 29 February examples in `as-of.test.ts` and `build.test.ts` cover it (stale at 12:00 on 29 Feb 2028, not stale at 00:00 on 1 Mar, stale again at 07:00). (3) A maintainer list of more than 10 names, or one with no usable name, is `null` (unknown) and not a truncated list, so a reordered long list cannot give a false maintainer change (security review note 3). (4) Reasons are clipped by code point to 200 UTF-16 units. (5) `scoreOne` calls the optional `timelineSink` inside a try block, so a throwing sink cannot change scoring. It must be synchronous and read-only (documented). (6) `MAX_REASON_LENGTH` of `timeline/build.ts` is exported from the index as `TIMELINE_MAX_REASON_LENGTH`. (7) The index test is unchanged: it checks named exports only, so the new exports needed no edit.
+- **Task 3 property durations (alone, `vitest run test/timeline`, 23 Nov 2026).** Property 5: 48 ms. Property 6: 22 ms. Property 7: 13 ms. Property 8: 10 ms. Property 9: 9 ms. Property 10: 2 ms. Property 11: 8 ms. Property 12 (engine half): 24 ms. Property 13: 42 ms. All numRuns 100.
+
+- **Task 4 notes (23 Nov 2026).** (1) Size: the design estimated about 150 bytes per Segment. A Segment with a 200 character reason is about 290 bytes, so the largest allowed timelines block (300 packages, 64 Segments, 200 character reasons) is about 5.6 MB, not under 4 MB. It stays under the 6 MB Lambda response limit on its own, but the whole body (report, plans) added to it could pass the limit. The Engine's own reasons are short templates, so the case is not reachable today. `timeline-size.test.ts` asserts the block is under 6 MB at the worst case and under 4 MB at 80 character reasons. No runtime size guard was added (not in the task); infra or a later guard (omit `timelines` above a byte budget, which requirement 8.12 permits) is open. (2) `scanWithInputs` takes `options` as an optional fourth parameter that defaults to `{ timelines: false }`, so the evidence and remediate callers are unchanged. (3) `buildTimelines` takes the scan date from `report.generatedAt` (the clock at the end of scoring), falling back to the deps clock. (4) The validator reports a timeline key by its index (`/timelines/<i>`), never by name, and also rejects two pull request marks for one package (`DUPLICATE`), which design.md did not list. (5) `pullRequests` is typed and validated but no code fills it yet (task 6.2).
+
+
+## Task 5 divergences (23 Nov 2026)
+
+- The drawer title version goes through `drawerModel(response, pkg, version?)`, not a `shownVersion` prop on `Drawer`. `Drawer` gets only `asOfLine`. Reason: the title is built in the model, which knows the package name.
+- A versioned grave inscription is `name version` (cut at 16 characters as before). An unversioned grave keeps the name only: the scan-date inscription never carried a version.
+- Forms are applied at every Stop, including the scan date, only when the Segment is before the scan date or carries a `version`; an unversioned Segment at the scan date keeps the scan Form (so the scan view is byte-for-byte the old plan).
+- A grave with a Form names advisories as ", with advisories" (no count); the tooltip says "has advisories" or "no advisories known" plus "as of <date>".
+- Tests changed beyond the design list: `ghost-drift.test.ts` (`withoutGhost` copies the three new keys) and `header.test.tsx` legend svg count 6 to 7.
+- The scrubber root has class `scrub` (not `scrubber`), to match the selector `.scrub input:focus-visible` of Deliberate change 12. The input has `aria-label="History date"` as well as a visible label, so the Tab-order test reads its name.
+
+## Task 6 divergences
+
+Recorded 23 Nov 2026.
+
+- `useBurial` returns `held` (packages whose pennant is held back: queued, or sinking before phase 0.65) and `shown` (session packages not held). A package that is in the response log and also gets a burial is held too, so the pennant returns at phase 0.65 in both cases.
+- `PaintContext2D` gains `rect` and `clip` (the burial clips the stone at the Plinth top, cell y 168). Existing painter tests use a Proxy and are unchanged.
+- The grave button name suffix follows `plan.graves[i].marker`, so a Not-published grave never carries it.
+- The marker legend chip draws the same four rectangles as the painter in a `0 0 16 44` viewBox, named "Pennant: a pull request was opened".
+- Property 18 compares painter calls: the log with marks, minus each `fillStyle=marker` and its four `fillRect` calls, equals the log without marks.
+
+
+## Task 8 divergences (23 Nov 2026)
+
+- Deliberate test change 13 also changes the test "places the section after 'How Sexton is different' and before 'Roadmap'" in `packages/web/test/readme.test.ts`. The heading after "## Sexton and Dependabot" is now "## Replay", and "## Roadmap" follows it. This follows from the placement that change 13 names. The test title is unchanged.
+- The README links are relative query links, `[?replay=axios](?replay=axios)` and `[?replay=keyv](?replay=keyv)`, because the hosted page has no address yet ("Hosted demo: the link arrives with the first deploy"). The section also names the header buttons "axios 2026" and "keyv 2026".
+- The README sentence is split into two short sentences: "A replay is reconstructed from public reports. It is not a live scan." The new readme test pins that text.
+- The web.md rule on the drawer note says "A note under the scrubber says so when an earlier date is chosen". That matches `time/Scrubber.tsx`, which shows `DRAWER_SCAN_DATE_TEXT` while the index is before the last Stop.

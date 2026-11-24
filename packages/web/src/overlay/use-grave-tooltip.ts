@@ -12,6 +12,11 @@ export function useGraveTooltip(suppressed: boolean): GraveTooltipControl {
   const shownIndex = suppressed ? null : state.index;
   const pendingHide = state.leaving && !state.overTip;
 
+  // Opening the drawer resets the tooltip: nothing shows after it closes until a pointer move or a key-driven focus.
+  useEffect(() => {
+    if (suppressed) dispatch({ type: "reset" });
+  }, [suppressed]);
+
   // Grace timer: runs only while the pointer has left and is not over the tooltip.
   useEffect(() => {
     if (!pendingHide) return undefined;

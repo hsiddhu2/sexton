@@ -1,6 +1,6 @@
 # Sexton: Product Requirements
 
-Version 0.3, 21 Nov 2026. Owner: Harpreet Singh Siddhu. This document is the single source of truth for what Sexton is and is not. Every spec, every design decision and every line of the write-up traces back to a numbered requirement here. If something is not in this document, it is not in scope. Changes to this document are versioned and dated.
+Version 0.4, 23 Nov 2026. Owner: Harpreet Singh Siddhu. This document is the single source of truth for what Sexton is and is not. Every spec, every design decision and every line of the write-up traces back to a numbered requirement here. If something is not in this document, it is not in scope. Changes to this document are versioned and dated.
 
 ## 1. Product statement
 
@@ -130,10 +130,10 @@ R-EV-3. The evidence pack SHALL contain a SHA-256 hash of its JSON body so that 
 
 ### 5.8 User interface
 
-R-UI-1. THE SYSTEM SHALL render each direct dependency as a grave in a cemetery scene. Grave form encodes state: upright stone for Alive and Restless, cross for Haunted, cracked tilted stone for Dead, open grave for Possessed. Colour follows the same state. No continuous encodings.
+R-UI-1. THE SYSTEM SHALL render each direct dependency as a grave in a cemetery scene. Grave form encodes state: upright stone for Alive and Restless, cross for Haunted, cracked tilted stone for Dead, open grave for Possessed. Colour follows the same state. No continuous encodings. A package whose installed version is not yet published on the chosen date shows an unmarked mound (the Not-published form), and a package with a logged pull request shows a pennant beside its grave. Neither changes the grave form of a State.
 R-UI-2. A ghost above a grave SHALL mean one or more advisories, and nothing else.
 R-UI-3. Graves SHALL be ordered by triage priority: Possessed first, then by state from least healthy to most healthy (Dead, Haunted, Restless, Alive), then by highest advisory severity, then by transitive reach descending, then by name.
-R-UI-4. Selecting a grave SHALL show the package's signals with sources, its state and the rule that produced it, and the proposed remediation with a preview of the PR body.
+R-UI-4. Selecting a grave SHALL show the package's signals with sources, its state and the rule that produced it, and the proposed remediation with a preview of the PR body. The drawer shows the scan date.
 R-UI-5. The scene SHALL be readable without the legend by a first-time viewer. Verified by one person outside the project before submission.
 R-UI-6. The scene SHALL render 300 graves without visible lag on a 2020 laptop.
 R-UI-7. The UI SHALL meet WCAG 2.1 AA for text contrast and keyboard navigation. Every grave SHALL be reachable by keyboard.
@@ -197,3 +197,4 @@ Every Kiro spec names the requirements it implements. Every PR names the spec. T
 0.1, 7 Nov 2026. First version. Policy file renamed from graveyard.policy.yml to sexton.policy.yml.
 0.2, 20 Nov 2026. R-UI-3 triage order adds state rank after Possessed. N-7 limited to runtime dependencies, dev-only weak copyleft recorded in docs/adr.
 0.3, 21 Nov 2026. R-ST-2: age alone gives Restless, Dead needs deprecation or age with an open advisory.
+0.4, 23 Nov 2026. R-UI-1: Not-published form and pull request marker. R-UI-4: drawer shows the scan date. Time features: history scrubber, burial, replay.

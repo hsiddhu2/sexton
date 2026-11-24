@@ -1,6 +1,6 @@
 import type { State } from "@sexton/api";
 
-export type ShapeId = "upright" | "cross" | "cracked" | "open";
+export type ShapeId = "upright" | "cross" | "cracked" | "open" | "unmarked";
 
 export interface ShapeDef {
   readonly d: string;
@@ -27,6 +27,8 @@ export const SHAPES: Record<ShapeId, ShapeDef> = {
     tiltDegrees: 0,
     pit: { x: 16, y: 42, w: 30, h: 18, rim: "M16 42 H46 V60 H16 Z" },
   },
+  // Not-published form: a low mound with no stone. Not a form of any State.
+  unmarked: { d: "M8 60 Q8 44 32 44 Q56 44 56 60 Z", detail: null, tiltDegrees: 0, pit: null },
 };
 
 export interface SolidBox {
@@ -50,6 +52,7 @@ export const SOLID_BOXES: Record<ShapeId, readonly SolidBox[]> = {
   ],
   cracked: [{ x: 12, y: 26, w: 40, h: 34 }],
   open: [{ x: 10, y: 40, w: 14, h: 14 }],
+  unmarked: [{ x: 12, y: 50, w: 40, h: 10 }],
 };
 
 /** Stone texture: 1 by 1 shape unit squares, the same for every grave of a shape. */
@@ -83,6 +86,12 @@ export const SPECKS: Record<ShapeId, readonly Speck[]> = {
     { x: 18, y: 44 },
     { x: 14, y: 48 },
     { x: 20, y: 50 },
+  ],
+  unmarked: [
+    { x: 20, y: 52 },
+    { x: 30, y: 50 },
+    { x: 42, y: 54 },
+    { x: 36, y: 57 },
   ],
 };
 

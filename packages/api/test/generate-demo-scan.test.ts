@@ -84,6 +84,16 @@ describe("demo scan generator", () => {
     expect(result.ok).toBe(true);
   });
 
+  // Spec cemetery-time, 8.11, 8.14, 13.2.
+  it("carries a timeline for each package, ending in the scan state, and the validator accepts it", () => {
+    for (const p of scan.report.packages) {
+      const segments = scan.timelines?.[p.name]?.segments ?? [];
+      expect(segments.length).toBeGreaterThan(0);
+      expect(segments[segments.length - 1]?.state).toBe(p.state);
+      expect(segments.every((s) => s.version === undefined)).toBe(true);
+    }
+    expect(Object.keys(scan.timelines ?? {})).toEqual(scan.report.packages.map((p) => p.name));
+  });
   it("gives byte-identical output on two runs", async () => {
     const again = serialiseDemoScan(await buildDemoScan({ fixturesDir: FIXTURES_DIR })) as string;
     expect(again).toBe(firstText);
@@ -126,6 +136,14 @@ describe("demo evidence pack", () => {
     expect(pack.body.remediation.plans.find((p) => p.packageName === "node-sass")).toMatchObject({ kind: "migrate", status: "proposed", title: "Sexton: migrate node-sass to sass" });
   });
 
+  it("keeps the evidence digest recorded before timelines existed, with or without timelines", async () => {
+    const { pack } = (await buildDemoEvidence(scan)) as { pack: EvidencePack };
+    expect(pack.integrity.digest).toBe("c8fb6cab465d46ca92cf83dbc10022b6a662c8fad68ec8f64d827ef16f43344d");
+    const { timelines: _timelines, ...without } = scan;
+    void _timelines;
+    const again = (await buildDemoEvidence(without as ScanResponse)) as { pack: EvidencePack };
+    expect(again.pack.integrity.digest).toBe(pack.integrity.digest);
+  });
   it("is deterministic", async () => {
     const a = (await buildDemoEvidence(scan)) as { json: string };
     const b = (await buildDemoEvidence(structuredClone(scan))) as { json: string };

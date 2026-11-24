@@ -11,9 +11,13 @@ import {
   InMemorySnapshotStore,
   MemoryCacheStore,
   attachRemediations,
+  available,
   buildEvidencePack,
+  buildHealth,
+  buildTimeline,
   bumpTargets,
   evaluatePolicy,
+  evaluateState,
   gatherBumpData,
   gatherMigrationData,
   planRemediation,
@@ -22,9 +26,12 @@ import {
   runMigrations,
   scorePackages,
   serialiseEvidencePack,
+  timelineFacts,
+  unavailable,
 } from "@sexton/engine";
 import { fixtureRoutes, routedTransport } from "./lib/fixture-routes.mjs";
 import { hasRemediationFixture, remediationTransport } from "./lib/remediation-routes.mjs";
+import { NOT_IN_PUBLIC_REPORTS, REPLAYS, REPLAY_IDS } from "./lib/replay-facts.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const DEFAULT_FIXTURES_DIR = join(HERE, "..", "..", "engine", "test", "fixtures");
@@ -32,6 +39,11 @@ export const OUTPUT_PATH = join(HERE, "..", "..", "web", "public", "demo", "scan
 // Spec evidence-pack, Requirement 8.1: the evidence pack of the same demo scan, beside scan.json.
 export const EVIDENCE_JSON_PATH = join(HERE, "..", "..", "web", "public", "demo", "evidence.json");
 export const EVIDENCE_MD_PATH = join(HERE, "..", "..", "web", "public", "demo", "evidence.md");
+/** Spec cemetery-time, 17.1: the two replay fixtures, served from the page origin. */
+export const REPLAY_DIR = join(HERE, "..", "..", "web", "public", "replay");
+export function replayOutputPath(id) {
+  return join(REPLAY_DIR, `${id}.json`);
+}
 export const DEMO_NOW = new Date("2026-11-12T00:00:00Z");
 const SEED_VERSION = "1.2.1";
 const SLSA_PROVENANCE_PREDICATE = "https://slsa.dev/provenance/v1";
@@ -81,7 +93,9 @@ export async function buildDemoScan({ fixturesDir = DEFAULT_FIXTURES_DIR, now = 
   const routes = [...refs.flatMap((p) => fixtureRoutes(fixturesDir, p.name, p.installedVersion)), ...seedRoutes(seed.name, last)];
   const { transport, unrouted } = routedTransport(routes);
   const all = [...refs, { name: seed.name, installedVersion: SEED_VERSION }];
+  const sinkInputs = new Map();
   const scored = await scorePackages(all, {
+    timelineSink: (input) => void sinkInputs.set(input.name, input),
     transport,
     clock: () => now,
     retry: { sleep: () => Promise.resolve() },
@@ -104,8 +118,131 @@ export async function buildDemoScan({ fixturesDir = DEFAULT_FIXTURES_DIR, now = 
   };
   const policy = evaluatePolicy(DEFAULT_POLICY, report, "default");
   const remediations = await demoRemediations(fixturesDir, report, policy, now);
-  return { report, policy, remediations };
+  const timelines = demoTimelines(report, sinkInputs, now);
+  return { report, policy, remediations, timelines };
 }
+
+/**
+ * One Timeline per package from the documents scoring held. Offline: every advisory date is null, so the advisory
+ * list is unavailable before the scan date (spec cemetery-time, 8.14). Own keys only, in report order.
+ */
+function demoTimelines(report, sinkInputs, now) {
+  const timelines = {};
+  for (const health of report.packages) {
+    const input = sinkInputs.get(health.name);
+    if (input === undefined) continue;
+    const advisoryDates = new Map();
+    if (health.signals.advisories.available) for (const a of health.signals.advisories.value) advisoryDates.set(a.id, null);
+    const facts = timelineFacts({
+      fullPackument: input.fullPackument,
+      abbreviatedPackument: input.abbreviatedPackument,
+      installed: input.installedVersion,
+      provenance: input.provenance,
+      advisories: health.signals.advisories,
+      advisoryDates,
+      scanDate: now,
+    });
+    Object.defineProperty(timelines, health.name, { value: buildTimeline(facts, health, now), enumerable: true, writable: true, configurable: true });
+  }
+  return timelines;
+}
+
+const NINETY_DAYS_MS = 90 * 24 * 3_600_000;
+
+/**
+ * The StateInputs of one Resolved version at one instant, from the facts of that version and its earlier versions
+ * (spec cemetery-time, design.md "Replay Segments follow the Resolved version"). A field that the facts do not give,
+ * or do not trigger, is left out. Last publish is given only when the version has a publish time.
+ */
+export function replayStateInputs(replay, version, at) {
+  const index = replay.versions.findIndex((v) => v.version === version);
+  const current = replay.versions[index];
+  if (current === undefined) throw new Error(`replay ${replay.id} has no version ${version}`);
+  const atMs = at.getTime();
+  const inputs = {};
+  if (current.publishedAt !== null) inputs.lastPublish = new Date(current.publishedAt);
+  if (current.provenance === false) {
+    const earlier = replay.versions.slice(0, index).reverse().find((v) => v.provenance === true);
+    if (earlier !== undefined) {
+      inputs.provenanceRegression = {
+        status: "regression",
+        installedVersion: current.version,
+        earlierVersion: earlier.version,
+        snapshotCaptureTime: current.publishedAt ?? at.toISOString(),
+      };
+    }
+  } else if (current.provenance === true) {
+    // snapshotCaptureTime is required by the contract and no source gives one: it is derived (the publish time when
+    // the facts have it, else the instant asked about), not a sourced fact. It does not change the state.
+    inputs.provenanceRegression = { status: "no-regression", snapshotCaptureTime: current.publishedAt ?? at.toISOString() };
+  }
+  const previous = replay.versions[index - 1];
+  if (current.installScript === true && previous?.installScript === false && current.publishedAt !== null) {
+    const seenMs = Date.parse(current.publishedAt);
+    if (seenMs <= atMs && atMs - seenMs <= NINETY_DAYS_MS) {
+      inputs.newInstallScript = [{ version: current.version, publishTime: current.publishedAt }];
+    }
+  }
+  return inputs;
+}
+
+/** The ten signals of the installed version at the Scan date. A fact no source gives is unavailable. */
+function replaySignals(replay, installed, at) {
+  const first = replay.sources[0].url;
+  const none = () => unavailable(NOT_IN_PUBLIC_REPORTS, first, at);
+  const src = replay.factSources;
+  const inputs = replayStateInputs(replay, installed.version, at);
+  const regression = inputs.provenanceRegression;
+  return {
+    lastPublish: installed.publishedAt === null ? none() : available(installed.publishedAt, src.publishedAt, at),
+    deprecated: none(),
+    hasInstallScript: installed.installScript === null ? none() : available(installed.installScript, src.installScript, at),
+    advisories: none(),
+    maintainers: none(),
+    provenance:
+      installed.provenance === null ? none() : available({ present: installed.provenance, predicateType: null }, src.provenance, at),
+    transitiveReach: none(),
+    maintainerChange: none(),
+    provenanceRegression: regression === undefined ? none() : available(regression, src.provenance, at),
+    newInstallScript:
+      installed.installScript === null ? none() : available(inputs.newInstallScript ?? [], src.installScript, at),
+  };
+}
+
+/** One Segment for each Stop: the state and reason of evaluateState on the Resolved version at the Stop. Ghost is false: advisories are unavailable. */
+export function replaySegments(replay) {
+  return replay.stops.map((stop) => {
+    const at = new Date(stop.from);
+    const { state, stateReason } = evaluateState(replayStateInputs(replay, stop.version, at), at);
+    return { from: stop.from, state, reason: stateReason, ghost: false, version: stop.version };
+  });
+}
+
+/**
+ * One replay response (spec cemetery-time, 17). Segments follow the Resolved version and take their state and reason
+ * from evaluateState. The report is the installed version at the Scan date. No scan metadata: the repository is not in the facts.
+ */
+export function buildReplay(id) {
+  const replay = REPLAYS[id];
+  if (replay === undefined) throw new Error(`unknown replay ${String(id)}`);
+  const scanDate = new Date(replay.generatedAt);
+  const segments = replaySegments(replay);
+  const installedVersion = replay.stops[replay.stops.length - 1].version;
+  const installed = replay.versions.find((v) => v.version === installedVersion);
+  const health = buildHealth({ name: replay.package, installedVersion }, replaySignals(replay, installed, scanDate), scanDate);
+  const report = { generatedAt: replay.generatedAt, packages: [health] };
+  const policy = evaluatePolicy(DEFAULT_POLICY, report, "default");
+  return {
+    report,
+    policy,
+    remediations: [],
+    actions: { remediate: false },
+    timelines: { [replay.package]: { installed: installedVersion, coveredFrom: null, segments } },
+    replay: { id: replay.id, title: replay.title, summary: replay.summary, sources: replay.sources.map((s) => ({ label: s.label, url: s.url })) },
+  };
+}
+
+
 
 /** The demo intake list: each package declared as ^installed in dependencies, locked. The demo has no package.json. */
 export function demoIntake(report) {
@@ -188,4 +325,9 @@ if (process.argv[1] !== undefined && fileURLToPath(import.meta.url) === process.
   writeFileSync(EVIDENCE_JSON_PATH, evidence.json);
   writeFileSync(EVIDENCE_MD_PATH, evidence.markdown);
   console.log(`wrote ${EVIDENCE_JSON_PATH} and ${EVIDENCE_MD_PATH}, digest ${evidence.pack.integrity.digest}`);
+  mkdirSync(REPLAY_DIR, { recursive: true });
+  for (const id of REPLAY_IDS) {
+    writeFileSync(replayOutputPath(id), serialiseDemoScan(buildReplay(id)));
+    console.log(`wrote ${replayOutputPath(id)}`);
+  }
 }

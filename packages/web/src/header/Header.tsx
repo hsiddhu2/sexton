@@ -6,6 +6,10 @@ import { failingRulesText } from "./failing-rules-text.js";
 import { Legend } from "./Legend.js";
 import { ScanTime } from "./ScanTime.js";
 import { Wordmark } from "./Wordmark.js";
+import type { ReplayInfo } from "@sexton/api";
+import { ReplayBanner } from "../replay/ReplayBanner.js";
+import { ReplayButtons } from "../replay/ReplayButtons.js";
+import type { ReplayId } from "../replay/replay-ids.js";
 
 export interface HeaderProps {
   /** Null while loading or after a load error: only the shell is shown. */
@@ -16,6 +20,12 @@ export interface HeaderProps {
   readonly onSubmit: (value: string) => string | null;
   /** Lets the page move focus to the Repository URL box (task 7). */
   readonly fieldRef?: RefObject<HTMLInputElement | null>;
+  /** Renders the Replay buttons after the Scan button when present. */
+  readonly onReplay?: (id: ReplayId) => void;
+  /** Set while a replay is loaded: the banner shows in the header area. */
+  readonly replay?: ReplayInfo;
+  /** Set while the As-of date is before the scan date. */
+  readonly asOf?: { readonly iso: string; readonly onBack: () => void };
 }
 
 function DownloadGlyph() {
@@ -26,7 +36,7 @@ function DownloadGlyph() {
   );
 }
 
-export function Header({ model, theme, apiConfigured, onSubmit, fieldRef }: HeaderProps) {
+export function Header({ model, theme, apiConfigured, onSubmit, fieldRef, asOf, onReplay, replay }: HeaderProps) {
   const [value, setValue] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const submit = (event: FormEvent<HTMLFormElement>): void => {
@@ -47,6 +57,16 @@ export function Header({ model, theme, apiConfigured, onSubmit, fieldRef }: Head
               <p className="header-time">
                 <ScanTime iso={model.scanTime} />
               </p>
+              {asOf === undefined ? null : (
+                <p className="header-asof">
+                  <span className="as-of">
+                    as of <ScanTime iso={asOf.iso} />
+                  </span>{" "}
+                  <button type="button" className="asof-back" onClick={asOf.onBack}>
+                    Back to now
+                  </button>
+                </p>
+              )}
               {model.unlockedNotice === null ? null : <p className="notice notice-unlocked">{model.unlockedNotice}</p>}
               {model.cappedNotice === null ? null : <p className="notice notice-capped">{model.cappedNotice}</p>}
               <p className="header-policy">
@@ -89,6 +109,8 @@ export function Header({ model, theme, apiConfigured, onSubmit, fieldRef }: Head
         </button>
         {apiConfigured ? null : <span className="repo-disabled">{HOSTED_UNAVAILABLE_TEXT}</span>}
       </form>
+      {onReplay === undefined ? null : <ReplayButtons onReplay={onReplay} />}
+      {replay === undefined ? null : <ReplayBanner replay={replay} />}
       {message === null ? null : (
         <p role="alert" className="header-message">
           {message}

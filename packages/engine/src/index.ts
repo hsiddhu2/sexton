@@ -29,6 +29,29 @@ export { ENGINE_VERSION, USER_AGENT, REPO_URL } from "./version.js";
 
 export { scorePackages, scoreOne, buildHealth, mapWithConcurrency, PACKAGE_CONCURRENCY } from "./score.js";
 export type { ScoringDependencies } from "./score.js";
+
+// cemetery-time
+export { timelineFacts } from "./timeline/facts.js";
+export type { TimelineFactsInput } from "./timeline/facts.js";
+export { stateAsOf, seenTimes, currentForm, NOT_PUBLISHED_FORM, NOT_PUBLISHED_REASON } from "./timeline/as-of.js";
+export { buildTimeline, MAX_REASON_LENGTH as TIMELINE_MAX_REASON_LENGTH } from "./timeline/build.js";
+export {
+  TIMELINE_MAX_VERSIONS,
+  TIMELINE_MAX_ADVISORIES,
+  TIMELINE_MAX_MAINTAINERS,
+  TIMELINE_MAX_SEGMENTS,
+} from "./timeline/types.js";
+export type {
+  Form,
+  PackageTimeline,
+  StateAsOf,
+  TimelineAdvisory,
+  TimelineFacts,
+  TimelineSegment,
+  TimelineVersion,
+} from "./timeline/types.js";
+export { fetchAdvisoryPublished } from "./clients/osv.js";
+export type { TimelineSink, TimelineSinkInput } from "./score.js";
 export type { ClientContext } from "./clients/context.js";
 export { fetchPackumentSignals, fetchInstallScriptSignal, extractLastPublish, extractDeprecated, packumentUrl, encodePackageName, NPM_REGISTRY, ABBREVIATED_ACCEPT } from "./clients/npm.js";
 export { fetchAdvisoriesSignal, fetchAdvisory, queryVulnIds, OSV_API, OSV_MAX_PAGES } from "./clients/osv.js";

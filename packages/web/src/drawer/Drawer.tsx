@@ -5,9 +5,15 @@ import { ScanTime } from "../header/ScanTime.js";
 import { trapStep } from "./focus-trap.js";
 import { displayValue } from "./format-value.js";
 import { PrPreview } from "./PrPreview.js";
+import type { ReplayInfo } from "@sexton/api";
+import { ReplayBanner } from "../replay/ReplayBanner.js";
 
 export interface DrawerProps {
   readonly model: DrawerModel;
+  /** One line "State on <date>: <State>. <reason>" for a versioned Segment (spec cemetery-time, 12.9). */
+  readonly asOfLine?: string;
+  /** Set for a replay: the banner shows at the top of the drawer (spec cemetery-time, 19.1). */
+  readonly replay?: ReplayInfo;
   readonly onClose: () => void;
   /** Present only for a hosted scan with actions.remediate true (spec remediate, Requirement 9.2). */
   readonly onRemediate?: (packageName: string) => Promise<RemediateView>;
@@ -65,7 +71,7 @@ function SignalValue({ valueText }: { readonly valueText: string }) {
   return v.kind === "block" ? <pre className="signal-value">{v.text}</pre> : <code className="signal-value">{v.text}</code>;
 }
 
-export function Drawer({ model, onClose, onRemediate, onDismissToField }: DrawerProps) {
+export function Drawer({ model, asOfLine, replay, onClose, onRemediate, onDismissToField }: DrawerProps) {
   const dialogRef = useRef<HTMLElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
 
@@ -112,6 +118,8 @@ export function Drawer({ model, onClose, onRemediate, onDismissToField }: Drawer
           Close
         </button>
         <h2 id="drawer-title">{model.title}</h2>
+        {replay === undefined ? null : <ReplayBanner replay={replay} />}
+        {asOfLine === undefined ? null : <p className="drawer-asof">{asOfLine}</p>}
         <div className="drawer-body" role="region" aria-label="Package evidence" tabIndex={0}>
           <p>
             State: <strong>{model.state}</strong>

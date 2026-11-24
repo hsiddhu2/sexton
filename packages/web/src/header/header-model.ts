@@ -36,6 +36,7 @@ function unlockedNoticeFor(unlocked: boolean, names: readonly string[]): string 
  * The repository URL in an API link is the canonical URL from the scan metadata, encoded. Pure, no fetch.
  */
 function evidenceLinksFor(response: ScanResponse, isDemo: boolean, hostedApiBase: string | null): EvidenceLinks | null {
+  if (response.replay !== undefined) return null; // a replay is not a scan: no downloads
   if (isDemo) return DEMO_EVIDENCE_LINKS;
   const scan = response.report.scan;
   if (hostedApiBase === null || scan === undefined) return null;
@@ -49,7 +50,7 @@ export function headerModel(response: ScanResponse, isDemo: boolean, hostedApiBa
   const scan = report.scan;
   return {
     repoText: scan === undefined ? NO_SCAN_METADATA_TEXT : scan.repo.url,
-    demoLabel: isDemo ? DEMO_LABEL_TEXT : null,
+    demoLabel: isDemo && response.replay === undefined ? DEMO_LABEL_TEXT : null,
     scanTime: report.generatedAt,
     unlockedNotice: scan === undefined ? null : unlockedNoticeFor(scan.unlocked, scan.unlockedPackages),
     cappedNotice:

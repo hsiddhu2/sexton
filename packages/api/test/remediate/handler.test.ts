@@ -89,7 +89,9 @@ describe("POST /api/remediate end to end (definition of done)", () => {
     await w.remediate(post({ repo: REPO_URL, package: "node-sass" }), CTX);
     const scan = json(await w.scan(makeEvent({ rawQueryString: repoQuery(REPO_URL) }), CTX)) as unknown as ScanResponse;
     expect(scan.actions).toEqual({ remediate: true });
-    expect(JSON.stringify(scan)).not.toContain("prUrl");
+    // Spec cemetery-time, 14.1: prUrl now appears in the scan, only inside the pullRequests marks.
+    expect(scan.pullRequests).toEqual([{ package: "node-sass", kind: "migrate", prUrl: `${REPO_URL}/pull/1`, timestamp: expect.any(String) as string }]);
+    expect(JSON.stringify({ ...scan, pullRequests: undefined })).not.toContain("prUrl");
     const ev = await w.scan(makeEvent({ rawPath: "/api/evidence", rawQueryString: `${repoQuery(REPO_URL)}&format=json` }), CTX);
     const pack = json(ev) as unknown as EvidencePack;
     expect(pack.body.remediation.log.available).toBe(true);

@@ -9,6 +9,7 @@ export const CONTRACT_ERROR_CODES = [
   "INVALID_DATE",
   "DUPLICATE",
   "TOO_MANY_PACKAGES",
+  "TOO_MANY_ITEMS",
 ] as const;
 export type ContractErrorCode = (typeof CONTRACT_ERROR_CODES)[number];
 
@@ -26,6 +27,7 @@ export const CONTRACT_ERROR_TEXT: Record<ContractErrorCode, string> = {
   INVALID_DATE: "value is not a parseable date",
   DUPLICATE: "value duplicates an earlier entry",
   TOO_MANY_PACKAGES: "more than 300 packages",
+  TOO_MANY_ITEMS: "more than the allowed number of items",
 };
 
 export const MAX_PACKAGES = 300;
@@ -326,6 +328,140 @@ function checkActions(w: Walk, root: Obj): void {
   if (Object.keys(actions).some((k) => k !== "remediate")) w.add("/actions", "UNKNOWN_VALUE");
 }
 
+const MAX_SEGMENTS = 64;
+const MAX_REASON = 200;
+const MAX_VERSION = 100;
+const MAX_PULL_REQUESTS = 300;
+const REPLAY_IDS: readonly string[] = ["axios", "keyv"];
+
+/** A string field with a length cap. Absent is allowed when `optional`. Never echoes the value. */
+function cappedStr(w: Walk, o: Obj, path: string, key: string, max: number, optional = false): void {
+  if (optional && !has(o, key)) return;
+  const v = w.str(o, path, key);
+  if (v !== undefined && v.length > max) w.add(`${path}/${key}`, "WRONG_TYPE");
+}
+
+function checkSegments(w: Walk, tl: Obj, path: string): void {
+  const segments = w.arr(tl, path, "segments");
+  if (segments === undefined) return;
+  if (segments.length < 1) w.add(`${path}/segments`, "MISSING_FIELD");
+  if (segments.length > MAX_SEGMENTS) {
+    w.add(`${path}/segments`, "TOO_MANY_ITEMS");
+    return;
+  }
+  let previous = Number.NEGATIVE_INFINITY;
+  for (let k = 0; k < segments.length && !w.full; k += 1) {
+    const seg = segments[k];
+    const p = `${path}/segments/${k}`;
+    if (!isObj(seg)) {
+      w.add(p, "NOT_OBJECT");
+      continue;
+    }
+    w.date(seg, p, "from");
+    const from = typeof seg["from"] === "string" ? Date.parse(seg["from"]) : Number.NaN;
+    if (Number.isFinite(from)) {
+      if (from <= previous) w.add(`${p}/from`, "DUPLICATE");
+      previous = from;
+    }
+    if (!has(seg, "state")) w.add(`${p}/state`, "MISSING_FIELD");
+    else if (seg["state"] !== null) w.checkEnum(seg["state"], `${p}/state`, STATES);
+    cappedStr(w, seg, p, "reason", MAX_REASON);
+    w.bool(seg, p, "ghost");
+    cappedStr(w, seg, p, "version", MAX_VERSION, true);
+  }
+}
+
+/** Spec cemetery-time, 8.13 and 8.15. Keys are package names of the report. */
+function checkTimelines(w: Walk, root: Obj, names: ReadonlySet<string>): void {
+  const timelines = w.obj(root, "", "timelines");
+  if (timelines === undefined) return;
+  const keys = Object.keys(timelines);
+  if (keys.length > MAX_PACKAGES) {
+    w.add("/timelines", "TOO_MANY_PACKAGES");
+    return;
+  }
+  keys.forEach((name, i) => {
+    if (w.full) return;
+    // The key itself never reaches the error path: the index does.
+    const p = `/timelines/${i}`;
+    if (!names.has(name)) w.add(p, "UNKNOWN_VALUE");
+    const tl = Object.getOwnPropertyDescriptor(timelines, name)?.value as unknown;
+    if (!isObj(tl)) {
+      w.add(p, "NOT_OBJECT");
+      return;
+    }
+    cappedStr(w, tl, p, "installed", MAX_VERSION);
+    if (!has(tl, "coveredFrom")) w.add(`${p}/coveredFrom`, "MISSING_FIELD");
+    else if (tl["coveredFrom"] !== null) w.date(tl, p, "coveredFrom");
+    checkSegments(w, tl, p);
+  });
+}
+
+function checkPullRequests(w: Walk, root: Obj, names: ReadonlySet<string>): void {
+  const list = w.arr(root, "", "pullRequests");
+  if (list === undefined) return;
+  if (list.length > MAX_PULL_REQUESTS) {
+    w.add("/pullRequests", "TOO_MANY_ITEMS");
+    return;
+  }
+  const marked = new Set<string>();
+  for (let j = 0; j < list.length && !w.full; j += 1) {
+    const entry = list[j];
+    const p = `/pullRequests/${j}`;
+    if (!isObj(entry)) {
+      w.add(p, "NOT_OBJECT");
+      continue;
+    }
+    const pkg = w.str(entry, p, "package", true);
+    if (pkg !== undefined) {
+      if (!names.has(pkg)) w.add(`${p}/package`, "UNKNOWN_VALUE");
+      else if (marked.has(pkg)) w.add(`${p}/package`, "DUPLICATE");
+      else marked.add(pkg);
+    }
+    w.oneOf(entry, p, "kind", REMEDIATION_KINDS);
+    const url = w.str(entry, p, "prUrl");
+    if (url !== undefined && !url.startsWith("https://")) w.add(`${p}/prUrl`, "UNKNOWN_VALUE");
+    w.date(entry, p, "timestamp");
+  }
+}
+
+function checkReplay(w: Walk, root: Obj): void {
+  const replay = w.obj(root, "", "replay");
+  if (replay === undefined) return;
+  w.oneOf(replay, "/replay", "id", REPLAY_IDS);
+  cappedStr(w, replay, "/replay", "title", 120);
+  cappedStr(w, replay, "/replay", "summary", 600);
+  const sources = w.arr(replay, "/replay", "sources");
+  if (sources === undefined) return;
+  if (sources.length < 1) w.add("/replay/sources", "MISSING_FIELD");
+  if (sources.length > 6) {
+    w.add("/replay/sources", "TOO_MANY_ITEMS");
+    return;
+  }
+  for (let k = 0; k < sources.length && !w.full; k += 1) {
+    const src = sources[k];
+    const p = `/replay/sources/${k}`;
+    if (!isObj(src)) {
+      w.add(p, "NOT_OBJECT");
+      continue;
+    }
+    cappedStr(w, src, p, "label", 120);
+    w.str(src, p, "url");
+  }
+}
+
+function reportNames(input: Obj): Set<string> {
+  const names = new Set<string>();
+  const report = input["report"];
+  const packages = isObj(report) ? report["packages"] : undefined;
+  if (Array.isArray(packages)) {
+    for (const pkg of packages as readonly unknown[]) {
+      if (isObj(pkg) && typeof pkg["name"] === "string") names.add(pkg["name"]);
+    }
+  }
+  return names;
+}
+
 function compareErrors(a: ContractError, b: ContractError): number {
   if (a.path !== b.path) return a.path < b.path ? -1 : 1;
   if (a.code !== b.code) return a.code < b.code ? -1 : 1;
@@ -344,6 +480,12 @@ export function validateScanResponse(input: unknown): ValidationResult {
     if (policy !== undefined) checkPolicy(w, policy);
     if (has(input, "remediations")) checkRemediations(w, input);
     if (has(input, "actions")) checkActions(w, input);
+    if (has(input, "timelines") || has(input, "pullRequests")) {
+      const names = reportNames(input);
+      if (has(input, "timelines")) checkTimelines(w, input, names);
+      if (has(input, "pullRequests")) checkPullRequests(w, input, names);
+    }
+    if (has(input, "replay")) checkReplay(w, input);
   }
   const [first, ...rest] = w.errors.slice().sort(compareErrors).slice(0, MAX_CONTRACT_ERRORS);
   if (first === undefined) return { ok: true, value: input as ScanResponse };

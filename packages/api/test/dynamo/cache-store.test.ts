@@ -8,6 +8,7 @@ import { DynamoCacheStore } from "../../src/dynamo/cache-store.js";
 import { arbCacheKey, arbJsonValue, arbStoredAt } from "../arbitraries.js";
 import { CACHE_TABLE, MemoryDynamo, type Operation } from "../fakes/memory-dynamo.js";
 import { captureLogger } from "../support/capture-logger.js";
+import { incompressibleHex } from "../support/incompressible.js";
 
 describe("Feature: infra, Property 1: Cache round trip", () => {
   it("get after set returns an entry deeply equal to what was set", async () => {
@@ -24,7 +25,10 @@ describe("Feature: infra, Property 1: Cache round trip", () => {
 describe("Feature: infra, Property 3: Oversize values are never stored", () => {
   // Each value is 400 KB to 600 KB of random hex, so this property runs 20 times, not 100.
   const NUM_RUNS = 20;
-  const arbIncompressible = fc.uint8Array({ minLength: 400 * 1024, maxLength: 600 * 1024 }).map((bytes) => Buffer.from(bytes).toString("hex"));
+  // A seed and a length are expanded to incompressible bytes by a seeded generator (A7: generating half a million array elements per run was the cost).
+  const arbIncompressible = fc
+    .tuple(fc.integer({ min: 0, max: 0xffffffff }), fc.integer({ min: 400 * 1024, max: 600 * 1024 }))
+    .map(([seed, length]) => incompressibleHex(seed, length));
 
   it("set resolves, writes nothing, and leaves an earlier entry unchanged", async () => {
     await fc.assert(

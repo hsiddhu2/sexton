@@ -47,6 +47,21 @@ export function Legend({ theme }: LegendProps) {
               </li>
             );
           })}
+          <li className="legend-chip legend-chip-pending">
+            <svg className="legend-shape legend-shape-pending" viewBox="0 0 64 64" width="32" height="32" aria-hidden="true" focusable="false">
+              <path d={SHAPES.unmarked.d} />
+            </svg>{" "}
+            <span>Not published yet on the chosen date</span>
+          </li>
+          <li className="legend-chip legend-chip-marker">
+            <svg className="legend-marker" viewBox="0 0 16 44" width="12" height="32" aria-hidden="true" focusable="false">
+              <rect x="0" y="0" width="2" height="44" />
+              <rect x="2" y="0" width="14" height="4" />
+              <rect x="2" y="4" width="10" height="4" />
+              <rect x="2" y="8" width="6" height="4" />
+            </svg>{" "}
+            <span>Pennant: a pull request was opened</span>
+          </li>
           <li className="legend-chip legend-chip-ghost">
             <svg className="legend-ghost" viewBox="0 0 12 14" width="24" height="28" aria-hidden="true" focusable="false">
               <path d={GHOST_PATH} />
