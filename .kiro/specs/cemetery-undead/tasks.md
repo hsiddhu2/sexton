@@ -25,52 +25,64 @@ Run-time notes:
 
 ## Tasks
 
-- [ ] 1. The R-UI-1 decision and the baseline
+- [x] 1. The R-UI-1 decision and the baseline
   - Applies the owner's decision on R-UI-1 and records the baseline measurements.
   - _Requirements: 13.1, 13.2, 14.1_
-  - [ ] 1.1 Apply the owner's decision on R-UI-1
+  - [x] 1.1 Apply the owner's decision on R-UI-1
     - If approved, edit R-UI-1 in docs/requirements.md to the design.md text, add the change log line "0.5, 24 Nov 2026", and bump the header to Version 0.5. If declined, keep the Alive outline for Restless and record the call in design.md.
     - _Requirements: 13.1, 13.2_
-  - [ ] 1.2 Record the baseline
+    - Notes: the owner approved the amendment as written on 24 Nov 2026. R-UI-1 in docs/requirements.md now holds the design.md text. Change log line "0.5, 24 Nov 2026" added, header bumped to Version 0.5, 24 Nov 2026.
+  - [x] 1.2 Record the baseline
     - Capture the current demo and axios replay at 1440 by 900 and 390 by 844 under build/undead/round-0. Record the Canvas top, the repaint medians and the e2e count in "Notes".
     - _Requirements: 14.1_
+    - Notes: baseline in build/undead/round-0 (demo and axios replay at 1440 by 900 and 390 by 844, page clock fixed at 2026-11-24T12:00Z). Canvas top: demo 163.6 at 1440, 540.5 at 390; axios replay 414.6 at 1440. scrollWidth 1440 and 390. No request left the origin. Repaint medians from the last e2e run: 2.00 ms and 1.60 ms, e2e 22 passed.
 
-- [ ] 2. Palette and colour vision (U1)
+- [x] 2. Palette and colour vision (U1)
   - Swaps every token to the night palette and adds the colour vision check.
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7_
-  - [ ] 2.1 Update `packages/web/src/scene/palette.ts` and `styles.css`
+  - [x] 2.1 Update `packages/web/src/scene/palette.ts` and `styles.css`
     - The tokens of design.md "Palette", the costume tokens, the silhouette and lantern tokens, and the new alpha byte constants. CSS custom properties for the new interface tokens, with no colour literal.
     - _Requirements: 1.1, 1.2, 1.3_
-  - [ ] 2.2 Write `packages/web/test/colour-vision.test.ts`
+    - Notes: night tokens, costume tokens, silhouette, lantern, moonEdge and the four new alpha bytes in palette.ts. After critic round 1 the sky, ground and gold moved: skyHorizon #5a2d6e, groundTop #2e2440, fog #6f5296, moon #f2a030 with moonEdge #d9781e, focus, ring and accentBg #e8a30c, wordmark #f2b02e (after round 2), border #ab9cc6 and muted #cdc4db (both raised to keep 3:1 and 4.5:1 on the new stops), starFar #c2b5df. The five state colours are the handoff values. styles.css holds no colour literal.
+  - [x] 2.2 Write `packages/web/test/colour-vision.test.ts`
     - Linearise, apply the fixed Machado 2009 severity 1.0 matrices, convert to CIELAB, then CIEDE2000. Every State pair is at least 8 apart for protanopia, deuteranopia and tritanopia. Includes a worked example of a CIEDE2000 pair from Sharma, Wu and Dalal 2005 Table 1.
     - _Requirements: 1.7_
-  - [ ] 2.3 Run the existing contrast tests unedited, and add the Glow stops check
+    - Notes: test/colour-vision.test.ts implements CIEDE2000 and matches three reference pairs of Sharma, Wu and Dalal 2005 Table 1 (2.0425, 1.0000, 31.903). Every State pair is at least 8 apart under the three Machado matrices.
+  - [x] 2.3 Run the existing contrast tests unedited, and add the Glow stops check
     - **Property 6: Contrast and colour vision over the whole palette**
     - **Validates: Requirements 1.4, 1.5, 1.6, 1.7**
     - Tag: `Feature: cemetery-undead, Property 6: Contrast and colour vision over the whole palette`.
     - `shapes-palette.test.ts` contrast Properties pass on the new tokens unedited (`backdropStops` keeps its ten stops). Add `glowStops` to `palette.ts` and a new test that runs the same 3:1 checks over it (Property 6). Record the minimum ratios in "Notes".
     - _Requirements: 1.4, 1.5, 1.6_
-  - [ ] 2.4 Screenshot loop for the palette
+    - Notes: every existing contrast test passes unedited on the new tokens. glowStops added; the new test runs the 3:1 checks over its ten stops. Final minimum for a state colour: Possessed 3.05:1 against fog over the horizon. Every token checked passes 3:1 on all ten glow stops. Colour vision minimum ΔE00: protanopia 8.4 (Alive and Dead).
+  - [x] 2.4 Screenshot loop for the palette
     - _Requirements: 14.1, 14.2, 14.3_
-  - [ ] 2.5 Independent code review of task 2
+    - Notes: Critic round 1 (round-2-1): not ready, sky purple too grey and thin, ground hazy grey, moon flat, gold too pale, links white, slider track grey. Sky, ground, gold and moon tokens changed. The moon gradient moves to task 5, the gold links and the slider track to task 7. Critic round 2 (round-3-1, with fonts): gold and type right. Open: a softer, taller sky glow with no hard horizon line, and a darker ground top (task 5); wordmark colour and glow (fixed).
+  - [x] 2.5 Independent code review of task 2
     - _Requirements: 15.5_
+    - Review notes: READY, no defect. CIEDE2000 and the three reference pairs (Sharma 2005 Table 1 pairs 1, 4 and 19) checked, and the Machado matrices are the severity 1.0 values. Acted on: design.md now records the final palette (decision 1), and the new tokens (silhouette, lantern, moonEdge, costume) have a format and contrast test. Task 1 (docs/requirements.md) was reviewed with it: READY, R-UI-1 byte-identical to the approved text. Note kept: web.md still says upright stone for Alive and Restless until task 8.3.
 
-- [ ] 3. Fonts (U2)
+- [x] 3. Fonts (U2)
   - Self-hosts the four families and switches the interface and canvas type.
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 11.1_
-  - [ ] 3.1 Add the font files and licences
+  - [x] 3.1 Add the font files and licences
     - The WOFF2 Latin subsets of design.md "Type" under `packages/web/public/fonts`, each family's `OFL.txt` beside it, and the font section of `CREDITS.md`.
     - _Requirements: 2.1, 11.1_
-  - [ ] 3.2 Add `@font-face` rules and the type scale to `styles.css`, and set the canvas name font
+    - Notes: four WOFF2 Latin subsets from Google Fonts, fetched once at development time: Pirata One, IM Fell English SC, IM Fell English italic, and Instrument Sans as one variable file for weights 400 to 600 (design.md said three files; one variable file is smaller and covers the same weights). OFL-<family>.txt beside them. CREDITS.md comes in task 8.
+  - [x] 3.2 Add `@font-face` rules and the type scale to `styles.css`, and set the canvas name font
     - The wordmark is in Pirata One, the interface in Instrument Sans, and the canvas names in IM Fell English SC with the fallback. `Cemetery.tsx` waits on `document.fonts.load` and then repaints once.
     - _Requirements: 2.2, 2.4_
-  - [ ] 3.3 Write `packages/web/test/fonts.test.ts` and apply Deliberate test change 25
+    - Notes: four @font-face rules with font-display swap. The body is in Instrument Sans, headings and tooltip names in IM Fell English SC, the wordmark in Pirata One with an amber glow. Canvas names are 18px IM Fell English SC (raised from 15 after critic round 2). useFontsReady repaints once after document.fonts.load. The decorative wordmark mark stays in the DOM, aria-hidden, and is hidden by CSS, because an existing header test pins it.
+  - [x] 3.3 Write `packages/web/test/fonts.test.ts` and apply Deliberate test change 25
     - The files and licences exist. `url(` appears only in `@font-face` with a `/fonts/` target. No `fonts.googleapis` or `fonts.gstatic` appears in src, public or index.html. The CSP keeps `font-src 'self'`.
     - _Requirements: 2.1, 2.3_
-  - [ ] 3.4 Screenshot loop for type
+    - Notes: test/fonts.test.ts checks the WOFF2 signature and licence of each file, four @font-face rules pointing only at /fonts/, no font host of another origin in src, public or index.html, and font-src 'self' in the CSP. Deliberate test change 25 applied in styles.test.ts and shapes-palette.test.ts. web 43 files pass.
+  - [x] 3.4 Screenshot loop for type
     - _Requirements: 14.1, 14.2, 14.3_
-  - [ ] 3.5 Independent code review of task 3
+    - Notes: Critic round 2 (round-3-1): the faces are right, and Instrument Sans is right throughout. The canvas names were thin at 1440, so they went from 15px to 18px. The wordmark colour moved to amber with a glow.
+  - [x] 3.5 Independent code review of task 3
     - _Requirements: 15.5_
+    - Review notes: READY, no defect. The WOFF2 signatures and lengths, the OFL texts, no external font host, and url() only to /fonts/ all checked. useFontsReady cannot loop. Acted on: design.md records the variable Instrument Sans file and the hidden wordmark mark (decisions 2 and 3). Note kept: Pirata One's licence reserves the name "Pirata" and Google's file is a subset, so CREDITS.md (task 8) will say so.
 
 - [ ] 4. Characters (U3)
   - Bakes the CC0 Characters, or falls back to vector, and draws the new Forms, Costumes and Ghost.

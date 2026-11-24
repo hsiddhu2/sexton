@@ -4,6 +4,7 @@ import { Drawer } from "./drawer/Drawer.js";
 import type { RemediateView } from "./load/remediate-client.js";
 import { drawerModel } from "./drawer/drawer-model.js";
 import { useContainerWidth } from "./hooks/use-container-width.js";
+import { useFontsReady } from "./hooks/use-fonts-ready.js";
 import { useFreeHeight } from "./hooks/use-free-height.js";
 import { useGhostPhase } from "./hooks/use-ghost-phase.js";
 import { scanTimeView } from "./header/format-scan-time.js";
@@ -37,6 +38,8 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
   const minHeight = useFreeHeight(containerRef, width);
   const anyGhost = useMemo(() => order.some(hasGhost), [order]);
   const phase = useGhostPhase(anyGhost, reducedMotion);
+  // A new plan object once the canvas fonts load, so the Scene repaints with them (spec cemetery-undead, 2.4).
+  const fontsReady = useFontsReady();
   // The Form of each grave as of the chosen instant: a lookup in the Segments, never a state rule.
   // At the scan date a grave without a versioned Segment keeps the scan Form.
   const views = useMemo((): readonly (FormView | undefined)[] | undefined => {
@@ -73,7 +76,7 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
         ...(burial.burial !== null && burialIndex >= 0 ? { burial: { index: burialIndex, phase: burial.burial.phase } } : {}),
         ...(views !== undefined ? { forms: views } : {}),
       }),
-    [order, width, theme, selectedIndex, phase, minHeight, views, marks, burial.burial, burialIndex],
+    [order, width, theme, selectedIndex, phase, minHeight, views, marks, burial.burial, burialIndex, fontsReady],
   );
   const request = burial.request;
   const onRemediateWithBurial = useMemo(

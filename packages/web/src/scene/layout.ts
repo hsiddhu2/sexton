@@ -36,7 +36,7 @@ export const GRAVE_GEOMETRY = {
   plinth: { x: 24, y: 168, w: 144, h: 40, r: 6 },
   ghostX: 84,
   ghostTop: 12,
-  inscription: { x: 96, baseline: 193, maxWidth: 136, font: "14px monospace" },
+  inscription: { x: 96, baseline: 193, maxWidth: 136, font: '18px "IM Fell English SC", Georgia, serif' },
 } as const;
 
 export interface GravePlan {

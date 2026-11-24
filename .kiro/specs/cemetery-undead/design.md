@@ -568,6 +568,23 @@ Checklist:
 18. **One glow per grave.** Reason: stacked glows drop Possessed to 2.59:1 (see "Palette").
 19. **Mockup Phase 2 items out of scope.** The speech bubbles and the replay stop cards are not built. Reason: the handoff names them Phase 2.
 
+## Decisions made during implementation
+
+1. **The palette after the Visual critic (task 2).**
+   - Critic rounds 1 and 2 asked for a broader, more saturated violet sky, a deep violet ground and a deeper gold. The final values replace those in the "Palette" table: skyHorizon #5a2d6e, groundTop #2e2440, fog #6f5296, moon #f2a030 with moonEdge #d9781e, focus, ring and accentBg #e8a30c, and wordmark #f2b02e.
+   - To keep 3:1 and 4.5:1 on the brighter stops, border went to #ab9cc6, muted to #cdc4db and starFar to #c2b5df.
+   - A costume token `dirt` #3b2a22 was added for the Restless mound.
+   - The state colours are unchanged.
+   - Measured minimums: Possessed 3.05:1 against fog over the horizon, and every check over the ten Glow stops passes. The numbers in "Palette" above are those of the first pass.
+2. **Instrument Sans as one variable WOFF2 (task 3).** Google serves weights 400 to 600 as a single variable file. One file covers the same weights and is smaller. The licences are `OFL-<family>.txt` beside the fonts.
+3. **The wordmark mark is hidden, not removed (task 3).** The mockup's wordmark is the name alone. An existing header test pins the decorative aria-hidden mark in the h1, so the mark stays in the DOM and CSS does not show it.
+4. **Vector fallback for the Characters (task 4).**
+   - The Zombie Apocalypse Kit is CC0, but it downloads only through a Google Drive folder, and the poly.pizza page of the Cube World Kit sits behind a browser challenge.
+   - Neither can be fetched by a script, so the bake cannot run unattended. Under requirement 3.9 the Vector fallback is used.
+   - No bake script and no devDependency were added. No package.json or package-lock.json changes.
+   - The README line follows requirement 12.2 for the fallback, and CREDITS.md lists the fonts only.
+   - If the owner later downloads the models into `build/models`, a Phase 2 bake can replace the vector source behind the same `drawCharacter` call.
+
 ## Notes and open items
 
 - **R-UI-1.** Approved by the owner on 24 Nov 2026 as written (see "Open question for the owner").

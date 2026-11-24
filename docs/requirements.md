@@ -1,6 +1,6 @@
 # Sexton: Product Requirements
 
-Version 0.4, 23 Nov 2026. Owner: Harpreet Singh Siddhu. This document is the single source of truth for what Sexton is and is not. Every spec, every design decision and every line of the write-up traces back to a numbered requirement here. If something is not in this document, it is not in scope. Changes to this document are versioned and dated.
+Version 0.5, 24 Nov 2026. Owner: Harpreet Singh Siddhu. This document is the single source of truth for what Sexton is and is not. Every spec, every design decision and every line of the write-up traces back to a numbered requirement here. If something is not in this document, it is not in scope. Changes to this document are versioned and dated.
 
 ## 1. Product statement
 
@@ -130,7 +130,7 @@ R-EV-3. The evidence pack SHALL contain a SHA-256 hash of its JSON body so that 
 
 ### 5.8 User interface
 
-R-UI-1. THE SYSTEM SHALL render each direct dependency as a grave in a cemetery scene. Grave form encodes state: upright stone for Alive and Restless, cross for Haunted, cracked tilted stone for Dead, open grave for Possessed. Colour follows the same state. No continuous encodings. A package whose installed version is not yet published on the chosen date shows an unmarked mound (the Not-published form), and a package with a logged pull request shows a pennant beside its grave. Neither changes the grave form of a State.
+R-UI-1. THE SYSTEM SHALL render each direct dependency as a grave in a cemetery scene. Grave form encodes state: a rounded stone with a party hat and flowers for Alive, a tilted stone with a hand clawing out of the dirt for Restless, a cross for Haunted, a cracked tilted stone with a lounging skeleton for Dead, and an open grave with a dancing devil-costumed zombie for Possessed. Colour follows the same state. Graves sit in three depth tiers by state group, each at a fixed scale. No continuous encodings. A package whose installed version is not yet published on the chosen date shows an unmarked mound (the Not-published form), and a package with a logged pull request shows a pennant beside its grave. Neither changes the grave form of a State.
 R-UI-2. A ghost above a grave SHALL mean one or more advisories, and nothing else.
 R-UI-3. Graves SHALL be ordered by triage priority: Possessed first, then by state from least healthy to most healthy (Dead, Haunted, Restless, Alive), then by highest advisory severity, then by transitive reach descending, then by name.
 R-UI-4. Selecting a grave SHALL show the package's signals with sources, its state and the rule that produced it, and the proposed remediation with a preview of the PR body. The drawer shows the scan date.
@@ -198,3 +198,4 @@ Every Kiro spec names the requirements it implements. Every PR names the spec. T
 0.2, 20 Nov 2026. R-UI-3 triage order adds state rank after Possessed. N-7 limited to runtime dependencies, dev-only weak copyleft recorded in docs/adr.
 0.3, 21 Nov 2026. R-ST-2: age alone gives Restless, Dead needs deprecation or age with an open advisory.
 0.4, 23 Nov 2026. R-UI-1: Not-published form and pull request marker. R-UI-4: drawer shows the scan date. Time features: history scrubber, burial, replay.
+0.5, 24 Nov 2026. R-UI-1: Alive and Restless get distinct forms; characters and costumes act out each state.

@@ -205,7 +205,9 @@ describe("Feature: cemetery-theme, Property 1: Palette contrast over every backd
     expect(PALETTE.light).toBe(PALETTE.dark);
     const css = readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
     expect(css).not.toMatch(/prefers-color-scheme/);
-    expect(css).not.toMatch(/url\(/);
+    // Spec cemetery-undead, Deliberate test change 25: url() only in @font-face, only to /fonts/<file>.woff2.
+    expect(css.replace(/@font-face\s*\{[^}]*\}/g, "")).not.toMatch(/url\(/);
+    for (const m of css.matchAll(/url\(([^)]*)\)/g)) expect(m[1]).toMatch(/^"\/fonts\/[a-z0-9-]+\.woff2"$/);
     expect(css).not.toMatch(/--(horizon|moon|fog|star|star-far|grass-dark|grass-light)\b/);
     for (const file of sourceFiles(resolve(process.cwd(), "src"))) {
       expect(readFileSync(file, "utf8"), file).not.toMatch(/prefers-color-scheme/);
