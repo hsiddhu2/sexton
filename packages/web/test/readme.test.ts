@@ -63,6 +63,19 @@ describe("README", () => {
     expect(body).not.toContain("\u2014");
   });
 
+  it("shows docs/replay-axios.png in the Replay section with a non-empty alt text", () => {
+    const start = lines.indexOf("## Replay");
+    const rest = lines.slice(start + 1);
+    const end = rest.findIndex((l) => l.startsWith("## "));
+    const body = end === -1 ? rest : rest.slice(0, end);
+    const image = body.filter((l) => /^!\[[^\]]+\]\(docs\/replay-axios\.png\)$/.test(l));
+    expect(image).toEqual(["![The axios replay at its Possessed stop. The banner says it is reconstructed from public reports.](docs/replay-axios.png)"]);
+    expect(body.join("\n")).toContain("Replay an attack");
+    expect(body.join("\n")).toContain("axios, Mar 2026");
+    expect(body.join("\n")).toContain("keyv, Aug 2026");
+    expect(body.join("\n")).toContain("Press Play");
+  });
+
   it("holds the three URLs exactly", () => {
     const body = section();
     const found = [...body.matchAll(/\]\((https?:\/\/[^)\s]+)\)/g)].map((m) => m[1]);

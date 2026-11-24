@@ -95,11 +95,13 @@ const SOURCE_HREFS = {
     "https://www.trendmicro.com/en_us/research/26/c/axios-npm-package-compromised.html",
     "https://www.csa.gov.sg/alerts-and-advisories/advisories/ad-2026-002/",
     "https://docs.npmjs.com/trusted-publishers",
+    "https://registry.npmjs.org/axios",
   ],
   keyv: [
     "https://snyk.io/blog/inside-keyv-npm-compromise-preinstall-malware-trusted-provenance-ide-hooks/",
     "https://osv.dev/vulnerability/MAL-2026-11524",
     "https://github.com/jaredwray/cacheable/issues/1692",
+    "https://registry.npmjs.org/keyv",
   ],
 } as const;
 
@@ -110,7 +112,7 @@ for (const id of ["axios", "keyv"] as const) {
     await expect(banner).toHaveCount(1);
     await expect(banner).toContainText("Reconstructed from public reports. Not a live scan.");
     const links = banner.locator("a");
-    await expect(links).toHaveCount(3);
+    await expect(links).toHaveCount(4);
     expect(await links.evaluateAll((as) => as.map((a) => a.getAttribute("href")))).toEqual([...SOURCE_HREFS[id]]);
     expect(await links.evaluateAll((as) => as.every((a) => a.getAttribute("target") === "_blank" && a.getAttribute("rel") === "noopener noreferrer"))).toBe(true);
     await expect(page.locator(".demo-label")).toHaveCount(0);
@@ -121,39 +123,104 @@ for (const id of ["axios", "keyv"] as const) {
   });
 }
 
-test("the axios replay shows Restless 1.14.0, then Possessed 1.14.1, then 1.14.0 again, with no Not-published mound", async ({ page, baseURL }) => {
+test("the axios replay shows Alive 1.14.0, then Possessed 1.14.1, then Alive 1.14.0 again, with no Not-published mound", async ({ page, baseURL }) => {
   await openReplay(page, baseURL, "?replay=axios");
   const grave = page.locator("button[data-grave-index]").first();
   const scrubber = page.getByRole("slider", { name: "History date" });
-  await expect(scrubber).toHaveValue("2");
-  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Restless");
+  await expect(scrubber).toHaveValue("0");
+  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
   await scrubber.focus();
   await scrubber.press("Home");
   await expect(scrubber).toHaveValue("0");
-  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Restless");
+  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
   await expect(grave).not.toHaveAttribute("aria-label", /not yet published/);
   await scrubber.press("ArrowRight");
   await expect(grave).toHaveAttribute("aria-label", "axios 1.14.1, Possessed");
   await grave.hover();
   await expect(page.getByRole("tooltip")).toContainText("provenance regression");
   await scrubber.press("ArrowRight");
-  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Restless");
+  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
 });
 
-test("the keyv replay shows Restless 5.6.0, then Possessed 6.0.0 at its end, and a second replay opens from the header", async ({ page, baseURL }) => {
+test("the keyv replay shows Alive 5.6.0, then Possessed 6.0.0 at its end, and a second replay opens from the header", async ({ page, baseURL }) => {
   await openReplay(page, baseURL, "?replay=keyv");
   const grave = page.locator("button[data-grave-index]").first();
   const scrubber = page.getByRole("slider", { name: "History date" });
-  await expect(scrubber).toHaveValue("1");
-  await expect(grave).toHaveAttribute("aria-label", "keyv 6.0.0, Possessed");
+  await expect(scrubber).toHaveValue("0");
+  await expect(grave).toHaveAttribute("aria-label", "keyv 5.6.0, Alive");
   await scrubber.focus();
   await scrubber.press("Home");
-  await expect(grave).toHaveAttribute("aria-label", "keyv 5.6.0, Restless");
+  await expect(grave).toHaveAttribute("aria-label", "keyv 5.6.0, Alive");
   await expect(grave).not.toHaveAttribute("aria-label", /not yet published/);
   await scrubber.press("End");
   await grave.hover();
   await expect(page.getByRole("tooltip")).toContainText("install script added in 6.0.0");
-  await page.getByRole("button", { name: "axios 2026" }).click();
-  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Restless");
+  await page.getByRole("button", { name: "axios, Mar 2026" }).click();
+  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
   await expect(page.locator('[role="note"]')).toContainText("axios");
 });
+
+// Spec cemetery-time-fixes, task 3.6: Play steps one Stop every 1,500 ms (requirements 3.1, 4.2, 4.4).
+test("Play on the axios replay reaches the Possessed Stop after 1,500 ms and the last Stop after 3,000 ms", async ({ page, baseURL }) => {
+  await page.clock.install();
+  await openReplay(page, baseURL, "?replay=axios");
+  const grave = page.locator("button[data-grave-index]").first();
+  const scrubber = page.getByRole("slider", { name: "History date" });
+  await expect(scrubber).toHaveValue("0");
+  const play = page.getByRole("button", { name: "Play" });
+  await play.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("button", { name: "Pause" })).toBeVisible();
+  await page.clock.runFor(1500);
+  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.1, Possessed");
+  await page.clock.runFor(1500);
+  await expect(scrubber).toHaveValue("2");
+  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
+  await expect(page.getByRole("button", { name: "Play" })).toBeVisible();
+});
+
+// Spec cemetery-time-fixes, task 5.4: a compact header (requirements 7.1, 7.2, 7.3).
+test("at 1440 by 900 on the demo the canvas top is at most 190, with the form and the replay group on one row and the scrubber on one row", async ({ page, baseURL }) => {
+  await blockForeignOrigins(page, originOf(baseURL));
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
+  const box = async (selector: string) => {
+    const b = await page.locator(selector).first().boundingBox();
+    expect(b, selector).not.toBeNull();
+    return b ?? { x: 0, y: 0, width: 0, height: 0 };
+  };
+  const header = await box("header.site-header");
+  const scrub = await box("section.scrub");
+  const canvas = await box("canvas");
+  console.log(`header height ${String(header.height)}, scrubber height ${String(scrub.height)}, canvas top ${String(canvas.y)}`);
+  expect(canvas.y).toBeLessThanOrEqual(190);
+  const middle = (b: { y: number; height: number }) => b.y + b.height / 2;
+  const sameRow = (a: { y: number; height: number }, b: { y: number; height: number }) => a.y < b.y + b.height && b.y < a.y + a.height;
+  const form = await box(".repo-form");
+  const group = await box(".replay-group");
+  expect(sameRow(form, group)).toBe(true);
+  const parts = await Promise.all(["label[for=history-date]", ".scrub-date", "button.scrub-play", "#history-date"].map(box));
+  for (const p of parts) expect(Math.abs(middle(p) - middle(parts[0] ?? p))).toBeLessThan(12);
+  // A replay has no evidence links. The form and the Replay group still share row 2, starting at the left.
+  await page.goto("/?replay=axios");
+  await expect(page.locator("button[data-grave-index]")).toHaveCount(1);
+  const replayForm = await box(".repo-form");
+  const replayGroup = await box(".replay-group");
+  const replayTop = await box(".header-top");
+  expect(sameRow(replayForm, replayGroup)).toBe(true);
+  expect(replayForm.x).toBeLessThan(40);
+  expect(replayForm.y).toBeGreaterThanOrEqual(replayTop.y + replayTop.height);
+});
+
+for (const search of ["", "?replay=axios"]) {
+  test(`at 360 px there is no horizontal scroll on ${search === "" ? "the demo" : "the axios replay"}`, async ({ page, baseURL }) => {
+    await blockForeignOrigins(page, originOf(baseURL));
+    await page.setViewportSize({ width: 360, height: 800 });
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto(`/${search}`);
+    await expect(page.locator("button[data-grave-index]").first()).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(360);
+  });
+}

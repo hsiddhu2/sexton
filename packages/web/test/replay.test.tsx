@@ -11,7 +11,7 @@ import { checkScanUrl } from "../src/load/check-scan-url.js";
 import { REPLAY_BANNER_TEXT } from "../src/replay/ReplayBanner.js";
 import { REPLAY_IDS, parseReplayParam, replayAddress, type ReplayId } from "../src/replay/replay-ids.js";
 import { stopsFor } from "../src/time/stops.js";
-import { EXPECTED_SEGMENTS, SIX_URLS, readReplay, readReplayText } from "./support/replay-fixture.js";
+import { EIGHT_URLS, EXPECTED_SEGMENTS, readReplay, readReplayText } from "./support/replay-fixture.js";
 
 afterEach(cleanup);
 beforeEach(() => {
@@ -59,27 +59,38 @@ describe("opening a replay (requirement 18)", () => {
   it("renders the Replay group after the Scan button with the two button texts", async () => {
     mount("");
     await ready();
-    const group = screen.getByRole("group", { name: "Replay" });
-    expect([...group.querySelectorAll("button")].map((b) => b.textContent)).toEqual(["axios 2026", "keyv 2026"]);
+    const group = screen.getByRole("group", { name: "Replay an attack" });
+    expect([...group.querySelectorAll("button")].map((b) => b.textContent)).toEqual(["axios, Mar 2026", "keyv, Aug 2026"]);
     const scan = screen.getByRole("button", { name: "Scan" });
     expect(scan.compareDocumentPosition(group) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("names the group with the visible label Replay an attack (spec cemetery-time-fixes, 8.1)", async () => {
+    mount("");
+    await ready();
+    const group = screen.getByRole("group", { name: "Replay an attack" });
+    const label = group.querySelector(".replay-label") as HTMLElement;
+    expect(label.textContent).toBe("Replay an attack");
+    expect(group.getAttribute("aria-labelledby")).toBe(label.id);
+    expect(group.hasAttribute("aria-label")).toBe(false);
+    expect(group.firstElementChild).toBe(label);
   });
 
   it("loads each fixture from the page origin when its button is pressed, then a second one from the header", async () => {
     const { urls, container } = mount("");
     await ready();
-    fireEvent.click(screen.getByRole("button", { name: "axios 2026" }));
+    fireEvent.click(screen.getByRole("button", { name: "axios, Mar 2026" }));
     await waitFor(() => {
-      expect(label(container)).toBe("axios 1.14.0, Restless");
+      expect(label(container)).toBe("axios 1.14.0, Alive");
     });
     expect(urls).toEqual([`${ORIGIN}/demo/scan.json`, `${ORIGIN}/replay/axios.json`]);
-    fireEvent.click(screen.getByRole("button", { name: "keyv 2026" }));
+    fireEvent.click(screen.getByRole("button", { name: "keyv, Aug 2026" }));
     await waitFor(() => {
-      expect(label(container)).toBe("keyv 6.0.0, Possessed");
+      expect(label(container)).toBe("keyv 5.6.0, Alive");
     });
     expect(urls[2]).toBe(`${ORIGIN}/replay/keyv.json`);
-    // The scrubber is at the Scan date of the replay.
-    expect(slider().getAttribute("aria-valuetext")).toBe(STOP_TEXT.keyv[1]);
+    // The scrubber is at the first Stop of the replay.
+    expect(slider().getAttribute("aria-valuetext")).toBe(STOP_TEXT.keyv[0]);
   });
 
   it("loads the matching fixture for ?replay=axios and ?replay=keyv instead of the demo", async () => {
@@ -209,15 +220,47 @@ describe("the replay through the scrubber (requirement 20)", () => {
     cleanup();
     const keyv = mount("?replay=keyv");
     await ready();
+    move(1);
     fireEvent.pointerEnter(grave(keyv.container));
     expect(screen.getByRole("tooltip").textContent).toContain("install script added in 6.0.0");
+  });
+
+  it("opens each replay at its first Stop with the first row of its table (spec cemetery-time-fixes, 3.1)", async () => {
+    for (const id of REPLAY_IDS) {
+      const { container } = mount(`?replay=${id}`);
+      await ready();
+      const first = EXPECTED_SEGMENTS[id][0];
+      expect(slider().value).toBe("0");
+      expect(slider().getAttribute("aria-valuetext")).toBe(STOP_TEXT[id][0]);
+      expect(label(container)).toBe(`${id} ${first.version}, ${first.state}`);
+      expect(screen.getByRole("button", { name: "Play" })).toBeTruthy();
+      cleanup();
+    }
+  });
+
+  it("shows the replay title in place of the repository and no policy line, at every Stop", async () => {
+    for (const id of REPLAY_IDS) {
+      const { container } = mount(`?replay=${id}`);
+      await ready();
+      const title = (readReplay(id) as { replay: { title: string } }).replay.title;
+      for (let i = 0; i < EXPECTED_SEGMENTS[id].length; i += 1) {
+        move(i);
+        expect(container.querySelector(".repo-text")?.textContent).toBe(title);
+        expect(container.querySelector(".header-policy")).toBeNull();
+        const header = container.querySelector("header.site-header")?.textContent ?? "";
+        expect(header).not.toContain("no scan metadata in this response");
+        expect(header).not.toContain("policy:");
+      }
+      cleanup();
+    }
   });
 
   it("returns to 1.14.0 at the end of the axios replay", async () => {
     const { container } = mount("?replay=axios");
     await ready();
+    move(2);
     expect(slider().value).toBe("2");
-    expect(label(container)).toBe("axios 1.14.0, Restless");
+    expect(label(container)).toBe("axios 1.14.0, Alive");
   });
 });
 
@@ -251,7 +294,7 @@ const arbReplayBlock: fc.Arbitrary<ReplayInfo> = fc.record({
   sources: fc.array(
     fc.record({
       label: fc.oneof(fc.string({ maxLength: 30 }), fc.constant("<svg onload=x>")),
-      url: fc.oneof(fc.constantFrom(...HOSTILE), fc.string({ maxLength: 40 }), fc.constantFrom(...SIX_URLS)),
+      url: fc.oneof(fc.constantFrom(...HOSTILE), fc.string({ maxLength: 40 }), fc.constantFrom(...EIGHT_URLS)),
     }),
     { minLength: 1, maxLength: 6 },
   ),

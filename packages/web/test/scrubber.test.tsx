@@ -2,10 +2,13 @@ import type { PackageTimeline, ScanResponse } from "@sexton/api";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import axe from "axe-core";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { act } from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App.js";
 import { cheapScan } from "./arbitraries.js";
 import { readDemoScanText } from "./support/demo-scan.js";
+import { setMedia } from "./setup.js";
+import { PLAY_STEP_MS } from "../src/time/play.js";
 afterEach(cleanup);
 beforeEach(() => {
   document.documentElement.lang = "en";
@@ -58,8 +61,8 @@ describe("scrubber on the demo scan (requirements 11, 12)", () => {
     const user = userEvent.setup();
     mount();
     await ready();
-    // Apiless mount: the evidence links, the Legend, the two Replay buttons and then the slider (the field and Scan are disabled).
-    for (let i = 0; i < 6; i += 1) await user.tab();
+    // Apiless mount: the evidence links, the Legend, the two Replay buttons, the Play control and then the slider (the field and Scan are disabled).
+    for (let i = 0; i < 7; i += 1) await user.tab();
     expect(document.activeElement).toBe(slider());
   });
   it("shows as of, the two caption lines and Back to now only before the scan date, and Back to now returns focus to the slider", async () => {
@@ -185,5 +188,149 @@ describe("versioned Segments (requirement 12.9)", () => {
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByRole("heading", { level: 2 }).textContent).toBe("pkg-1 1.0.0");
     expect(dialog.querySelector(".drawer-asof")).toBeNull();
+  });
+});
+
+// Spec cemetery-time-fixes, task 3.5: the Play control (requirement 4).
+describe("the Play control", () => {
+  const play = (): HTMLButtonElement => document.querySelector<HTMLButtonElement>("button.scrub-play") as HTMLButtonElement;
+  const live = (): string => document.querySelector(".scrub-live")?.textContent ?? "";
+  const step = (ms: number): void => {
+    act(() => {
+      vi.advanceTimersByTime(ms);
+    });
+  };
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("is a native button named Play after the date text and before the slider, inside a polite live section", async () => {
+    mount();
+    await ready();
+    const button = screen.getByRole("button", { name: "Play" });
+    expect(button).toBe(play());
+    expect(button.tagName).toBe("BUTTON");
+    expect(button.getAttribute("type")).toBe("button");
+    expect(button.hasAttribute("aria-pressed")).toBe(false);
+    const date = document.querySelector(".scrub-date") as Element;
+    expect(date.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(button.compareDocumentPosition(slider()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const line = document.querySelector(".scrub-live") as HTMLElement;
+    expect(line.tagName).toBe("P");
+    expect(line.getAttribute("aria-live")).toBe("polite");
+    expect(line.closest(".scrub")).not.toBeNull();
+    expect(line.textContent).toBe("");
+  });
+
+  it("starts with Enter and with Space, and its name becomes Pause", async () => {
+    const user = userEvent.setup();
+    mount();
+    await ready();
+    play().focus();
+    await user.keyboard("{Enter}");
+    expect(play().textContent).toBe("Pause");
+    expect(screen.getByRole("button", { name: "Pause" })).toBe(play());
+    await user.keyboard("{Enter}");
+    expect(play().textContent).toBe("Play");
+    await user.keyboard(" ");
+    expect(screen.getByRole("button", { name: "Pause" })).toBe(play());
+    await user.keyboard(" ");
+    expect(screen.getByRole("button", { name: "Play" })).toBe(play());
+  });
+
+  it("at the last Stop moves to Stop 0, steps every 1,500 ms, announces each step and stops at the last", async () => {
+    mount();
+    await ready();
+    const max = Number(slider().max);
+    expect(slider().value).toBe(String(max));
+    vi.useFakeTimers();
+    fireEvent.click(play());
+    expect(slider().value).toBe("0");
+    expect(live()).toBe(`Playing from ${slider().getAttribute("aria-valuetext") ?? ""}`);
+    expect(screen.queryByRole("status")).toBeNull();
+    step(PLAY_STEP_MS - 1);
+    expect(slider().value).toBe("0");
+    step(1);
+    expect(slider().value).toBe("1");
+    expect(live()).toBe(slider().getAttribute("aria-valuetext"));
+    expect(screen.queryByRole("status")).toBeNull();
+    for (let i = 2; i <= max; i += 1) step(PLAY_STEP_MS);
+    expect(slider().value).toBe(String(max));
+    expect(play().textContent).toBe("Play");
+    expect(live()).toBe(`End of history at ${slider().getAttribute("aria-valuetext") ?? ""}`);
+    step(5 * PLAY_STEP_MS);
+    expect(slider().value).toBe(String(max));
+  });
+
+  it("pauses on Pause and keeps the Stop", async () => {
+    mount();
+    await ready();
+    vi.useFakeTimers();
+    fireEvent.click(play());
+    step(PLAY_STEP_MS);
+    fireEvent.click(play());
+    expect(slider().value).toBe("1");
+    expect(play().textContent).toBe("Play");
+    expect(live()).toBe(`Paused at ${slider().getAttribute("aria-valuetext") ?? ""}`);
+    step(5 * PLAY_STEP_MS);
+    expect(slider().value).toBe("1");
+  });
+
+  it("pauses on a slider move and on Back to now", async () => {
+    mount();
+    await ready();
+    vi.useFakeTimers();
+    fireEvent.click(play());
+    move(3);
+    expect(play().textContent).toBe("Play");
+    step(5 * PLAY_STEP_MS);
+    expect(slider().value).toBe("3");
+    fireEvent.click(play());
+    step(PLAY_STEP_MS);
+    expect(slider().value).toBe("4");
+    fireEvent.click(screen.getByRole("button", { name: "Back to now" }));
+    expect(slider().value).toBe(slider().max);
+    expect(play().textContent).toBe("Play");
+    step(5 * PLAY_STEP_MS);
+    expect(slider().value).toBe(slider().max);
+  });
+
+  it("makes the same steps at the same times under Reduced motion", async () => {
+    setMedia("(prefers-reduced-motion: reduce)", true);
+    mount();
+    await ready();
+    vi.useFakeTimers();
+    fireEvent.click(play());
+    step(PLAY_STEP_MS - 1);
+    expect(slider().value).toBe("0");
+    step(1);
+    expect(slider().value).toBe("1");
+    step(PLAY_STEP_MS);
+    expect(slider().value).toBe("2");
+  });
+
+  it("is not rendered with one Stop", async () => {
+    const one: PackageTimeline = { installed: "1.0.0", coveredFrom: null, segments: [{ from: "2026-11-12T00:00:00.000Z", state: "Alive", reason: "r", ghost: false, version: "1.0.0" }] };
+    const base = cheapScan(1);
+    const name = base.report.packages[0]?.name as string;
+    mount(JSON.stringify({ ...base, report: { ...base.report, generatedAt: "2026-11-12T00:00:00.000Z" }, timelines: { [name]: one } }));
+    await ready();
+    // A versioned Segment at the Scan date: the start and the Scan date are one Stop.
+    expect(Number(slider().max)).toBe(0);
+    expect(document.querySelector("button.scrub-play")).toBeNull();
+  });
+
+  it("has no axe violations while playing", async () => {
+    mount();
+    await ready();
+    vi.useFakeTimers();
+    fireEvent.click(play());
+    expect(play().textContent).toBe("Pause");
+    // Fake timers hold the next step, so no tick lands while axe runs.
+    vi.useRealTimers();
+    const result = await axe.run(document, AXE_OPTIONS);
+    expect(result.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.html).join(" | ")}`)).toEqual([]);
+    expect(play().textContent).toBe("Pause");
+    fireEvent.click(play());
   });
 });

@@ -1,8 +1,9 @@
 // The facts of the two incident replays and nothing else. Spec cemetery-time, requirements 17.1 to 17.9,
-// design.md section "Replay facts" (23 Nov 2026). A field that no source gives is null here or left out.
+// design.md section "Replay facts" (23 Nov 2026), with the registry publish times of spec cemetery-time-fixes,
+// requirement 2 (24 Nov 2026). A field that no source gives is null here or left out.
 // Nothing in this file is derived: the generator derives the states, reasons and signals from these facts.
 
-/** The six source URLs. Every one is https. A replay may list only these. */
+/** The eight source URLs. Every one is https. A replay may list only these. */
 export const SOURCE_URLS = Object.freeze({
   trendmicro: "https://www.trendmicro.com/en_us/research/26/c/axios-npm-package-compromised.html",
   csa: "https://www.csa.gov.sg/alerts-and-advisories/advisories/ad-2026-002/",
@@ -10,6 +11,8 @@ export const SOURCE_URLS = Object.freeze({
   snyk: "https://snyk.io/blog/inside-keyv-npm-compromise-preinstall-malware-trusted-provenance-ide-hooks/",
   osv: "https://osv.dev/vulnerability/MAL-2026-11524",
   ghIssue: "https://github.com/jaredwray/cacheable/issues/1692",
+  registryAxios: "https://registry.npmjs.org/axios",
+  registryKeyv: "https://registry.npmjs.org/keyv",
 });
 
 /** The reason of every required signal that no source gives. */
@@ -18,9 +21,11 @@ export const NOT_IN_PUBLIC_REPORTS = "not in public reports";
 /**
  * Per replay:
  * - `versions`: the sourced versions in Version order. `publishedAt` null means no source gives a publish time.
- *   `installScript` and `provenance` null mean the sources do not say.
+ *   `installScript` and `provenance` null mean the sources do not say. `deprecated`, when present, is the registry's
+ *   deprecated flag (false: the registry document has no deprecated field).
  * - `stops`: the Resolved version (what a fresh `npm install` resolves) from each instant. The first `from` is the
- *   window start. The last `from` is the Scan date (`generatedAt`) for axios and the publish of 6.0.0 for keyv.
+ *   window start, one hour before the bad publish. The last `from` is the Scan date (`generatedAt`): for axios the
+ *   removal of 1.14.1, for keyv the publish of 6.0.0.
  * - `factSources`: the URL that a signal of the installed version cites.
  */
 export const REPLAYS = Object.freeze({
@@ -35,18 +40,19 @@ export const REPLAYS = Object.freeze({
       { label: "Trend Micro: axios npm package compromised", url: SOURCE_URLS.trendmicro },
       { label: "CSA Singapore advisory AD-2026-002", url: SOURCE_URLS.csa },
       { label: "npm docs: trusted publishers", url: SOURCE_URLS.npmTrusted },
+      { label: "npm registry: axios", url: SOURCE_URLS.registryAxios },
     ],
     versions: [
-      { version: "1.14.0", publishedAt: null, installScript: null, provenance: true },
-      { version: "1.14.1", publishedAt: "2026-03-31T00:21:00.000Z", installScript: false, provenance: false },
+      { version: "1.14.0", publishedAt: "2026-03-27T19:01:40.915Z", installScript: null, provenance: true },
+      { version: "1.14.1", publishedAt: "2026-03-31T00:21:58.168Z", installScript: false, provenance: false },
     ],
     stops: [
-      { from: "2026-03-30T23:21:00.000Z", version: "1.14.0" },
-      { from: "2026-03-31T00:21:00.000Z", version: "1.14.1" },
+      { from: "2026-03-30T23:21:58.168Z", version: "1.14.0" },
+      { from: "2026-03-31T00:21:58.168Z", version: "1.14.1" },
       { from: "2026-03-31T03:29:00.000Z", version: "1.14.0" },
     ],
     factSources: {
-      publishedAt: SOURCE_URLS.trendmicro,
+      publishedAt: SOURCE_URLS.registryAxios,
       installScript: SOURCE_URLS.trendmicro,
       provenance: SOURCE_URLS.npmTrusted,
     },
@@ -57,26 +63,31 @@ export const REPLAYS = Object.freeze({
     title: "Replay: keyv npm compromise, 4 August 2026",
     summary:
       "keyv 6.0.0 was published on 4 August 2026 at 09:35 UTC and added a preinstall script, node setup.mjs. It still carried a valid provenance attestation from GitHub Actions, so provenance alone did not flag it. Sexton marks it Possessed because an install script appeared.",
-    generatedAt: "2026-08-04T09:35:00.000Z",
+    generatedAt: "2026-08-04T09:35:00.763Z",
     sources: [
       { label: "Snyk: inside the keyv npm compromise", url: SOURCE_URLS.snyk },
       { label: "OSV: MAL-2026-11524", url: SOURCE_URLS.osv },
       { label: "cacheable issue 1692", url: SOURCE_URLS.ghIssue },
+      { label: "npm registry: keyv", url: SOURCE_URLS.registryKeyv },
     ],
+    // 5.6.0: the registry document has no deprecated field and no dist.attestations, so deprecated and provenance
+    // are false, both from the keyv registry URL.
     versions: [
-      { version: "5.6.0", publishedAt: null, installScript: false, provenance: null },
-      { version: "6.0.0-rc.1", publishedAt: null, installScript: false, provenance: null },
-      { version: "6.0.0", publishedAt: "2026-08-04T09:35:00.000Z", installScript: true, provenance: true },
+      { version: "5.6.0", publishedAt: "2026-01-21T00:39:26.982Z", installScript: false, provenance: false, deprecated: false },
+      { version: "6.0.0-rc.1", publishedAt: "2026-08-03T19:21:08.158Z", installScript: false, provenance: null },
+      { version: "6.0.0", publishedAt: "2026-08-04T09:35:00.763Z", installScript: true, provenance: true },
     ],
     // 6.0.0-rc.1 is a prerelease that a fresh install of a stable range does not resolve, so it is never a Stop version.
     stops: [
-      { from: "2026-08-04T08:35:00.000Z", version: "5.6.0" },
-      { from: "2026-08-04T09:35:00.000Z", version: "6.0.0" },
+      { from: "2026-08-04T08:35:00.763Z", version: "5.6.0" },
+      { from: "2026-08-04T09:35:00.763Z", version: "6.0.0" },
     ],
+    // provenance cites Snyk: the report signal is about the installed 6.0.0.
     factSources: {
-      publishedAt: SOURCE_URLS.snyk,
+      publishedAt: SOURCE_URLS.registryKeyv,
       installScript: SOURCE_URLS.snyk,
       provenance: SOURCE_URLS.snyk,
+      deprecated: SOURCE_URLS.registryKeyv,
     },
   },
 });

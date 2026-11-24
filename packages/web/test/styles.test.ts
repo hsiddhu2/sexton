@@ -93,4 +93,13 @@ describe("styles.css static checks", () => {
       expect(body, selector).toMatch(/(^|[;\s])color:\s*var\(--accent-text\)/);
     }
   });
+
+  it("gives .scrub-play and .visually-hidden no transition and no animation, and .visually-hidden no colour (spec cemetery-time-fixes, 4.8)", () => {
+    for (const selector of [".scrub-play", ".visually-hidden"]) {
+      const found = rulesFor(selector);
+      expect(found.length, selector).toBeGreaterThan(0);
+      for (const r of found) expect(r.body, selector).not.toMatch(/transition|animation/);
+    }
+    for (const r of rulesFor(".visually-hidden")) expect(r.body).not.toMatch(/color|background|#[0-9a-fA-F]{3,8}\b|rgba?\(/);
+  });
 });

@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
 import { Cemetery } from "./Cemetery.js";
 import { LoadingCard } from "./LoadingCard.js";
 import { Header } from "./header/Header.js";
@@ -8,8 +8,11 @@ import { requestRemediation, type RemediateView } from "./load/remediate-client.
 import { useScanLoader } from "./load/use-scan-loader.js";
 import { replayAddress, type ReplayId } from "./replay/replay-ids.js";
 import { applyPalette, type Theme } from "./scene/palette.js";
-import { Scrubber } from "./time/Scrubber.js";
+import { HISTORY_OMITTED_TEXT, Scrubber } from "./time/Scrubber.js";
 import { stopsFor } from "./time/stops.js";
+import { usePlay } from "./time/use-play.js";
+
+const NO_STOPS: readonly number[] = [];
 
 export interface AppProps {
   readonly fetchFn: typeof fetch;
@@ -46,23 +49,19 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
   );
   const stopInfo = useMemo(() => (state.status === "ready" ? stopsFor(state.response) : null), [state]);
   const scrubberRef = useRef<HTMLInputElement | null>(null);
-  // The chosen Stop belongs to one load: a new load id falls back to the Scan date (the last Stop).
-  const [picked, setPicked] = useState<{ readonly loadId: number; readonly index: number } | null>(null);
+  // The chosen Stop belongs to one load. A replay opens at its first Stop, every other response at its Scan date
+  // (spec cemetery-time-fixes, requirement 3). A slider move, Back to now and a new load stop Play.
+  const isReplay = state.status === "ready" && state.response.replay !== undefined;
+  const player = usePlay(stopInfo?.stops ?? NO_STOPS, state.loadId, isReplay);
+  const { index, seek } = player;
   const last = stopInfo === null ? 0 : stopInfo.stops.length - 1;
-  const index = picked !== null && picked.loadId === state.loadId ? Math.min(Math.max(picked.index, 0), last) : last;
   const showScrubber = stopInfo !== null && stopInfo.hasTimelines;
-  const pick = useCallback(
-    (next: number): void => {
-      setPicked({ loadId: state.loadId, index: next });
-    },
-    [state.loadId],
-  );
   const asOfMs = showScrubber ? (stopInfo.stops[index] ?? null) : null;
   const asOf = showScrubber && index < last && asOfMs !== null
     ? {
         iso: new Date(asOfMs).toISOString(),
         onBack: () => {
-          pick(last);
+          seek(last);
           scrubberRef.current?.focus();
         },
       }
@@ -70,7 +69,20 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
   return (
     <>
       <Header model={model} theme={theme} apiConfigured={apiBase !== null} onSubmit={loader.submitRepo} fieldRef={repoFieldRef} onReplay={onReplay} {...(state.status === "ready" && state.response.replay !== undefined ? { replay: state.response.replay } : {})} {...(asOf !== undefined ? { asOf } : {})} />
-      {showScrubber ? <Scrubber stops={stopInfo.stops} index={index} onChange={pick} inputRef={scrubberRef} /> : null}
+      {showScrubber ? (
+        <Scrubber
+          stops={stopInfo.stops}
+          index={index}
+          onChange={seek}
+          inputRef={scrubberRef}
+          playing={player.playing}
+          onPlay={player.play}
+          onPause={player.pause}
+          announce={player.announce}
+        />
+      ) : state.status === "ready" && state.response.timelinesOmitted === "too-large" ? (
+        <p className="history-omitted">{HISTORY_OMITTED_TEXT}</p>
+      ) : null}
       {state.status === "loading" ? (
         <LoadingCard />
       ) : state.status === "error" ? (

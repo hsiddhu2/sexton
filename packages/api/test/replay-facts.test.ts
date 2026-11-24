@@ -1,4 +1,5 @@
 // Spec cemetery-time, task 7.2: the replay fixtures trace to the facts file and agree with the Engine. No network.
+// Spec cemetery-time-fixes, task 2: the registry publish times, eight source URLs and Property 4.
 import { readFileSync } from "node:fs";
 import { SIGNAL_NAMES, evaluateState, type StateInputs } from "@sexton/engine";
 import fc from "fast-check";
@@ -11,23 +12,23 @@ import { validateScanResponse } from "../../web/src/load/validate-scan-response.
 import type { ScanResponse } from "../src/contract.js";
 
 const ids = REPLAY_IDS as readonly ("axios" | "keyv")[];
-const SIX: readonly string[] = Object.values(SOURCE_URLS as Record<string, string>);
+const EIGHT: readonly string[] = Object.values(SOURCE_URLS as Record<string, string>);
 
 const EXPECTED = {
   axios: {
     installed: "1.14.0",
     segments: [
-      ["2026-03-30T23:21:00.000Z", "1.14.0", "Restless", "all state signals unavailable"],
-      ["2026-03-31T00:21:00.000Z", "1.14.1", "Possessed", "provenance regression: 1.14.1 has no provenance, 1.14.0 had it"],
-      ["2026-03-31T03:29:00.000Z", "1.14.0", "Restless", "all state signals unavailable"],
+      ["2026-03-30T23:21:58.168Z", "1.14.0", "Alive", "no rule matched"],
+      ["2026-03-31T00:21:58.168Z", "1.14.1", "Possessed", "provenance regression: 1.14.1 has no provenance, 1.14.0 had it"],
+      ["2026-03-31T03:29:00.000Z", "1.14.0", "Alive", "no rule matched"],
     ],
     versions: ["1.14.0", "1.14.1"],
   },
   keyv: {
     installed: "6.0.0",
     segments: [
-      ["2026-08-04T08:35:00.000Z", "5.6.0", "Restless", "all state signals unavailable"],
-      ["2026-08-04T09:35:00.000Z", "6.0.0", "Possessed", "install script added in 6.0.0"],
+      ["2026-08-04T08:35:00.763Z", "5.6.0", "Alive", "no rule matched"],
+      ["2026-08-04T09:35:00.763Z", "6.0.0", "Possessed", "install script added in 6.0.0"],
     ],
     versions: ["5.6.0", "6.0.0"],
   },
@@ -103,7 +104,7 @@ describe("replay fixtures", () => {
           expect(s.source).toBe(facts.sources[0].url);
           expect(s.value).toBeNull();
         } else {
-          expect(SIX).toContain(s?.source);
+          expect(EIGHT).toContain(s?.source);
         }
       }
       // Advisories, deprecation, maintainers, reach and maintainer change: no source gives them.
@@ -116,23 +117,23 @@ describe("replay fixtures", () => {
       if (installed.provenance !== null) expect(signals["provenance"]?.value).toEqual({ present: installed.provenance, predicateType: null });
     }
     const keyv = fixture("keyv").report.packages[0]?.signals;
-    expect(keyv?.newInstallScript).toMatchObject({ available: true, value: [{ version: "6.0.0", publishTime: "2026-08-04T09:35:00.000Z" }] });
+    expect(keyv?.newInstallScript).toMatchObject({ available: true, value: [{ version: "6.0.0", publishTime: "2026-08-04T09:35:00.763Z" }] });
     const axios = fixture("axios").report.packages[0]?.signals;
     expect(axios?.newInstallScript.available).toBe(false);
   });
 
-  it("use only the six source URLs, https only, and no signal that is not on main", () => {
+  it("use only the eight source URLs, https only, and no signal that is not on main", () => {
     for (const id of ids) {
       const response = fixture(id);
       const urls = strings(response).filter((s) => /^https?:\/\//.test(s));
       expect(urls.length).toBeGreaterThan(0);
-      for (const url of urls) expect(SIX).toContain(url);
+      for (const url of urls) expect(EIGHT).toContain(url);
       for (const source of response.replay?.sources ?? []) expect(source.url.startsWith("https://")).toBe(true);
       const names = Object.keys(response.report.packages[0]?.signals ?? {});
       expect(names.every((n) => (SIGNAL_NAMES as readonly string[]).includes(n))).toBe(true);
     }
-    expect(SIX).toHaveLength(6);
-    expect(SIX.every((u) => u.startsWith("https://"))).toBe(true);
+    expect(EIGHT).toHaveLength(8);
+    expect(EIGHT.every((u) => u.startsWith("https://"))).toBe(true);
   });
 });
 
@@ -142,6 +143,7 @@ interface Fact {
   readonly publishedAt: string | null;
   readonly installScript: boolean | null;
   readonly provenance: boolean | null;
+  readonly deprecated?: boolean | null;
 }
 function model(versions: readonly Fact[], version: string, at: Date): StateInputs {
   const inputs: { -readonly [K in keyof StateInputs]: StateInputs[K] } = {};
@@ -149,6 +151,7 @@ function model(versions: readonly Fact[], version: string, at: Date): StateInput
   for (let i = 0; i < versions.length; i += 1) if (versions[i]?.version === version) index = i;
   const v = versions[index] as Fact;
   if (v.publishedAt !== null) inputs.lastPublish = new Date(v.publishedAt);
+  if (typeof v.deprecated === "boolean") inputs.deprecated = v.deprecated;
   if (v.provenance === false) {
     for (let i = index - 1; i >= 0; i -= 1) {
       const e = versions[i] as Fact;
@@ -231,5 +234,63 @@ describe("Property 13: Segments agree with state as of at every instant", () => 
       ),
       { numRuns: 100 },
     );
+  });
+});
+
+// Spec cemetery-time-fixes, task 2.5. The bad publishes and scan dates come from requirements 2.1 and 2.5, not the facts file.
+const BAD_PUBLISH = { axios: "2026-03-31T00:21:58.168Z", keyv: "2026-08-04T09:35:00.763Z" } as const;
+const SCAN_DATE = { axios: "2026-03-31T03:29:00.000Z", keyv: "2026-08-04T09:35:00.763Z" } as const;
+
+describe("Property 4: The replays follow the registry facts", () => {
+  it("Feature: cemetery-time-fixes, Property 4: The replays follow the registry facts", () => {
+    for (const id of ids) {
+      const facts = REPLAYS[id];
+      const response = fixture(id);
+      expect(validateScanResponse(response).ok).toBe(true);
+      const segments = response.timelines?.[id]?.segments ?? [];
+      const stops = facts.stops as Stop[];
+      const start = Date.parse(BAD_PUBLISH[id]) - 3_600_000;
+      const end = Date.parse(SCAN_DATE[id]);
+      expect(Date.parse(segments[0]?.from ?? "")).toBe(start);
+      expect(response.report.generatedAt).toBe(SCAN_DATE[id]);
+      expect(segments.map((s) => s.from)).toEqual(stops.map((s) => s.from));
+      const check = (t: number): void => {
+        let held: (typeof segments)[number] | undefined;
+        for (const s of segments) if (Date.parse(s.from) <= t) held = s;
+        let version: string | undefined;
+        for (const s of stops) if (Date.parse(s.from) <= t) version = s.version;
+        expect(held).toBeDefined();
+        expect(held?.version).toBe(version);
+        const expected = evaluateState(model(facts.versions as Fact[], version as string, new Date(t)), new Date(t));
+        expect(held?.state).toBe(expected.state);
+        expect(held?.reason).toBe(expected.stateReason);
+      };
+      for (const s of stops) {
+        const at = Date.parse(s.from);
+        check(at);
+        if (at - 1 >= start) check(at - 1);
+      }
+      check(end);
+      fc.assert(fc.property(fc.integer({ min: start, max: end }), check), { numRuns: 100 });
+    }
+  });
+});
+
+describe("the registry facts (requirements 2.1, 2.2)", () => {
+  it("hold the five registry publish times and the keyv 5.6.0 flags, with no deprecated fact for axios", () => {
+    const pick = (id: "axios" | "keyv") =>
+      (REPLAYS[id].versions as Fact[]).map((v) => [v.version, v.publishedAt, v.deprecated ?? null, v.provenance]);
+    expect(pick("axios")).toEqual([
+      ["1.14.0", "2026-03-27T19:01:40.915Z", null, true],
+      ["1.14.1", "2026-03-31T00:21:58.168Z", null, false],
+    ]);
+    expect(pick("keyv")).toEqual([
+      ["5.6.0", "2026-01-21T00:39:26.982Z", false, false],
+      ["6.0.0-rc.1", "2026-08-03T19:21:08.158Z", null, null],
+      ["6.0.0", "2026-08-04T09:35:00.763Z", null, true],
+    ]);
+    expect(REPLAYS.axios.factSources.publishedAt).toBe("https://registry.npmjs.org/axios");
+    expect(REPLAYS.keyv.factSources.publishedAt).toBe("https://registry.npmjs.org/keyv");
+    expect(REPLAYS.keyv.factSources.deprecated).toBe("https://registry.npmjs.org/keyv");
   });
 });
