@@ -196,25 +196,29 @@ Run-time notes for the agents:
     - _Requirements: 11.5_
     - Review notes: READY, no defect. Acted on: a unit test now pins `freeHeight` rounding up (test/free-height.test.ts). Notes kept: the paint wait relies on two frames after the Possessed label; the 1 px vertical overflow is recorded in decision 6; with a row gap of 0, a wrapped row 1 would get no gap, which cannot happen at 960 px and wider (row 1 needs about 708 px); the blue box in the pictures is the selected-grave ring.
 
-- [ ] 7. Steering web.md
+- [x] 7. Steering web.md
   - Brings the cemetery rules in line with the built behaviour.
   - _Requirements: 10.3_
-  - [ ] 7.1 Update `.kiro/steering/web.md`
+  - [x] 7.1 Update `.kiro/steering/web.md`
     - Replace the button texts in the replay rule with "axios, Mar 2026" and "keyv, Aug 2026" in the group "Replay an attack". Add: a replay opens at its first Stop and every other scan at its scan date; the Play control (shown for more than one Stop, one Stop every 1,500 ms, restarts at the last Stop, paused by the slider, Back to now and a new load, announced in a polite live line, never automatic); the omitted history line for `timelinesOmitted`; the canvas top at most 190 px at 1440 by 900 on the demo. Keep the front matter and every other rule.
     - _Requirements: 10.3_
-  - [ ] 7.2 Security review of task 7
+    - Notes: the replay rule names "axios, Mar 2026" and "keyv, Aug 2026" in the group "Replay an attack". Four lines added: the opening Stop, the Play control, the omitted history line, and the canvas top at most 190 px with the two rows at 960 px and wider. Front matter and every other rule unchanged.
+  - [x] 7.2 Security review of task 7
     - Invoke the security-reviewer agent on `.kiro/steering/web.md`. Record the findings in "Review notes". Fix every defect in this task.
     - _Requirements: 11.5_
+    - Review notes: READY, no defect. Every new line was checked against the built code. Note kept: the one-row scrubber at 960 px comes from the CSS and the e2e run.
 
-- [ ] 8. README
+- [x] 8. README
   - Describes the new replay controls and shows the replay screenshot.
   - _Requirements: 10.1, 10.2_
-  - [ ] 8.1 Update `README.md` and `packages/web/test/readme.test.ts`
+  - [x] 8.1 Update `README.md` and `packages/web/test/readme.test.ts`
     - In "## Replay": name the "Replay an attack" group with the buttons "axios, Mar 2026" and "keyv, Aug 2026", say that a replay opens before the attack and that Play steps through it, keep the two links and the sentence "A replay is reconstructed from public reports. It is not a live scan.", and add the image line of design.md "F6" on its own line. Short sentences, no semicolon, no em dash. Apply Deliberate test change 15.
     - _Requirements: 10.1, 10.2_
-  - [ ] 8.2 Security review of task 8
+    - Notes: the Replay section names the group and both buttons, says a replay opens one hour before the attack so the grave starts Alive, and that Play steps through it. The image line is on its own line with the alt text of call 36. Both links and the not-a-live-scan sentence kept. No semicolon, no em dash. Deliberate test change 15: one new test in readme.test.ts, 8 of 8 pass.
+  - [x] 8.2 Security review of task 8
     - Invoke the security-reviewer agent on the files of 8.1. Record the findings in "Review notes". Fix every defect in this task.
     - _Requirements: 11.5_
+    - Review notes: READY, no defect. Acted on: the test now checks "Press Play" instead of any "Play". The opening claim was checked against both fixtures.
 
 - [ ] 9. Root gates and the final fresh-clone run
   - Runs every gate once on the final tree, then proves the fresh clone again.

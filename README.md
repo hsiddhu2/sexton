@@ -117,7 +117,11 @@ Keep Dependabot on and run Sexton beside it.
 
 ## Replay
 
-The cemetery has a history scrubber. It shows each package as it stood on an earlier date. Two replays play real incidents through it. Open the hosted page with [?replay=axios](?replay=axios) or [?replay=keyv](?replay=keyv), or press the "axios 2026" or "keyv 2026" button in the header.
+The cemetery has a history scrubber. It shows each package as it stood on an earlier date. Two replays play real incidents through it. Open the hosted page with [?replay=axios](?replay=axios) or [?replay=keyv](?replay=keyv). You can also press "axios, Mar 2026" or "keyv, Aug 2026" in the "Replay an attack" group in the header.
+
+A replay opens one hour before the attack, so the grave starts Alive. Press Play to step through the history one stop at a time, or move the slider yourself.
+
+![The axios replay at its Possessed stop. The banner says it is reconstructed from public reports.](docs/replay-axios.png)
 
 A replay is reconstructed from public reports. It is not a live scan.
 
