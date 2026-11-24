@@ -2,7 +2,7 @@
 
 ## Introduction
 
-cemetery-undead is Phase 1 of the "Night of the Living Deps" art pass, approved by HP on 24 Nov 2026 at 03:41 from the mockups `private/design/mockup-night.html` (the cemetery) and `private/design/mockup-nightreplay.html` (the axios replay moment). It changes how the cemetery looks. It does not change what any grave means.
+cemetery-undead is Phase 1 of the "Night of the Living Deps" art pass, approved by the owner on 24 Nov 2026 at 03:41 from the mockups `private/design/mockup-night.html` (the cemetery) and `private/design/mockup-nightreplay.html` (the axios replay moment). It changes how the cemetery looks. It does not change what any grave means.
 
 - **U1.** A Halloween night palette, with state colours chosen to stay apart for viewers with colour vision deficiency.
 - **U2.** Self-hosted display and interface fonts.
@@ -16,9 +16,9 @@ Phase 2 (sound, speech bubbles, the replay burst choreography and the burial pri
 
 This spec traces to R-UI-1 to R-UI-7 of docs/requirements.md section 5.8, to N-7 and N-9 of section 6, and to the cemetery-polish, cemetery-time and cemetery-time-fixes specs. It changes no state rule, no policy rule, no API field and no evidence field. The demo evidence digest stays c8fb6cab465d46ca92cf83dbc10022b6a662c8fad68ec8f64d827ef16f43344d.
 
-R-UI-1 today says "upright stone for Alive and Restless". This spec gives Alive and Restless different forms. Requirement 13 asks HP to amend R-UI-1 before the build starts (design.md "Open question for HP").
+R-UI-1 today says "upright stone for Alive and Restless". This spec gives Alive and Restless different forms. Requirement 13 asks the owner to amend R-UI-1 before the build starts (design.md "Open question for the owner").
 
-Paths: this spec changes `packages/web`, the root `package-lock.json` (dev-only additions to `packages/web` devDependencies), `README.md`, `CREDITS.md` (new, repository root), `docs/cemetery.png`, `docs/replay-axios.png`, `.kiro/steering/web.md` and `.kiro/specs/cemetery-undead`, plus `docs/requirements.md` for the R-UI-1 amendment if HP approves it. It changes nothing under `packages/engine`, `packages/api`, `packages/cli`, `packages/action`, `infra` or `.github`. It adds no runtime dependency and no request to another origin at run time. Every date this spec writes is 24 Nov 2026 (UTC) unless it is a fact from a source.
+Paths: this spec changes `packages/web`, the root `package-lock.json` (dev-only additions to `packages/web` devDependencies), `README.md`, `CREDITS.md` (new, repository root), `docs/cemetery.png`, `docs/replay-axios.png`, `.kiro/steering/web.md` and `.kiro/specs/cemetery-undead`, plus `docs/requirements.md` for the R-UI-1 amendment if the owner approves it. It changes nothing under `packages/engine`, `packages/api`, `packages/cli`, `packages/action`, `infra` or `.github`. It adds no runtime dependency and no request to another origin at run time. Every date this spec writes is 24 Nov 2026 (UTC) unless it is a fact from a source.
 
 ## Glossary
 
@@ -49,7 +49,7 @@ Paths: this spec changes `packages/web`, the root `package-lock.json` (dev-only 
 - **Footer bar**: the bar at the bottom of the page that holds Play, the History date slider and "Replay an attack".
 - **Canvas top**: the y of the top edge of the scene canvas in CSS pixels, from the top of the viewport.
 - **Reduced motion**: the `prefers-reduced-motion: reduce` media query.
-- **Visual critic**: a review subagent that sees only screenshots, the mockup screenshots and the frontend-design guidance, never the code.
+- **Visual critic**: a review subagent that sees only screenshots, the mockup screenshots and the design guidance, never the code.
 - **Deliberate test change**: a change to an existing test that design.md lists because the test pins a value this spec changes on purpose.
 
 ## Requirements
@@ -233,18 +233,18 @@ Paths: this spec changes `packages/web`, the root `package-lock.json` (dev-only 
 
 ### Requirement 13: The product requirement for grave forms
 
-**User Story:** As HP, I want the product requirements to match the cemetery, so that the write-up and the code agree.
+**User Story:** As the owner, I want the product requirements to match the cemetery, so that the write-up and the code agree.
 
 **Traces to:** R-UI-1; docs/requirements.md change policy
 
 #### Acceptance Criteria
 
-1. THE build SHALL not start until HP has decided the R-UI-1 amendment in design.md "Open question for HP".
-2. WHERE HP approves the amendment, THE spec tasks SHALL change R-UI-1 to the text in design.md and SHALL add a change log line "0.5, 24 Nov 2026" to docs/requirements.md.
+1. THE build SHALL not start until the owner has decided the R-UI-1 amendment in design.md "Open question for the owner".
+2. WHERE the owner approves the amendment, THE spec tasks SHALL change R-UI-1 to the text in design.md and SHALL add a change log line "0.5, 24 Nov 2026" to docs/requirements.md.
 
 ### Requirement 14: The screenshot loop
 
-**User Story:** As HP, I want the result to match the mockup, so that the approved art direction is what ships.
+**User Story:** As the owner, I want the result to match the mockup, so that the approved art direction is what ships.
 
 **Traces to:** U1 to U7; the handoff "How to build it: the screenshot loop"
 

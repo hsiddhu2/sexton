@@ -15,8 +15,8 @@ Then the README, web.md, the screenshots, the gates and the fresh-clone run. Pat
 
 Run-time notes:
 
-- Build starts only after HP types `go` and has decided the R-UI-1 amendment (design.md "Open question for HP").
-- Change only `packages/web`, the root `package-lock.json` (devDependencies of `@sexton/web` only), `README.md`, `CREDITS.md`, `docs/cemetery.png`, `docs/replay-axios.png`, `.kiro/steering/web.md`, `.kiro/specs/cemetery-undead`, and `docs/requirements.md` if HP approves the amendment.
+- Build starts only after the owner types `go` and has decided the R-UI-1 amendment (design.md "Open question for the owner").
+- Change only `packages/web`, the root `package-lock.json` (devDependencies of `@sexton/web` only), `README.md`, `CREDITS.md`, `docs/cemetery.png`, `docs/replay-axios.png`, `.kiro/steering/web.md`, `.kiro/specs/cemetery-undead`, and `docs/requirements.md` if the owner approves the amendment.
 - Tests change only where design.md lists a Deliberate test change (1 to 26). Any other existing test that fails is a regression: fix the source, not the test.
 - `numRuns` is 100 for every new property. Every new property test carries `Feature: cemetery-undead, Property N: <title>`.
 - Every visual sub-task ends with the screenshot loop of design.md "Visual critic protocol". Each round's findings are recorded as "Critic round N".
@@ -26,9 +26,9 @@ Run-time notes:
 ## Tasks
 
 - [ ] 1. The R-UI-1 decision and the baseline
-  - Applies HP's decision on R-UI-1 and records the baseline measurements.
+  - Applies the owner's decision on R-UI-1 and records the baseline measurements.
   - _Requirements: 13.1, 13.2, 14.1_
-  - [ ] 1.1 Apply HP's decision on R-UI-1
+  - [ ] 1.1 Apply the owner's decision on R-UI-1
     - If approved, edit R-UI-1 in docs/requirements.md to the design.md text, add the change log line "0.5, 24 Nov 2026", and bump the header to Version 0.5. If declined, keep the Alive outline for Restless and record the call in design.md.
     - _Requirements: 13.1, 13.2_
   - [ ] 1.2 Record the baseline
@@ -129,7 +129,7 @@ Run-time notes:
   - Adds "Here lies" and the Punchlines to the tooltip and the drawer, and the Serious mode toggle.
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 8.1, 8.2, 8.3, 8.4_
   - [ ] 6.1 Write `src/epitaph/epitaph.ts` and `src/epitaph/serious.ts`
-    - The Reason families, the table of design.md exactly as HP approved it, `hereLies`, and the guarded storage read and write.
+    - The Reason families, the table of design.md exactly as the owner approved it, `hereLies`, and the guarded storage read and write.
     - _Requirements: 7.3, 7.4, 7.6, 8.3, 8.4_
   - [ ] 6.2 Update `GraveTooltip.tsx`, `tooltip-model.ts`, `Drawer.tsx` and `App.tsx`
     - "Here lies <name> <version>", then the reason, then the Punchline unless Serious mode is on. The Not-published line has no Punchline. Text only. The Serious mode toggle has `aria-pressed` and is persisted.

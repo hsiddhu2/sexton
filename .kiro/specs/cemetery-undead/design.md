@@ -2,7 +2,7 @@
 
 ## Overview
 
-cemetery-undead is Phase 1 of the art pass "Night of the Living Deps". HP approved art direction C on 24 Nov 2026 at 03:41 from two mockups:
+cemetery-undead is Phase 1 of the art pass "Night of the Living Deps". The owner approved art direction C on 24 Nov 2026 at 03:41 from two mockups:
 
 - `private/design/mockup-night.html`, the cemetery;
 - `private/design/mockup-nightreplay.html`, the axios replay moment.
@@ -20,13 +20,15 @@ The spec changes how the cemetery looks and leaves what a grave means alone. A g
 5. **Ghost.** Original art. Never the Kiro logo.
 6. **Depth.** Three Tiers by urgency. Triage order holds within a Tier and in the keyboard order.
 7. **Frame rate.** 12 a second. One still Pose under Reduced motion. The 300-grave repaint stays inside 16 ms.
-8. **Epitaphs.** A fixed table keyed by State and reason. HP approves it (section "Epitaph table").
+8. **Epitaphs.** A fixed table keyed by State and reason, approved by the owner on 24 Nov 2026 with one change: the install-script line is the owner's wording (section "Epitaph table").
 9. **Serious mode.** Off by default, remembered per browser with a guarded localStorage read.
 10. **Sound button.** Shown but disabled in Phase 1.
 11. **Canvas top.** At or above y 190 at 1440 by 900.
 12. **The screenshot loop.** A Visual critic that never sees the code reviews every visual change at both sizes.
 
-### Open question for HP (requirement 13, blocks the build)
+### Open question for the owner (requirement 13, blocks the build)
+
+**Decided 24 Nov 2026: the owner approved the amendment as written.** Task 1.1 applies it.
 
 R-UI-1 says: "Grave form encodes state: upright stone for Alive and Restless, cross for Haunted, cracked tilted stone for Dead, open grave for Possessed." This spec gives Alive and Restless different Forms. The approved art cannot meet R-UI-1 as written.
 
@@ -34,7 +36,7 @@ The proposed amendment, as a change log line "0.5, 24 Nov 2026. R-UI-1: Alive an
 
 > R-UI-1. THE SYSTEM SHALL render each direct dependency as a grave in a cemetery scene. Grave form encodes state: a rounded stone with a party hat and flowers for Alive, a tilted stone with a hand clawing out of the dirt for Restless, a cross for Haunted, a cracked tilted stone with a lounging skeleton for Dead, and an open grave with a dancing devil-costumed zombie for Possessed. Colour follows the same state. Graves sit in three depth tiers by state group, each at a fixed scale. No continuous encodings. A package whose installed version is not yet published on the chosen date shows an unmarked mound (the Not-published form), and a package with a logged pull request shows a pennant beside its grave. Neither changes the grave form of a State.
 
-If HP declines, these parts revert and the rest of the spec stands:
+If the owner declines, these parts revert and the rest of the spec stands:
 - Restless keeps the Alive outline (`rounded`, upright) with the hand in front, and no `tilted` outline is added. Requirement 3.3 then reads "an upright stone with a zombie hand clawing out of the dirt in front of it".
 - Deliberate test change 1 keeps one shared outline for Alive and Restless.
 - Deliberate test change 2 keeps its old title and its one allowed shared shape, renamed from upright to rounded.
@@ -301,13 +303,13 @@ export function hereLies(name: string, version: string): string; // "Here lies <
 
 Anything else gives null, and then no Punchline.
 
-#### Epitaph table (for HP to approve)
+#### Epitaph table (approved by the owner on 24 Nov 2026)
 
 | State | Engine reason | Reason family | Punchline | Why it is true |
 |---|---|---|---|---|
 | Possessed | maintainer change in the last 90 days | maintainer-change | The keys changed hands. Nobody heard the door. | a maintainer was added or removed in 90 days (`maintainerDiff` counts both). The handoff's example "New owners moved in. Nobody heard them knock." is true only of an addition, so it is not used. |
 | Possessed | provenance regression: X has no provenance, Y had it | provenance-regression | It used to carry papers. This one came without. | the installed version lacks the provenance an earlier one had |
-| Possessed | install script added in X | install-script | Came back with a script that runs on install. | this version added an install script |
+| Possessed | install script added in X | install-script | It came back with a script, and it runs before you do. | this version added an install script, which npm runs at install, before any of your code |
 | Dead | installed version is deprecated | deprecated | Deprecated, not departed. | the installed version is deprecated and still installed |
 | Dead | no release in 24 months and an open advisory | stale-with-advisory | Two years without a release, and a hole still open. | no release in 24 months and an open advisory |
 | Haunted | advisory of severity High or Critical | severe-advisory | Something serious walks these grounds. | a High or Critical advisory is open |
@@ -528,7 +530,7 @@ After every visual sub-task, the Orchestrator does three things:
 2. It spawns a fresh subagent with only:
    - those four images;
    - `private/design/shots/mockup-night-1440.png` and `mockup-nightreplay-1440.png`;
-   - the text of the frontend-design guidance;
+   - the text of the design guidance;
    - this section's checklist.
 3. The critic answers READY, or gives numbered findings. Findings are fixed, the round repeats, and each round's findings go under the sub-task as "Critic round N".
 
@@ -542,7 +544,7 @@ Checklist:
 - nothing overlaps at 390;
 - the footer bar matches the mockup;
 - the Canvas top is near the header;
-- no generic template tells (frontend-design's list).
+- no generic template tells (the design guidance's list).
 
 ## Calls made without a user decision
 
@@ -568,7 +570,7 @@ Checklist:
 
 ## Notes and open items
 
-- **R-UI-1.** Waits for HP (see "Open question for HP").
+- **R-UI-1.** Approved by the owner on 24 Nov 2026 as written (see "Open question for the owner").
 - **Cube World Kit licence.** Checked in task 4.1.
 - **The bake.** Task 4 records whether it worked within its day or the Vector fallback was used.
 - **Alive against Restless.** 1.509:1 against the existing 1.5 minimum, so a later shade change must recheck it.
