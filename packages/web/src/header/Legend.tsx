@@ -63,7 +63,7 @@ export function Legend({ theme }: LegendProps) {
             <span>Pennant: a pull request was opened</span>
           </li>
           <li className="legend-chip legend-chip-ghost">
-            <svg className="legend-ghost" viewBox="0 0 12 14" width="24" height="28" aria-hidden="true" focusable="false">
+            <svg className="legend-ghost" viewBox="0 0 24 28" width="24" height="28" aria-hidden="true" focusable="false">
               <path d={GHOST_PATH} />
             </svg>{" "}
             <span>Ghost: one or more advisories</span>

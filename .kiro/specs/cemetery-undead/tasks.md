@@ -84,58 +84,73 @@ Run-time notes:
     - _Requirements: 15.5_
     - Review notes: READY, no defect. The WOFF2 signatures and lengths, the OFL texts, no external font host, and url() only to /fonts/ all checked. useFontsReady cannot loop. Acted on: design.md records the variable Instrument Sans file and the hidden wordmark mark (decisions 2 and 3). Note kept: Pirata One's licence reserves the name "Pirata" and Google's file is a subset, so CREDITS.md (task 8) will say so.
 
-- [ ] 4. Characters (U3)
+- [x] 4. Characters (U3)
   - Bakes the CC0 Characters, or falls back to vector, and draws the new Forms, Costumes and Ghost.
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 11.1, 11.2, 11.3, 11.4_
-  - [ ] 4.1 Check the model licences
+  - [x] 4.1 Check the model licences
     - Read the Zombie Apocalypse Kit and Cube World Kit licence pages. Record in design.md the exact licence text and the models used for the zombie, the skeleton and the hand. Use no model whose page does not say CC0.
     - _Requirements: 3.9, 11.2_
-  - [ ] 4.2 Write `packages/web/scripts/bake-sprites.mjs` and bake the Atlases (budget: one working day)
+    - Notes: the Zombie Apocalypse Kit page states "License CC0" (60 models, animated, glTF), but it downloads only through a Google Drive folder. The poly.pizza page of the Cube World Kit is behind a browser challenge. No model was used. design.md decision 4.
+  - [x] 4.2 Write `packages/web/scripts/bake-sprites.mjs` and bake the Atlases (budget: one working day)
     - three.js and any loader as devDependencies of `@sexton/web` only. Use a Playwright Chromium page, a fixed three-quarter orthographic camera, 12 Poses a second and 96-pixel cells. Write `public/sprites/<character>-<clip>.png` and `.json`, with CC0-1.0 and the pack in each JSON. Models are read from the repository-root `build/models`, gitignored by the root `build/*` rule. Add the npm script `sprites:bake` only. If all four Atlases are not ready within the day, stop the bake and record the Vector fallback call in design.md.
     - _Requirements: 3.9, 11.2, 11.3_
-  - [ ] 4.3 Write `scene/characters/` (the sprite source, the vector source and `costume.ts`) and the new shapes
+    - Notes: not baked. The models cannot be fetched by a script, so requirement 3.9's Vector fallback is used. No bake script, no devDependency, and no package.json or lockfile change (design.md decision 4).
+  - [x] 4.3 Write `scene/characters/` (the sprite source, the vector source and `costume.ts`) and the new shapes
     - The `CharacterSource` interface, the Atlas loader with `ready`, the Vector fallback Poses, the costume paths, the `rounded` and `tilted` outlines, the lid flung aside and the new Ghost path. `SHAPE_BY_STATE` as in design.md.
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.8_
-  - [ ] 4.4 Write `packages/web/test/characters.test.ts`: Property 2, and apply Deliberate test changes 1, 2, 11, 14 (ghost) and 15
+    - Notes: scene/characters/vector.ts draws the zombie (dance), the skeleton (lounge and dance) and the hand (twitch) at 12 Poses a Clip (8 for twitch), plus the devil, onesie and party Costumes, from costume tokens. New rounded (Alive) and tilted (Restless) outlines, a rounded cracked Dead stone, and the original Ghost path with oval eyes and blush. STATE_BY_SHAPE maps a drawn shape back to its State, so a grave at an earlier date shows that date's Character.
+  - [x] 4.4 Write `packages/web/test/characters.test.ts`: Property 2, and apply Deliberate test changes 1, 2, 11, 14 (ghost) and 15
     - **Property 2: Form, Character and Costume depend on the State only, and a Ghost on advisories only**
     - **Validates: Requirements 3.6, 3.7**
     - Also: each Atlas JSON says CC0-1.0 and names the pack, or the vector source is selected. No `kiro` string appears in the scene source or the public assets.
     - _Requirements: 3.6, 3.7, 3.9, 11.2_
-  - [ ] 4.5 Screenshot loop for the Characters
+    - Notes: Property 2 in characters.test.ts, 100 runs, plus the State to Form, Character and Costume table, no sprite or model file in public, and no kiro name in the scene source or public assets. Deliberate test changes 1, 2, 11, 14 (ghost) and 15 applied. Change 15 needed no edit: the scene test's ghost assertions still hold.
+  - [x] 4.5 Screenshot loop for the Characters
     - _Requirements: 14.1, 14.2, 14.3_
-  - [ ] 4.6 Independent code review of task 4
+    - Notes: Critic round 3 (round-5-3, with task 5): not ready, eight points. Acted on: smaller name tags; bigger, overlapping ghosts; a larger zombie with a tail; the skeleton lounging across a rounded cracked stone; a splayed hand on a mound; bigger bats; more fog; a feathered horizon; a bigger moon with craters. Not acted on, against the spec's rules: per-grave variation, overlapping rows, a dimmer back row, a scaled-up lone replay grave (design.md decision 8). Header and footer points go to task 7.
+  - [x] 4.6 Independent code review of task 4
     - _Requirements: 15.5_
+    - Review notes: READY. Notes acted on through the task 5 review below.
 
-- [ ] 5. Motion, Tiers and the night backdrop (U4)
+- [x] 5. Motion, Tiers and the night backdrop (U4)
   - Animates the Characters at 12 a second, lays the graves out in Tiers, and draws the cached backdrop with bats and the Lantern glow.
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 10.2_
-  - [ ] 5.1 Write `scene/motion.ts` and the clock in `Cemetery.tsx`
+  - [x] 5.1 Write `scene/motion.ts` and the clock in `Cemetery.tsx`
     - `poseAt`, `dancers`, `inDanceWindow`, FNV-1a seed. One `setTimeout(FRAME_MS)` while animated Characters are on screen, Reduced motion is off and the page is visible.
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
-  - [ ] 5.2 Write `packages/web/test/motion.test.ts`: Property 3
+    - Notes: scene/motion.ts (FNV-1a seed, poseAt, dancers, inDanceWindow). The clock lives in Scene.tsx, not Cemetery: one setTimeout(FRAME_MS) while Reduced motion is off and the page is visible. It only invalidates the canvas, so React does not re-render each frame.
+  - [x] 5.2 Write `packages/web/test/motion.test.ts`: Property 3
     - **Property 3: Motion is a pure function of time, seed and Reduced motion**
     - **Validates: Requirements 4.1, 4.2, 4.3, 4.4**
     - Fake-timer examples: one step per 83 ms, no timer under Reduced motion, no timer while hidden, and a restart on visibility.
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.6_
-  - [ ] 5.3 Write `scene/tiers.ts` and update `planScene`, the grave buttons and the tooltip anchor
+    - Notes: Property 3 in motion.test.tsx, 100 runs for each of pose, dancers and dance window. Clock examples with fake timers: one extra timer while moving, none under Reduced motion, at least three repaints in three steps, no timer while hidden, a restart on visibilitychange.
+  - [x] 5.3 Write `scene/tiers.ts` and update `planScene`, the grave buttons and the tooltip anchor
     - The Tier rows of design.md "Tiers", `SKY_HEIGHT` 160, scaled per-grave geometry, and the scaled ring and button rectangles.
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7_
-  - [ ] 5.4 Write `packages/web/test/tiers.test.ts`: Property 1, and apply Deliberate test changes 3 to 6 and 14 (marker)
+    - Notes: scene/tiers.ts. planScene places each grave in the Tier of its scan-date State, back Tier first, each row centred, SKY_HEIGHT 160, TIER_GAP 12. ScenePlan gains rowLines, paintOrder, dancers, reducedMotion and lantern. The 11 grave keys are unchanged: the scale is rect.w / 192.
+  - [x] 5.4 Write `packages/web/test/tiers.test.ts`: Property 1, and apply Deliberate test changes 3 to 6 and 14 (marker)
     - **Property 1: Tiers keep triage order and never overlap**
     - **Validates: Requirements 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7**
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7_
-  - [ ] 5.5 Write `scene/backdrop.ts` and update `draw.ts`
+    - Notes: Property 1 in tiers.test.ts, 100 runs, with Forms; the demo mix gives 6, 4 and 2; column thresholds per Tier (415/416, 339/340, 277/278). Deliberate test changes 3 to 6 and 14 (marker) applied in layout.test.ts, ghost-drift.test.ts and marker.test.tsx, against an independent Tier model in the test.
+  - [x] 5.5 Write `scene/backdrop.ts` and update `draw.ts`
     - The cached layer (sky, stars, the right-hand moon, church, tree, fence, fog, ground, grass, vignette, grain), the bats, the Lantern glow, and the graves drawn back to front with Characters and Costumes. The burial moves the Character with its stone.
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 10.2_
-  - [ ] 5.6 Apply Deliberate test changes 7 to 10, 12 and 13, and confirm the scenery seed tests pass unedited
+    - Notes: draw.ts draws the sky (with the glow feathered into the ground), stars, the cratered harvest moon, the church, tree, fence and bats, fog, ground, grass, vignette and grain, then the graves back to front. Each grave is drawn in its cell frame at its Tier scale, with one glow (lantern or Possessed). The Character rides with the stone in a burial. No backdrop cache (design.md decision 5).
+  - [x] 5.6 Apply Deliberate test changes 7 to 10, 12 and 13, and confirm the scenery seed tests pass unedited
     - _Requirements: 6.2, 6.3_
-  - [ ] 5.7 Run the e2e budget
+    - Notes: Deliberate test changes 7 to 10, 12 and 13 applied in draw.test.ts. scenery-seed.test.ts passes unedited after rewording two comments that held the words Math.random.
+  - [x] 5.7 Run the e2e budget
     - `npm run test:e2e -w @sexton/web`. Both 300-grave medians are at or below 16 ms. Record them.
     - _Requirements: 6.6_
-  - [ ] 5.8 Screenshot loop for the scene
+    - Notes: npm run test:e2e: 22 passed. 300-grave medians 2.60 ms and 2.30 ms (16 ms budget). Two cemetery-polish tests failed on the first run because pressing a front grave scrolled the URL box away; fixed by the sticky header (design.md decision 9).
+  - [x] 5.8 Screenshot loop for the scene
     - _Requirements: 14.1, 14.2, 14.3_
-  - [ ] 5.9 Independent code review of task 5
+    - Notes: Critic round 3 findings as in 4.5. round-5-4 has the changes. The next critic round runs after task 7, with the header and footer in place.
+  - [x] 5.9 Independent code review of task 5
     - _Requirements: 15.5_
+    - Review notes: Task 4 READY. Task 5 NOT READY with one defect: the clock test's final assertion could never fail. Fixed: it now asserts at least three repaints after three steps. Notes acted on: column thresholds for the middle and back Tiers; the cemetery-undead tag on Property 8; the change label in a draw test comment; design.md decisions 5, 6, 9 and 10 record the missing cache, centred rows, the sticky header and the test notes. Notes kept: a full-canvas gradient and pattern each frame (the measured medians stay small); the clock runs while only bats move.
 
 - [ ] 6. Epitaphs and Serious mode (U5, U6)
   - Adds "Here lies" and the Punchlines to the tooltip and the drawer, and the Serious mode toggle.

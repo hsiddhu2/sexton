@@ -1,6 +1,7 @@
 import { memo, useEffect, useRef } from "react";
 import { drawScene } from "./draw.js";
 import { backingStore, type ScenePlan } from "./layout.js";
+import { FRAME_MS } from "./motion.js";
 import { createRedrawScheduler, type RedrawScheduler } from "./scheduler.js";
 
 export interface SceneProps {
@@ -29,7 +30,7 @@ function SceneView({ plan }: SceneProps) {
         ctx ??= canvas.getContext("2d");
         if (ctx === null) return;
         const current = planRef.current;
-        drawScene(ctx, current, backingStore(current.width, current.groundHeight, window.devicePixelRatio).scale);
+        drawScene(ctx, current, backingStore(current.width, current.groundHeight, window.devicePixelRatio).scale, Date.now());
       },
     );
     schedulerRef.current = scheduler;
@@ -52,6 +53,29 @@ function SceneView({ plan }: SceneProps) {
   useEffect(() => {
     schedulerRef.current?.invalidate();
   }, [plan]);
+
+  // The Character clock (spec cemetery-undead, 4.1, 4.2, 4.6): one repaint every FRAME_MS while motion is allowed
+  // and the page is visible. React does not re-render for it: only the canvas repaints.
+  const still = plan.reducedMotion || plan.graves.length === 0;
+  useEffect(() => {
+    if (still) return undefined;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const tick = (): void => {
+      timer = null;
+      if (document.visibilityState === "hidden") return;
+      schedulerRef.current?.invalidate();
+      timer = setTimeout(tick, FRAME_MS);
+    };
+    const onVisibility = (): void => {
+      if (document.visibilityState !== "hidden" && timer === null) tick();
+    };
+    timer = setTimeout(tick, FRAME_MS);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      if (timer !== null) clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [still]);
 
   return (
     <canvas

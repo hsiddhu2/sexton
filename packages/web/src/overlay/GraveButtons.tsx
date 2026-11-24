@@ -21,11 +21,16 @@ export interface GraveButtonsProps {
   readonly views?: readonly (FormView | undefined)[];
   /** The As-of date text for the tooltip, set only before the scan date. */
   readonly asOfDate?: string;
+  /** Told the grave whose tooltip shows (hovered or focused), for the Lantern glow; null when none. */
+  readonly onLantern?: (index: number | null) => void;
 }
 
-export function GraveButtons({ plan, selectedIndex, packages, onSelect, onOpen, suppressTooltip = false, quietFocus, views, asOfDate }: GraveButtonsProps) {
+export function GraveButtons({ plan, selectedIndex, packages, onSelect, onOpen, suppressTooltip = false, quietFocus, views, asOfDate, onLantern }: GraveButtonsProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const { shownIndex, dispatch } = useGraveTooltip(suppressTooltip);
+  useEffect(() => {
+    onLantern?.(shownIndex);
+  }, [shownIndex, onLantern]);
   const shownPkg = shownIndex === null ? undefined : packages[shownIndex];
   const shownCell = shownIndex === null ? undefined : plan.graves[shownIndex]?.rect;
 

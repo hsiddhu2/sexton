@@ -153,7 +153,12 @@ main {
 }
 
 /* Header bar */
+/* The header stays in view while the cemetery scrolls, so the Repository URL box is always reachable
+   (spec cemetery-undead, requirement 9). Below the drawer backdrop (10), above the graves and tooltip (1, 2). */
 .site-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
   box-sizing: border-box;
   display: flex;
   flex-wrap: wrap;

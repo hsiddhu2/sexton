@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 /** The canvas families (spec cemetery-undead, requirement 2.4). */
-export const CANVAS_FONTS = ['18px "IM Fell English SC"'] as const;
+export const CANVAS_FONTS = ['15px "IM Fell English SC"'] as const;
 
 /**
  * Turns true once the canvas fonts have loaded, so the Scene repaints once with them. Until then the canvas draws

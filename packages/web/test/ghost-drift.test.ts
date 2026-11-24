@@ -48,8 +48,10 @@ describe("Feature: cemetery-theme, Property 6: Ghost offset function", () => {
           expect(Math.abs(offset)).toBeLessThanOrEqual(6);
           for (const g of plan.graves) {
             if (g.ghost === null) continue;
-            expect(g.ghost.y).toBe(g.rect.y + 12 + offset);
-            expect(g.ghost.x).toBe(g.rect.x + 84);
+            // Spec cemetery-undead, Deliberate test change 14: the cell offsets scale with the Tier; the drift does not.
+            const scale = g.rect.w / 192;
+            expect(g.ghost.y).toBe(g.rect.y + 12 * scale + offset);
+            expect(g.ghost.x).toBe(g.rect.x + 84 * scale);
             expect(g.ghost.x).toBeGreaterThanOrEqual(g.rect.x);
             expect(g.ghost.y).toBeGreaterThanOrEqual(g.rect.y);
             expect(g.ghost.x + GHOST_WIDTH).toBeLessThanOrEqual(g.rect.x + g.rect.w);

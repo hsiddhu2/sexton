@@ -585,6 +585,27 @@ Checklist:
    - The README line follows requirement 12.2 for the fallback, and CREDITS.md lists the fonts only.
    - If the owner later downloads the models into `build/models`, a Phase 2 bake can replace the vector source behind the same `drawCharacter` call.
 
+5. **No backdrop cache (task 5).** The scenery is drawn every frame instead of cached in an offscreen layer (call 7). Measured with 300 graves at 1280 by 800, the medians are 2.60 ms and 2.30 ms after a scrubber move, against the 16 ms budget. A cache would add a second canvas and a context that the painter tests cannot see. The e2e budget test guards this choice. If a later change pushes the median near the budget, the cache is the first fix.
+6. **Tier rows are centred (task 5).** The mockup centres every row, so each Tier row is centred in the drawable width (`min(width, MAX_BACKING)`). Graves still fill a row left to right in triage order. The layout tests use an independent model of this rule.
+7. **The moon scales down on narrow scenes (task 5).** `r = min(64, floor(width / 5) - 4)`, at x `width - width / 5`, y 84, so the moon stays inside the sky at width 224. After critic round 3 the radius went from 56 to 64 and the moon gained three craters in moonEdge.
+8. **Critic round 3 changes (tasks 4 and 5).**
+   - Grave name tags are smaller (104 by 26) and the inscription is 15 px.
+   - Ghosts are drawn 1.6 times larger and lower, overlapping their stones. The planned ghost box and its drift are unchanged.
+   - The Dead stone is a rounded tilted outline with the same crack, and the skeleton lounges across its base.
+   - The Possessed zombie is drawn 1.35 times larger, with a tail.
+   - The Restless hand has splayed fingers on a stepped dirt mound.
+   - The bats are 1.7 times larger, the fog band is taller, and the sky glow feathers 56 px into the ground.
+   - Not done, against rules this spec keeps:
+     - varying tilt, pose or mirroring per grave, because a Form depends on the State only (Property 2);
+     - rows overlapping each other, because grave rectangles never overlap (Property 1);
+     - a dimmer back row, because the state colours are fixed by the contrast rules;
+     - enlarging a lone replay grave, because the Tier scales are fixed.
+9. **Sticky header (task 5, ahead of task 7).** The front Tier sits low on the page, so pressing a grave there scrolled the URL box out of view, and the cemetery-polish e2e failed. The header is now `position: sticky`, as requirement 9.4 asks of the Footer bar, so the box stays reachable.
+10. **Test notes (tasks 4 and 5).**
+    - Deliberate change 7 also allows the costume tokens: they are palette tokens.
+    - The marker test (change 14) checks the cell-relative rectangles inside each grave frame. The frame's translate and scale are covered by the draw tests.
+    - Change 1 renamed the test from five to six shapes, since there are now six outlines.
+
 ## Notes and open items
 
 - **R-UI-1.** Approved by the owner on 24 Nov 2026 as written (see "Open question for the owner").

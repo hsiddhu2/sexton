@@ -32,6 +32,8 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
   const order = useMemo(() => triageOrder(response.report.packages), [response]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(() => (order.length > 0 ? 0 : null));
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  // The grave under the pointer or holding focus gets the Lantern glow (spec cemetery-undead, 6.4).
+  const [lantern, setLantern] = useState<number | null>(null);
   const returnFocusTo = useRef<number | null>(null);
   const quietFocus = useRef(false);
   const width = useContainerWidth(containerRef);
@@ -73,10 +75,12 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
         ghostPhase: phase,
         minHeight,
         marks,
+        reducedMotion,
+        lantern,
         ...(burial.burial !== null && burialIndex >= 0 ? { burial: { index: burialIndex, phase: burial.burial.phase } } : {}),
         ...(views !== undefined ? { forms: views } : {}),
       }),
-    [order, width, theme, selectedIndex, phase, minHeight, views, marks, burial.burial, burialIndex, fontsReady],
+    [order, width, theme, selectedIndex, phase, minHeight, views, marks, burial.burial, burialIndex, fontsReady, reducedMotion, lantern],
   );
   const request = burial.request;
   const onRemediateWithBurial = useMemo(
@@ -144,6 +148,7 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
                   onOpen={onOpen}
                   suppressTooltip={drawerOpen}
                   quietFocus={quietFocus}
+                  onLantern={setLantern}
                   {...(views !== undefined ? { views } : {})}
                   {...(asOfDate !== undefined ? { asOfDate } : {})}
                 />

@@ -5,15 +5,19 @@ import { GRAVE_GEOMETRY, planScene, type ScenePlan } from "../src/scene/layout.j
 import {
   ALPHA_ZERO_BYTE,
   FOG_PEAK_ALPHA_BYTE,
+  GLOW_ALPHA_BYTE,
+  GRAIN_ALPHA_BYTE,
+  LANTERN_ALPHA_BYTE,
   MOON_HALO_ALPHA_BYTE,
   PALETTE,
   SHADOW_ALPHA_BYTE,
   STONE_ALPHA_BYTE,
+  VIGNETTE_ALPHA_BYTE,
   type Theme,
 } from "../src/scene/palette.js";
 import { arbScenePackages, arbSceneWidth, arbTheme, scenePackage } from "./arbitraries.js";
 import { STATES } from "../src/load/lists.js";
-import { SOLID_BOXES, SPECKS } from "../src/scene/shapes.js";
+import { plinthPath, SOLID_BOXES, SPECKS } from "../src/scene/shapes.js";
 
 const NUM_RUNS = 100;
 
@@ -55,7 +59,19 @@ function tokens(theme: Theme): Set<string> {
   const out = new Set<string>();
   for (const [key, value] of Object.entries(p)) if (key !== "states" && typeof value === "string") out.add(value);
   for (const value of Object.values(p.states)) out.add(value);
+  for (const value of Object.values(p.costume)) out.add(value);
   return out;
+}
+
+/**
+ * Spec cemetery-undead: graves are painted back Tier first, each in its own cell frame that opens with
+ * save, translate(rect.x, rect.y), scale(tier scale). The index of that first save ends the scenery.
+ */
+function graveStart(calls: readonly Logged[], plan: ScenePlan): number {
+  const first = plan.graves[plan.paintOrder[0] ?? -1];
+  if (first === undefined) return calls.length;
+  const at = calls.findIndex((c, i) => c.method === "translate" && c.args[0] === first.rect.x && c.args[1] === first.rect.y && calls[i - 1]?.method === "save");
+  return at === -1 ? calls.length : at - 1;
 }
 
 const SCENERY_METHODS = new Set([
@@ -63,10 +79,15 @@ const SCENERY_METHODS = new Set([
   "clearRect",
   "createLinearGradient",
   "createRadialGradient",
+  "createPattern",
   "beginPath",
   "arc",
   "fill",
   "fillRect",
+  "save",
+  "translate",
+  "scale",
+  "restore",
 ]);
 
 function planFor(
@@ -98,11 +119,11 @@ describe("Feature: cemetery-theme, Property 4: Painter call discipline", () => {
           expect(clear).toBeGreaterThanOrEqual(0);
           expect(names.slice(0, clear).every((m) => m === "setTransform")).toBe(true);
 
-          const firstGrave = names.indexOf("save");
-          const sceneryEnd = firstGrave === -1 ? names.length : firstGrave;
-          expect(names.slice(0, sceneryEnd).every((m) => SCENERY_METHODS.has(m) || (m === "strokeRect" && firstGrave === -1))).toBe(
-            true,
-          );
+          // Spec cemetery-undead, Deliberate test change 8: the scenery now also translates, scales and fills paths
+          // (church, tree, bats), so it is bounded by the first grave frame rather than by the first save.
+          const sceneryEnd = graveStart(log.calls, plan);
+          expect(names.slice(0, sceneryEnd).every((m) => SCENERY_METHODS.has(m) || m === "strokeRect")).toBe(true);
+          expect(names.slice(0, sceneryEnd).filter((m) => m === "strokeRect")).toHaveLength(plan.graves.length === 0 && plan.ring !== null ? 1 : 0);
           expect(names.slice(0, sceneryEnd)).not.toContain("fillText");
 
           const texts = log.calls.filter((c) => c.method === "fillText");
@@ -118,6 +139,7 @@ describe("Feature: cemetery-theme, Property 4: Painter call discipline", () => {
             ...[...allowed].map((t) => t + ALPHA_ZERO_BYTE),
             ...[...allowed].map((t) => t + MOON_HALO_ALPHA_BYTE),
             ...[...allowed].map((t) => t + SHADOW_ALPHA_BYTE),
+            ...[LANTERN_ALPHA_BYTE, GLOW_ALPHA_BYTE, VIGNETTE_ALPHA_BYTE, GRAIN_ALPHA_BYTE].flatMap((b) => [...allowed].map((t) => t + b)),
           ];
           const ok = new Set([...allowed, ...alphaTokens]);
           for (const a of log.assigned) {
@@ -133,8 +155,9 @@ describe("Feature: cemetery-theme, Property 4: Painter call discipline", () => {
 
   it("gives a plan for zero packages Scenery", () => {
     const plan = planScene({ packages: [], width: 500, theme: "dark", selectedIndex: null, ghostPhase: 0 });
-    expect(plan.scenery.skyHeight).toBe(80);
-    expect(plan.scenery.moon).toEqual({ x: 83, y: 40, r: 20 });
+    // Spec cemetery-undead, Deliberate test change 12: a taller sky and the harvest moon on the right.
+    expect(plan.scenery.skyHeight).toBe(160);
+    expect(plan.scenery.moon).toEqual({ x: 400, y: 84, r: 64 });
   });
 
   it("draws the same Plinth path object for one Grave of each State", () => {
@@ -142,10 +165,11 @@ describe("Feature: cemetery-theme, Property 4: Painter call discipline", () => {
     const plan = planScene({ packages, width: 1280, theme: "dark", selectedIndex: null, ghostPhase: 0 });
     const log = logger();
     drawScene(log.ctx, plan, 1);
-    const withPath = log.calls.filter((c) => c.method === "fill" && c.args.length === 1).map((c) => c.args[0]);
+    // Spec cemetery-undead, Deliberate test change 9: the scenery fills six paths (church, tree, four bats) first.
+    const withPath = log.calls.slice(graveStart(log.calls, plan)).filter((c) => c.method === "fill" && c.args.length === 1).map((c) => c.args[0]);
     expect(withPath).toHaveLength(packages.length * 2);
-    const plinths = withPath.filter((_, i) => i % 2 === 1);
-    expect(new Set(plinths).size).toBe(1);
+    expect(withPath.filter((p) => p === plinthPath())).toHaveLength(packages.length);
+    expect(log.calls.slice(0, graveStart(log.calls, plan)).filter((c) => c.method === "fill" && c.args.length === 1)).toHaveLength(6);
   });
 });
 
@@ -169,7 +193,8 @@ describe("Feature: cemetery-theme, Property 5: Scenery depends on the width only
           expect(moon.x + moon.r).toBeLessThanOrEqual(planA.width);
           expect(moon.y - moon.r).toBeGreaterThanOrEqual(0);
           expect(moon.y + moon.r).toBeLessThanOrEqual(skyHeight);
-          expect(moon.x).toBeLessThanOrEqual(planA.width / 3);
+          // Spec cemetery-undead, Deliberate test change 12: the moon is on the right.
+          expect(moon.x).toBeGreaterThanOrEqual(planA.width - planA.width / 3);
         },
       ),
       { numRuns: NUM_RUNS },
@@ -218,8 +243,8 @@ describe("Feature: cemetery-polish, Property 4: Painter call discipline for star
           drawScene(log.ctx, plan, 1);
           const calls = log.calls;
           const names = calls.map((c) => c.method);
-          const firstSave = names.indexOf("save");
-          const end = firstSave === -1 ? names.length : firstSave;
+          // Spec cemetery-undead, Deliberate test change 8: the scenery ends at the first grave frame.
+          const end = graveStart(calls, plan);
           const s = plan.scenery;
           const rectAt = (i: number): number[] => calls[i]?.args as number[];
           const scenery = calls.slice(0, end);
@@ -233,9 +258,9 @@ describe("Feature: cemetery-polish, Property 4: Painter call discipline for star
           scenery.forEach((c, i) => {
             if (c.method !== "fillRect") return;
             const [, y, w, h] = rectAt(i) as [number, number, number, number];
-            if (y >= 304 && w === 1) grassIdx.push(i);
-            else if (w === 1 && h === 1) farIdx.push(i);
-            else if (w === 2 && h === 2) nearIdx.push(i);
+            if (y >= s.horizonY && w === 1) grassIdx.push(i);
+            else if (w === 1 && h === 1 && y < s.horizonY) farIdx.push(i);
+            else if (w === 2 && h === 2 && y < s.horizonY) nearIdx.push(i);
           });
           expect(farIdx).toHaveLength(far);
           expect(nearIdx).toHaveLength(near);
@@ -254,19 +279,19 @@ describe("Feature: cemetery-polish, Property 4: Painter call discipline for star
           expect(
             grassIdx.every((i) => {
               const [, y, , h] = rectAt(i) as [number, number, number, number];
-              return i > fogIdx && y >= 304 && y + h <= plan.groundHeight;
+              return i > fogIdx && y >= s.horizonY && y + h <= plan.groundHeight;
             }),
           ).toBe(true);
 
           // shadow and texture
           const rest = calls.slice(end);
           const n = plan.graves.length;
+          const ghosts = plan.graves.filter((g) => g.ghost !== null).length;
           expect(rest.filter((c) => c.method === "scale" && c.args[0] === 72 && c.args[1] === 8)).toHaveLength(n);
-          expect(rest.filter((c) => c.method === "arc" && c.args[2] === 1)).toHaveLength(n);
-          expect(rest.filter((c) => c.method === "fill" && c.args.length === 0)).toHaveLength(n);
-          expect(rest.filter((c) => c.method === "fill" && c.args.length === 1)).toHaveLength(
-            n * 2 + plan.graves.filter((g) => g.ghost !== null).length,
-          );
+          // Each ghost adds two eye and two blush ovals (a unit arc and an argument-less fill each).
+          expect(rest.filter((c) => c.method === "arc" && c.args[2] === 1)).toHaveLength(n + 4 * ghosts);
+          expect(rest.filter((c) => c.method === "fill" && c.args.length === 0)).toHaveLength(n + 4 * ghosts);
+          expect(rest.filter((c) => c.method === "fill" && c.args.length === 1)).toHaveLength(n * 2 + ghosts);
           const pit = PALETTE[theme].pit + SHADOW_ALPHA_BYTE;
           expect(log.assigned.filter((a) => a.prop === "fillStyle" && a.value === pit)).toHaveLength(n);
           expect(log.assigned.filter((a) => a.prop === "lineWidth" && a.value === 0.5)).toHaveLength(n);
@@ -279,14 +304,16 @@ describe("Feature: cemetery-polish, Property 4: Painter call discipline for star
           const shadowStarts = calls.flatMap((c, i) => (c.method === "scale" && c.args[0] === 72 ? [i - 2] : []));
           expect(shadowStarts).toHaveLength(n);
           shadowStarts.forEach((at, k) => {
-            const g = plan.graves[k];
+            // Painted back Tier first: the k-th shadow belongs to the k-th grave of the paint order.
+            const g = plan.graves[plan.paintOrder[k] ?? -1];
             expect(names.slice(at, at + 7)).toEqual(["save", "translate", "scale", "beginPath", "arc", "fill", "restore"]);
-            expect(calls[at + 1]?.args).toEqual([(g?.rect.x ?? 0) + 96, (g?.rect.y ?? 0) + 210]);
+            // Cell-relative inside the grave frame.
+            expect(calls[at + 1]?.args).toEqual([96, 210]);
             // the next save after the shadow opens the shape: its stroke comes after its fill
             expect(names[at + 7]).toBe("save");
             let f = at + 8;
             while (f < calls.length && !(names[f] === "fill" && calls[f]?.args.length === 1)) f += 1;
-            const k1 = SPECKS[g?.shape ?? "upright"].length;
+            const k1 = SPECKS[g?.shape ?? "rounded"].length;
             expect(names[f + 1]).toBe("stroke");
             expect(calls[f + 1]?.args[0]).toBe(calls[f]?.args[0]);
             expect(names.slice(f + 2, f + 2 + k1).every((m) => m === "fillRect")).toBe(true);
@@ -296,12 +323,14 @@ describe("Feature: cemetery-polish, Property 4: Painter call discipline for star
           // colours: far stars starFar, near stars star, tones grassDark then grassLight, texture ink at the stone byte
           const c = PALETTE[theme];
           const fills = log.assigned.filter((a) => a.prop === "fillStyle").map((a) => a.value);
-          const sceneryFills = fills.slice(0, fills.indexOf(c.moon) + 1);
+          // The moon is a gradient now; the first silhouette fill (the church) follows the stars and the moon.
+          const haloAt = fills.indexOf(c.silhouette);
+          const sceneryFills = fills.slice(0, haloAt + 1);
           expect(sceneryFills.indexOf(c.starFar)).toBeGreaterThan(-1);
           expect(sceneryFills.indexOf(c.starFar)).toBeLessThan(sceneryFills.indexOf(c.star));
           const darkAt = fills.indexOf(c.grassDark);
           const lightAt = fills.indexOf(c.grassLight);
-          expect(darkAt).toBeGreaterThan(fills.indexOf(c.moon));
+          expect(darkAt).toBeGreaterThan(haloAt);
           expect(lightAt).toBe(darkAt + 1);
           expect(fills.filter((v) => v === c.grassDark || v === c.grassLight)).toHaveLength(2);
           const stone = c.ink + STONE_ALPHA_BYTE;
@@ -317,14 +346,17 @@ describe("Feature: cemetery-polish, Property 4: Painter call discipline for star
     fc.assert(
       fc.property(arbSceneWidth, arbTheme, fc.constantFrom(...STATES), (width, theme, state) => {
         const packages = [scenePackage("a", state, "none"), scenePackage("b", state, "none")];
-        const plan = planFor(packages, Math.max(width, 448), theme, -1, 0);
+        // Spec cemetery-undead, Deliberate test change 10: both graves share one Tier; Reduced motion holds every
+        // Character in its still Pose, since only the animation phase may differ between two graves of a State.
+        const plan = planScene({ packages, width: Math.max(width, 448), theme, selectedIndex: null, ghostPhase: 0, reducedMotion: true });
         const log = logger();
         drawScene(log.ctx, plan, 1);
-        const first = log.calls.findIndex((c) => c.method === "save");
+        const first = graveStart(log.calls, plan);
         const body = log.calls.slice(first);
+        // Each grave opens its frame with save, translate(rect.x, rect.y).
         const starts: number[] = [];
         body.forEach((c, i) => {
-          if (c.method === "scale" && c.args[0] === 72) starts.push(i - 2);
+          if (c.method === "translate" && plan.graves.some((g) => g.rect.x === c.args[0] && g.rect.y === c.args[1]) && body[i - 1]?.method === "save") starts.push(i - 1);
         });
         expect(starts).toHaveLength(2);
         const [a, b] = plan.graves;
@@ -333,8 +365,8 @@ describe("Feature: cemetery-polish, Property 4: Painter call discipline for star
         expect(s1 - s0).toBe(body.length - s1);
         const dx = (b?.rect.x ?? 0) - (a?.rect.x ?? 0);
         const dy = (b?.rect.y ?? 0) - (a?.rect.y ?? 0);
-        // Absolute moves (translate to the Cell, the Inscription position) shift by the Cell offset;
-        // everything else, the shadow, texture and specks included, is identical.
+        // The only absolute move is the translate to the Cell, which shifts by the Cell offset;
+        // everything else, the shadow, texture, specks, Character and inscription included, is identical.
         for (let i = 0; i < s1 - s0; i += 1) {
           const ca = body[s0 + i];
           const cb = body[s1 + i];
@@ -345,7 +377,8 @@ describe("Feature: cemetery-polish, Property 4: Painter call discipline for star
             const shifted = (cb.args[0] as number) - (ca.args[0] as number) === dx && (cb.args[1] as number) - (ca.args[1] as number) === dy;
             expect(same || shifted).toBe(true);
           } else if (ca.method === "fillText") {
-            expect([(cb.args[1] as number) - dx, (cb.args[2] as number) - dy, cb.args[3]]).toEqual([ca.args[1], ca.args[2], ca.args[3]]);
+            // The inscription is cell-relative inside the frame: the same position, a different name.
+            expect(cb.args.slice(1)).toEqual(ca.args.slice(1));
           } else {
             expect(cb.args).toEqual(ca.args);
           }
@@ -403,8 +436,8 @@ describe("cemetery-polish: stone texture and grass examples", () => {
     const plan = planFor(packages, width, "dark", -1, 0);
     const log = logger();
     drawScene(log.ctx, plan, 1);
-    const first = log.calls.findIndex((c) => c.method === "save");
-    const grass = log.calls.slice(0, first).filter((c) => c.method === "fillRect" && (c.args[1] as number) >= 304 && c.args[2] === 1);
+    const first = graveStart(log.calls, plan);
+    const grass = log.calls.slice(0, first).filter((c) => c.method === "fillRect" && (c.args[1] as number) >= plan.scenery.horizonY && c.args[2] === 1);
     expect(grass.length).toBeLessThanOrEqual(bound);
     expect(grass.length).toBeGreaterThan(0);
   });
@@ -423,12 +456,12 @@ describe("Feature: cemetery-time, Property 2: Painter call discipline for tufts 
           const log = logger();
           drawScene(log.ctx, plan, 1);
           const names = log.calls.map((c) => c.method);
-          const firstSave = names.indexOf("save");
-          const end = firstSave === -1 ? names.length : firstSave;
+          const end = graveStart(log.calls, plan);
+          expect(names.length).toBeGreaterThan(0);
           const fogIdx = log.calls.findIndex((c) => c.method === "fillRect" && c.args[1] === plan.scenery.fog.y && c.args[3] === plan.scenery.fog.h);
           const tufts = log.calls
             .map((c, i) => ({ c, i }))
-            .filter(({ c, i }) => i < end && c.method === "fillRect" && (c.args[1] as number) >= 304 && c.args[2] === 1);
+            .filter(({ c, i }) => i < end && c.method === "fillRect" && (c.args[1] as number) >= plan.scenery.horizonY && c.args[2] === 1);
           const extra = plan.groundHeight - plan.height >= 10 ? 1 : 0;
           const perLine = plan.scenery.grass.reduce((sum, t) => sum + t.rects.length, 0);
           expect(tufts).toHaveLength((plan.rows + extra) * perLine);
