@@ -238,6 +238,23 @@ describe("the replay through the scrubber (requirement 20)", () => {
     }
   });
 
+  it("shows the replay title in place of the repository and no policy line, at every Stop", async () => {
+    for (const id of REPLAY_IDS) {
+      const { container } = mount(`?replay=${id}`);
+      await ready();
+      const title = (readReplay(id) as { replay: { title: string } }).replay.title;
+      for (let i = 0; i < EXPECTED_SEGMENTS[id].length; i += 1) {
+        move(i);
+        expect(container.querySelector(".repo-text")?.textContent).toBe(title);
+        expect(container.querySelector(".header-policy")).toBeNull();
+        const header = container.querySelector("header.site-header")?.textContent ?? "";
+        expect(header).not.toContain("no scan metadata in this response");
+        expect(header).not.toContain("policy:");
+      }
+      cleanup();
+    }
+  });
+
   it("returns to 1.14.0 at the end of the axios replay", async () => {
     const { container } = mount("?replay=axios");
     await ready();

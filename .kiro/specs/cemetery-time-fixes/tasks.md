@@ -11,7 +11,7 @@ Run-time notes for the agents:
 - Tests change only where design.md lists a Deliberate test change (numbered 1 to 19 there). Any other existing test that fails is a regression: fix the source, not the test.
 - Change only `packages/engine`, `packages/api`, `packages/web`, `README.md`, `docs/cemetery.png`, `docs/replay-axios.png`, `.kiro/steering/web.md` and `.kiro/specs/cemetery-time-fixes`. Nothing under `infra`, `packages/cli`, `packages/action` or `.github`, and no `package.json` or `package-lock.json`.
 - Regenerate derived files with `npm run demo:generate -w @sexton/api` (offline). Never run `fixtures:record` and never use the network in a test.
-- Each top-level task ends with a security review. Invoke the security-reviewer agent with the list of files that the task changed, ask it to review them against this spec's requirements and the security steering, record its findings in a "Review notes" line under that sub-task, and fix every finding of kind "defect" inside the same task before it is marked done.
+- Each top-level task ends with a security review. Run an independent security review on the list of files that the task changed, against this spec's requirements and the security steering, record the findings in a "Review notes" line under that sub-task, and fix every finding of kind "defect" inside the same task before it is marked done.
 - Run vitest one package at a time. Under load a first run can time out. Run the failing file alone before reading it as a regression.
 - No task asks the user a question. Every call that needed a decision is recorded in design.md "Calls made without a user decision". Dates written by a task are 24 Nov 2026 (UTC) or the date of the run.
 
@@ -45,7 +45,7 @@ Run-time notes for the agents:
     - _Requirements: 1.1, 1.2, 1.8_
     - Notes: commit 80c7543. api alone exit 0 (32 files, 286 tests, no demo folder created). Root `npm test` exit 0, 1836 tests. Per-package counts in design.md "Notes and open items". Clone removed.
   - [x] 1.7 Security review of task 1
-    - Invoke the security-reviewer agent on the files of 1.1 to 1.3. Record the findings in "Review notes". Fix every defect in this task.
+    - Run an independent security review on the files of 1.1 to 1.3. Record the findings in "Review notes". Fix every defect in this task.
     - _Requirements: 11.5_
     - Review notes: READY, no defect. Notes kept: the check reads single lines, so a path call split over lines is not flagged; only .ts, .tsx and .mjs are walked, as design.md says; the allow list is per file; the global setup checks only scan.json, which is the file the web tests read; `execFileSync("npm")` needs npm.cmd on Windows, and CI runs on Ubuntu and macOS only; the nag.test.ts entry is not strictly needed, kept because design.md lists it.
 
@@ -76,7 +76,7 @@ Run-time notes for the agents:
     - _Requirements: 2.3, 2.4, 2.5, 2.6, 2.10_
     - Notes: Property 4 in replay-facts.test.ts, 100 runs per replay, with the Stop instants, the millisecond before each and the Scan date as fixed cases. The bad publishes and Scan dates are literals from requirements 2.1 and 2.5. The review's note 1 added a literal check of the registry facts (a new test, not a change to an old one).
   - [x] 2.6 Security review of task 2
-    - Invoke the security-reviewer agent on the files of 2.1 to 2.5 and the two regenerated fixtures. Record the findings in "Review notes". Fix every defect in this task.
+    - Run an independent security review on the files of 2.1 to 2.5 and the two regenerated fixtures. Record the findings in "Review notes". Fix every defect in this task.
     - _Requirements: 11.5_
     - Review notes: READY, no defect. Acted on: note 1, no test pinned the literal facts of 2.1 and 2.2, so a test now does. Notes kept: the keyv 5.6.0 provenance source (call 12) is a comment, since Segments carry no source; a replay whose installed version had a boolean deprecated would need `factSources.deprecated`, which axios lacks, and no fact gives one today; Property 4 reuses the model of Property 13, which adds no no-regression input, with no effect while lastPublish is present; Property 4 does not check the report state, the EXPECTED and trace tests do.
 
@@ -111,7 +111,7 @@ Run-time notes for the agents:
     - _Requirements: 3.1, 4.2, 4.4, 4.11_
     - Notes: task 3 parts of changes 17 and 18 (slider 0 and keyv 5.6.0 Alive at load) and the Play test with `page.clock`. `npm run test:e2e -w @sexton/web`: 18 passed, none skipped, repaint medians 1.90 ms and 1.60 ms after a scrubber move. The smoke test rewrote docs/cemetery.png, restored until task 6.
   - [x] 3.7 Security review of task 3
-    - Invoke the security-reviewer agent on the files of 3.1 to 3.6. Record the findings in "Review notes". Fix every defect in this task.
+    - Run an independent security review on the files of 3.1 to 3.6. Record the findings in "Review notes". Fix every defect in this task.
     - _Requirements: 11.5_
     - Review notes: READY, no defect. Acted on: an event that changes nothing no longer clears the live line; the axe-while-playing example now holds the timer with fake timers so no tick lands during axe. Recorded as design decisions 1 and 2: the hook keys its state by load and takes the Stops. Notes kept: reduced motion is checked for timing only, and the play path has no animation code.
 
@@ -148,7 +148,7 @@ Run-time notes for the agents:
     - _Requirements: 5.2, 5.6, 6.4, 6.5_
     - Notes: App: the omitted line sits directly after the header, no slider, no live region; neither shows for a response with neither field. Scan: a hosted scan on the fixture transport carries timelines and no timelinesOmitted. generate-demo-scan.test.ts passes unedited. api 33 files, 296 tests. web 40 files, 391 tests.
   - [x] 4.7 Security review of task 4
-    - Invoke the security-reviewer agent on the files of 4.1 to 4.6. Record the findings in "Review notes". Fix every defect in this task.
+    - Run an independent security review on the files of 4.1 to 4.6. Record the findings in "Review notes". Fix every defect in this task.
     - _Requirements: 11.5_
     - Review notes: READY, no defect. Notes kept: no handler-level test drives a hosted scan over 5 MiB (the fixtures cannot reach it, the guard is unit tested and wired in one line); the 80 character case asserts no margin; the body is serialised twice on the hosted path, once by the guard and once by the handler.
 
@@ -172,7 +172,7 @@ Run-time notes for the agents:
     - _Requirements: 7.1, 7.2, 7.3, 7.5_
     - Notes: layout test at 1440 by 900 and two 360 px tests. First run: header 160 px, canvas top 201 px, and two cemetery-polish e2e tests failed because the field sat under the drawer. Fixed in the CSS (decision 4), not the tests. Second run: 21 passed, header 122.3 px, scrubber 41.3 px, canvas top 163.6 px, scrollWidth 360 on the demo and the axios replay. Recorded in design.md.
   - [x] 5.5 Security review of task 5
-    - Invoke the security-reviewer agent on the files of 5.1 to 5.4. Record the findings in "Review notes". Fix every defect in this task.
+    - Run an independent security review on the files of 5.1 to 5.4. Record the findings in "Review notes". Fix every defect in this task.
     - _Requirements: 11.5_
     - Review notes: READY, no defect. Acted on: the 0 row gap of `.scrub` is recorded as decision 5. Notes kept: below 960 px the group label wraps with the buttons, covered by the 360 px tests.
 
@@ -192,7 +192,7 @@ Run-time notes for the agents:
     - _Requirements: 9.3_
     - Notes: read both images. docs/cemetery.png: drawer closed, canvas top about 164 (at or above 190), "Replay an attack" and both buttons on the form row, label, date, Play and slider on one row, 12 graves. docs/replay-axios.png: banner with the title, the not-a-live-scan line, the summary and four links (Trend Micro, CSA, npm docs, npm registry), the open Possessed grave "axios 1.14.1", the as-of line "as of 31 Mar 2026, 00:21 UTC" with Back to now, slider at Stop 1, drawer closed. First pass of the replay image showed the form on row 1 and the Replay group on row 2, fixed and retaken.
   - [x] 6.4 Security review of task 6
-    - Invoke the security-reviewer agent on `docs/cemetery.png` and `docs/replay-axios.png` (metadata only) and `packages/web/e2e/smoke.spec.ts`. Record the findings in "Review notes". Fix every defect in this task.
+    - Run an independent security review on `docs/cemetery.png` and `docs/replay-axios.png` (metadata only) and `packages/web/e2e/smoke.spec.ts`. Record the findings in "Review notes". Fix every defect in this task.
     - _Requirements: 11.5_
     - Review notes: READY, no defect. Acted on: a unit test now pins `freeHeight` rounding up (test/free-height.test.ts). Notes kept: the paint wait relies on two frames after the Possessed label; the 1 px vertical overflow is recorded in decision 6; with a row gap of 0, a wrapped row 1 would get no gap, which cannot happen at 960 px and wider (row 1 needs about 708 px); the blue box in the pictures is the selected-grave ring.
 
@@ -204,7 +204,7 @@ Run-time notes for the agents:
     - _Requirements: 10.3_
     - Notes: the replay rule names "axios, Mar 2026" and "keyv, Aug 2026" in the group "Replay an attack". Four lines added: the opening Stop, the Play control, the omitted history line, and the canvas top at most 190 px with the two rows at 960 px and wider. Front matter and every other rule unchanged.
   - [x] 7.2 Security review of task 7
-    - Invoke the security-reviewer agent on `.kiro/steering/web.md`. Record the findings in "Review notes". Fix every defect in this task.
+    - Run an independent security review on `.kiro/steering/web.md`. Record the findings in "Review notes". Fix every defect in this task.
     - _Requirements: 11.5_
     - Review notes: READY, no defect. Every new line was checked against the built code. Note kept: the one-row scrubber at 960 px comes from the CSS and the e2e run.
 
@@ -216,7 +216,7 @@ Run-time notes for the agents:
     - _Requirements: 10.1, 10.2_
     - Notes: the Replay section names the group and both buttons, says a replay opens one hour before the attack so the grave starts Alive, and that Play steps through it. The image line is on its own line with the alt text of call 36. Both links and the not-a-live-scan sentence kept. No semicolon, no em dash. Deliberate test change 15: one new test in readme.test.ts, 8 of 8 pass.
   - [x] 8.2 Security review of task 8
-    - Invoke the security-reviewer agent on the files of 8.1. Record the findings in "Review notes". Fix every defect in this task.
+    - Run an independent security review on the files of 8.1. Record the findings in "Review notes". Fix every defect in this task.
     - _Requirements: 11.5_
     - Review notes: READY, no defect. Acted on: the test now checks "Press Play" instead of any "Play". The opening claim was checked against both fixtures.
 
@@ -248,7 +248,7 @@ Run-time notes for the agents:
     - _Requirements: 1.1, 1.2, 1.4, 1.8_
     - Notes: commit bee8968. api alone exit 0 (33 files, 296 tests, no demo folder created), root `npm test` exit 0 (1873 tests), bare web Vitest with the demo folder deleted exit 0 (41 files, 395 tests, demo files written by the global setup). Counts in design.md "Notes and open items". Clone removed.
   - [x] 9.7 Security review of the whole change
-    - Invoke the security-reviewer agent on the whole branch against this spec's requirements and the security steering. Record the findings in "Review notes". Fix every defect before the spec is closed.
+    - Run an independent security review on the whole branch against this spec's requirements and the security steering. Record the findings in "Review notes". Fix every defect before the spec is closed.
     - _Requirements: 11.5_
     - Review notes: READY, no defect, over the whole branch (8 commits, 43 paths). Checked: no secret, no network in tests, Engine untouched, no new fetch, no shell, no innerHTML, demo generator path untouched, every changed line of a pre-existing test maps to Deliberate test changes 1 to 19, numRuns and the 16 ms budget kept, all paths allowed, no trailers and no attribution. Notes kept: the 1 px vertical overflow of decision 6; the guard measures a body without timelines for a byte count only its tests read; a body still over the limit without timelines is not capped, as 5.4 allows; Property 4's model shares the generator's rules, and the EXPECTED rows and the literal facts test pin the values.
 

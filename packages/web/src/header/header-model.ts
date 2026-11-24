@@ -21,6 +21,8 @@ export interface HeaderModel {
   readonly policyLabel: "default policy" | "policy file";
   readonly failingRules: number;
   readonly evidenceLinks: EvidenceLinks | null;
+  /** False on a replay: its policy result is for the replay's end time, not for the date the scrubber shows. */
+  readonly showPolicy: boolean;
 }
 
 function unlockedNoticeFor(unlocked: boolean, names: readonly string[]): string | null {
@@ -44,12 +46,15 @@ function evidenceLinksFor(response: ScanResponse, isDemo: boolean, hostedApiBase
   return { json: `${base}&format=json`, markdown: `${base}&format=md` };
 }
 
-/** Pure. The demo label comes from isDemo only and never from the repository name. */
+/**
+ * Pure. The demo label comes from isDemo only and never from the repository name. A replay shows its title in place
+ * of the repository and hides the policy line.
+ */
 export function headerModel(response: ScanResponse, isDemo: boolean, hostedApiBase: string | null = null): HeaderModel {
   const { report, policy } = response;
   const scan = report.scan;
   return {
-    repoText: scan === undefined ? NO_SCAN_METADATA_TEXT : scan.repo.url,
+    repoText: response.replay !== undefined ? response.replay.title : scan === undefined ? NO_SCAN_METADATA_TEXT : scan.repo.url,
     demoLabel: isDemo && response.replay === undefined ? DEMO_LABEL_TEXT : null,
     scanTime: report.generatedAt,
     unlockedNotice: scan === undefined ? null : unlockedNoticeFor(scan.unlocked, scan.unlockedPackages),
@@ -61,5 +66,6 @@ export function headerModel(response: ScanResponse, isDemo: boolean, hostedApiBa
     policyLabel: policy.source === "default" ? "default policy" : "policy file",
     failingRules: policy.rules.filter((rule) => !rule.pass).length,
     evidenceLinks: evidenceLinksFor(response, isDemo, hostedApiBase),
+    showPolicy: response.replay === undefined,
   };
 }

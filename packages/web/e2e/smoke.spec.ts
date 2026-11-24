@@ -148,6 +148,9 @@ test("the axios replay at its Possessed stop, for the README", async ({ page, ba
   await expect(grave).toHaveAttribute("aria-label", "axios 1.14.1, Possessed");
   await expect(page.locator('[role="note"]')).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
+  // A replay names itself in the header and shows no policy line (its policy is for the replay's end time).
+  await expect(page.locator(".repo-text")).toHaveText("Replay: axios npm compromise, 31 March 2026");
+  await expect(page.locator(".header-policy")).toHaveCount(0);
   // Move focus off the slider so no focus ring is in the picture, then wait two frames for the repaint.
   await scrubber.blur();
   await waitForFirstPaint(page);

@@ -69,9 +69,11 @@ export function Header({ model, theme, apiConfigured, onSubmit, fieldRef, asOf, 
               )}
               {model.unlockedNotice === null ? null : <p className="notice notice-unlocked">{model.unlockedNotice}</p>}
               {model.cappedNotice === null ? null : <p className="notice notice-capped">{model.cappedNotice}</p>}
-              <p className="header-policy">
-                policy: <strong>{model.policyStatus}</strong>, {model.policyLabel}, {failingRulesText(model.failingRules)}
-              </p>
+              {model.showPolicy ? (
+                <p className="header-policy">
+                  policy: <strong>{model.policyStatus}</strong>, {model.policyLabel}, {failingRulesText(model.failingRules)}
+                </p>
+              ) : null}
             </>
           )}
         </div>

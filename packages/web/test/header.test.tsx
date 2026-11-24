@@ -283,3 +283,25 @@ describe("Header bar (cemetery-polish task 8)", () => {
     ]);
   });
 });
+
+// Fix after review of cemetery-time-fixes: a replay names itself and hides the policy line, every other scan keeps both.
+describe("replay header text", () => {
+  it("shows the replay title and no policy line for a replay, and the repository and policy line without one", () => {
+    const base = cheapScan(1);
+    const replay = { ...base, replay: { id: "axios" as const, title: "Replay: axios npm compromise, 31 March 2026", summary: "s", sources: [{ label: "l", url: "https://example.com/" }] } };
+    const withReplay = headerModel(replay, false);
+    expect(withReplay.repoText).toBe("Replay: axios npm compromise, 31 March 2026");
+    expect(withReplay.showPolicy).toBe(false);
+    const plain = headerModel(base, false);
+    expect(plain.repoText).not.toBe("Replay: axios npm compromise, 31 March 2026");
+    expect(plain.repoText).toMatch(/^(https:\/\/github\.com\/|no scan metadata in this response$)/);
+    expect(plain.showPolicy).toBe(true);
+    const shown = render(<Header model={withReplay} theme="light" apiConfigured={true} onSubmit={noSubmit} />);
+    expect(shown.container.querySelector(".header-policy")).toBeNull();
+    expect(shown.container.textContent).toContain("Replay: axios npm compromise, 31 March 2026");
+    shown.unmount();
+    const kept = render(<Header model={plain} theme="light" apiConfigured={true} onSubmit={noSubmit} />);
+    expect(kept.container.querySelector(".header-policy")?.textContent).toMatch(/^policy: (pass|fail), /);
+    kept.unmount();
+  });
+});
