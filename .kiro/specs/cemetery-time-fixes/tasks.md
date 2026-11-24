@@ -80,33 +80,40 @@ Run-time notes for the agents:
     - _Requirements: 11.5_
     - Review notes: READY, no defect. Acted on: note 1, no test pinned the literal facts of 2.1 and 2.2, so a test now does. Notes kept: the keyv 5.6.0 provenance source (call 12) is a comment, since Segments carry no source; a replay whose installed version had a boolean deprecated would need `factSources.deprecated`, which axios lacks, and no fact gives one today; Property 4 reuses the model of Property 13, which adds no no-regression input, with no effect while lastPublish is present; Property 4 does not check the report state, the EXPECTED and trace tests do.
 
-- [ ] 3. Opening Stop and the Play control (F3)
+- [x] 3. Opening Stop and the Play control (F3)
   - A replay opens at its first Stop. A Play control steps one Stop every 1,500 ms through a pure reducer and a timer hook, and announces each step in a polite live line.
   - _Requirements: 3.1, 3.2, 3.3, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10, 4.11_
-  - [ ] 3.1 Create `packages/web/src/time/play.ts`
+  - [x] 3.1 Create `packages/web/src/time/play.ts`
     - `PLAY_STEP_MS`, `PlayState`, `PlayEvent`, `openingStop(count, replay)` and `playStep(state, event)` with the rules of design.md "F3". Pure.
     - _Requirements: 3.1, 3.2, 3.3, 4.3, 4.4, 4.5, 4.6, 4.10_
-  - [ ] 3.2 Write `packages/web/test/play.test.ts`: Property 3
+    - Notes: pure `openingStop` and `playStep` with the rules of design.md F3. Seek clamps a negative or non-integer index to 0.
+  - [x] 3.2 Write `packages/web/test/play.test.ts`: Property 3
     - **Property 3: Play visits the Stops in order and ends at the last**
     - **Validates: Requirements 3.1, 3.2, 3.3, 4.3, 4.4, 4.5, 4.6, 4.10**
     - Generated Stop counts 0 to 40, replay flags and event sequences, checked against a plain loop model.
     - Tag: `Feature: cemetery-time-fixes, Property 3: Play visits the Stops in order and ends at the last`.
     - _Requirements: 3.1, 3.2, 3.3, 4.3, 4.4, 4.5, 4.6, 4.10_
-  - [ ] 3.3 Create `packages/web/src/time/use-play.ts`
+    - Notes: Property 3 in play.test.ts, 100 runs, Stop counts 0 to 40, both replay flags, up to 60 events, checked against a plain loop model, then a play and ticks from the final state.
+  - [x] 3.3 Create `packages/web/src/time/use-play.ts`
     - `useReducer(playStep)`, `load` on a new `loadId`, one `setTimeout(PLAY_STEP_MS)` while playing with cleanup, the announcement text of design.md call 24. Returns `{ index, playing, announce, play, pause, seek }`.
     - _Requirements: 4.4, 4.5, 4.7, 4.9_
-  - [ ] 3.4 Update `packages/web/src/App.tsx`, `packages/web/src/time/Scrubber.tsx` and `packages/web/src/styles.css`
+    - Notes: one `setTimeout(PLAY_STEP_MS)` while playing, cleared by the effect cleanup on each step, pause, seek, new load and unmount. State keyed by load (design.md "Decisions made during implementation" 1 and 2).
+  - [x] 3.4 Update `packages/web/src/App.tsx`, `packages/web/src/time/Scrubber.tsx` and `packages/web/src/styles.css`
     - App uses `usePlay` in place of `picked` (replay flag from `state.response.replay`), "Back to now" calls `seek(last)` and focuses the slider. Scrubber renders the Play button (class `scrub-play`, only for more than one Stop, before the slider) and the `aria-live="polite"` line with the class `visually-hidden`. CSS: `.scrub-play`, `.scrub-play:focus-visible` (3 px `--focus`), `.visually-hidden`, no transition and no animation.
     - _Requirements: 3.1, 3.2, 3.3, 4.1, 4.2, 4.5, 4.6, 4.7, 4.8, 4.11_
-  - [ ] 3.5 Update the web tests for the opening Stop and Play
+    - Notes: App uses `usePlay`, the slider and Back to now call `seek`. Scrubber renders Play (only for more than one Stop) between the date text and the slider, and the polite live line at the end of the section. CSS adds `.scrub-play`, its focus ring and `.visually-hidden`, with tokens only and no transition or animation.
+  - [x] 3.5 Update the web tests for the opening Stop and Play
     - Apply Deliberate test changes 9, 13, 14, the task 3 parts of 8, 10 and 12 (`seen[7]` "Play", `seen[8]` "History date", ten presses). Add the hook examples to `play.test.ts` (fake timers: 1,500 ms per step, none before, stop at the last, pause, unmount and new load clear the timer, no step without a press) and the DOM examples to `scrubber.test.tsx` and `replay.test.tsx` listed in design.md "Testing Strategy", and the `styles.test.ts` additions.
     - _Requirements: 3.1, 3.2, 3.3, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.11_
-  - [ ] 3.6 Extend `packages/web/e2e/time.spec.ts` (written by impl, run by the orchestrator)
+    - Notes: Deliberate test changes 9, 13, 14 and the task 3 parts of 8, 10 and 12 applied. New: nine hook examples in play.test.ts, eight Play examples in scrubber.test.tsx, one opening-Stop example in replay.test.tsx, one styles example. web 40 files, 388 tests.
+  - [x] 3.6 Extend `packages/web/e2e/time.spec.ts` (written by impl, run by the orchestrator)
     - Apply the task 3 parts of Deliberate test changes 17 and 18 (slider "0" at load, "keyv 5.6.0, Alive"). Add the Play test: `page.clock.install()` before `goto("/?replay=axios")`, press Play, `runFor(1500)` gives "axios 1.14.1, Possessed", `runFor(1500)` gives Stop 2 and the button named "Play" again. The orchestrator runs `npm run test:e2e -w @sexton/web` and records the result in "Notes".
     - _Requirements: 3.1, 4.2, 4.4, 4.11_
-  - [ ] 3.7 Security review of task 3
+    - Notes: task 3 parts of changes 17 and 18 (slider 0 and keyv 5.6.0 Alive at load) and the Play test with `page.clock`. `npm run test:e2e -w @sexton/web`: 18 passed, none skipped, repaint medians 1.90 ms and 1.60 ms after a scrubber move. The smoke test rewrote docs/cemetery.png, restored until task 6.
+  - [x] 3.7 Security review of task 3
     - Invoke the security-reviewer agent on the files of 3.1 to 3.6. Record the findings in "Review notes". Fix every defect in this task.
     - _Requirements: 11.5_
+    - Review notes: READY, no defect. Acted on: an event that changes nothing no longer clears the live line; the axe-while-playing example now holds the timer with fake timers so no tick lands during axe. Recorded as design decisions 1 and 2: the hook keys its state by load and takes the Stops. Notes kept: reduced motion is checked for timing only, and the play path has no animation code.
 
 - [ ] 4. The timelines size guard (F4)
   - Drops `timelines` from a hosted scan body over 5 MiB and names the reason in the contract, the Validator and the web app.

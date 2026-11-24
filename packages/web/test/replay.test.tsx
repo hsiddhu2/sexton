@@ -75,11 +75,11 @@ describe("opening a replay (requirement 18)", () => {
     expect(urls).toEqual([`${ORIGIN}/demo/scan.json`, `${ORIGIN}/replay/axios.json`]);
     fireEvent.click(screen.getByRole("button", { name: "keyv 2026" }));
     await waitFor(() => {
-      expect(label(container)).toBe("keyv 6.0.0, Possessed");
+      expect(label(container)).toBe("keyv 5.6.0, Alive");
     });
     expect(urls[2]).toBe(`${ORIGIN}/replay/keyv.json`);
-    // The scrubber is at the Scan date of the replay.
-    expect(slider().getAttribute("aria-valuetext")).toBe(STOP_TEXT.keyv[1]);
+    // The scrubber is at the first Stop of the replay.
+    expect(slider().getAttribute("aria-valuetext")).toBe(STOP_TEXT.keyv[0]);
   });
 
   it("loads the matching fixture for ?replay=axios and ?replay=keyv instead of the demo", async () => {
@@ -209,13 +209,28 @@ describe("the replay through the scrubber (requirement 20)", () => {
     cleanup();
     const keyv = mount("?replay=keyv");
     await ready();
+    move(1);
     fireEvent.pointerEnter(grave(keyv.container));
     expect(screen.getByRole("tooltip").textContent).toContain("install script added in 6.0.0");
+  });
+
+  it("opens each replay at its first Stop with the first row of its table (spec cemetery-time-fixes, 3.1)", async () => {
+    for (const id of REPLAY_IDS) {
+      const { container } = mount(`?replay=${id}`);
+      await ready();
+      const first = EXPECTED_SEGMENTS[id][0];
+      expect(slider().value).toBe("0");
+      expect(slider().getAttribute("aria-valuetext")).toBe(STOP_TEXT[id][0]);
+      expect(label(container)).toBe(`${id} ${first.version}, ${first.state}`);
+      expect(screen.getByRole("button", { name: "Play" })).toBeTruthy();
+      cleanup();
+    }
   });
 
   it("returns to 1.14.0 at the end of the axios replay", async () => {
     const { container } = mount("?replay=axios");
     await ready();
+    move(2);
     expect(slider().value).toBe("2");
     expect(label(container)).toBe("axios 1.14.0, Alive");
   });

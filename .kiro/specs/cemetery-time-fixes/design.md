@@ -392,6 +392,12 @@ Each item is the question, the call, and the reason.
 39. **The cemetery-time text "Which Stop is shown first".** Call: left unedited in `.kiro/specs/cemetery-time/design.md` line 428. This spec supersedes it. Reason: that folder is outside the allowed paths.
 40. **Process.** Call: during the spec work these read-only node commands ran: `crypto.randomUUID()` for the specId, and `evaluateState` from `packages/engine/dist/state.js` on the new facts (the table in "Replay facts" matches its output). Two earlier attempts printed nothing and were dropped. One of them wrote a scratch script to `/tmp` (outside the repository) and deleted it. No git command, build, test or network call ran.
 
+## Decisions made during implementation
+
+1. **usePlay holds its state with a load key (task 3).** `use-play.ts` keeps `{ key, play, announce }` in `useState`, where the key is the load id, the Stop count and the replay flag. When the key changes it replaces the state during render with the `load` result of `playStep`, in place of a `load` dispatch from an effect. Reason: the loader gives the same load id to the loading state and the ready state, so the Stop count also has to start a new load, and a reset during render means no frame shows the previous response's Stop. The reducer, the events and the timer are as designed.
+2. **usePlay takes the Stops, not the count (task 3).** It needs the Stop instants for the announcement texts of call 24. The count is their length.
+3. **An event that changes nothing keeps the live line (task 3).** A pause while stopped or a play with one Stop returns the same state, so the last announcement stays.
+
 ## Notes and open items
 
 - **Fresh-clone proof after task 1.** Run 24 Nov 2026 on commit 80c7543, cloned to `build/fresh-clone`, `npx npm@11 ci`, no `packages/web/public/demo` folder. `npm test -w @sexton/api` first: exit 0, 32 files, 286 tests, and still no demo folder afterwards. Then root `npm test`: exit 0. action 2 files 12 tests, api 32 files 286 tests, cli 4 files 60 tests, engine 78 files 1059 tests, web 39 files 368 tests, infra 6 files 51 tests (1836 in all). Then task 1.5 in the same clone: `packages/web/public/demo` deleted, `npx vitest run` in `packages/web`: the global setup ran the generator, the three demo files were written, exit 0, 39 files, 368 tests. The clone was then removed.

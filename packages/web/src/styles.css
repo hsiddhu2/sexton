@@ -760,6 +760,36 @@ pre.signal-value {
   color: var(--muted);
   overflow-wrap: anywhere;
 }
+.scrub-play {
+  padding: 2px 12px;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: var(--field);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+.scrub-play:hover {
+  border-color: var(--focus);
+}
+.scrub-play:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+/* Read by assistive technology, not shown. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  border: 0;
+  white-space: nowrap;
+}
 .header-asof {
   display: flex;
   flex-wrap: wrap;

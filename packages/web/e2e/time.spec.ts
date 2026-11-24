@@ -127,7 +127,7 @@ test("the axios replay shows Alive 1.14.0, then Possessed 1.14.1, then Alive 1.1
   await openReplay(page, baseURL, "?replay=axios");
   const grave = page.locator("button[data-grave-index]").first();
   const scrubber = page.getByRole("slider", { name: "History date" });
-  await expect(scrubber).toHaveValue("2");
+  await expect(scrubber).toHaveValue("0");
   await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
   await scrubber.focus();
   await scrubber.press("Home");
@@ -146,8 +146,8 @@ test("the keyv replay shows Alive 5.6.0, then Possessed 6.0.0 at its end, and a 
   await openReplay(page, baseURL, "?replay=keyv");
   const grave = page.locator("button[data-grave-index]").first();
   const scrubber = page.getByRole("slider", { name: "History date" });
-  await expect(scrubber).toHaveValue("1");
-  await expect(grave).toHaveAttribute("aria-label", "keyv 6.0.0, Possessed");
+  await expect(scrubber).toHaveValue("0");
+  await expect(grave).toHaveAttribute("aria-label", "keyv 5.6.0, Alive");
   await scrubber.focus();
   await scrubber.press("Home");
   await expect(grave).toHaveAttribute("aria-label", "keyv 5.6.0, Alive");
@@ -158,4 +158,23 @@ test("the keyv replay shows Alive 5.6.0, then Possessed 6.0.0 at its end, and a 
   await page.getByRole("button", { name: "axios 2026" }).click();
   await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
   await expect(page.locator('[role="note"]')).toContainText("axios");
+});
+
+// Spec cemetery-time-fixes, task 3.6: Play steps one Stop every 1,500 ms (requirements 3.1, 4.2, 4.4).
+test("Play on the axios replay reaches the Possessed Stop after 1,500 ms and the last Stop after 3,000 ms", async ({ page, baseURL }) => {
+  await page.clock.install();
+  await openReplay(page, baseURL, "?replay=axios");
+  const grave = page.locator("button[data-grave-index]").first();
+  const scrubber = page.getByRole("slider", { name: "History date" });
+  await expect(scrubber).toHaveValue("0");
+  const play = page.getByRole("button", { name: "Play" });
+  await play.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("button", { name: "Pause" })).toBeVisible();
+  await page.clock.runFor(1500);
+  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.1, Possessed");
+  await page.clock.runFor(1500);
+  await expect(scrubber).toHaveValue("2");
+  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
+  await expect(page.getByRole("button", { name: "Play" })).toBeVisible();
 });
