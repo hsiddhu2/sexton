@@ -12,7 +12,7 @@ function SceneView({ plan }: SceneProps) {
   const planRef = useRef(plan);
   const schedulerRef = useRef<RedrawScheduler | null>(null);
   planRef.current = plan;
-  const backing = backingStore(plan.width, plan.height, window.devicePixelRatio);
+  const backing = backingStore(plan.width, plan.groundHeight, window.devicePixelRatio);
 
   useEffect(() => {
     let ctx: CanvasRenderingContext2D | null = null;
@@ -29,7 +29,7 @@ function SceneView({ plan }: SceneProps) {
         ctx ??= canvas.getContext("2d");
         if (ctx === null) return;
         const current = planRef.current;
-        drawScene(ctx, current, backingStore(current.width, current.height, window.devicePixelRatio).scale);
+        drawScene(ctx, current, backingStore(current.width, current.groundHeight, window.devicePixelRatio).scale);
       },
     );
     schedulerRef.current = scheduler;
@@ -60,7 +60,7 @@ function SceneView({ plan }: SceneProps) {
       aria-hidden="true"
       width={backing.width}
       height={backing.height}
-      style={{ width: plan.width, height: plan.height }}
+      style={{ width: plan.width, height: plan.groundHeight }}
     />
   );
 }

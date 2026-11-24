@@ -46,7 +46,8 @@ interface LooseEnvelope {
 
 const text = (v: unknown, fallback: string): string => (typeof v === "string" ? v : fallback);
 
-export function drawerModel(response: ScanResponse, pkg: PackageHealth): DrawerModel {
+/** `version` replaces the installed version in the title (a versioned Segment, replay only). */
+export function drawerModel(response: ScanResponse, pkg: PackageHealth, version?: string): DrawerModel {
   const signals: SignalRow[] = SIGNAL_NAMES.map((name) => {
     const env = pkg.signals[name] as unknown as LooseEnvelope;
     const available = env.available === true;
@@ -79,7 +80,7 @@ export function drawerModel(response: ScanResponse, pkg: PackageHealth): DrawerM
   const remediation = response.remediations?.find((r) => r.packageName === pkg.name) ?? null;
 
   return {
-    title: `${pkg.name} ${pkg.installedVersion}`,
+    title: `${pkg.name} ${version ?? pkg.installedVersion}`,
     state: pkg.state,
     stateReason: pkg.stateReason,
     signals,

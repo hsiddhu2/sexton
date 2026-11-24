@@ -2,8 +2,9 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { sceneryFor } from "../src/scene/layout.js";
-import { mulberry32, SCENERY_SEED, unitStars, unitTufts } from "../src/scene/scenery-seed.js";
+import { scenePackage } from "./arbitraries.js";
+import { planScene, sceneryFor } from "../src/scene/layout.js";
+import { mulberry32, SCENERY_SEED, unitClusters, unitStars } from "../src/scene/scenery-seed.js";
 
 const NUM_RUNS = 100;
 
@@ -25,7 +26,7 @@ describe("Feature: cemetery-polish, Property 2: Seeded scenery is deterministic 
         const b = sceneryFor(width);
         expect(b).toEqual(a);
         expect(a.stars).toHaveLength(Math.floor((width * 80) / 800));
-        expect(a.grass).toHaveLength(Math.floor(width / 14));
+        expect(a.grass).toHaveLength(3 * Math.floor(width / 96));
         a.stars.forEach((s, i) => {
           expect(s.x).toBeGreaterThanOrEqual(0);
           expect(s.x).toBeLessThanOrEqual(width - 2);
@@ -35,13 +36,20 @@ describe("Feature: cemetery-polish, Property 2: Seeded scenery is deterministic 
           expect(s.layer).toBe(i % 3 === 0 ? "near" : "far");
         });
         for (const t of a.grass) {
-          expect(t.x).toBeGreaterThanOrEqual(0);
-          expect(t.x).toBeLessThanOrEqual(width - 2);
+          expect(t.base).toBeGreaterThanOrEqual(8);
+          expect(t.base).toBeLessThanOrEqual(16);
           expect(t.h).toBeGreaterThanOrEqual(4);
-          expect(t.h).toBeLessThanOrEqual(10);
-          expect(t.y).toBeGreaterThanOrEqual(0);
-          expect(t.y + t.h).toBeLessThanOrEqual(224);
+          expect(t.h).toBeLessThanOrEqual(8);
+          expect([-1, 1]).toContain(t.dir);
           expect(["dark", "light"]).toContain(t.tone);
+          expect(t.rects).toHaveLength(6);
+          for (const [rx, ry, rw, rh] of t.rects) {
+            expect(rx).toBeGreaterThanOrEqual(0);
+            expect(rx).toBeLessThanOrEqual(width - 1);
+            expect(ry).toBeGreaterThanOrEqual(0);
+            expect(rw).toBe(1);
+            expect(ry + rh).toBeLessThanOrEqual(16);
+          }
         }
       }),
       { numRuns: NUM_RUNS },
@@ -59,13 +67,13 @@ describe("Feature: cemetery-polish, Property 2: Seeded scenery is deterministic 
     );
   });
 
-  it("has unitStars and unitTufts prefixes for any n at most m", () => {
+  it("has unitStars and unitClusters prefixes for any n at most m", () => {
     fc.assert(
       fc.property(fc.nat(150), fc.nat(150), (x, y) => {
         const n = Math.min(x, y);
         const m = Math.max(x, y);
         expect(unitStars(m).slice(0, n)).toEqual(unitStars(n));
-        expect(unitTufts(m).slice(0, n)).toEqual(unitTufts(n));
+        expect(unitClusters(m).slice(0, n)).toEqual(unitClusters(n));
         for (const s of unitStars(m)) {
           expect(s.u).toBeGreaterThanOrEqual(0);
           expect(s.u).toBeLessThan(1);
@@ -98,5 +106,26 @@ describe("Feature: cemetery-polish, Property 2: Seeded scenery is deterministic 
     const src = join(import.meta.dirname, "..", "src");
     const offenders = sourceFiles(src).filter((path) => readFileSync(path, "utf8").includes("Math.random"));
     expect(offenders).toEqual([]);
+  });
+});
+
+describe("Feature: cemetery-time, Property 1: Tuft scenery is deterministic, bounded and depends on the width only", () => {
+  it("gives equal scenery for any packages, phases and ground heights at one width", () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 224, max: 3000 }),
+        fc.integer({ min: 0, max: 47 }),
+        fc.integer({ min: -100, max: 4000 }),
+        fc.integer({ min: 0, max: 5 }),
+        (width, phase, minHeight, count) => {
+          const packages = Array.from({ length: count }, (_, i) => scenePackage(`p${String(i)}`, "Alive", "none"));
+          const a = planScene({ packages: [], width, theme: "dark", selectedIndex: null, ghostPhase: 0 });
+          const b = planScene({ packages, width, theme: "dark", selectedIndex: null, ghostPhase: phase, minHeight });
+          expect(b.scenery.grass).toEqual(a.scenery.grass);
+          expect(b.scenery).toEqual(a.scenery);
+        },
+      ),
+      { numRuns: NUM_RUNS },
+    );
   });
 });

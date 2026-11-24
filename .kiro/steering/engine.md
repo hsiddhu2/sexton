@@ -16,3 +16,6 @@ fileMatchPattern: "packages/engine/**/*.ts"
 - The remediation log contract in remediation/remediation-log.ts has two methods, append and list. It has no update and no delete.
 - Every log entry must pass isValidLogEntry. Its fields are repository, branch, prUrl, package, kind and timestamp.
 - Remediation branch names start with sexton/ and pass isValidBranchName.
+- The Timeline lives in packages/engine/src/timeline. timelineFacts keeps at most 50 versions, 20 advisories and 10 maintainers per version, and records coveredFrom when older versions are dropped.
+- stateAsOf(facts, health, scanDate, asOf) is pure. At or after the scan date it returns the scan form. Before the installed version is seen it returns the Not-published form. Otherwise it builds StateInputs from dated facts and calls evaluateState, so there is one copy of the state rules. Deprecation, undated advisories and snapshot history are unavailable before the scan date.
+- The Engine computes the Segments. buildTimeline calls stateAsOf at every instant where a form can change and writes at most 64 Segments of { from, state, reason, ghost }. The web app only looks the Segments up (time/form-at.ts) and holds no state rule. The optional Segment version is set by the replay generator, never by buildTimeline.

@@ -6,7 +6,8 @@ import {
   SHADOW_ALPHA_BYTE,
   STONE_ALPHA_BYTE,
 } from "./palette.js";
-import { GRAVE_GEOMETRY, GRASS_TILE_HEIGHT, type GravePlan, type ScenePlan, type Star, type Tuft } from "./layout.js";
+import { GRAVE_GEOMETRY, BOTTOM_LINE_MIN_GAP, BOTTOM_LINE_OFFSET, CELL_HEIGHT, CELL_WIDTH, type GravePlan, type ScenePlan, type Star, type Tuft } from "./layout.js";
+import { BURIAL_SINK_PX, burialFrame } from "../time/burial.js";
 import { detailPath, ghostPath, pitRimPath, plinthPath, SHAPES, shapePath, SPECKS } from "./shapes.js";
 
 export interface GradientLike {
@@ -31,6 +32,8 @@ export interface PaintContext2D {
   scale(x: number, y: number): void;
   beginPath(): void;
   arc(x: number, y: number, r: number, startAngle: number, endAngle: number): void;
+  rect(x: number, y: number, w: number, h: number): void;
+  clip(): void;
   fill(path?: Path2D): void;
   stroke(path: Path2D): void;
   fillText(text: string, x: number, y: number, maxWidth?: number): void;
@@ -51,6 +54,16 @@ const SHADOW_RY = 8;
 const SHADOW_CX = 96;
 const SHADOW_CY = 210;
 const STONE_LINE_WIDTH = 0.5;
+const MARKER_BASE_Y = 168;
+const MOUND_RX = 60;
+const MOUND_RY = 14;
+/** The pennant at fixed Cell offsets: pole, then three flag rows. Right of every stone box, above the Plinth top. */
+const MARKER_RECTS: readonly (readonly [number, number, number, number])[] = [
+  [160, 124, 2, 44],
+  [162, 124, 14, 4],
+  [162, 128, 10, 4],
+  [162, 132, 6, 4],
+];
 
 interface Split<T> {
   readonly a: readonly T[];
@@ -60,7 +73,7 @@ interface Split<T> {
 // Scenery is cached per width, so its lists keep one identity. Splitting by layer or
 // tone happens once per list, not once per frame.
 const starSplits = new WeakMap<readonly Star[], Split<Star>>();
-const tuftSplits = new WeakMap<readonly Tuft[], Split<Tuft>>();
+const tuftRects = new WeakMap<readonly Tuft[], Split<number>>();
 
 function splitStars(stars: readonly Star[]): Split<Star> {
   let split = starSplits.get(stars);
@@ -71,28 +84,37 @@ function splitStars(stars: readonly Star[]): Split<Star> {
   return split;
 }
 
-function splitTufts(grass: readonly Tuft[]): Split<Tuft> {
-  let split = tuftSplits.get(grass);
+/** Flat [x, y, w, h, ...] lists per tone, built once per Scenery list. */
+function splitTuftRects(grass: readonly Tuft[]): Split<number> {
+  let split = tuftRects.get(grass);
   if (split === undefined) {
-    split = { a: grass.filter((t) => t.tone === "dark"), b: grass.filter((t) => t.tone === "light") };
-    tuftSplits.set(grass, split);
+    const dark: number[] = [];
+    const light: number[] = [];
+    for (const t of grass) {
+      const out = t.tone === "dark" ? dark : light;
+      for (const r of t.rects) out.push(r[0], r[1], r[2], r[3]);
+    }
+    split = { a: dark, b: light };
+    tuftRects.set(grass, split);
   }
   return split;
 }
 
-function drawGrass(ctx: PaintContext2D, plan: ScenePlan): void {
+/** One fillStyle per tone, then a fillRect per rectangle for each Row line and the Bottom line. */
+function drawTufts(ctx: PaintContext2D, plan: ScenePlan): void {
   const colours = PALETTE[plan.theme];
-  const { a: dark, b: light } = splitTufts(plan.scenery.grass);
-  const top0 = plan.scenery.skyHeight;
+  const { a: dark, b: light } = splitTuftRects(plan.scenery.grass);
+  const first = plan.scenery.skyHeight + CELL_HEIGHT;
+  const bottom = plan.groundHeight - plan.height >= BOTTOM_LINE_MIN_GAP ? plan.groundHeight - BOTTOM_LINE_OFFSET : -1;
   for (let pass = 0; pass < 2; pass += 1) {
     const list = pass === 0 ? dark : light;
     ctx.fillStyle = pass === 0 ? colours.grassDark : colours.grassLight;
-    for (let tile = 0; top0 + tile * GRASS_TILE_HEIGHT < plan.height; tile += 1) {
-      const top = top0 + tile * GRASS_TILE_HEIGHT;
-      for (let i = 0; i < list.length; i += 1) {
-        const t = list[i];
-        if (t !== undefined && top + t.y + t.h <= plan.height) ctx.fillRect(t.x, top + t.y, 2, t.h);
-      }
+    for (let line = 1; line <= plan.rows; line += 1) {
+      const top = first + (line - 1) * CELL_HEIGHT;
+      for (let i = 0; i < list.length; i += 4) ctx.fillRect(list[i] ?? 0, top + (list[i + 1] ?? 0), 1, list[i + 3] ?? 0);
+    }
+    if (bottom >= 0) {
+      for (let i = 0; i < list.length; i += 4) ctx.fillRect(list[i] ?? 0, bottom + (list[i + 1] ?? 0), 1, list[i + 3] ?? 0);
     }
   }
 }
@@ -134,7 +156,7 @@ function drawScenery(ctx: PaintContext2D, plan: ScenePlan): void {
   ground.addColorStop(0, colours.groundTop);
   ground.addColorStop(1, colours.bg);
   ctx.fillStyle = ground as CanvasGradient;
-  ctx.fillRect(0, s.horizonY, plan.width, Math.max(0, plan.height - s.horizonY));
+  ctx.fillRect(0, s.horizonY, plan.width, Math.max(0, plan.groundHeight - s.horizonY));
 
   ctx.fillStyle = colours.horizon;
   ctx.fillRect(0, s.horizonY, plan.width, HORIZON_LINE_HEIGHT);
@@ -146,7 +168,7 @@ function drawScenery(ctx: PaintContext2D, plan: ScenePlan): void {
   ctx.fillStyle = fog as CanvasGradient;
   ctx.fillRect(0, s.fog.y, plan.width, s.fog.h);
 
-  drawGrass(ctx, plan);
+  drawTufts(ctx, plan);
 }
 
 /** Translucent decoration colours, built once per frame rather than once per grave. */
@@ -169,7 +191,15 @@ function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan, deco:
   ctx.fill();
   ctx.restore();
 
+  const frame = grave.burial === null ? null : burialFrame(grave.burial);
   ctx.save();
+  if (frame !== null) {
+    // The stone sinks behind the ground line at the Plinth top: nothing below the Cell's stone area is drawn.
+    ctx.beginPath();
+    ctx.rect(grave.rect.x, grave.rect.y, CELL_WIDTH, MARKER_BASE_Y);
+    ctx.clip();
+    ctx.translate(0, frame.sink * BURIAL_SINK_PX);
+  }
   ctx.translate(grave.rect.x + g.shapeX + SHAPE_HALF * g.shapeScale, grave.rect.y + g.shapeY + SHAPE_HALF * g.shapeScale);
   ctx.rotate((def.tiltDegrees * Math.PI) / 180);
   ctx.translate(-SHAPE_HALF * g.shapeScale, -SHAPE_HALF * g.shapeScale);
@@ -204,19 +234,35 @@ function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan, deco:
   }
   ctx.restore();
 
+  if (frame !== null && frame.mound > 0) {
+    ctx.save();
+    ctx.translate(grave.rect.x + SHADOW_CX, grave.rect.y + MARKER_BASE_Y);
+    ctx.scale(MOUND_RX * frame.mound, MOUND_RY * frame.mound);
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, 2 * Math.PI);
+    ctx.fillStyle = colours.grassLight;
+    ctx.fill();
+    ctx.restore();
+  }
+
   ctx.save();
   ctx.translate(grave.rect.x, grave.rect.y);
   ctx.fillStyle = grave.fill;
   ctx.fill(plinthPath());
   ctx.restore();
 
-  if (grave.ghost !== null) {
+  if (grave.ghost !== null && grave.burial === null) {
     ctx.save();
     ctx.translate(grave.ghost.x, grave.ghost.y);
     ctx.scale(2, 2);
     ctx.fillStyle = colours.ghost;
     ctx.fill(ghostPath());
     ctx.restore();
+  }
+
+  if (grave.marker) {
+    ctx.fillStyle = colours.marker;
+    for (const [mx, my, mw, mh] of MARKER_RECTS) ctx.fillRect(grave.rect.x + mx, grave.rect.y + my, mw, mh);
   }
 
   if (grave.inscription !== null) {
@@ -231,7 +277,7 @@ function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan, deco:
 export function drawScene(ctx: PaintContext2D, plan: ScenePlan, scale: number): void {
   const colours = PALETTE[plan.theme];
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
-  ctx.clearRect(0, 0, plan.width, plan.height);
+  ctx.clearRect(0, 0, plan.width, plan.groundHeight);
   drawScenery(ctx, plan);
   const deco: DecorationColours = { shadow: colours.pit + SHADOW_ALPHA_BYTE, stone: colours.ink + STONE_ALPHA_BYTE };
   for (const grave of plan.graves) drawGrave(ctx, grave, plan, deco);

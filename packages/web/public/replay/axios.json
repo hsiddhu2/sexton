@@ -1,0 +1,165 @@
+{
+  "report": {
+    "generatedAt": "2026-03-31T03:29:00.000Z",
+    "packages": [
+      {
+        "name": "axios",
+        "installedVersion": "1.14.0",
+        "state": "Restless",
+        "stateReason": "all state signals unavailable",
+        "signals": {
+          "lastPublish": {
+            "value": null,
+            "source": "https://www.trendmicro.com/en_us/research/26/c/axios-npm-package-compromised.html",
+            "fetchedAt": "2026-03-31T03:29:00.000Z",
+            "available": false,
+            "reason": "not in public reports"
+          },
+          "deprecated": {
+            "value": null,
+            "source": "https://www.trendmicro.com/en_us/research/26/c/axios-npm-package-compromised.html",
+            "fetchedAt": "2026-03-31T03:29:00.000Z",
+            "available": false,
+            "reason": "not in public reports"
+          },
+          "hasInstallScript": {
+            "value": null,
+            "source": "https://www.trendmicro.com/en_us/research/26/c/axios-npm-package-compromised.html",
+            "fetchedAt": "2026-03-31T03:29:00.000Z",
+            "available": false,
+            "reason": "not in public reports"
+          },
+          "advisories": {
+            "value": null,
+            "source": "https://www.trendmicro.com/en_us/research/26/c/axios-npm-package-compromised.html",
+            "fetchedAt": "2026-03-31T03:29:00.000Z",
+            "available": false,
+            "reason": "not in public reports"
+          },
+          "maintainers": {
+            "value": null,
+            "source": "https://www.trendmicro.com/en_us/research/26/c/axios-npm-package-compromised.html",
+            "fetchedAt": "2026-03-31T03:29:00.000Z",
+            "available": false,
+            "reason": "not in public reports"
+          },
+          "provenance": {
+            "value": {
+              "present": true,
+              "predicateType": null
+            },
+            "source": "https://docs.npmjs.com/trusted-publishers",
+            "fetchedAt": "2026-03-31T03:29:00.000Z",
+            "available": true
+          },
+          "transitiveReach": {
+            "value": null,
+            "source": "https://www.trendmicro.com/en_us/research/26/c/axios-npm-package-compromised.html",
+            "fetchedAt": "2026-03-31T03:29:00.000Z",
+            "available": false,
+            "reason": "not in public reports"
+          },
+          "maintainerChange": {
+            "value": null,
+            "source": "https://www.trendmicro.com/en_us/research/26/c/axios-npm-package-compromised.html",
+            "fetchedAt": "2026-03-31T03:29:00.000Z",
+            "available": false,
+            "reason": "not in public reports"
+          },
+          "provenanceRegression": {
+            "value": {
+              "status": "no-regression",
+              "snapshotCaptureTime": "2026-03-31T03:29:00.000Z"
+            },
+            "source": "https://docs.npmjs.com/trusted-publishers",
+            "fetchedAt": "2026-03-31T03:29:00.000Z",
+            "available": true
+          },
+          "newInstallScript": {
+            "value": null,
+            "source": "https://www.trendmicro.com/en_us/research/26/c/axios-npm-package-compromised.html",
+            "fetchedAt": "2026-03-31T03:29:00.000Z",
+            "available": false,
+            "reason": "not in public reports"
+          }
+        },
+        "missingSignals": [
+          "lastPublish",
+          "deprecated",
+          "hasInstallScript",
+          "advisories",
+          "maintainers",
+          "transitiveReach",
+          "maintainerChange",
+          "newInstallScript"
+        ]
+      }
+    ]
+  },
+  "policy": {
+    "source": "default",
+    "pass": true,
+    "rules": [
+      {
+        "index": 0,
+        "type": "forbid_state",
+        "pass": true,
+        "failures": [],
+        "unevaluated": [],
+        "notFound": []
+      }
+    ]
+  },
+  "remediations": [],
+  "actions": {
+    "remediate": false
+  },
+  "timelines": {
+    "axios": {
+      "installed": "1.14.0",
+      "coveredFrom": null,
+      "segments": [
+        {
+          "from": "2026-03-30T23:21:00.000Z",
+          "state": "Restless",
+          "reason": "all state signals unavailable",
+          "ghost": false,
+          "version": "1.14.0"
+        },
+        {
+          "from": "2026-03-31T00:21:00.000Z",
+          "state": "Possessed",
+          "reason": "provenance regression: 1.14.1 has no provenance, 1.14.0 had it",
+          "ghost": false,
+          "version": "1.14.1"
+        },
+        {
+          "from": "2026-03-31T03:29:00.000Z",
+          "state": "Restless",
+          "reason": "all state signals unavailable",
+          "ghost": false,
+          "version": "1.14.0"
+        }
+      ]
+    }
+  },
+  "replay": {
+    "id": "axios",
+    "title": "Replay: axios npm compromise, 31 March 2026",
+    "summary": "axios 1.14.1 was published by hand from a compromised maintainer account, with no provenance, and it added the dependency plain-crypto-js 4.2.1, whose postinstall ran the payload. npm removed 1.14.1 at about 03:29 UTC, so a fresh install resolves 1.14.0 again. Sexton marks 1.14.1 Possessed because provenance regressed.",
+    "sources": [
+      {
+        "label": "Trend Micro: axios npm package compromised",
+        "url": "https://www.trendmicro.com/en_us/research/26/c/axios-npm-package-compromised.html"
+      },
+      {
+        "label": "CSA Singapore advisory AD-2026-002",
+        "url": "https://www.csa.gov.sg/alerts-and-advisories/advisories/ad-2026-002/"
+      },
+      {
+        "label": "npm docs: trusted publishers",
+        "url": "https://docs.npmjs.com/trusted-publishers"
+      }
+    ]
+  }
+}

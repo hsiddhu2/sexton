@@ -41,6 +41,11 @@ function contextFor(entry: PackageHealth, failingRules: readonly FailingRule[] =
   return { entry, failingRules, generatedAt, engineVersion: "0.1.0" };
 }
 
+// A7 (cemetery-time): compiled once, not once per generated body.
+const FORBIDDEN_OUTSIDE_SPANS = /<|\]\(|!\[|&[a-z#0-9]+;|https?:\/\//i;
+const BLOCK_START = /^(#|>|-|\*|\||\d+\.)/;
+const INDENTED_ROW = /^\| {2}\| /;
+
 const arbHostileRules = fc.array(
   fc.record({ index: fc.nat(50), type: fc.constantFrom("forbid_state" as const, "max_age_months" as const), name: fc.option(arbHostileString, { nil: undefined }), reason: arbHostileString }),
   { maxLength: 25 },
@@ -60,28 +65,35 @@ describe("buildPrBody", () => {
         arbHostileString,
         (health, rules, reason, generatedAt) => {
           const state = UNHEALTHY.includes(health.state as UnhealthyState) ? (health.state as UnhealthyState) : "Dead";
+          // A7 (cemetery-time): the context, the row prefixes and the escaped signal text are built once per outer run,
+          // and each body's checks are collected and asserted once (an expect call per line was the cost).
+          const ctx = contextFor(health, rules, generatedAt);
+          const expectedRows = SIGNAL_NAMES.map((name) => ({
+            name,
+            prefix: `| \`${name}\` |`,
+            source: escapeField(health.signals[name].source),
+            fetchedAt: escapeField(health.signals[name].fetchedAt),
+          }));
           fc.assert(
             fc.property(arbPlanFor(health.name, health.installedVersion, state, reason), (plan) => {
-              const body = buildPrBody({ ...plan, stateReason: health.stateReason }, contextFor(health, rules, generatedAt));
+              const body = buildPrBody({ ...plan, stateReason: health.stateReason }, ctx);
               const lines = body.split("\n");
-              for (const name of SIGNAL_NAMES) {
-                const s = health.signals[name];
-                const row = lines.find((l) => l.startsWith(`| \`${name}\` |`));
-                expect(row).toBeDefined();
-                expect(row).toContain(escapeField(s.source));
-                expect(row).toContain(escapeField(s.fetchedAt));
+              const problems: string[] = [];
+              for (const e of expectedRows) {
+                const row = lines.find((l) => l.startsWith(e.prefix));
+                if (row === undefined) problems.push(`no row for ${e.name}`);
+                else if (!row.includes(e.source) || !row.includes(e.fetchedAt)) problems.push(`row for ${e.name} lacks its source or fetchedAt`);
               }
               const outside = stripSpans(body);
-              expect(outside).not.toContain(MARKER);
-              expect(body).not.toContain(RANGE_MARKER);
-              expect(outside).not.toMatch(/<|\]\(|!\[|&[a-z#0-9]+;|https?:\/\//i);
+              if (outside.includes(MARKER)) problems.push("marker outside a span");
+              if (body.includes(RANGE_MARKER)) problems.push("range marker in the body");
+              if (FORBIDDEN_OUTSIDE_SPANS.test(outside)) problems.push("forbidden text outside a span");
               for (const line of lines) {
                 const bare = stripSpans(line);
-                if (/^(#|>|-|\*|\||\d+\.)/.test(bare)) {
-                  expect(TEMPLATE_BLOCK_LINES.some((re) => re.test(bare)) || /^\| {2}\| /.test(bare)).toBe(true);
-                }
+                if (BLOCK_START.test(bare) && !(TEMPLATE_BLOCK_LINES.some((re) => re.test(bare)) || INDENTED_ROW.test(bare))) problems.push(`untemplated block line: ${line}`);
               }
-              for (const span of body.match(/`[^`]*`/g) ?? []) expect(span.includes("\n")).toBe(false);
+              for (const span of body.match(/`[^`]*`/g) ?? []) if (span.includes("\n")) problems.push("a span holds a newline");
+              expect(problems).toEqual([]);
             }),
             { numRuns: 5 },
           );

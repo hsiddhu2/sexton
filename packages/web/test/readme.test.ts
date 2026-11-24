@@ -18,6 +18,7 @@ const ORIGINAL_HEADINGS: readonly string[] = [
   "## GitHub Action",
   "## Sexton scans itself",
   "## How Sexton is different",
+  "## Replay",
   "## Roadmap",
   "## Documentation",
   "## Licence",
@@ -45,7 +46,21 @@ describe("README", () => {
     const h2 = lines.filter((l) => l.startsWith("## "));
     const i = h2.indexOf(HEADING);
     expect(h2[i - 1]).toBe("## How Sexton is different");
-    expect(h2[i + 1]).toBe("## Roadmap");
+    expect(h2[i + 1]).toBe("## Replay");
+    expect(h2[i + 2]).toBe("## Roadmap");
+  });
+
+  it("pins the Replay section text", () => {
+    const start = lines.indexOf("## Replay");
+    const rest = lines.slice(start + 1);
+    const end = rest.findIndex((l) => l.startsWith("## "));
+    const body = (end === -1 ? rest : rest.slice(0, end)).join("\n");
+    expect(lines.filter((l) => l === "## Replay")).toHaveLength(1);
+    expect(body).toContain("[?replay=axios](?replay=axios)");
+    expect(body).toContain("[?replay=keyv](?replay=keyv)");
+    expect(body).toContain("A replay is reconstructed from public reports. It is not a live scan.");
+    expect(body).not.toContain(";");
+    expect(body).not.toContain("\u2014");
   });
 
   it("holds the three URLs exactly", () => {

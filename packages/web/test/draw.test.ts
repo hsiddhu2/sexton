@@ -232,10 +232,10 @@ describe("Feature: cemetery-polish, Property 4: Painter call discipline for star
           const grassIdx: number[] = [];
           scenery.forEach((c, i) => {
             if (c.method !== "fillRect") return;
-            const [, , w, h] = rectAt(i) as [number, number, number, number];
-            if (w === 1 && h === 1) farIdx.push(i);
+            const [, y, w, h] = rectAt(i) as [number, number, number, number];
+            if (y >= 304 && w === 1) grassIdx.push(i);
+            else if (w === 1 && h === 1) farIdx.push(i);
             else if (w === 2 && h === 2) nearIdx.push(i);
-            else if (w === 2) grassIdx.push(i);
           });
           expect(farIdx).toHaveLength(far);
           expect(nearIdx).toHaveLength(near);
@@ -247,16 +247,14 @@ describe("Feature: cemetery-polish, Property 4: Painter call discipline for star
           expect(s.stars.every((st) => st.y >= 0 && st.y + st.size <= s.skyHeight)).toBe(true);
 
           // grass
-          let expectedTufts = 0;
-          for (let tile = 0; s.skyHeight + tile * 224 < plan.height; tile += 1) {
-            for (const t of s.grass) if (s.skyHeight + tile * 224 + t.y + t.h <= plan.height) expectedTufts += 1;
-          }
-          expect(grassIdx).toHaveLength(expectedTufts);
+          const extra = plan.groundHeight - plan.height >= 10 ? 1 : 0;
+          const perLine = s.grass.reduce((sum, t) => sum + t.rects.length, 0);
+          expect(grassIdx).toHaveLength((plan.rows + extra) * perLine);
           const fogIdx = scenery.findIndex((c) => c.method === "fillRect" && c.args[1] === s.fog.y && c.args[3] === s.fog.h);
           expect(
             grassIdx.every((i) => {
               const [, y, , h] = rectAt(i) as [number, number, number, number];
-              return i > fogIdx && y >= s.skyHeight && y + h <= plan.height;
+              return i > fogIdx && y >= 304 && y + h <= plan.groundHeight;
             }),
           ).toBe(true);
 
@@ -397,14 +395,61 @@ describe("cemetery-polish: stone texture and grass examples", () => {
     }
   });
 
-  it("draws at most 4641 grass rectangles for 300 graves at width 1280", () => {
+  it.each([
+    [1280, 12000],
+    [224, 13000],
+  ])("draws at most the bounded grass rectangles for 300 graves at width %i", (width, bound) => {
     const packages = Array.from({ length: 300 }, (_, i) => scenePackage(`p${String(i)}`, "Alive", "none"));
-    const plan = planFor(packages, 1280, "dark", -1, 0);
+    const plan = planFor(packages, width, "dark", -1, 0);
     const log = logger();
     drawScene(log.ctx, plan, 1);
     const first = log.calls.findIndex((c) => c.method === "save");
-    const grass = log.calls.slice(0, first).filter((c) => c.method === "fillRect" && c.args[2] === 2 && c.args[3] !== 2);
-    expect(grass.length).toBeLessThanOrEqual(51 * 91);
+    const grass = log.calls.slice(0, first).filter((c) => c.method === "fillRect" && (c.args[1] as number) >= 304 && c.args[2] === 1);
+    expect(grass.length).toBeLessThanOrEqual(bound);
     expect(grass.length).toBeGreaterThan(0);
+  });
+});
+
+describe("Feature: cemetery-time, Property 2: Painter call discipline for tufts and the ground", () => {
+  it("draws tufts after the fog, inside the ground, once per line, with one fillStyle per tone", () => {
+    fc.assert(
+      fc.property(
+        arbScenePackages([0, 1, 5, 59, 61]),
+        arbSceneWidth,
+        arbTheme,
+        fc.integer({ min: -50, max: 3000 }),
+        (packages, width, theme, minHeight) => {
+          const plan = planScene({ packages, width, theme, selectedIndex: null, ghostPhase: 0, minHeight });
+          const log = logger();
+          drawScene(log.ctx, plan, 1);
+          const names = log.calls.map((c) => c.method);
+          const firstSave = names.indexOf("save");
+          const end = firstSave === -1 ? names.length : firstSave;
+          const fogIdx = log.calls.findIndex((c) => c.method === "fillRect" && c.args[1] === plan.scenery.fog.y && c.args[3] === plan.scenery.fog.h);
+          const tufts = log.calls
+            .map((c, i) => ({ c, i }))
+            .filter(({ c, i }) => i < end && c.method === "fillRect" && (c.args[1] as number) >= 304 && c.args[2] === 1);
+          const extra = plan.groundHeight - plan.height >= 10 ? 1 : 0;
+          const perLine = plan.scenery.grass.reduce((sum, t) => sum + t.rects.length, 0);
+          expect(tufts).toHaveLength((plan.rows + extra) * perLine);
+          for (const { c, i } of tufts) {
+            const [x, y, w, h] = c.args as [number, number, number, number];
+            expect(i).toBeGreaterThan(fogIdx);
+            expect(w).toBe(1);
+            expect(y + h).toBeLessThanOrEqual(plan.groundHeight);
+            expect(x).toBeGreaterThanOrEqual(0);
+            expect(x).toBeLessThanOrEqual(plan.width - 1);
+          }
+          expect(log.calls.filter((c) => c.method === "fillRect" && (c.args[1] as number) < 80 && c.args[2] === 1 && c.args[3] !== 1)).toHaveLength(0);
+          const p = PALETTE[theme];
+          expect(log.assigned.filter((a) => a.prop === "fillStyle" && (a.value === p.grassDark || a.value === p.grassLight))).toHaveLength(2);
+          if (plan.graves.length > 0) {
+            const ground = log.calls.find((c) => c.method === "fillRect" && c.args[1] === plan.scenery.horizonY && c.args[3] !== 2);
+            expect(ground?.args[3]).toBe(plan.groundHeight - plan.scenery.horizonY);
+          }
+        },
+      ),
+      { numRuns: NUM_RUNS },
+    );
   });
 });

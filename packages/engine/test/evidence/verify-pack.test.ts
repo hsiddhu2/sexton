@@ -109,6 +109,11 @@ describe("Feature: evidence-pack, Property 31: Key order does not change the dig
 });
 
 describe("Feature: evidence-pack, Property 32: Any leaf edit is caught", () => {
+  // A7 (cemetery-time): profiled at about 5.5 ms of generation of the pack arbitrary per run against under 1 ms for
+  // everything else, so the cost is the generator. Every one of the 1000 runs draws a fresh pack from the original arbitrary.
+  // Per run the pack is serialised and parsed once (the parsed copy is the one edited, so no further clone is needed),
+  // the leaf paths are walked once, each canonical form is computed once, and one expect checks the result.
+  // The generator is the cost, about 6.5 s alone, so this test alone has a 60 s timeout (design.md, A7 measurements).
   it("returns digest-mismatch after one leaf of the body changes", async () => {
     await fc.assert(
       fc.asyncProperty(arbPack, fc.nat(), arbJsonValue, async (i, pick, leaf) => {
@@ -121,5 +126,5 @@ describe("Feature: evidence-pack, Property 32: Any leaf edit is caught", () => {
       }),
       { numRuns: 1000 },
     );
-  });
+  }, 60_000);
 });

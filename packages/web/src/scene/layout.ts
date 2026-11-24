@@ -1,6 +1,7 @@
 import type { PackageHealth, State } from "@sexton/api";
-import { colourFor, type Theme } from "./palette.js";
-import { unitStars, unitTufts } from "./scenery-seed.js";
+import type { FormView } from "../time/form-at.js";
+import { colourFor, PALETTE, type Theme } from "./palette.js";
+import { unitClusters, unitStars } from "./scenery-seed.js";
 import { SHAPE_BY_STATE, type ShapeId } from "./shapes.js";
 
 export type { Theme } from "./palette.js";
@@ -47,11 +48,19 @@ export interface GravePlan {
   readonly fill: string;
   readonly ghost: { readonly x: number; readonly y: number } | null;
   readonly inscription: string | null;
+  /** True for the Not-published form (an unmarked mound). */
+  readonly pending: boolean;
+  /** True when a pull request marker is drawn beside the grave. Never true for a pending grave. */
+  readonly marker: boolean;
+  /** Burial phase in [0, 1], or null when no burial plays on this grave. */
+  readonly burial: number | null;
 }
 
 export const STAR_AREA = 800;
-export const GRASS_STEP = 14;
+export const GRASS_CLUSTER_WIDTH = 96;
 export const GRASS_TILE_HEIGHT = 224;
+export const BOTTOM_LINE_MIN_GAP = 10;
+export const BOTTOM_LINE_OFFSET = 26;
 
 export interface Star {
   readonly x: number;
@@ -60,12 +69,17 @@ export interface Star {
   readonly layer: "far" | "near";
 }
 
-/** Tile-relative: y is measured from the top of the Tile. */
+/** Tile-relative rectangle: x, y, width, height. */
+export type TuftRect = readonly [number, number, number, number];
+
+/** Three blades from one base. Tile-relative: y is measured from the top of the line band. */
 export interface Tuft {
   readonly x: number;
-  readonly y: number;
+  readonly base: number;
   readonly h: number;
+  readonly dir: -1 | 1;
   readonly tone: "dark" | "light";
+  readonly rects: readonly TuftRect[];
 }
 
 export interface Scenery {
@@ -82,6 +96,8 @@ export interface ScenePlan {
   readonly width: number;
   readonly height: number;
   readonly columns: number;
+  readonly rows: number;
+  readonly groundHeight: number;
   readonly theme: Theme;
   readonly graves: readonly GravePlan[];
   readonly ring: Rect | null;
@@ -94,6 +110,13 @@ export interface SceneInput {
   readonly theme: Theme;
   readonly selectedIndex: number | null;
   readonly ghostPhase: number;
+  /** Free height of the viewport under the header. Unreadable values count as 0. */
+  readonly minHeight?: number;
+  /** One Form per grave, in triage order; undefined entries keep the scan Form. */
+  readonly forms?: readonly (FormView | undefined)[];
+  /** One flag per grave: a pull request was opened for it. */
+  readonly marks?: readonly boolean[];
+  readonly burial?: { readonly index: number; readonly phase: number } | null;
 }
 
 const round2 = (value: number): number => Math.round(value * 100) / 100;
@@ -103,29 +126,42 @@ export function ghostOffset(phase: number): number {
   return round2(GHOST_AMPLITUDE * Math.sin((2 * Math.PI * phase) / GHOST_STEPS)) + 0;
 }
 
+function makeTuft(x: number, base: number, h: number, dir: -1 | 1, tone: "dark" | "light"): Tuft {
+  const rects: TuftRect[] = [];
+  for (let k = 0; k < 3; k += 1) {
+    const bh = k === 1 ? h : h - 2;
+    const lean = k === 1 ? dir : k === 0 ? -1 : 1;
+    const bx = x + (k - 1) * 2;
+    const low = Math.ceil(bh / 2);
+    rects.push([bx, base - low, 1, low], [bx + lean, base - bh, 1, Math.floor(bh / 2)]);
+  }
+  return { x, base, h, dir, tone, rects };
+}
+
 /** Pure. Decoration that depends on the layout width only. */
 export function sceneryFor(width: number): Scenery {
   if (lastScenery !== null && lastScenery.width === width) return lastScenery.scenery;
   // The backing store never exceeds MAX_BACKING CSS pixels, so decoration is capped there too.
   const w = Number.isNaN(width) ? 0 : Math.min(width, MAX_BACKING);
-  const span = Math.max(w - 1, 0);
+  const starSpan = Math.max(w - 1, 0);
   const stars = unitStars(Math.floor((w * SKY_HEIGHT) / STAR_AREA)).map((s, i): Star => {
     const near = i % 3 === 0;
     return {
-      x: Math.floor(s.u * span),
+      x: Math.floor(s.u * starSpan),
       y: 4 + Math.floor(s.v * 69),
       size: near ? 2 : 1,
       layer: near ? "near" : "far",
     };
   });
-  const grass = unitTufts(Math.floor(w / GRASS_STEP)).map(
-    (t): Tuft => ({
-      x: Math.floor(t.u * span),
-      y: Math.floor(t.v * (GRASS_TILE_HEIGHT - t.h + 1)),
-      h: t.h,
-      tone: t.tone,
-    }),
-  );
+  const span = Math.max(w - 7, 0);
+  const grass: Tuft[] = [];
+  for (const cluster of unitClusters(Math.floor(w / GRASS_CLUSTER_WIDTH))) {
+    const centre = 3 + Math.floor(cluster.cu * span);
+    for (const t of cluster.tufts) {
+      const x = Math.min(Math.max(centre + Math.floor((t.off - 0.5) * 48), 3), Math.max(w - 4, 3));
+      grass.push(makeTuft(x, 8 + Math.floor(t.v * 9), 4 + Math.floor(t.r * 5), t.r2 < 0.5 ? -1 : 1, t.r3 < 0.5 ? "dark" : "light"));
+    }
+  }
   const scenery: Scenery = {
     skyHeight: SKY_HEIGHT,
     horizonY: SKY_HEIGHT,
@@ -161,11 +197,13 @@ export function planScene(input: SceneInput): ScenePlan {
   const n = input.packages.length;
   const scenery = sceneryFor(width);
   if (n === 0) {
-    return { width, height: 0, columns: 0, theme: input.theme, graves: [], ring: null, scenery };
+    return { width, height: 0, columns: 0, rows: 0, groundHeight: 0, theme: input.theme, graves: [], ring: null, scenery };
   }
   const columns = Math.max(1, Math.floor((width - 2 * PADDING) / CELL_WIDTH));
   const rows = Math.ceil(n / columns);
   const height = SKY_HEIGHT + PADDING + rows * CELL_HEIGHT + PADDING;
+  const free = typeof input.minHeight === "number" && Number.isFinite(input.minHeight) ? Math.max(0, Math.floor(input.minHeight)) : 0;
+  const groundHeight = Math.max(height, free);
   const graves = input.packages.map((pkg, index): GravePlan => {
     const rect: Rect = {
       x: PADDING + (index % columns) * CELL_WIDTH,
@@ -173,17 +211,26 @@ export function planScene(input: SceneInput): ScenePlan {
       w: CELL_WIDTH,
       h: CELL_HEIGHT,
     };
+    const form = input.forms?.[index];
+    const pending = form !== undefined && form.state === null;
+    const state = form?.state ?? pkg.state;
+    const showGhost = form === undefined ? hasGhost(pkg) : form.ghost && !pending;
+    const baseName = form?.version === undefined ? pkg.name : `${pkg.name} ${form.version}`;
+    const burial = input.burial;
     return {
       index,
       name: pkg.name,
       state: pkg.state,
       rect,
-      shape: SHAPE_BY_STATE[pkg.state],
-      fill: colourFor(pkg.state, input.theme),
-      ghost: hasGhost(pkg)
+      shape: pending ? "unmarked" : SHAPE_BY_STATE[state],
+      fill: pending ? PALETTE[input.theme].border : colourFor(state, input.theme),
+      ghost: showGhost
         ? { x: rect.x + GRAVE_GEOMETRY.ghostX, y: rect.y + GRAVE_GEOMETRY.ghostTop + ghostOffset(input.ghostPhase) }
         : null,
-      inscription: inscriptionFor(pkg.name, n),
+      inscription: inscriptionFor(baseName, n),
+      pending,
+      marker: !pending && input.marks?.[index] === true,
+      burial: !pending && burial != null && burial.index === index ? Math.min(1, Math.max(0, burial.phase)) : null,
     };
   });
   const selected = input.selectedIndex;
@@ -192,7 +239,7 @@ export function planScene(input: SceneInput): ScenePlan {
     selectedGrave === undefined
       ? null
       : { x: selectedGrave.rect.x + 2, y: selectedGrave.rect.y + 2, w: selectedGrave.rect.w - 4, h: selectedGrave.rect.h - 4 };
-  return { width, height, columns, theme: input.theme, graves, ring, scenery };
+  return { width, height, columns, rows, groundHeight, theme: input.theme, graves, ring, scenery };
 }
 
 export function backingStore(cssWidth: number, cssHeight: number, dpr: number): { scale: number; width: number; height: number } {

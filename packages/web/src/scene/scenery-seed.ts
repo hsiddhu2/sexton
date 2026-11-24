@@ -16,11 +16,17 @@ export interface UnitStar {
   readonly v: number;
 }
 
-export interface UnitTuft {
-  readonly u: number;
+export interface UnitTuftSeed {
+  readonly off: number;
   readonly v: number;
-  readonly h: number;
-  readonly tone: "dark" | "light";
+  readonly r: number;
+  readonly r2: number;
+  readonly r3: number;
+}
+
+export interface UnitCluster {
+  readonly cu: number;
+  readonly tufts: readonly [UnitTuftSeed, UnitTuftSeed, UnitTuftSeed];
 }
 
 function wholeCount(count: number): number {
@@ -39,16 +45,20 @@ export function unitStars(count: number): readonly UnitStar[] {
   return out;
 }
 
-/** The first `count` tufts of one fixed stream. Tuft i uses randoms 4i to 4i+3: u, v, height, tone. */
-export function unitTufts(count: number): readonly UnitTuft[] {
+/**
+ * The first `count` tuft clusters of one fixed stream. Cluster i uses the 16 randoms 16i to 16i+15:
+ * the centre, then offset, base, height, direction and tone for each of three tufts.
+ */
+export function unitClusters(count: number): readonly UnitCluster[] {
   const next = mulberry32(SCENERY_SEED ^ 0x2);
-  const out: UnitTuft[] = [];
+  const out: UnitCluster[] = [];
   for (let i = 0; i < wholeCount(count); i += 1) {
-    const u = next();
-    const v = next();
-    const h = 4 + Math.floor(next() * 7);
-    const tone = next() < 0.5 ? "dark" : "light";
-    out.push({ u, v, h, tone });
+    const cu = next();
+    const one = (): UnitTuftSeed => ({ off: next(), v: next(), r: next(), r2: next(), r3: next() });
+    const a = one();
+    const b = one();
+    const c = one();
+    out.push({ cu, tufts: [a, b, c] });
   }
   return out;
 }

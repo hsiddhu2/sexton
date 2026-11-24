@@ -1,5 +1,6 @@
 import type { PackageHealth } from "@sexton/api";
-import { useRef, type KeyboardEvent } from "react";
+import { useEffect, useRef, type KeyboardEvent, type MutableRefObject } from "react";
+import type { FormView } from "../time/form-at.js";
 import type { ScenePlan } from "../scene/layout.js";
 import { reduceSelection } from "../selection/selection.js";
 import { graveLabel } from "./grave-label.js";
@@ -14,13 +15,36 @@ export interface GraveButtonsProps {
   readonly onOpen: (index: number) => void;
   /** True while the drawer is open: no tooltip is shown. */
   readonly suppressTooltip?: boolean;
+  /** Set by the parent before it returns focus to a grave in code; that one focus shows no tooltip. */
+  readonly quietFocus?: MutableRefObject<boolean>;
+  /** The Form of each grave as of the chosen date, in triage order; undefined entries show the scan Form. */
+  readonly views?: readonly (FormView | undefined)[];
+  /** The As-of date text for the tooltip, set only before the scan date. */
+  readonly asOfDate?: string;
 }
 
-export function GraveButtons({ plan, selectedIndex, packages, onSelect, onOpen, suppressTooltip = false }: GraveButtonsProps) {
+export function GraveButtons({ plan, selectedIndex, packages, onSelect, onOpen, suppressTooltip = false, quietFocus, views, asOfDate }: GraveButtonsProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const { shownIndex, dispatch } = useGraveTooltip(suppressTooltip);
   const shownPkg = shownIndex === null ? undefined : packages[shownIndex];
   const shownCell = shownIndex === null ? undefined : plan.graves[shownIndex]?.rect;
+
+  // A focus counts as key-driven when a key was pressed after the last pointer press (any element, so Tab into the grave counts).
+  const keyDriven = useRef(false);
+  useEffect(() => {
+    const onKey = (): void => {
+      keyDriven.current = true;
+    };
+    const onPointer = (): void => {
+      keyDriven.current = false;
+    };
+    document.addEventListener("keydown", onKey, true);
+    document.addEventListener("pointerdown", onPointer, true);
+    return () => {
+      document.removeEventListener("keydown", onKey, true);
+      document.removeEventListener("pointerdown", onPointer, true);
+    };
+  }, []);
 
   const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>): void => {
     const outcome = reduceSelection(selectedIndex, event, plan.columns, packages.length);
@@ -44,20 +68,27 @@ export function GraveButtons({ plan, selectedIndex, packages, onSelect, onOpen, 
             type="button"
             className="grave-button"
             data-grave-index={i}
-            aria-label={graveLabel(pkg)}
+            aria-label={graveLabel(pkg, views?.[i], plan.graves[i]?.marker === true)}
             {...(i === shownIndex ? { "aria-describedby": TOOLTIP_ID } : {})}
             tabIndex={i === selectedIndex ? 0 : -1}
             style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
             onKeyDown={onKeyDown}
             onFocus={() => {
               onSelect(i);
-              dispatch({ type: "focus", index: i });
+              const programmatic = quietFocus?.current === true;
+              if (quietFocus !== undefined) quietFocus.current = false;
+              const key = !programmatic && keyDriven.current;
+              keyDriven.current = false;
+              dispatch({ type: "focus", index: i, key });
             }}
             onBlur={() => {
               dispatch({ type: "blur", index: i });
             }}
-            onPointerEnter={() => {
-              dispatch({ type: "pointer-enter", index: i });
+            onPointerEnter={(event) => {
+              dispatch({ type: "pointer-enter", index: i, x: event.clientX, y: event.clientY });
+            }}
+            onPointerMove={(event) => {
+              dispatch({ type: "pointer-move", index: i, x: event.clientX, y: event.clientY });
             }}
             onPointerLeave={() => {
               dispatch({ type: "pointer-leave", index: i });
@@ -72,6 +103,8 @@ export function GraveButtons({ plan, selectedIndex, packages, onSelect, onOpen, 
         <GraveTooltip
           pkg={shownPkg}
           cell={shownCell}
+          {...(shownIndex !== null && views?.[shownIndex] !== undefined ? { view: views[shownIndex] } : {})}
+          {...(asOfDate !== undefined ? { asOfDate } : {})}
           onPointerEnter={() => {
             dispatch({ type: "tip-enter" });
           }}

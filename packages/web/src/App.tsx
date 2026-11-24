@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Cemetery } from "./Cemetery.js";
 import { LoadingCard } from "./LoadingCard.js";
 import { Header } from "./header/Header.js";
@@ -6,7 +6,10 @@ import { headerModel } from "./header/header-model.js";
 import { useMediaQuery } from "./hooks/use-media-query.js";
 import { requestRemediation, type RemediateView } from "./load/remediate-client.js";
 import { useScanLoader } from "./load/use-scan-loader.js";
+import { replayAddress, type ReplayId } from "./replay/replay-ids.js";
 import { applyPalette, type Theme } from "./scene/palette.js";
+import { Scrubber } from "./time/Scrubber.js";
+import { stopsFor } from "./time/stops.js";
 
 export interface AppProps {
   readonly fetchFn: typeof fetch;
@@ -35,9 +38,39 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
     if (repo === undefined) return undefined;
     return (packageName: string): Promise<RemediateView> => requestRemediation(fetchFn, apiBase, repo, packageName);
   }, [state, apiBase, fetchFn]);
+  const onReplay = useCallback(
+    (id: ReplayId): void => {
+      loader.loadFrom(replayAddress(id), "replay");
+    },
+    [loader],
+  );
+  const stopInfo = useMemo(() => (state.status === "ready" ? stopsFor(state.response) : null), [state]);
+  const scrubberRef = useRef<HTMLInputElement | null>(null);
+  // The chosen Stop belongs to one load: a new load id falls back to the Scan date (the last Stop).
+  const [picked, setPicked] = useState<{ readonly loadId: number; readonly index: number } | null>(null);
+  const last = stopInfo === null ? 0 : stopInfo.stops.length - 1;
+  const index = picked !== null && picked.loadId === state.loadId ? Math.min(Math.max(picked.index, 0), last) : last;
+  const showScrubber = stopInfo !== null && stopInfo.hasTimelines;
+  const pick = useCallback(
+    (next: number): void => {
+      setPicked({ loadId: state.loadId, index: next });
+    },
+    [state.loadId],
+  );
+  const asOfMs = showScrubber ? (stopInfo.stops[index] ?? null) : null;
+  const asOf = showScrubber && index < last && asOfMs !== null
+    ? {
+        iso: new Date(asOfMs).toISOString(),
+        onBack: () => {
+          pick(last);
+          scrubberRef.current?.focus();
+        },
+      }
+    : undefined;
   return (
     <>
-      <Header model={model} theme={theme} apiConfigured={apiBase !== null} onSubmit={loader.submitRepo} fieldRef={repoFieldRef} />
+      <Header model={model} theme={theme} apiConfigured={apiBase !== null} onSubmit={loader.submitRepo} fieldRef={repoFieldRef} onReplay={onReplay} {...(state.status === "ready" && state.response.replay !== undefined ? { replay: state.response.replay } : {})} {...(asOf !== undefined ? { asOf } : {})} />
+      {showScrubber ? <Scrubber stops={stopInfo.stops} index={index} onChange={pick} inputRef={scrubberRef} /> : null}
       {state.status === "loading" ? (
         <LoadingCard />
       ) : state.status === "error" ? (
@@ -64,6 +97,7 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
           response={state.response}
           theme={theme}
           reducedMotion={reducedMotion}
+          asOfMs={asOfMs}
           repoFieldRef={repoFieldRef}
           {...(onRemediate !== undefined ? { onRemediate } : {})}
         />

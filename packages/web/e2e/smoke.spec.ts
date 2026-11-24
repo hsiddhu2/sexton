@@ -78,7 +78,8 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
   await page.emulateMedia({ reducedMotion: "no-preference" });
   // A 300-package response built from the demo scan: every package copies one that carries advisories.
   const demo = (await (await request.get(`${origin}/demo/scan.json`)).json()) as {
-    report: { packages: DemoPackage[] };
+    report: { generatedAt: string; packages: DemoPackage[] };
+    timelines?: Record<string, unknown>;
   };
   const template = demo.report.packages.find((p) => p.signals.advisories.available && p.signals.advisories.value.length > 0);
   expect(template).toBeDefined();
@@ -88,6 +89,18 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
     name: `ghost-${String(i)}`,
   }));
   // Match the pathname only. A glob also matches the navigation URL "/?scan=/test/scan-300.json".
+  // Every package carries a Timeline, so the scrubber exists and a move re-plans all 300 graves.
+  const timeline = {
+    installed: "1.0.0",
+    coveredFrom: null,
+    segments: [
+      { from: "2019-01-01T00:00:00.000Z", state: null, reason: "installed version not yet published", ghost: false },
+      { from: "2020-01-01T00:00:00.000Z", state: "Alive", reason: "no rule matched", ghost: false },
+      { from: "2022-01-01T00:00:00.000Z", state: "Restless", reason: "no release in 24 months", ghost: false },
+      { from: big.report.generatedAt, state: "Haunted", reason: "advisory of severity High or Critical", ghost: true },
+    ],
+  };
+  big.timelines = Object.fromEntries(big.report.packages.map((p) => [p.name, structuredClone(timeline)]));
   await page.route((url) => url.pathname === "/test/scan-300.json", (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(big) }),
   );
@@ -101,5 +114,17 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
   const med = median(times);
   console.log(`median redraw of 300 graves over 30 paints: ${med.toFixed(2)} ms`);
   expect(med).toBeLessThanOrEqual(BUDGET_MS);
+  // Spec cemetery-time, 12.6: a second timed pass after a scrubber move (Home, then one step right), by keyboard.
+  const scrubber = page.getByRole("slider", { name: "History date" });
+  await scrubber.focus();
+  await scrubber.press("Home");
+  await scrubber.press("ArrowRight");
+  await expect(scrubber).toHaveAttribute("aria-valuetext", /^1 Jan 2020/);
+  await waitForFirstPaint(page);
+  const moved = await page.evaluate(() => (window as unknown as TimingWindow).__sextonTiming?.redraw(30) ?? []);
+  expect(moved).toHaveLength(30);
+  const movedMedian = median(moved);
+  console.log(`median redraw of 300 graves after a scrubber move over 30 paints: ${movedMedian.toFixed(2)} ms`);
+  expect(movedMedian).toBeLessThanOrEqual(BUDGET_MS);
   expect(cspViolations).toEqual([]);
 });

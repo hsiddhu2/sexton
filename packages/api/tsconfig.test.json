@@ -11,6 +11,9 @@
     "test"
   ],
   "exclude": [
-    "test/generate-demo-scan.test.ts"
+    "test/generate-demo-scan.test.ts",
+    "test/replay-facts.test.ts",
+    "test/timelines.test.ts",
+    "test/timeline-size.test.ts"
   ]
 }

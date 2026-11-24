@@ -28,6 +28,7 @@ export interface PaletteTheme {
   readonly accentBg: string;
   readonly accentText: string;
   readonly wordmark: string;
+  readonly marker: string;
   readonly states: Readonly<Record<State, string>>;
 }
 
@@ -57,6 +58,7 @@ const NIGHT: PaletteTheme = {
   accentBg: "#3f64d8",
   accentText: "#ffffff",
   wordmark: "#efe6c4",
+  marker: "#efe6c4",
   states: {
     Alive: "#43a857",
     Restless: "#f2d060",
@@ -114,6 +116,7 @@ export function cssVariables(theme: Theme): Record<string, string> {
     "--accent-bg": p.accentBg,
     "--accent-text": p.accentText,
     "--wordmark": p.wordmark,
+    "--marker": p.marker,
   };
 }
 

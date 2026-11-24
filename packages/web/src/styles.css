@@ -194,12 +194,17 @@ main {
 }
 
 .header-repo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
   font-weight: 600;
   min-width: 0;
 }
 
 .repo-text {
   overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 .demo-label,
@@ -702,4 +707,143 @@ pre.signal-value {
   .loading-spinner {
     animation: none;
   }
+}
+/* Scrubber: a native range, no transition and no animation */
+.scrub {
+  box-sizing: border-box;
+  padding: 8px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.875rem;
+}
+.scrub-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+}
+.scrub-date {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.scrub-track {
+  position: relative;
+  padding: 4px 0 0;
+}
+.scrub-track input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  accent-color: var(--focus);
+}
+.scrub input:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.scrub-ticks {
+  display: block;
+  width: 100%;
+  height: 6px;
+  margin-top: 2px;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1;
+}
+.scrub-ticks path {
+  vector-effect: non-scaling-stroke;
+}
+.scrub-note {
+  margin: 4px 0 0;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.header-asof {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 0;
+  color: var(--text);
+}
+.asof-back {
+  padding: 2px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--field);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.asof-back:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.drawer-asof {
+  margin: 0;
+  padding: 0 16px 8px;
+  overflow-wrap: anywhere;
+}
+.legend-shape-pending {
+  fill: var(--border);
+}
+.legend-marker {
+  flex: none;
+  fill: var(--marker);
+}
+/* Replay: buttons after the Scan button, and the banner */
+.replay-group {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.replay-button {
+  padding: 6px 14px;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: var(--field);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+.replay-button:hover {
+  border-color: var(--focus);
+}
+.replay-button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.replay-banner {
+  box-sizing: border-box;
+  flex: 1 1 100%;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--field);
+  color: var(--text);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+.replay-banner p {
+  margin: 0 0 4px;
+}
+.replay-sources {
+  margin: 0;
+  padding-left: 20px;
+}
+.replay-banner a {
+  color: var(--text);
+}
+.replay-banner a:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.drawer .replay-banner {
+  margin: 0 16px 8px;
+  width: auto;
 }

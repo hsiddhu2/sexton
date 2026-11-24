@@ -228,3 +228,67 @@ describe("tooltip in the cemetery", () => {
     remove.mockRestore();
   });
 });
+
+const arbEvent4: fc.Arbitrary<TipEvent> = fc.oneof(
+  arbEvent,
+  fc.constant<TipEvent>({ type: "reset" }),
+  fc.record({ index: fc.integer({ min: 0, max: 3 }), x: fc.integer({ min: 0, max: 2 }), y: fc.integer({ min: 0, max: 2 }) }).map((r): TipEvent => ({ type: "pointer-move", ...r })),
+  fc.record({ index: fc.integer({ min: 0, max: 3 }), key: fc.boolean() }).map((r): TipEvent => ({ type: "focus", ...r })),
+);
+
+describe("tooltip machine with reset and quiet", () => {
+  it("Feature: cemetery-time, Property 4: The tooltip machine with reset and quiet", () => {
+    fc.assert(
+      fc.property(fc.array(arbEvent4, { maxLength: 40 }), (events) => {
+        let state: TipState = TIP_START;
+        for (const event of events) {
+          const next = tipReducer(state, event);
+          expect(tipReducer(state, event)).toEqual(next);
+          if (event.type === "reset") {
+            expect(next.index).toBeNull();
+            expect(next.quiet).toBe(true);
+          }
+          if (state.quiet && event.type === "pointer-enter") expect(next.index).toBeNull();
+          if (state.quiet && event.type === "focus" && event.key !== true) expect(next.index).toBeNull();
+          if (event.type === "focus" && event.key === true) expect(next).toMatchObject({ index: event.index, source: "focus", quiet: false });
+          if (event.type === "pointer-move") {
+            const moved = state.pos === null || state.pos.x !== event.x || state.pos.y !== event.y;
+            expect(next.pos).toEqual({ x: event.x, y: event.y });
+            if (state.quiet && moved) expect(next).toMatchObject({ index: event.index, source: "pointer", quiet: false });
+            if (state.quiet && !moved) expect(next).toMatchObject({ index: null, quiet: true });
+          }
+          if (state.quiet && event.type === "escape") expect(next.quiet).toBe(true);
+          expect(next.index === null).toBe(next.source === null);
+          state = next;
+        }
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  it("shows nothing after the drawer closes until the pointer moves to a new position or a key moves focus", () => {
+    const { container } = render(<Cemetery response={cheapScan(3)} theme="dark" reducedMotion={true} />);
+    const list = graves(container);
+    fireEvent.pointerEnter(list[0] as HTMLElement, { clientX: 10, clientY: 10 });
+    fireEvent.pointerMove(list[0] as HTMLElement, { clientX: 10, clientY: 10 });
+    expect(tips(container)).toHaveLength(1);
+    fireEvent.click(list[0] as HTMLElement);
+    expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+    fireEvent.keyDown(document.querySelector('[role="dialog"]') as HTMLElement, { key: "Escape" });
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(tips(container)).toHaveLength(0);
+    // The browser re-reports the stationary pointer: still nothing.
+    fireEvent.pointerEnter(list[0] as HTMLElement, { clientX: 10, clientY: 10 });
+    fireEvent.pointerMove(list[0] as HTMLElement, { clientX: 10, clientY: 10 });
+    expect(tips(container)).toHaveLength(0);
+    fireEvent.pointerMove(list[0] as HTMLElement, { clientX: 14, clientY: 12 });
+    expect(tips(container)).toHaveLength(1);
+    // Close again, then a key moves focus: the tooltip shows.
+    fireEvent.click(list[0] as HTMLElement);
+    fireEvent.keyDown(document.querySelector('[role="dialog"]') as HTMLElement, { key: "Escape" });
+    expect(tips(container)).toHaveLength(0);
+    const fresh = graves(container);
+    fireEvent.keyDown(fresh[0] as HTMLElement, { key: "ArrowRight" });
+    expect(tips(container)).toHaveLength(1);
+  });
+});

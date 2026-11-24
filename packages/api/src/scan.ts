@@ -28,15 +28,18 @@ import {
   type RemediationEntry,
   type RetryOptions,
   type SnapshotStore,
+  type TimelineSinkInput,
   type Transport,
 } from "@sexton/engine";
 import type { ScanResponse } from "./contract.js";
 import { intakeErrorSpec, internalErrorSpec, policyErrorSpec, policyFetchFailedSpec, type ErrorSpec } from "./http/responses.js";
 import { errorName, type Logger } from "./log/logger.js";
 import { planStage } from "./plan-stage.js";
+import { pullRequestMarks } from "./pull-requests.js";
 import { isAllowed } from "./remediate/allowlist.js";
 import type { RemediationLogReader } from "./remediate/log-store.js";
 import { fetchPolicyText } from "./policy-source.js";
+import { buildTimelines } from "./timelines.js";
 
 export const SCAN_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -54,7 +57,7 @@ export interface ScanDeps {
   readonly githubToken?: () => Promise<string | null>;
   /** The remediate allowlist; absent allows nothing (spec remediate, Requirement 7.2). */
   readonly allowlist?: ReadonlySet<string>;
-  /** The remediation log, read by the evidence path only (spec remediate, Requirement 7.1). */
+  /** The remediation log, read by the evidence path (spec remediate, 7.1) and by scan() for pull request marks (cemetery-time, 14.1). */
   readonly remediationLog?: RemediationLogReader;
 }
 
@@ -103,7 +106,7 @@ export async function runScan(repoUrl: string, deps: ScanDeps): Promise<ScanOutc
 }
 
 async function scan(repoUrl: string, deps: ScanDeps, summary: Summary): Promise<ScanOutcome> {
-  const outcome = await scanWithInputs(repoUrl, deps, summary);
+  const outcome = await scanWithInputs(repoUrl, deps, summary, { timelines: true });
   return outcome.ok ? { ok: true, body: outcome.body } : outcome;
 }
 
@@ -121,7 +124,17 @@ function needsFiles(report: HealthReport): boolean {
   return report.packages.some((p) => (p.state === "Haunted" || p.state === "Dead" || p.state === "Possessed") && DEFAULT_RECIPE_REGISTRY.has(p.name));
 }
 
-export async function scanWithInputs(repoUrl: string, deps: ScanDeps, summary: Summary): Promise<ScanWithInputs> {
+export interface ScanOptions {
+  /** Build the Timelines (spec cemetery-time, 8.11). The evidence path leaves this false (8.14). */
+  readonly timelines: boolean;
+}
+
+export async function scanWithInputs(
+  repoUrl: string,
+  deps: ScanDeps,
+  summary: Summary,
+  options: ScanOptions = { timelines: false },
+): Promise<ScanWithInputs> {
   const retry = deps.retry !== undefined ? { retry: deps.retry } : {};
   const ctx: ClientContext = {
     transport: deps.transport,
@@ -149,6 +162,7 @@ export async function scanWithInputs(repoUrl: string, deps: ScanDeps, summary: S
   summary.unlocked = intake.unlocked;
 
   // The policy fetch and scoring share one cache store, so a key intake read is not fetched again (4.13).
+  const sinkInputs = new Map<string, TimelineSinkInput>();
   const [policyText, scored] = await Promise.all([
     fetchPolicyText(ctx, intake.repo, ref),
     scorePackages(intake.packages, {
@@ -157,6 +171,7 @@ export async function scanWithInputs(repoUrl: string, deps: ScanDeps, summary: S
       cacheStore: deps.cacheStore,
       cacheTtlMs: SCAN_CACHE_TTL_MS,
       snapshotStore: deps.snapshotStore,
+      ...(options.timelines ? { timelineSink: (input: TimelineSinkInput): void => void sinkInputs.set(input.name, input) } : {}),
       ...retry,
     }),
   ]);
@@ -189,6 +204,29 @@ export async function scanWithInputs(repoUrl: string, deps: ScanDeps, summary: S
   }
   if (planned.partial) deps.log.warn({ msg: "plans-partial" });
 
+  // Timelines (spec cemetery-time, 8.11, 8.12). buildTimelines omits a failed package; the outer guard omits the field.
+  let timelines: ScanResponse["timelines"];
+  if (options.timelines) {
+    try {
+      const parsed = new Date(report.generatedAt);
+      timelines = await buildTimelines(ctx, report, sinkInputs, Number.isFinite(parsed.getTime()) ? parsed : deps.clock());
+    } catch {
+      deps.log.warn({ msg: "timelines-failed" });
+    }
+  }
+
+  // Pull request marks (spec cemetery-time, 14.1, 14.2): the scan path only. The log partition is the lower-cased URL.
+  // A failed read omits the field. The warn line holds the error name only.
+  let pullRequests: ScanResponse["pullRequests"];
+  if (options.timelines && deps.remediationLog !== undefined) {
+    try {
+      const entries = await deps.remediationLog.list(repoUrl.toLowerCase());
+      pullRequests = pullRequestMarks(entries, report.packages.map((p) => p.name));
+    } catch (error) {
+      deps.log.warn({ msg: "remediation-log-unavailable", errorName: errorName(error) });
+    }
+  }
+
   return {
     ok: true,
     body: {
@@ -196,6 +234,8 @@ export async function scanWithInputs(repoUrl: string, deps: ScanDeps, summary: S
       policy: policyResult,
       remediations: planned.remediations,
       actions: { remediate: deps.allowlist !== undefined && isAllowed(deps.allowlist, intake.repo) },
+      ...(timelines !== undefined ? { timelines } : {}),
+      ...(pullRequests !== undefined ? { pullRequests } : {}),
     },
     dependencies: intake.packages,
     manifests,

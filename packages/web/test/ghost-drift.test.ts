@@ -28,6 +28,9 @@ const withoutGhost = (g: GravePlan): Omit<GravePlan, "ghost"> => ({
   shape: g.shape,
   fill: g.fill,
   inscription: g.inscription,
+  pending: g.pending,
+  marker: g.marker,
+  burial: g.burial,
 });
 
 describe("Feature: cemetery-theme, Property 6: Ghost offset function", () => {

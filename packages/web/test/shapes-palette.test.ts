@@ -68,14 +68,14 @@ describe("Feature: cemetery-ui, Property 3: A ghost is present if and only if th
 });
 
 describe("shapes and palette examples", () => {
-  it("has four distinct shape path strings and the specified state mapping", () => {
+  it("has five distinct shape path strings and the specified state mapping", () => {
     const paths = Object.values(SHAPES).map((s) => s.d);
-    expect(new Set(paths).size).toBe(4);
+    expect(new Set(paths).size).toBe(5);
     expect(SHAPE_BY_STATE).toEqual({ Alive: "upright", Restless: "upright", Haunted: "cross", Dead: "cracked", Possessed: "open" });
     expect(SHAPES.cracked.tiltDegrees).not.toBe(0);
-    for (const id of ["upright", "cross", "open"] as const) expect(SHAPES[id].tiltDegrees).toBe(0);
+    for (const id of ["upright", "cross", "open", "unmarked"] as const) expect(SHAPES[id].tiltDegrees).toBe(0);
     expect(SHAPES.open.pit).not.toBeNull();
-    for (const id of ["upright", "cross", "cracked"] as const) expect(SHAPES[id].pit).toBeNull();
+    for (const id of ["upright", "cross", "cracked", "unmarked"] as const) expect(SHAPES[id].pit).toBeNull();
   });
 
   it("has five pairwise distinct state colours per theme", () => {
@@ -129,7 +129,7 @@ describe("Feature: cemetery-theme, Property 1: Palette contrast over every backd
         const stop = stops[stopIndex] as string;
         expect(stop).toMatch(/^#[0-9a-f]{6}$/);
         for (const fg of [p.text, p.muted, p.wordmark]) expect(contrast(fg, stop), `${fg} on ${stop}`).toBeGreaterThanOrEqual(TEXT_MIN);
-        const nonText = [p.ghost, p.ring, p.focus, p.border, ...STATES.map((s) => colourFor(s, theme))];
+        const nonText = [p.ghost, p.marker, p.ring, p.focus, p.border, ...STATES.map((s) => colourFor(s, theme))];
         for (const fg of nonText) expect(contrast(fg, stop), `${fg} on ${stop}`).toBeGreaterThanOrEqual(NON_TEXT_MIN);
       }),
       { numRuns: NUM_RUNS },
@@ -148,7 +148,7 @@ describe("Feature: cemetery-theme, Property 1: Palette contrast over every backd
           expect(contrast(fg, stop), `${fg} on ${stop}`).toBeGreaterThanOrEqual(TEXT_MIN);
           for (const back of [p.surface, p.field]) expect(contrast(fg, back)).toBeGreaterThanOrEqual(TEXT_MIN);
         }
-        for (const fg of [...STATES.map((s) => colourFor(s, theme)), p.ghost, p.ring, p.focus, p.border]) {
+        for (const fg of [...STATES.map((s) => colourFor(s, theme)), p.ghost, p.marker, p.ring, p.focus, p.border]) {
           expect(contrast(fg, stop), `${fg} on ${stop}`).toBeGreaterThanOrEqual(NON_TEXT_MIN);
         }
         for (const fg of [p.focus, p.border]) expect(contrast(fg, p.field)).toBeGreaterThanOrEqual(NON_TEXT_MIN);
@@ -158,7 +158,7 @@ describe("Feature: cemetery-theme, Property 1: Palette contrast over every backd
           for (const back of [p.skyTop, p.skyMid, p.skyHorizon]) expect(contrast(star, back)).toBeGreaterThanOrEqual(NON_TEXT_MIN);
         }
         for (const s of STATES) expect(contrast(p.ink, colourFor(s, theme))).toBeGreaterThanOrEqual(TEXT_MIN);
-        for (const t of [p.star, p.starFar, p.grassDark, p.grassLight, p.field, p.accentBg, p.accentText, p.wordmark]) {
+        for (const t of [p.star, p.starFar, p.grassDark, p.grassLight, p.field, p.accentBg, p.accentText, p.wordmark, p.marker]) {
           expect(t).toMatch(/^#[0-9a-f]{6}$/);
         }
         expect(luminance(stops[9] as string)).toBeLessThanOrEqual(luminance(p.groundTop));
@@ -195,7 +195,7 @@ describe("Feature: cemetery-theme, Property 1: Palette contrast over every backd
       const tokens = [
         p.skyTop, p.skyMid, p.skyHorizon, p.groundTop, p.bg, p.horizon, p.moon, p.fog, p.surface, p.text,
         p.muted, p.border, p.focus, p.ring, p.ghost, p.ink, p.pit, p.star, p.starFar, p.grassDark,
-        p.grassLight, p.field, p.accentBg, p.accentText, p.wordmark, ...STATES.map((s) => colourFor(s, theme)),
+        p.grassLight, p.field, p.accentBg, p.accentText, p.wordmark, p.marker, ...STATES.map((s) => colourFor(s, theme)),
       ];
       for (const t of tokens) expect(t).toMatch(/^#[0-9a-f]{6}$/);
     }
@@ -310,5 +310,21 @@ describe("palette contrast (WCAG 2.1 relative luminance)", () => {
       }
     }
     expect(checked).toBeGreaterThan(20);
+  });
+});
+
+describe("Feature: cemetery-time, Property 23: The marker colour keeps the contrast", () => {
+  it("keeps at least 3 to 1 on every Backdrop stop, is lower-case six-digit hex and differs from the State and ghost colours", () => {
+    fc.assert(
+      fc.property(arbTheme, fc.nat({ max: 9 }), (theme, stopIndex) => {
+        const p = PALETTE[theme];
+        const stop = backdropStops(theme)[stopIndex] as string;
+        expect(p.marker).toMatch(/^#[0-9a-f]{6}$/);
+        expect(contrast(p.marker, stop), `${p.marker} on ${stop}`).toBeGreaterThanOrEqual(NON_TEXT_MIN);
+        for (const s of STATES) expect(p.marker).not.toBe(colourFor(s, theme));
+        expect(p.marker).not.toBe(p.ghost);
+      }),
+      { numRuns: NUM_RUNS },
+    );
   });
 });

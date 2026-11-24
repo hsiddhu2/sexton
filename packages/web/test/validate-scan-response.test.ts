@@ -7,6 +7,10 @@ import {
 } from "../src/load/validate-scan-response.js";
 import { FAULT_MARKER, arbBigScanResponse, arbFault, arbJson, arbRemediations, arbScanResponse, cheapScan } from "./arbitraries.js";
 import { readDemoScan } from "./support/demo-scan.js";
+import { EXPECTED_SEGMENTS, readReplay } from "./support/replay-fixture.js";
+import { formAt, timelineOf } from "../src/time/form-at.js";
+import { stopsFor } from "../src/time/stops.js";
+import type { ScanResponse } from "@sexton/api";
 
 const PATH_RE = /^(\/(report|policy|remediations|packages|signals|[A-Za-z]+|\d+))*$/;
 
@@ -212,5 +216,216 @@ describe("validateScanResponse remediations (spec remediation)", () => {
     const { remediations: _drop, ...none } = { ...scan, remediations: [] };
     expect(_drop).toEqual([]);
     expect(validateScanResponse(none).ok).toBe(true);
+  });
+});
+
+// Spec cemetery-time, 8.13, 8.15, 14.3.
+describe("timelines, pull requests and replay", () => {
+  type Seg = { from: string; state: string | null; reason: string; ghost: boolean; version?: unknown };
+  type Tl = { installed: string; coveredFrom: string | null; segments: Seg[] };
+  const demo = readDemoScan() as { report: { packages: { name: string }[] }; timelines: Record<string, Tl> };
+  const first = demo.report.packages[0]?.name ?? "";
+  const base = (): Record<string, unknown> => structuredClone(demo) as unknown as Record<string, unknown>;
+  const withTimeline = (edit: (tl: Tl) => void): unknown => {
+    const body = base() as { timelines: Record<string, Tl> };
+    edit(body.timelines[first] as Tl);
+    return body;
+  };
+  const paths = (input: unknown): string[] => errorsOf(input).map((e) => e.path);
+  const iso = (i: number): string => new Date(Date.UTC(2024, 0, 1) + i * 86_400_000).toISOString();
+
+  it("Feature: cemetery-time, Property 12: Built timelines respect the size cap and the contract (validator half)", () => {
+    expect(validateScanResponse(JSON.parse(JSON.stringify(demo))).ok).toBe(true);
+    const { timelines: _t, ...without } = demo;
+    expect(_t).toBeDefined();
+    expect(validateScanResponse(without).ok).toBe(true);
+  });
+
+  it("Feature: cemetery-time, Property 14: The validator rejects bad timelines, pull requests and replay blocks", () => {
+    const states = fc.constantFrom("Possessed", "Dead", "Haunted", "Restless", "Alive", null);
+    const arbSegments = fc.array(fc.record({ state: states, ghost: fc.boolean(), reason: fc.string({ maxLength: 200 }), version: fc.option(fc.string({ maxLength: 100 }), { nil: undefined }) }), {
+      minLength: 1,
+      maxLength: 64,
+    });
+    const build = (segs: { state: string | null; ghost: boolean; reason: string; version: string | undefined }[]): Seg[] =>
+      segs.map((s, i) => ({ from: iso(i), state: s.state, ghost: s.ghost, reason: s.reason, ...(s.version !== undefined ? { version: s.version } : {}) }));
+    fc.assert(
+      fc.property(arbSegments, (segs) => {
+        // Valid, with and without a version, and after a JSON round trip.
+        const ok = withTimeline((tl) => (tl.segments = build(segs)));
+        expect(validateScanResponse(JSON.parse(JSON.stringify(ok))).ok).toBe(true);
+      }),
+      { numRuns: 100 },
+    );
+    const fault = fc.constantFrom(
+      "version-101",
+      "version-number",
+      "reason-201",
+      "state-bad",
+      "ghost-string",
+      "from-bad",
+      "from-not-increasing",
+      "from-duplicate",
+      "empty",
+      "too-many",
+      "installed-101",
+      "covered-bad",
+      "unknown-package",
+    );
+    fc.assert(
+      fc.property(arbSegments, fault, (segs, f) => {
+        const body = base() as { timelines: Record<string, Tl> };
+        const tl = body.timelines[first] as Tl;
+        tl.segments = build(segs);
+        let path = `/timelines/0/segments/0`;
+        const seg0 = tl.segments[0] as Seg;
+        switch (f) {
+          case "version-101": seg0.version = "v".repeat(101); path += "/version"; break;
+          case "version-number": seg0.version = 3; path += "/version"; break;
+          case "reason-201": seg0.reason = "r".repeat(201); path += "/reason"; break;
+          case "state-bad": seg0.state = "Zombie"; path += "/state"; break;
+          case "ghost-string": (seg0 as { ghost: unknown }).ghost = "yes"; path += "/ghost"; break;
+          case "from-bad": seg0.from = "not a date"; path += "/from"; break;
+          case "from-not-increasing":
+          case "from-duplicate":
+            tl.segments = [seg0, { ...seg0, from: f === "from-duplicate" ? seg0.from : iso(-5) }];
+            path = `/timelines/0/segments/1/from`;
+            break;
+          case "empty": tl.segments = []; path = "/timelines/0/segments"; break;
+          case "too-many": tl.segments = Array.from({ length: 65 }, (_, i) => ({ ...seg0, from: iso(i) })); path = "/timelines/0/segments"; break;
+          case "installed-101": tl.installed = "i".repeat(101); path = "/timelines/0/installed"; break;
+          case "covered-bad": tl.coveredFrom = "nope"; path = "/timelines/0/coveredFrom"; break;
+          default: {
+            const t = body.timelines;
+            body.timelines = { ["not-in-report-" + FAULT_MARKER]: tl, ...Object.fromEntries(Object.entries(t).filter(([k]) => k !== first)) };
+            path = "/timelines/0";
+          }
+        }
+        const result = validateScanResponse(body);
+        expect(result.ok).toBe(false);
+        if (!result.ok) {
+          expect(result.errors.some((e) => e.path === path)).toBe(true);
+          expect(JSON.stringify(result.errors)).not.toContain(FAULT_MARKER);
+        }
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  it("accepts a Segment version of exactly 100 characters and rejects 101 and non-strings", () => {
+    expect(validateScanResponse(withTimeline((tl) => ((tl.segments[0] as Seg).version = "v".repeat(100)))).ok).toBe(true);
+    expect(paths(withTimeline((tl) => ((tl.segments[0] as Seg).version = "v".repeat(101))))).toEqual([`/timelines/0/segments/0/version`]);
+    for (const bad of [null, 1, true, {}, []]) {
+      expect(paths(withTimeline((tl) => ((tl.segments[0] as Seg).version = bad)))).toEqual([`/timelines/0/segments/0/version`]);
+    }
+  });
+
+  it("does not let a __proto__ key pollute or throw", () => {
+    const text = JSON.stringify(base()).replace('"timelines":{', '"timelines":{"__proto__":{"installed":"1","coveredFrom":null,"segments":[]},');
+    const result = validateScanResponse(JSON.parse(text));
+    expect(result.ok).toBe(false);
+    expect(({} as Record<string, unknown>)["installed"]).toBeUndefined();
+  });
+
+  it("checks pullRequests", () => {
+    const entry = { package: first, kind: "bump", prUrl: "https://github.com/a/b/pull/1", timestamp: "2026-11-20T00:00:00Z" };
+    expect(validateScanResponse({ ...base(), pullRequests: [entry] }).ok).toBe(true);
+    expect(paths({ ...base(), pullRequests: [entry, { ...entry, kind: "remove" }] })).toEqual(["/pullRequests/1/package"]);
+    expect(paths({ ...base(), pullRequests: [{ ...entry, package: "nope" }] })).toEqual(["/pullRequests/0/package"]);
+    expect(paths({ ...base(), pullRequests: [{ ...entry, kind: "zap" }] })).toEqual(["/pullRequests/0/kind"]);
+    expect(paths({ ...base(), pullRequests: [{ ...entry, prUrl: "http://x" }] })).toEqual(["/pullRequests/0/prUrl"]);
+    expect(paths({ ...base(), pullRequests: [{ ...entry, timestamp: "x" }] })).toEqual(["/pullRequests/0/timestamp"]);
+    expect(errorsOf({ ...base(), pullRequests: Array.from({ length: 301 }, () => entry) }).map((e) => e.code)).toEqual(["TOO_MANY_ITEMS"]);
+  });
+
+  it("checks replay", () => {
+    const replay = { id: "axios", title: "t", summary: "s", sources: [{ label: "l", url: "http://not-https.example" }] };
+    expect(validateScanResponse({ ...base(), replay }).ok).toBe(true);
+    expect(paths({ ...base(), replay: { ...replay, id: "other" } })).toEqual(["/replay/id"]);
+    expect(paths({ ...base(), replay: { ...replay, title: "t".repeat(121) } })).toEqual(["/replay/title"]);
+    expect(paths({ ...base(), replay: { ...replay, summary: "s".repeat(601) } })).toEqual(["/replay/summary"]);
+    expect(paths({ ...base(), replay: { ...replay, sources: [] } })).toEqual(["/replay/sources"]);
+    expect(errorsOf({ ...base(), replay: { ...replay, sources: Array.from({ length: 7 }, () => replay.sources[0]) } }).map((e) => e.code)).toEqual(["TOO_MANY_ITEMS"]);
+    expect(paths({ ...base(), replay: { ...replay, sources: [{ label: "l".repeat(121), url: "u" }] } })).toEqual(["/replay/sources/0/label"]);
+  });
+});
+
+describe("Property 20: The replay fixtures pass the validator, also under mutation, and follow the sourced versions", () => {
+  const ids = ["axios", "keyv"] as const;
+  type Obj = Record<string, unknown>;
+  const tlOf = (r: Obj, id: string): Obj => (r["timelines"] as Obj)[id] as Obj;
+  const firstSegment = (r: Obj, id: string): Obj => (tlOf(r, id)["segments"] as Obj[])[0] as Obj;
+  const mutations: readonly ((r: Obj, id: string) => void)[] = [
+    (r) => {
+      delete (r["report"] as Obj)["scan"];
+    },
+    (r) => {
+      delete r["remediations"];
+    },
+    (r) => {
+      delete r["actions"];
+    },
+    (r) => {
+      r["actions"] = null;
+    },
+    (r, id) => {
+      tlOf(r, id)["coveredFrom"] = null;
+    },
+    (r, id) => {
+      delete firstSegment(r, id)["reason"];
+    },
+    (r, id) => {
+      delete firstSegment(r, id)["version"];
+    },
+    (r, id) => {
+      firstSegment(r, id)["version"] = null;
+    },
+  ];
+  it("Feature: cemetery-time, Property 20: The replay fixtures pass the validator, also under mutation, and follow the sourced versions", () => {
+    for (const id of ids) {
+      expect(validateScanResponse(readReplay(id)).ok).toBe(true);
+      const response = readReplay(id) as ScanResponse;
+      const segments = response.timelines?.[id]?.segments ?? [];
+      expect(segments.map((s) => ({ from: s.from, version: s.version }))).toEqual(EXPECTED_SEGMENTS[id].map((s) => ({ from: s.from, version: s.version })));
+      expect(segments.map((s) => ({ state: s.state, reason: s.reason }))).toEqual(EXPECTED_SEGMENTS[id].map((s) => ({ state: s.state, reason: s.reason })));
+      for (const s of segments) expect(s.version).not.toBe("6.0.0-rc.1");
+      expect(segments.every((s) => !s.ghost)).toBe(true);
+      expect(stopsFor(response).stops.map((ms) => new Date(ms).toISOString())).toEqual(segments.map((s) => s.from));
+      const last = segments[segments.length - 1];
+      expect(response.report.packages[0]?.state).toBe(last?.state);
+      expect(response.report.packages[0]?.installedVersion).toBe(last?.version);
+      expect(response.timelines?.[id]?.installed).toBe(last?.version);
+    }
+    fc.assert(
+      fc.property(fc.constantFrom(...ids), fc.subarray([...mutations.keys()]), (id, picked) => {
+        const doc = JSON.parse(JSON.stringify(readReplay(id))) as Obj;
+        for (const k of picked) (mutations[k] as (r: Obj, i: string) => void)(doc, id);
+        let outcome: ReturnType<typeof validateScanResponse> | undefined;
+        expect(() => {
+          outcome = validateScanResponse(doc);
+        }).not.toThrow();
+        expect(outcome).toBeDefined();
+      }),
+      { numRuns: 100 },
+    );
+    // Lookup: every instant from the first from to the scan date gives the version and state of the holding Segment.
+    for (const id of ids) {
+      const response = readReplay(id) as ScanResponse;
+      const timeline = timelineOf(response, id);
+      const expected = EXPECTED_SEGMENTS[id];
+      const startMs = Date.parse(expected[0].from);
+      const endMs = Date.parse(response.report.generatedAt);
+      const pkg = response.report.packages[0];
+      fc.assert(
+        fc.property(fc.integer({ min: startMs, max: endMs }), (t) => {
+          const holder = [...expected].reverse().find((s) => Date.parse(s.from) <= t);
+          const view = formAt(timeline, t, { state: pkg?.state ?? null, reason: pkg?.stateReason ?? "", ghost: false });
+          expect(view.version).toBe(holder?.version);
+          expect(view.state).toBe(holder?.state);
+          expect(view.reason).toBe(holder?.reason);
+        }),
+        { numRuns: 100 },
+      );
+    }
   });
 });

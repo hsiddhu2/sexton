@@ -169,7 +169,7 @@ describe("Header examples", () => {
     expect(panel.textContent).toContain(
       "Triage order: Possessed first, then state from least healthy to most healthy (Dead, Haunted, Restless, Alive), then highest advisory severity, then transitive reach, then name.",
     );
-    expect(panel.querySelectorAll("svg").length).toBe(6);
+    expect(panel.querySelectorAll("svg").length).toBe(8);
   });
 
   it("omits the demo label for a non-demo load of a response naming sexton-demo/fixture", () => {
@@ -255,7 +255,7 @@ describe("evidence links", () => {
 });
 
 describe("Header bar (cemetery-polish task 8)", () => {
-  it("has the title text 'Sexton cemetery', a placeholder without a host name and one Legend chip per State plus the Ghost", () => {
+  it("has the title text 'Sexton cemetery', a placeholder without a host name and one Legend chip per State, the Ghost, the Not-published form and the Pull request marker", () => {
     const { container } = render(
       <Header model={headerModel(cheapScan(1), true)} theme="dark" apiConfigured={true} onSubmit={noSubmit} />,
     );
@@ -265,7 +265,7 @@ describe("Header bar (cemetery-polish task 8)", () => {
     expect(placeholder).toBe("Paste a public repository URL");
     expect(placeholder).not.toMatch(/\.(com|org|io)/);
     const chips = container.querySelectorAll("#legend-panel .legend-chip");
-    expect(chips).toHaveLength(6);
+    expect(chips).toHaveLength(8);
     expect(container.querySelectorAll("#legend-panel .legend-chip-ghost")).toHaveLength(1);
   });
 

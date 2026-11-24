@@ -115,6 +115,12 @@ So Dependabot tells you that a package is known to be bad. Sexton tells you whic
 
 Keep Dependabot on and run Sexton beside it.
 
+## Replay
+
+The cemetery has a history scrubber. It shows each package as it stood on an earlier date. Two replays play real incidents through it. Open the hosted page with [?replay=axios](?replay=axios) or [?replay=keyv](?replay=keyv), or press the "axios 2026" or "keyv 2026" button in the header.
+
+A replay is reconstructed from public reports. It is not a live scan.
+
 ## Roadmap
 
 Releases are sequenced, not promised by date. Release 0.1 lists each item's state today.

@@ -2,6 +2,9 @@ import type { PackageHealth } from "@sexton/api";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { backingStore, GHOST_HEIGHT, GHOST_WIDTH, ghostOffset, inscriptionFor, planScene, type Rect } from "../src/scene/layout.js";
+import { colourFor, PALETTE } from "../src/scene/palette.js";
+import { SHAPE_BY_STATE } from "../src/scene/shapes.js";
+import type { FormView } from "../src/time/form-at.js";
 import { arbScenePackages, at, arbSceneName, arbSceneWidth, arbTheme, cheapScan } from "./arbitraries.js";
 
 const NUM_RUNS = 100;
@@ -72,7 +75,7 @@ describe("Feature: cemetery-ui, Property 8: Layout is deterministic and no two g
 });
 
 const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
-const GRAVE_KEYS = ["fill", "ghost", "index", "inscription", "name", "rect", "shape", "state"];
+const GRAVE_KEYS = ["burial", "fill", "ghost", "index", "inscription", "marker", "name", "pending", "rect", "shape", "state"];
 
 describe("Feature: cemetery-ui, Property 19: Scene plan invariants", () => {
   it("holds for any packages, theme, phase and selection", () => {
@@ -240,5 +243,86 @@ describe("Feature: cemetery-theme, Property 3: Inscription truncation", () => {
     const count = (n: number): number =>
       planScene({ packages: packagesOf(n), width: 1280, theme: "dark", selectedIndex: null, ghostPhase: 0 }).graves.filter((g) => g.inscription !== null).length;
     expect([count(60), count(61)]).toEqual([60, 0]);
+  });
+});
+
+describe("Feature: cemetery-time, Property 3: Ground height", () => {
+  it("keeps the layout formulas and sets groundHeight from minHeight", () => {
+    fc.assert(
+      fc.property(
+        arbScenePackages([0, 1, 5, 61]),
+        arbSceneWidth,
+        arbTheme,
+        fc.oneof(fc.integer({ min: -500, max: 5000 }), fc.constantFrom(Number.NaN, Infinity, -Infinity)),
+        (packages, width, theme, minHeight) => {
+          const plan = planScene({ packages, width, theme, selectedIndex: null, ghostPhase: 0, minHeight });
+          const base = planScene({ packages, width, theme, selectedIndex: null, ghostPhase: 0 });
+          expect(plan.height).toBe(base.height);
+          expect(plan.columns).toBe(base.columns);
+          expect(plan.graves.map((g) => g.rect)).toEqual(base.graves.map((g) => g.rect));
+          const free = Number.isFinite(minHeight) ? Math.max(0, Math.floor(minHeight)) : 0;
+          expect(plan.groundHeight).toBe(packages.length === 0 ? 0 : Math.max(plan.height, free));
+          expect(base.groundHeight).toBe(base.height);
+          expect(plan.rows).toBe(plan.columns === 0 ? 0 : Math.ceil(packages.length / plan.columns));
+          for (const g of plan.graves) expect(g.rect.y + g.rect.h).toBeLessThanOrEqual(plan.height);
+        },
+      ),
+      { numRuns: NUM_RUNS },
+    );
+  });
+});
+
+const arbFormView: fc.Arbitrary<FormView | undefined> = fc.oneof(
+  fc.constant(undefined),
+  fc.record({
+    state: fc.constantFrom<FormView["state"]>(null, "Alive", "Restless", "Haunted", "Dead", "Possessed"),
+    reason: fc.constant("r"),
+    ghost: fc.boolean(),
+  }),
+  fc.record({
+    state: fc.constantFrom<FormView["state"]>(null, "Alive", "Dead"),
+    reason: fc.constant("r"),
+    ghost: fc.boolean(),
+    version: fc.constantFrom("1.0.0", "2.3.4"),
+  }),
+);
+describe("Feature: cemetery-time, Property 16: A plan with Forms keeps the cemetery rules", () => {
+  it("keeps positions and order, encodes state by shape and colour, and draws no Ghost or marker on the Not-published form", () => {
+    fc.assert(
+      fc.property(
+        arbScenePackages([0, 1, 12, 59, 61]),
+        arbSceneWidth,
+        arbTheme,
+        fc.array(arbFormView, { minLength: 61, maxLength: 61 }),
+        fc.array(fc.boolean(), { minLength: 61, maxLength: 61 }),
+        fc.integer({ min: 0, max: 60 }),
+        (packages, width, theme, forms, marks, burialIndex) => {
+          const base = { packages, width, theme, selectedIndex: null, ghostPhase: 0 as const };
+          const plain = planScene(base);
+          const plan = planScene({ ...base, forms, marks, burial: { index: burialIndex, phase: 0.5 } });
+          expect(plan.graves).toHaveLength(plain.graves.length);
+          expect(plan.height).toBe(plain.height);
+          plan.graves.forEach((g, i) => {
+            const p = at(plain.graves, i);
+            const form = forms[i];
+            expect([g.index, g.name, g.state, g.rect]).toEqual([p.index, p.name, p.state, p.rect]);
+            expect(Object.keys(g).sort()).toEqual(GRAVE_KEYS);
+            if (form !== undefined && form.state === null) {
+              expect([g.pending, g.shape, g.fill, g.ghost, g.marker, g.burial]).toEqual([true, "unmarked", PALETTE[theme].border, null, false, null]);
+            } else if (form !== undefined && form.state !== null) {
+              expect(g.pending).toBe(false);
+              expect(g.shape).toBe(SHAPE_BY_STATE[form.state]);
+              expect(g.fill).toBe(colourFor(form.state, theme));
+              expect(g.ghost !== null).toBe(form.ghost);
+              expect(g.marker).toBe(marks[i] === true);
+            } else {
+              expect(g).toEqual({ ...p, marker: marks[i] === true, burial: burialIndex === i ? 0.5 : null });
+            }
+            if (form?.version !== undefined && g.inscription !== null) expect(g.inscription.startsWith(g.name.slice(0, 8))).toBe(true);
+          });
+        },
+      ),
+      { numRuns: 100 },
+    );
   });
 });

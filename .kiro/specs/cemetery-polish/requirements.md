@@ -376,3 +376,15 @@ This spec does NOT add a runtime dependency, a Markdown library, a web font, an 
 3. THE spec tasks SHALL change no `package.json` and no `package-lock.json`.
 4. THE spec tasks SHALL change no existing test except those listed in design.md under "Deliberate test changes".
 5. THE spec tasks SHALL end each top-level task with a review by the security-reviewer agent of that task's changes, and SHALL record its findings in the task notes.
+
+## Correction, 23 Nov 2026 (spec cemetery-time)
+
+Criterion 7.4 above stated that the Evidence tooltip stays shown while the pointer is over it. The build does not do that. Spec `.kiro/specs/cemetery-time` (requirement 5) replaces it. The original text is left as written.
+
+Old criterion 7.4, verbatim:
+
+> 4. WHILE the pointer is over the Evidence tooltip, THE Web app SHALL keep the tooltip shown, and WHEN the pointer leaves both the grave button and the tooltip, THE Web app SHALL hide the tooltip after the Grace period.
+
+New 7.4: The Evidence tooltip has `pointer-events: none` and lies inside its own Cell. It stays shown while the pointer is over the grave button under it, so the pointer is over the tooltip area without the tooltip taking the pointer. The tooltip never receives a pointer event itself.
+
+The Grace period still applies when the pointer leaves the grave button: the tooltip hides after it. Escape still hides the tooltip, and it stays hidden until the pointer enters a grave button again or a grave button receives focus again (criterion 7.5 is unchanged).

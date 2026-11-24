@@ -27,6 +27,9 @@ A sexton keeps the churchyard: buries the dead, keeps the grounds, tolls the bel
 - POST /api/remediate takes only { repo, package }. A repository outside the allowlist gets 422 repository-not-allowed before any scan or GitHub request. The allowlist today is hsiddhu2/sexton-demo.
 - Remediation log: append-only. Each entry holds repository, branch, prUrl, package, kind and timestamp.
 - GitHub Action: a composite action. It runs sexton check on pull requests, writes the job summary, posts or updates one comment and fails the job with the CLI exit code.
+- Cemetery time: a history scrubber that shows each package as of an earlier date, a pennant beside a grave whose pull request was opened, and a burial animation when Sexton opens one. The Engine writes the timeline of each package into GET /api/scan. The evidence pack and the policy result describe the scan date only.
+- Two replays, axios (March 2026) and keyv (August 2026), are scan responses built offline from public reports and played through the scrubber. They are fixtures on the web origin, not live scans. The address ?replay=axios or ?replay=keyv loads one.
+- Publisher-changed and new-dependency signals come in a later spec.
 
 ## Rules that never change
 - Every signal carries its source URL and fetch timestamp.

@@ -27,3 +27,14 @@ fileMatchPattern: ["packages/web/**/*.ts", "packages/web/**/*.tsx", "packages/we
 - At 360 px there is no horizontal scroll, with the drawer closed, open or the legend open. Below 512 px the drawer is full width.
 - Every colour is a token in scene/palette.ts. A new token joins the contrast tests. styles.css holds no colour literal. The palette is night-only.
 - The scan time is shown in a <time> element with a machine-readable dateTime.
+- Grass is short seeded tufts along the row lines and one line near the bottom of the ground (scene/scenery-seed.ts, drawn by drawTufts in scene/draw.ts). Tufts depend on the scene width only.
+- The ground reaches the bottom of the viewport. hooks/use-free-height.ts gives the free height and planScene takes it as minHeight. Grave positions do not change.
+- The scrubber (time/Scrubber.tsx) is a native range input named "History date" with aria-valuetext. Its stops come from time/stops.ts: the start, one stop for each change of state, ghost or version, and the scan date. It is not rendered when the response has no timelines.
+- Web holds no state rule. The Engine writes Segments into the scan response (timelines). time/form-at.ts looks up the Segment at the chosen instant. Never copy a state rule into web.
+- Triage order and grave positions always use the scan date. Only form, colour, ghost and the inscription version follow the chosen date.
+- The drawer always shows the scan date. A note under the scrubber says so when an earlier date is chosen.
+- Two forms are added and neither changes the grave form of a State. The Not-published form is an unmarked mound with no ghost, for a package whose installed version is not yet published on the chosen date. The pull request marker is a pennant beside the grave, and the grave button name ends in "pull request opened". It is not a ghost. Both have a legend chip.
+- The marker comes from the scan response (pullRequests, read from the remediation log) and from pull requests opened in this session.
+- The burial plays once for each package and loaded scan after a pull request is opened, when the drawer closes or at once if it is closed. It lasts 1200 ms in three fixed phases: the stone sinks, a mound shows, then the stone returns with the pennant. Under prefers-reduced-motion there is no burial animation. The burial never changes the state, shape or fill of a grave.
+- A replay is a scan response loaded from /replay/axios.json or /replay/keyv.json on the page origin. The header buttons are "axios 2026" and "keyv 2026". The addresses ?replay=axios and ?replay=keyv load them. Any other replay value loads nothing.
+- A replay screen shows the banner text "Reconstructed from public reports. Not a live scan." (replay/ReplayBanner.tsx). A source link is made only for an https:// address.

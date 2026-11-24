@@ -64,6 +64,24 @@ export async function fetchAdvisory(ctx: ClientContext, id: string): Promise<Adv
   return { id, severity: severityFromOsv(record), summary };
 }
 
+/**
+ * Published time of one advisory, read from the cached `osv-vuln` document. ISO, or null when the
+ * record has no parseable `published` or the read fails. Never throws. Spec cemetery-time, 8.1.
+ */
+export async function fetchAdvisoryPublished(ctx: ClientContext, id: string): Promise<string | null> {
+  try {
+    const record = await cachedJson(ctx, cacheKey(OSV_VULN_SOURCE, id, "*"), `${OSV_API}/vulns/${encodeURIComponent(id)}`, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+    if (!isRecord(record) || typeof record["published"] !== "string") return null;
+    const ms = new Date(record["published"]).getTime();
+    return Number.isFinite(ms) ? new Date(ms).toISOString() : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Advisories for one package version. Any failure marks the whole signal unavailable. Requirement 6.4, 6.5. */
 export async function fetchAdvisoriesSignal(ctx: ClientContext, name: string, version: string): Promise<Signal<readonly Advisory[]>> {
   const source = `${OSV_API}/querybatch`;

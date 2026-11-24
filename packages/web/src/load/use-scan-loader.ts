@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { checkScanUrl } from "./check-scan-url.js";
 import { makeLoadError, type LoadError } from "./load-error.js";
 import { loadScan } from "./load-scan.js";
+import { parseReplayParam, replayAddress } from "../replay/replay-ids.js";
 
 export type LoadState =
   | { readonly status: "loading"; readonly loadId: number }
@@ -16,11 +17,11 @@ export type LoadState =
       readonly source: LoadSource;
     };
 
-export type LoadSource = "hosted" | "address";
+export type LoadSource = "hosted" | "address" | "replay";
 
 export interface ScanLoader {
   readonly state: LoadState;
-  readonly loadFrom: (address: string) => void;
+  readonly loadFrom: (address: string, source?: LoadSource) => void;
   /** Returns fixed text when no request started, or null when one did. */
   readonly submitRepo: (value: string) => string | null;
 }
@@ -70,6 +71,15 @@ export function useScanLoader(deps: ScanLoaderDeps): ScanLoader {
   );
 
   useEffect(() => {
+    // The replay query is a closed set and wins over scan. A value outside it loads no address: start("") is rejected by checkScanUrl before any request.
+    const replay = parseReplayParam(initialSearch);
+    if (replay !== null) {
+      if ("rejected" in replay) start("");
+      else start(replayAddress(replay.id), "replay");
+      return () => {
+        controllerRef.current?.abort();
+      };
+    }
     const params = new URLSearchParams(initialSearch);
     start(params.has("scan") ? (params.get("scan") ?? "") : DEMO_ADDRESS);
     return () => {

@@ -44,9 +44,26 @@ export interface ScoringDependencies {
   readonly cacheStore?: CacheStore;
   readonly retry?: RetryOptions;
   readonly snapshotStore?: SnapshotStore;
+  /**
+   * Optional. Called once per package with documents scoring already holds. Changes nothing when absent.
+   * The sink must be synchronous and must treat its input as read-only.
+   */
+  readonly timelineSink?: TimelineSink;
 }
 
+/** What scoreOne hands to the timeline sink. Documents are null when their read failed. */
+export interface TimelineSinkInput {
+  readonly name: string;
+  readonly installedVersion: string;
+  readonly fullPackument: unknown;
+  readonly abbreviatedPackument: unknown;
+  readonly provenance: Signal<ProvenanceValue>;
+}
+
+export type TimelineSink = (input: TimelineSinkInput) => void;
+
 export interface ScoreOneOptions {
+  readonly timelineSink?: TimelineSink;
   readonly snapshotStore?: SnapshotStore;
   readonly reach?: ReachPhase;
   /** Defaults to ctx.clock(). */
@@ -70,6 +87,7 @@ export async function scorePackages(packages: readonly PackageRef[], deps: Scori
     reach,
     reference,
     ...(deps.snapshotStore !== undefined ? { snapshotStore: deps.snapshotStore } : {}),
+    ...(deps.timelineSink !== undefined ? { timelineSink: deps.timelineSink } : {}),
   };
   const results = await mapWithConcurrency(packages, PACKAGE_CONCURRENCY, (pkg) =>
     isUnresolved(pkg) ? Promise.resolve(unresolvedHealth(pkg, reference)) : scoreOne(ctx, pkg, options),
@@ -145,6 +163,20 @@ export async function scoreOne(ctx: ClientContext, pkg: PackageRef, options: Sco
       readHistory(),
     ]);
   await seen;
+
+  if (options.timelineSink !== undefined) {
+    try {
+      options.timelineSink({
+        name,
+        installedVersion,
+        fullPackument: fullPackument.ok ? fullPackument.doc : null,
+        abbreviatedPackument: abbreviatedPackument.ok ? abbreviatedPackument.doc : null,
+        provenance,
+      });
+    } catch {
+      // A sink failure never changes scoring.
+    }
+  }
 
   const maintainers = maintainersSignalFrom(fullPackument);
   const history = buildHistorySignals({
