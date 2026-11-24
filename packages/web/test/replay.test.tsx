@@ -59,21 +59,32 @@ describe("opening a replay (requirement 18)", () => {
   it("renders the Replay group after the Scan button with the two button texts", async () => {
     mount("");
     await ready();
-    const group = screen.getByRole("group", { name: "Replay" });
-    expect([...group.querySelectorAll("button")].map((b) => b.textContent)).toEqual(["axios 2026", "keyv 2026"]);
+    const group = screen.getByRole("group", { name: "Replay an attack" });
+    expect([...group.querySelectorAll("button")].map((b) => b.textContent)).toEqual(["axios, Mar 2026", "keyv, Aug 2026"]);
     const scan = screen.getByRole("button", { name: "Scan" });
     expect(scan.compareDocumentPosition(group) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("names the group with the visible label Replay an attack (spec cemetery-time-fixes, 8.1)", async () => {
+    mount("");
+    await ready();
+    const group = screen.getByRole("group", { name: "Replay an attack" });
+    const label = group.querySelector(".replay-label") as HTMLElement;
+    expect(label.textContent).toBe("Replay an attack");
+    expect(group.getAttribute("aria-labelledby")).toBe(label.id);
+    expect(group.hasAttribute("aria-label")).toBe(false);
+    expect(group.firstElementChild).toBe(label);
   });
 
   it("loads each fixture from the page origin when its button is pressed, then a second one from the header", async () => {
     const { urls, container } = mount("");
     await ready();
-    fireEvent.click(screen.getByRole("button", { name: "axios 2026" }));
+    fireEvent.click(screen.getByRole("button", { name: "axios, Mar 2026" }));
     await waitFor(() => {
       expect(label(container)).toBe("axios 1.14.0, Alive");
     });
     expect(urls).toEqual([`${ORIGIN}/demo/scan.json`, `${ORIGIN}/replay/axios.json`]);
-    fireEvent.click(screen.getByRole("button", { name: "keyv 2026" }));
+    fireEvent.click(screen.getByRole("button", { name: "keyv, Aug 2026" }));
     await waitFor(() => {
       expect(label(container)).toBe("keyv 5.6.0, Alive");
     });

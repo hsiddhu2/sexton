@@ -176,8 +176,8 @@ describe("keyboard reach (Requirement 10.5)", () => {
     expect(seen[2]).toBe("Legend");
     expect(seen[3]).toBe("repo");
     expect(seen[4]).toBe("Scan");
-    expect(seen[5]).toBe("axios 2026");
-    expect(seen[6]).toBe("keyv 2026");
+    expect(seen[5]).toBe("axios, Mar 2026");
+    expect(seen[6]).toBe("keyv, Aug 2026");
     expect(seen[7]).toBe("Play");
     expect(seen[8]).toBe("History date");
     const first = container.querySelector<HTMLElement>('button[data-grave-index][tabindex="0"]');

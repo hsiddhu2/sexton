@@ -3,7 +3,10 @@ export const REPLAY_IDS = ["axios", "keyv"] as const;
 export type ReplayId = (typeof REPLAY_IDS)[number];
 
 /** The button text of each replay. */
-export const REPLAY_BUTTON_TEXT: Readonly<Record<ReplayId, string>> = { axios: "axios 2026", keyv: "keyv 2026" };
+export const REPLAY_BUTTON_TEXT: Readonly<Record<ReplayId, string>> = { axios: "axios, Mar 2026", keyv: "keyv, Aug 2026" };
+
+/** The visible label that names the Replay group (spec cemetery-time-fixes, 8.1). */
+export const REPLAY_GROUP_LABEL = "Replay an attack";
 
 /** The fixture address, a path on the page origin. It passes checkScanUrl. */
 export function replayAddress(id: ReplayId): string {

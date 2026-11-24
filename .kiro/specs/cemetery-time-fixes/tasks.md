@@ -152,24 +152,29 @@ Run-time notes for the agents:
     - _Requirements: 11.5_
     - Review notes: READY, no defect. Notes kept: no handler-level test drives a hosted scan over 5 MiB (the fixtures cannot reach it, the guard is unit tested and wired in one line); the 80 character case asserts no margin; the body is serialised twice on the hosted path, once by the guard and once by the handler.
 
-- [ ] 5. Compact header and the "Replay an attack" group (F5)
+- [x] 5. Compact header and the "Replay an attack" group (F5)
   - Puts the form and the Replay group on one row and the scrubber on one row at 960 px and wider, labels the group, and renames the buttons.
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 8.1, 8.2, 8.3_
-  - [ ] 5.1 Update `packages/web/src/replay/replay-ids.ts` and `packages/web/src/replay/ReplayButtons.tsx`
+  - [x] 5.1 Update `packages/web/src/replay/replay-ids.ts` and `packages/web/src/replay/ReplayButtons.tsx`
     - `REPLAY_BUTTON_TEXT` becomes `{ axios: "axios, Mar 2026", keyv: "keyv, Aug 2026" }`. The group gets `aria-labelledby="replay-label"` and a visible `span#replay-label.replay-label` "Replay an attack" before the buttons.
     - _Requirements: 8.1, 8.2_
-  - [ ] 5.2 Update `packages/web/src/styles.css`
+    - Notes: `REPLAY_BUTTON_TEXT` is "axios, Mar 2026" and "keyv, Aug 2026". The group has `aria-labelledby="replay-label"` and a visible `span#replay-label.replay-label` "Replay an attack" before the buttons.
+  - [x] 5.2 Update `packages/web/src/styles.css`
     - The `@media (min-width: 960px)` block and the `.replay-label` rule of design.md "F5". The 600 px block and every other rule stay.
     - _Requirements: 7.1, 7.2, 7.3, 7.5_
-  - [ ] 5.3 Update the web tests for the new names
+    - Notes: one `@media (min-width: 960px)` block at the end of styles.css, after the base rules, and `.replay-label`. Adds `.header-top { flex: 1 1 50% }` (design.md "Decisions made during implementation" 4) and a 0 row gap on `.scrub` (decision 5). The 600 px block and every other rule unchanged.
+  - [x] 5.3 Update the web tests for the new names
     - Apply Deliberate test changes 7, the task 5 parts of 8, 12 and 18. Add to `replay.test.tsx`: the label "Replay an attack" is visible text inside the group and names it. Confirm `header.test.tsx` passes unedited.
     - _Requirements: 7.4, 8.1, 8.2, 8.3_
-  - [ ] 5.4 Extend `packages/web/e2e/time.spec.ts` (written by impl, run by the orchestrator)
+    - Notes: Deliberate test changes 7 and the task 5 parts of 8, 12 and 18. New example: the label is visible text, the first child of the group, and names it. header.test.tsx passes unedited. web 40 files, 392 tests.
+  - [x] 5.4 Extend `packages/web/e2e/time.spec.ts` (written by impl, run by the orchestrator)
     - At 1440 by 900 on the demo at the Scan date with Reduced motion: the canvas top is at most 190 (log the header height, the scrubber height and the canvas top). At 360 by 800: `document.documentElement.scrollWidth` is 360 on the demo and on `?replay=axios`. The orchestrator runs `npm run test:e2e -w @sexton/web` and records the measured heights in design.md "Notes and open items".
     - _Requirements: 7.1, 7.2, 7.3, 7.5_
-  - [ ] 5.5 Security review of task 5
+    - Notes: layout test at 1440 by 900 and two 360 px tests. First run: header 160 px, canvas top 201 px, and two cemetery-polish e2e tests failed because the field sat under the drawer. Fixed in the CSS (decision 4), not the tests. Second run: 21 passed, header 122.3 px, scrubber 41.3 px, canvas top 163.6 px, scrollWidth 360 on the demo and the axios replay. Recorded in design.md.
+  - [x] 5.5 Security review of task 5
     - Invoke the security-reviewer agent on the files of 5.1 to 5.4. Record the findings in "Review notes". Fix every defect in this task.
     - _Requirements: 11.5_
+    - Review notes: READY, no defect. Acted on: the 0 row gap of `.scrub` is recorded as decision 5. Notes kept: below 960 px the group label wraps with the buttons, covered by the 360 px tests.
 
 - [ ] 6. Screenshots (F6)
   - Retakes the cemetery screenshot and adds the axios replay screenshot.

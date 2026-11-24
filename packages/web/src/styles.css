@@ -839,6 +839,10 @@ pre.signal-value {
   flex-wrap: wrap;
   gap: 8px;
 }
+.replay-label {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
 .replay-button {
   padding: 6px 14px;
   border: 2px solid var(--border);
@@ -885,4 +889,43 @@ pre.signal-value {
 .drawer .replay-banner {
   margin: 0 16px 8px;
   width: auto;
+}
+
+/* Compact header at 960 px and wider (spec cemetery-time-fixes, 7.1, 7.2): the form and the Replay group share one row,
+   and the scrubber's label, date, Play and slider share one row. Below 960 px the rules above apply. */
+@media (min-width: 960px) {
+  .site-header {
+    gap: 8px 16px;
+    padding: 8px 16px;
+  }
+  /* At least half the row, so the form and the Replay group always start row 2 at the left. */
+  .header-top {
+    flex: 1 1 50%;
+  }
+  .repo-form {
+    flex: 1 1 28rem;
+  }
+  .replay-group {
+    flex: 0 1 auto;
+    align-items: center;
+  }
+  .scrub {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 12px;
+    padding: 6px 16px;
+  }
+  .scrub-row {
+    flex: none;
+    align-items: center;
+  }
+  .scrub-track {
+    flex: 1 1 20rem;
+    min-width: 0;
+    padding: 0;
+  }
+  .scrub-note {
+    flex-basis: 100%;
+  }
 }

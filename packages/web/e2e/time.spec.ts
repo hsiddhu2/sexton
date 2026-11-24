@@ -155,7 +155,7 @@ test("the keyv replay shows Alive 5.6.0, then Possessed 6.0.0 at its end, and a 
   await scrubber.press("End");
   await grave.hover();
   await expect(page.getByRole("tooltip")).toContainText("install script added in 6.0.0");
-  await page.getByRole("button", { name: "axios 2026" }).click();
+  await page.getByRole("button", { name: "axios, Mar 2026" }).click();
   await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
   await expect(page.locator('[role="note"]')).toContainText("axios");
 });
@@ -178,3 +178,40 @@ test("Play on the axios replay reaches the Possessed Stop after 1,500 ms and the
   await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
   await expect(page.getByRole("button", { name: "Play" })).toBeVisible();
 });
+
+// Spec cemetery-time-fixes, task 5.4: a compact header (requirements 7.1, 7.2, 7.3).
+test("at 1440 by 900 on the demo the canvas top is at most 190, with the form and the replay group on one row and the scrubber on one row", async ({ page, baseURL }) => {
+  await blockForeignOrigins(page, originOf(baseURL));
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
+  const box = async (selector: string) => {
+    const b = await page.locator(selector).first().boundingBox();
+    expect(b, selector).not.toBeNull();
+    return b ?? { x: 0, y: 0, width: 0, height: 0 };
+  };
+  const header = await box("header.site-header");
+  const scrub = await box("section.scrub");
+  const canvas = await box("canvas");
+  console.log(`header height ${String(header.height)}, scrubber height ${String(scrub.height)}, canvas top ${String(canvas.y)}`);
+  expect(canvas.y).toBeLessThanOrEqual(190);
+  const middle = (b: { y: number; height: number }) => b.y + b.height / 2;
+  const sameRow = (a: { y: number; height: number }, b: { y: number; height: number }) => a.y < b.y + b.height && b.y < a.y + a.height;
+  const form = await box(".repo-form");
+  const group = await box(".replay-group");
+  expect(sameRow(form, group)).toBe(true);
+  const parts = await Promise.all(["label[for=history-date]", ".scrub-date", "button.scrub-play", "#history-date"].map(box));
+  for (const p of parts) expect(Math.abs(middle(p) - middle(parts[0] ?? p))).toBeLessThan(12);
+});
+
+for (const search of ["", "?replay=axios"]) {
+  test(`at 360 px there is no horizontal scroll on ${search === "" ? "the demo" : "the axios replay"}`, async ({ page, baseURL }) => {
+    await blockForeignOrigins(page, originOf(baseURL));
+    await page.setViewportSize({ width: 360, height: 800 });
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto(`/${search}`);
+    await expect(page.locator("button[data-grave-index]").first()).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(360);
+  });
+}
