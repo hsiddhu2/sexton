@@ -13,7 +13,7 @@ export const CELL_WIDTH = 192;
 export const CELL_HEIGHT = 224;
 export const PADDING = 16;
 /** Spec cemetery-undead: room for the harvest moon, the church and the bats. */
-export const SKY_HEIGHT = 160;
+export const SKY_HEIGHT = 120;
 /** Stars sit in the top band of the sky only, as before. */
 export const STAR_BAND_HEIGHT = 80;
 export const MIN_WIDTH = CELL_WIDTH + 2 * PADDING;
@@ -64,10 +64,10 @@ export interface GravePlan {
 export const STAR_AREA = 800;
 /** Bat positions as [fraction of the width, y]. Fixed, so they depend on the width only. */
 const BAT_SPOTS: readonly (readonly [number, number])[] = [
-  [0.2, 48],
-  [0.58, 34],
-  [0.64, 58],
-  [0.7, 40],
+  [0.2, 40],
+  [0.5, 26],
+  [0.56, 50],
+  [0.62, 32],
 ];
 export const GRASS_CLUSTER_WIDTH = 96;
 export const GRASS_TILE_HEIGHT = 224;
@@ -195,7 +195,7 @@ export function sceneryFor(width: number): Scenery {
   const scenery: Scenery = {
     skyHeight: SKY_HEIGHT,
     horizonY: SKY_HEIGHT,
-    moon: { x: Math.floor(width - width / 5), y: 84, r: Math.min(64, Math.floor(width / 5) - 4) },
+    moon: { x: Math.floor(width - width / 5), y: 62, r: Math.min(52, Math.floor(width / 5) - 4) },
     fog: { y: SKY_HEIGHT - 40, h: 160 },
     groundFade: 640,
     stars,

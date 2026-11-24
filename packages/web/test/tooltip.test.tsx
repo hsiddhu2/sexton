@@ -44,10 +44,15 @@ describe("tooltip model", () => {
     );
   });
 
-  it("positions the tooltip at offset (8, 4) with width 176", () => {
+  // Spec cemetery-undead, Deliberate test change 23: width 240, kept inside the Scene when its width is given.
+  it("positions the tooltip at offset (8, 4) with width 240", () => {
     fc.assert(
-      fc.property(fc.integer({ min: -50, max: 5000 }), fc.integer({ min: -50, max: 5000 }), (x, y) => {
-        expect(tooltipRect({ x, y, w: 192, h: 224 })).toEqual({ left: x + 8, top: y + 4, width: 176 });
+      fc.property(fc.integer({ min: -50, max: 5000 }), fc.integer({ min: -50, max: 5000 }), fc.integer({ min: 224, max: 6000 }), (x, y, scene) => {
+        expect(tooltipRect({ x, y, w: 192, h: 224 })).toEqual({ left: x + 8, top: y + 4, width: 240 });
+        const kept = tooltipRect({ x, y, w: 192, h: 224 }, scene);
+        expect(kept.top).toBe(y + 4);
+        expect(kept.left).toBe(Math.min(x + 8, Math.max(0, scene - 248)));
+        if (x + 8 >= 0) expect(kept.left + kept.width).toBeLessThanOrEqual(Math.max(scene, 248));
       }),
       { numRuns: 100 },
     );

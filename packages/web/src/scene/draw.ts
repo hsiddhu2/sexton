@@ -66,6 +66,8 @@ const GHOST_DRAW_SCALE = 1.6;
 const GHOST_SHIFT_X = 10;
 const GHOST_SHIFT_Y = 36;
 const BAT_SCALE = 1.7;
+/** The church (150 high) and tree fit inside the 120 px sky. */
+const SILHOUETTE_SCALE = 0.72;
 const HORIZON_FEATHER = 56;
 /** Moon craters as [dx, dy, r], in moon radii. */
 const CRATERS: readonly (readonly [number, number, number])[] = [
@@ -195,11 +197,13 @@ function drawScenery(ctx: PaintContext2D, plan: ScenePlan, nowMs: number): void 
   // Silhouettes on the horizon: the church at the left, a dead tree at the right, bats in the sky.
   ctx.fillStyle = colours.silhouette;
   ctx.save();
-  ctx.translate(Math.floor(plan.width * CHURCH_X), s.horizonY - CHURCH_PATH.h);
+  ctx.translate(Math.floor(plan.width * CHURCH_X), s.horizonY - CHURCH_PATH.h * SILHOUETTE_SCALE);
+  ctx.scale(SILHOUETTE_SCALE, SILHOUETTE_SCALE);
   ctx.fill(churchPath());
   ctx.restore();
   ctx.save();
-  ctx.translate(Math.floor(plan.width * TREE_X), s.horizonY - TREE_PATH.h);
+  ctx.translate(Math.floor(plan.width * TREE_X), s.horizonY - TREE_PATH.h * SILHOUETTE_SCALE);
+  ctx.scale(SILHOUETTE_SCALE, SILHOUETTE_SCALE);
   ctx.fill(treePath());
   ctx.restore();
   for (let i = 0; i < s.bats.length; i += 1) {

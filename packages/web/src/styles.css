@@ -124,7 +124,7 @@ main {
   z-index: 2;
   box-sizing: border-box;
   max-width: 100%;
-  padding: 8px 10px;
+  padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--surface);
@@ -153,12 +153,7 @@ main {
 }
 
 /* Header bar */
-/* The header stays in view while the cemetery scrolls, so the Repository URL box is always reachable
-   (spec cemetery-undead, requirement 9). Below the drawer backdrop (10), above the graves and tooltip (1, 2). */
 .site-header {
-  position: sticky;
-  top: 0;
-  z-index: 5;
   box-sizing: border-box;
   display: flex;
   flex-wrap: wrap;
@@ -265,7 +260,7 @@ main {
 }
 
 .header-policy strong {
-  color: var(--text);
+  color: var(--accent-bg);
 }
 
 .header-evidence {
@@ -310,6 +305,8 @@ main {
 }
 
 .legend-toggle,
+.sound-toggle,
+.serious-toggle,
 .drawer-close {
   padding: 6px 14px;
   border-radius: 999px;
@@ -463,6 +460,7 @@ main {
 }
 
 .legend-toggle:focus-visible,
+.serious-toggle:focus-visible,
 .repo-form button:focus-visible,
 .repo-form input:focus-visible {
   outline: 3px solid var(--focus);
@@ -926,41 +924,172 @@ pre.signal-value {
   width: auto;
 }
 
-/* Compact header at 960 px and wider (spec cemetery-time-fixes, 7.1, 7.2): the form and the Replay group share one row,
-   and the scrubber's label, date, Play and slider share one row. Below 960 px the rules above apply. */
+/* Sound (Phase 2) and Serious mode (spec cemetery-undead, 8.1, 9.2). */
+.sound-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: not-allowed;
+}
+.sound-glyph {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+.serious-toggle[aria-pressed="true"] {
+  border-color: var(--focus);
+  background: var(--surface);
+}
+.epitaph-lead {
+  font-family: "IM Fell English", Georgia, serif;
+  font-style: italic;
+  color: var(--muted);
+}
+.epitaph-line {
+  display: block;
+}
+/* The mockup card: "Here lies" small and italic, the name on its own line in small caps, then the state in its colour. */
+.epitaph-line .epitaph-lead {
+  display: block;
+  font-size: 0.8125rem;
+}
+.epitaph-line .tooltip-name {
+  display: inline;
+  font-size: 1.0625rem;
+  letter-spacing: 0.02em;
+}
+.tooltip-state {
+  font-weight: 600;
+}
+.tooltip-state-possessed {
+  color: var(--state-possessed);
+}
+.tooltip-state-dead {
+  color: var(--state-dead);
+}
+.tooltip-state-haunted {
+  color: var(--state-haunted);
+}
+.tooltip-state-restless {
+  color: var(--state-restless);
+}
+.tooltip-state-alive {
+  color: var(--state-alive);
+}
+/* The drawer title keeps the display face; every other drawer heading is in the interface face. */
+.drawer h3,
+.drawer h4,
+.drawer h5 {
+  font-family: "Instrument Sans", system-ui, sans-serif;
+  font-weight: 600;
+}
+/* The replay banner as a compact card, with its sources on one line. */
+.replay-banner .replay-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  padding: 0;
+  list-style: none;
+}
+.epitaph-punchline,
+.drawer-epitaph {
+  font-family: "IM Fell English", Georgia, serif;
+  font-style: italic;
+  color: var(--accent-bg);
+}
+.drawer-epitaph {
+  margin: 0;
+}
+
+/* The Footer bar: Play, the History date and slider, and the Replay group, in view at the bottom
+   (spec cemetery-undead, 9.3, 9.4). */
+.night-footer {
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 8px 16px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+.night-footer .scrub {
+  flex: 1 1 20rem;
+  min-width: 0;
+  padding: 0;
+  background: var(--surface);
+  border: 0;
+}
+.night-footer .history-omitted {
+  flex: 1 1 20rem;
+  padding: 0;
+  border: 0;
+}
+.night-footer .replay-group {
+  flex: 0 1 auto;
+  align-items: center;
+}
+
+/* One header row and one footer row at 960 px and wider (spec cemetery-undead, 9.5). There the header stays in view
+   while the cemetery scrolls, so the Repository URL box is always reachable, and the Footer bar stays at the bottom.
+   Both sit below the drawer backdrop (10) and above the graves and tooltip (1, 2). Narrower, both scroll with the page. */
 @media (min-width: 960px) {
   .site-header {
-    gap: 0 16px;
-    padding: 8px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 5;
   }
-  /* A zero-height line break: the form, the Replay group, the banner and the message always start row 2 at the
-     left, with or without the evidence links on row 1. The row gap is 0, so each row 2 item carries its own 8px. */
-  .site-header::after {
-    content: "";
-    order: 1;
-    flex-basis: 100%;
-    height: 0;
+  .night-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
   }
-  .repo-form,
-  .replay-group,
-  .replay-banner,
-  .header-message {
-    order: 2;
-    margin-top: 8px;
+  .site-header {
+    gap: 8px 16px;
+    padding: 10px 24px;
+  }
+  .header-top {
+    flex: 1 1 24rem;
+    flex-wrap: nowrap;
+  }
+  .site-header {
+    column-gap: 12px;
+  }
+  .evidence-link {
+    padding: 4px 10px;
+  }
+  .header-summary {
+    min-height: 0;
   }
   .repo-form {
-    flex: 1 1 28rem;
+    flex: 0 1 20rem;
+    flex-wrap: nowrap;
   }
-  .replay-group {
-    flex: 0 1 auto;
-    align-items: center;
+  /* Two summary lines: the repository and its label, then the scan time and the policy. */
+  .header-repo {
+    flex: 1 1 100%;
+    flex-wrap: nowrap;
   }
-  .scrub {
+  .replay-banner {
+    flex: 0 1 56rem;
+  }
+  /* The field's placeholder says what it is; the label text stays for assistive technology. */
+  .repo-label-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .night-footer {
+    padding: 10px 24px;
+  }
+  .night-footer .scrub {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0 12px;
-    padding: 6px 16px;
   }
   .scrub-row {
     flex: none;
@@ -973,5 +1102,38 @@ pre.signal-value {
   }
   .scrub-note {
     flex-basis: 100%;
+  }
+}
+
+/* Narrow screens: the controls flow in rows instead of one full-width button each (spec cemetery-undead, 9.6). */
+@media (max-width: 600px) {
+  .site-header {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .header-top,
+  .repo-form,
+  .replay-banner {
+    flex: 1 1 100%;
+  }
+  .wordmark {
+    font-size: 2rem;
+  }
+  .night-footer {
+    gap: 6px 12px;
+  }
+  .night-footer .replay-group {
+    flex: 1 1 100%;
+  }
+  /* Scan stays beside the field, and the field never runs past the edge. */
+  .repo-form {
+    flex-wrap: nowrap;
+    align-items: flex-end;
+  }
+  .repo-form label {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 }

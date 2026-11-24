@@ -4,7 +4,8 @@ import type { FormView } from "../time/form-at.js";
 import { NOT_PUBLISHED_TEXT } from "./grave-label.js";
 
 export const GRACE_MS = 150;
-export const TOOLTIP_WIDTH = 176;
+/** Spec cemetery-undead, 7.1: wide enough for the Epitaph line. */
+export const TOOLTIP_WIDTH = 240;
 
 export interface TooltipContent {
   readonly name: string;
@@ -55,9 +56,14 @@ export function tooltipContent(pkg: PackageHealth, view?: FormView, asOfDate?: s
   };
 }
 
-/** Inside the Cell: left = cell.x + 8, top = cell.y + 4, width 176. */
-export function tooltipRect(cell: Rect): { readonly left: number; readonly top: number; readonly width: number } {
-  return { left: cell.x + 8, top: cell.y + 4, width: TOOLTIP_WIDTH };
+/**
+ * Anchored at its Cell: left = cell.x + 8, top = cell.y + 4, width 240. It may extend past a scaled Cell, and it is
+ * kept inside the Scene when the scene width is given (spec cemetery-undead, 7.1).
+ */
+export function tooltipRect(cell: Rect, sceneWidth?: number): { readonly left: number; readonly top: number; readonly width: number } {
+  const left = cell.x + 8;
+  const max = sceneWidth === undefined ? left : Math.max(0, sceneWidth - TOOLTIP_WIDTH - 8);
+  return { left: Math.min(left, max), top: cell.y + 4, width: TOOLTIP_WIDTH };
 }
 
 export interface TipState {

@@ -38,13 +38,13 @@ export function Scrubber({ stops, index, onChange, inputRef, playing = false, on
   return (
     <section className="scrub" aria-label="History">
       <div className="scrub-row">
-        <label htmlFor="history-date">History date</label>
-        <span className="scrub-date">{text}</span>
         {stops.length > 1 ? (
           <button type="button" className="scrub-play" onClick={playing ? onPause : onPlay}>
             {playing ? "Pause" : "Play"}
           </button>
         ) : null}
+        <label htmlFor="history-date">History date</label>
+        <span className="scrub-date">{text}</span>
       </div>
       <div className="scrub-track">
         <input

@@ -157,3 +157,22 @@ test("the axios replay at its Possessed stop, for the README", async ({ page, ba
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   await page.screenshot({ path: REPLAY_SCREENSHOT });
 });
+
+// Spec cemetery-undead, task 7.3 (requirement 2.3): the fonts come from the page origin and nothing leaves it.
+test("loads the fonts from /fonts on the page origin and makes no request to another origin", async ({ page, baseURL }) => {
+  const origin = new URL(baseURL ?? "http://localhost:4173").origin;
+  const requests: string[] = [];
+  page.on("request", (r) => requests.push(r.url()));
+  await page.route("**/*", async (route) => {
+    if (new URL(route.request().url()).origin === origin) await route.continue();
+    else await route.abort();
+  });
+  await page.goto("/");
+  await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  expect(requests.filter((u) => new URL(u).origin !== origin)).toEqual([]);
+  const fonts = requests.filter((u) => u.endsWith(".woff2")).map((u) => new URL(u).pathname);
+  expect(fonts.length).toBeGreaterThan(0);
+  for (const f of fonts) expect(f).toMatch(/^\/fonts\/[a-z0-9-]+\.woff2$/);
+  expect(await page.evaluate(() => document.fonts.check('16px "Instrument Sans"'))).toBe(true);
+});

@@ -1,3 +1,4 @@
+import { punchline } from "../epitaph/epitaph.js";
 import { useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { hasPrPrefix, type RemediateView } from "../load/remediate-client.js";
 import type { DrawerModel } from "./drawer-model.js";
@@ -19,6 +20,8 @@ export interface DrawerProps {
   readonly onRemediate?: (packageName: string) => Promise<RemediateView>;
   /** A press on the backdrop at (x, y). Returns true when it moved focus to the Repository URL box and closed the drawer. */
   readonly onDismissToField?: (x: number, y: number) => boolean;
+  /** Serious mode hides the Punchline (spec cemetery-undead, 8.2). */
+  readonly serious?: boolean;
 }
 
 export const DEMO_ONLY_TEXT = "Pull requests are opened only on the demo repository";
@@ -71,7 +74,8 @@ function SignalValue({ valueText }: { readonly valueText: string }) {
   return v.kind === "block" ? <pre className="signal-value">{v.text}</pre> : <code className="signal-value">{v.text}</code>;
 }
 
-export function Drawer({ model, asOfLine, replay, onClose, onRemediate, onDismissToField }: DrawerProps) {
+export function Drawer({ model, asOfLine, replay, onClose, onRemediate, onDismissToField, serious = false }: DrawerProps) {
+  const line = serious ? null : punchline(model.state, model.stateReason);
   const dialogRef = useRef<HTMLElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
 
@@ -117,6 +121,9 @@ export function Drawer({ model, asOfLine, replay, onClose, onRemediate, onDismis
         <button ref={closeRef} type="button" className="drawer-close" onClick={onClose}>
           Close
         </button>
+        <p className="drawer-epitaph">
+          <em className="epitaph-lead">Here lies</em>
+        </p>
         <h2 id="drawer-title">{model.title}</h2>
         {replay === undefined ? null : <ReplayBanner replay={replay} />}
         {asOfLine === undefined ? null : <p className="drawer-asof">{asOfLine}</p>}
@@ -125,6 +132,7 @@ export function Drawer({ model, asOfLine, replay, onClose, onRemediate, onDismis
             State: <strong>{model.state}</strong>
           </p>
           <p>Reason: {model.stateReason}</p>
+          {line === null ? null : <p className="epitaph-punchline">{line}</p>}
 
           <h3>Signals</h3>
           <ul className="drawer-signals">

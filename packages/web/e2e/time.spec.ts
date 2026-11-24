@@ -180,7 +180,8 @@ test("Play on the axios replay reaches the Possessed Stop after 1,500 ms and the
 });
 
 // Spec cemetery-time-fixes, task 5.4: a compact header (requirements 7.1, 7.2, 7.3).
-test("at 1440 by 900 on the demo the canvas top is at most 190, with the form and the replay group on one row and the scrubber on one row", async ({ page, baseURL }) => {
+// Spec cemetery-undead, Deliberate test change 26: one header row, and the Footer bar at the bottom of the viewport.
+test("at 1440 by 900 on the demo the canvas top is at most 190, with the header on one row and the footer bar in view", async ({ page, baseURL }) => {
   await blockForeignOrigins(page, originOf(baseURL));
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -192,29 +193,33 @@ test("at 1440 by 900 on the demo the canvas top is at most 190, with the form an
     return b ?? { x: 0, y: 0, width: 0, height: 0 };
   };
   const header = await box("header.site-header");
-  const scrub = await box("section.scrub");
+  const footer = await box("footer.night-footer");
   const canvas = await box("canvas");
-  console.log(`header height ${String(header.height)}, scrubber height ${String(scrub.height)}, canvas top ${String(canvas.y)}`);
+  console.log(`header height ${String(header.height)}, footer height ${String(footer.height)}, canvas top ${String(canvas.y)}`);
   expect(canvas.y).toBeLessThanOrEqual(190);
+  expect(Math.round(footer.y + footer.height)).toBe(900);
   const middle = (b: { y: number; height: number }) => b.y + b.height / 2;
-  const sameRow = (a: { y: number; height: number }, b: { y: number; height: number }) => a.y < b.y + b.height && b.y < a.y + a.height;
-  const form = await box(".repo-form");
-  const group = await box(".replay-group");
-  expect(sameRow(form, group)).toBe(true);
-  const parts = await Promise.all(["label[for=history-date]", ".scrub-date", "button.scrub-play", "#history-date"].map(box));
+  const controls = await Promise.all([".repo-form", ".sound-toggle", ".serious-toggle", ".legend-toggle"].map(box));
+  for (const c of controls) expect(Math.abs(middle(c) - middle(controls[0] ?? c))).toBeLessThan(12);
+  const parts = await Promise.all(["button.scrub-play", "label[for=history-date]", ".scrub-date", "#history-date"].map(box));
   for (const p of parts) expect(Math.abs(middle(p) - middle(parts[0] ?? p))).toBeLessThan(12);
-  // A replay has no evidence links. The form and the Replay group still share row 2, starting at the left.
-  await page.goto("/?replay=axios");
-  await expect(page.locator("button[data-grave-index]")).toHaveCount(1);
-  const replayForm = await box(".repo-form");
-  const replayGroup = await box(".replay-group");
-  const replayTop = await box(".header-top");
-  expect(sameRow(replayForm, replayGroup)).toBe(true);
-  expect(replayForm.x).toBeLessThan(40);
-  expect(replayForm.y).toBeGreaterThanOrEqual(replayTop.y + replayTop.height);
+  // Every grave of the demo fits between the header and the footer.
+  for (const g of await page.locator("button[data-grave-index]").all()) {
+    const b = await g.boundingBox();
+    expect(b).not.toBeNull();
+    if (b !== null) expect(b.y + b.height).toBeLessThanOrEqual(footer.y + 1);
+  }
 });
 
 for (const search of ["", "?replay=axios"]) {
+  test(`at 390 px there is no horizontal scroll on ${search === "" ? "the demo" : "the axios replay"}`, async ({ page, baseURL }) => {
+    await blockForeignOrigins(page, originOf(baseURL));
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto(`/${search}`);
+    await expect(page.locator("button[data-grave-index]").first()).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  });
   test(`at 360 px there is no horizontal scroll on ${search === "" ? "the demo" : "the axios replay"}`, async ({ page, baseURL }) => {
     await blockForeignOrigins(page, originOf(baseURL));
     await page.setViewportSize({ width: 360, height: 800 });

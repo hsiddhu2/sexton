@@ -152,42 +152,52 @@ Run-time notes:
     - _Requirements: 15.5_
     - Review notes: Task 4 READY. Task 5 NOT READY with one defect: the clock test's final assertion could never fail. Fixed: it now asserts at least three repaints after three steps. Notes acted on: column thresholds for the middle and back Tiers; the cemetery-undead tag on Property 8; the change label in a draw test comment; design.md decisions 5, 6, 9 and 10 record the missing cache, centred rows, the sticky header and the test notes. Notes kept: a full-canvas gradient and pattern each frame (the measured medians stay small); the clock runs while only bats move.
 
-- [ ] 6. Epitaphs and Serious mode (U5, U6)
+- [x] 6. Epitaphs and Serious mode (U5, U6)
   - Adds "Here lies" and the Punchlines to the tooltip and the drawer, and the Serious mode toggle.
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 8.1, 8.2, 8.3, 8.4_
-  - [ ] 6.1 Write `src/epitaph/epitaph.ts` and `src/epitaph/serious.ts`
+  - [x] 6.1 Write `src/epitaph/epitaph.ts` and `src/epitaph/serious.ts`
     - The Reason families, the table of design.md exactly as the owner approved it, `hereLies`, and the guarded storage read and write.
     - _Requirements: 7.3, 7.4, 7.6, 8.3, 8.4_
-  - [ ] 6.2 Update `GraveTooltip.tsx`, `tooltip-model.ts`, `Drawer.tsx` and `App.tsx`
+    - Notes: src/epitaph/epitaph.ts holds the ten rows of the approved table, each a State and an anchored pattern of the Engine reason text, plus hereLies. src/epitaph/serious.ts holds the guarded read and write and the guarded window.localStorage access.
+  - [x] 6.2 Update `GraveTooltip.tsx`, `tooltip-model.ts`, `Drawer.tsx` and `App.tsx`
     - "Here lies <name> <version>", then the reason, then the Punchline unless Serious mode is on. The Not-published line has no Punchline. Text only. The Serious mode toggle has `aria-pressed` and is persisted.
     - _Requirements: 7.1, 7.2, 7.5, 7.7, 8.1, 8.2_
-  - [ ] 6.3 Write `test/epitaph.test.ts` (Property 4) and `test/serious.test.ts` (Property 5), and apply Deliberate test changes 23 and 24
+    - Notes: the tooltip shows "Here lies", the name and version, "<version>, <State>" with the State in its colour, the reason, the gold italic Punchline (not in Serious mode, not for a Not-published grave) and the advisories. It is 240 wide and kept inside the Scene. The drawer shows "Here lies" above its title and the Punchline under "Reason:". The Serious mode toggle has aria-pressed and is remembered under sexton:serious.
+  - [x] 6.3 Write `test/epitaph.test.ts` (Property 4) and `test/serious.test.ts` (Property 5), and apply Deliberate test changes 23 and 24
     - **Property 4: Punchlines come only from the table and are true of the reason**
     - **Validates: Requirements 7.3, 7.4, 7.6**
     - **Property 5: Serious mode storage is total**
     - **Validates: Requirements 8.3, 8.4**
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 8.1, 8.2, 8.3, 8.4_
-  - [ ] 6.4 Screenshot loop for the tooltip and drawer
+    - Notes: Property 4 (epitaph.test.ts) and Property 5 (serious.test.tsx), 100 runs each. Examples: every table row, the signature check, no name in any Punchline, the toggle hiding and restoring the Punchline across a remount, the Not-published tooltip with neither "Here lies" nor a Punchline. Deliberate test change 23 applied; change 24 needed no edit (design.md decision 14).
+  - [x] 6.4 Screenshot loop for the tooltip and drawer
     - _Requirements: 14.1, 14.2, 14.3_
-  - [ ] 6.5 Independent code review of task 6
+    - Notes: Critic round 4 (round-7-7, with task 7) asked for a padded tooltip card with the name in small caps on its own line and the state coloured; done. A 300 px tooltip beside the grave was not done, because the width and offset are pinned (design.md decision 13).
+  - [x] 6.5 Independent code review of task 6
     - _Requirements: 15.5_
+    - Review notes: READY, no defect. All ten patterns match the Engine texts. Acted on: the Serious mode write moved out of the state updater; tests added for the Not-published tooltip and for the Legend words. Notes kept: the version shows twice in the tooltip, and "Here lies" is a line above the drawer title (design.md decision 14).
 
-- [ ] 7. Header, Footer bar and Legend (U7)
+- [x] 7. Header, Footer bar and Legend (U7)
   - Moves the time controls and the Replay group into the Footer bar, adds the Sound and Serious mode buttons, and redraws the Legend.
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 10.1, 10.3, 10.4_
-  - [ ] 7.1 Update `Header.tsx`, `App.tsx`, `time/Scrubber.tsx`, `replay/ReplayButtons.tsx`, `hooks/use-free-height.ts` and `styles.css`
+  - [x] 7.1 Update `Header.tsx`, `App.tsx`, `time/Scrubber.tsx`, `replay/ReplayButtons.tsx`, `hooks/use-free-height.ts` and `styles.css`
     - The header row order of design.md, the disabled "Sound off" button with its description, `footer.night-footer` after `main` with Play, label, date and slider, and then the Replay group. The omitted line goes in the footer. The free height leaves room for the footer.
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.8_
-  - [ ] 7.2 Update `header/Legend.tsx`
+    - Notes: the header order is wordmark, summary, evidence links, form, disabled "Sound off" (aria-describedby to a visually hidden "Sound arrives in the next release"), Serious mode, Legend, then the replay banner. footer.night-footer after main holds Play, History date, the date, the slider (or the omitted line), and the Replay group. The header and footer stay in view at 960 px and wider (design.md decision 12). The ground runs under the footer (decision 15). The sky is 120 and there is no Tier gap (decision 11).
+  - [x] 7.2 Update `header/Legend.tsx`
     - The new Form words and chips, still 8 chips, with no colour literal.
     - _Requirements: 10.3_
-  - [ ] 7.3 Apply Deliberate test changes 16 to 22 and 26, and add the e2e checks
+    - Notes: the Legend keeps 8 chips. Each Form chip is the tilted outline where the Form tilts, with its words (FORM_WORDS).
+  - [x] 7.3 Apply Deliberate test changes 16 to 22 and 26, and add the e2e checks
     - At 1440 by 900 the Canvas top is at most 190 and the footer's bottom is the viewport bottom. There is no horizontal scroll at 390 and 360 on the demo and the axios replay, and no font request leaves the origin. The axe checks pass on the demo, with the drawer open, with the legend open and while playing.
     - _Requirements: 9.5, 9.6, 9.7, 10.1, 10.4_
-  - [ ] 7.4 Screenshot loop for the whole page
+    - Notes: Deliberate test changes 16, 17, 18, 20, 22 and 26 applied. Changes 19 and 21 needed no edit. New e2e checks: the canvas top is at most 190 at 1440 by 900; the footer bottom is at 900; the header controls share a row, and so do the footer controls; every demo grave ends above the footer; no horizontal scroll at 390 and 360 on the demo and the axios replay; fonts only from /fonts on the page origin. e2e 25 passed; header 114.3 px, footer 57.3 px, canvas top 114.3 px; medians 2.70 ms and 2.35 ms.
+  - [x] 7.4 Screenshot loop for the whole page
     - _Requirements: 14.1, 14.2, 14.3_
-  - [ ] 7.5 Independent code review of task 7
+    - Notes: Critic round 4 (round-7-7): not ready, eight points. Done: the tooltip card, the compact replay banner card, two header summary lines, Scan inline at 390, plain drawer headings. Not done, for the reasons in design.md decision 13: a wider tooltip beside the grave, a larger lone replay grave, stripping https://, the drawer signal and date styles, a round Play icon. The final round runs in task 8.
+  - [x] 7.5 Independent code review of task 7
     - _Requirements: 15.5_
+    - Review notes: READY, no defect. Acted on: design.md decisions 11, 12 and 15 record the shorter sky, the in-view rule at 960 px and wider, and the ground under the footer; the layout test comment cites them; the Legend words have a test. Notes kept: change 26 dropped the replay-row sub-check, because the Replay group moved to the footer.
 
 - [ ] 8. Screenshots, README, credits and steering
   - Retakes the README pictures and writes the documentation.

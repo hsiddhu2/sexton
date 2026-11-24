@@ -14,20 +14,20 @@ const allOf = (n: number, state: PackageHealth["state"]): PackageHealth[] => pac
 
 /**
  * Spec cemetery-undead, Deliberate test changes 3 to 6: an independent model of the Tier layout. Back Tier first
- * (Alive, 0.64), middle (Haunted and Restless, 0.8), front (Possessed and Dead, 1); 12 px between Tiers; every row
- * centred; sky 160 and padding 16.
+ * (Alive, 0.64), middle (Haunted and Restless, 0.8), front (Possessed and Dead, 1); no gap between Tiers; every row
+ * centred in the drawable width; sky 120 and padding 16 (design.md, decisions 6 and 11).
  */
 function tierModel(packages: readonly PackageHealth[], width: number): { rects: Rect[]; height: number; rows: number } {
   const tierOf = (s: string): number => (s === "Alive" ? 0 : s === "Haunted" || s === "Restless" ? 1 : 2);
   const scales = [0.64, 0.8, 1];
   const rects: Rect[] = [];
-  let y = 160 + 16;
+  let y = 120 + 16;
   let rows = 0;
   let first = true;
   for (let t = 0; t < 3; t += 1) {
     const members = packages.map((p, i) => [p, i] as const).filter(([p]) => tierOf(p.state) === t).map(([, i]) => i);
     if (members.length === 0) continue;
-    if (!first) y += 12;
+    if (!first) y += 0;
     first = false;
     const w = Math.round(192 * (scales[t] ?? 1));
     const h = Math.round(224 * (scales[t] ?? 1));
@@ -89,9 +89,9 @@ describe("Feature: cemetery-ui, Property 8: Layout is deterministic and no two g
   it("puts the first package at the left of its Tier's first row, at the Tier's scale", () => {
     const plan = planScene({ packages: allOf(3, "Dead"), width: 1280, theme: "light", selectedIndex: null, ghostPhase: 0 });
     // Three front cells of 192 centred in 1248: left = 16 + (1248 - 576) / 2.
-    expect(plan.graves[0]?.rect).toEqual({ x: 352, y: 176, w: 192, h: 224 });
+    expect(plan.graves[0]?.rect).toEqual({ x: 352, y: 136, w: 192, h: 224 });
     const back = planScene({ packages: allOf(3, "Alive"), width: 1280, theme: "light", selectedIndex: null, ghostPhase: 0 });
-    expect(back.graves[0]?.rect).toEqual({ x: 16 + Math.floor((1248 - 3 * 123) / 2), y: 176, w: 123, h: 143 });
+    expect(back.graves[0]?.rect).toEqual({ x: 16 + Math.floor((1248 - 3 * 123) / 2), y: 136, w: 123, h: 143 });
   });
 
   it("changes columns at width 415 and 416", () => {
@@ -103,7 +103,7 @@ describe("Feature: cemetery-ui, Property 8: Layout is deterministic and no two g
   it("lays out 300 front-Tier graves at width 224 in one column", () => {
     const plan = planScene({ packages: allOf(300, "Dead"), width: 224, theme: "dark", selectedIndex: null, ghostPhase: 0 });
     expect(plan.columns).toBe(1);
-    expect(plan.height).toBe(67392);
+    expect(plan.height).toBe(67352);
   });
 
   it("gives zero columns and height for no packages", () => {
@@ -247,12 +247,12 @@ describe("Feature: cemetery-theme, Property 2: Layout formulas, containment and 
   it("matches the 300-grave examples", () => {
     // Spec cemetery-undead: 300 front-Tier graves, worked by hand in design.md (Deliberate test change 6).
     const tall = planScene({ packages: allOf(300, "Dead"), width: 224, theme: "dark", selectedIndex: null, ghostPhase: 0 });
-    expect([tall.columns, tall.height]).toEqual([1, 67392]);
-    const b = backingStore(224, 67392, 2);
-    expect(b.scale).toBe(16384 / 67392);
+    expect([tall.columns, tall.height]).toEqual([1, 67352]);
+    const b = backingStore(224, 67352, 2);
+    expect(b.scale).toBe(16384 / 67352);
     expect(b.height).toBeLessThanOrEqual(16384);
     const wide = planScene({ packages: allOf(300, "Dead"), width: 1280, theme: "dark", selectedIndex: null, ghostPhase: 0 });
-    expect([wide.columns, wide.height]).toEqual([6, 11392]);
+    expect([wide.columns, wide.height]).toEqual([6, 11352]);
   });
 });
 

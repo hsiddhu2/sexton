@@ -25,9 +25,11 @@ export interface CemeteryProps {
   readonly repoFieldRef?: RefObject<HTMLInputElement | null>;
   /** Opens a pull request; present only for a hosted scan with actions.remediate true (spec remediate, 9.2). */
   readonly onRemediate?: (packageName: string) => Promise<RemediateView>;
+  /** Serious mode hides the Punchlines (spec cemetery-undead, 8). */
+  readonly serious?: boolean;
 }
 
-export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFieldRef, onRemediate }: CemeteryProps) {
+export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFieldRef, onRemediate, serious = false }: CemeteryProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const order = useMemo(() => triageOrder(response.report.packages), [response]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(() => (order.length > 0 ? 0 : null));
@@ -149,6 +151,7 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
                   suppressTooltip={drawerOpen}
                   quietFocus={quietFocus}
                   onLantern={setLantern}
+                  serious={serious}
                   {...(views !== undefined ? { views } : {})}
                   {...(asOfDate !== undefined ? { asOfDate } : {})}
                 />
@@ -157,7 +160,7 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
           </div>
         </main>
       </div>
-      {openPackage === undefined ? null : <Drawer model={drawerModel(response, openPackage, openVersion)} {...(response.replay !== undefined ? { replay: response.replay } : {})} {...(asOfLine !== undefined ? { asOfLine } : {})} onClose={onClose} onDismissToField={onDismissToField} {...(onRemediateWithBurial !== undefined ? { onRemediate: onRemediateWithBurial } : {})} />}
+      {openPackage === undefined ? null : <Drawer model={drawerModel(response, openPackage, openVersion)} {...(response.replay !== undefined ? { replay: response.replay } : {})} {...(asOfLine !== undefined ? { asOfLine } : {})} onClose={onClose} onDismissToField={onDismissToField} serious={serious} {...(onRemediateWithBurial !== undefined ? { onRemediate: onRemediateWithBurial } : {})} />}
     </>
   );
 }

@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Cemetery } from "./Cemetery.js";
 import { LoadingCard } from "./LoadingCard.js";
 import { Header } from "./header/Header.js";
@@ -9,8 +9,10 @@ import { useScanLoader } from "./load/use-scan-loader.js";
 import { replayAddress, type ReplayId } from "./replay/replay-ids.js";
 import { applyPalette, type Theme } from "./scene/palette.js";
 import { HISTORY_OMITTED_TEXT, Scrubber } from "./time/Scrubber.js";
+import { ReplayButtons } from "./replay/ReplayButtons.js";
 import { stopsFor } from "./time/stops.js";
 import { usePlay } from "./time/use-play.js";
+import { browserStorage, readSerious, writeSerious } from "./epitaph/serious.js";
 
 const NO_STOPS: readonly number[] = [];
 
@@ -24,6 +26,13 @@ export interface AppProps {
 export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
   const loader = useScanLoader({ fetchFn, pageOrigin, apiBase, initialSearch });
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+  // Serious mode, remembered per browser with a guarded read (spec cemetery-undead, 8).
+  const [serious, setSerious] = useState(() => readSerious(browserStorage()));
+  const toggleSerious = useCallback((): void => {
+    const next = !serious;
+    writeSerious(browserStorage(), next);
+    setSerious(next);
+  }, [serious]);
   const theme: Theme = "dark";
   const repoFieldRef = useRef<HTMLInputElement | null>(null);
   useLayoutEffect(() => {
@@ -68,21 +77,7 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
     : undefined;
   return (
     <>
-      <Header model={model} theme={theme} apiConfigured={apiBase !== null} onSubmit={loader.submitRepo} fieldRef={repoFieldRef} onReplay={onReplay} {...(state.status === "ready" && state.response.replay !== undefined ? { replay: state.response.replay } : {})} {...(asOf !== undefined ? { asOf } : {})} />
-      {showScrubber ? (
-        <Scrubber
-          stops={stopInfo.stops}
-          index={index}
-          onChange={seek}
-          inputRef={scrubberRef}
-          playing={player.playing}
-          onPlay={player.play}
-          onPause={player.pause}
-          announce={player.announce}
-        />
-      ) : state.status === "ready" && state.response.timelinesOmitted === "too-large" ? (
-        <p className="history-omitted">{HISTORY_OMITTED_TEXT}</p>
-      ) : null}
+      <Header model={model} theme={theme} apiConfigured={apiBase !== null} onSubmit={loader.submitRepo} fieldRef={repoFieldRef} serious={serious} onSerious={toggleSerious} {...(state.status === "ready" && state.response.replay !== undefined ? { replay: state.response.replay } : {})} {...(asOf !== undefined ? { asOf } : {})} />
       {state.status === "loading" ? (
         <LoadingCard />
       ) : state.status === "error" ? (
@@ -111,9 +106,27 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
           reducedMotion={reducedMotion}
           asOfMs={asOfMs}
           repoFieldRef={repoFieldRef}
+          serious={serious}
           {...(onRemediate !== undefined ? { onRemediate } : {})}
         />
       )}
+      <footer className="night-footer">
+        {showScrubber ? (
+          <Scrubber
+            stops={stopInfo.stops}
+            index={index}
+            onChange={seek}
+            inputRef={scrubberRef}
+            playing={player.playing}
+            onPlay={player.play}
+            onPause={player.pause}
+            announce={player.announce}
+          />
+        ) : state.status === "ready" && state.response.timelinesOmitted === "too-large" ? (
+          <p className="history-omitted">{HISTORY_OMITTED_TEXT}</p>
+        ) : null}
+        <ReplayButtons onReplay={onReplay} />
+      </footer>
     </>
   );
 }

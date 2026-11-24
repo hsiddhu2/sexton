@@ -20,6 +20,8 @@ export function useFreeHeight(ref: RefObject<HTMLElement | null>, width: number)
         setHeight(0);
         return;
       }
+      // The ground runs to the bottom of the viewport, under the Footer bar that stays in view over it
+      // (spec cemetery-undead, 9.4, design.md decision 15).
       setHeight(freeHeight(window.innerHeight, element.getBoundingClientRect().top + window.scrollY));
     };
     measure();

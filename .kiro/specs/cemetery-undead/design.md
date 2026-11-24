@@ -587,7 +587,7 @@ Checklist:
 
 5. **No backdrop cache (task 5).** The scenery is drawn every frame instead of cached in an offscreen layer (call 7). Measured with 300 graves at 1280 by 800, the medians are 2.60 ms and 2.30 ms after a scrubber move, against the 16 ms budget. A cache would add a second canvas and a context that the painter tests cannot see. The e2e budget test guards this choice. If a later change pushes the median near the budget, the cache is the first fix.
 6. **Tier rows are centred (task 5).** The mockup centres every row, so each Tier row is centred in the drawable width (`min(width, MAX_BACKING)`). Graves still fill a row left to right in triage order. The layout tests use an independent model of this rule.
-7. **The moon scales down on narrow scenes (task 5).** `r = min(64, floor(width / 5) - 4)`, at x `width - width / 5`, y 84, so the moon stays inside the sky at width 224. After critic round 3 the radius went from 56 to 64 and the moon gained three craters in moonEdge.
+7. **The moon scales down on narrow scenes (task 5).** The moon gained three craters in moonEdge after critic round 3. Its final values are in decision 11: `r = min(52, floor(width / 5) - 4)`, at x `width - width / 5`, y 62, so it stays inside the sky at width 224.
 8. **Critic round 3 changes (tasks 4 and 5).**
    - Grave name tags are smaller (104 by 26) and the inscription is 15 px.
    - Ghosts are drawn 1.6 times larger and lower, overlapping their stones. The planned ghost box and its drift are unchanged.
@@ -605,6 +605,33 @@ Checklist:
     - Deliberate change 7 also allows the costume tokens: they are palette tokens.
     - The marker test (change 14) checks the cell-relative rectangles inside each grave frame. The frame's translate and scale are covered by the draw tests.
     - Change 1 renamed the test from five to six shapes, since there are now six outlines.
+
+11. **A shorter sky and no gap between Tiers (task 7).**
+    - With the Footer bar at the bottom, the demo's front row sat behind it at 1440 by 900.
+    - The sky is now 120 px (was 160) and TIER_GAP is 0 (was 12).
+    - The church and tree are drawn at 0.72 so they fit the sky. The bats moved to y 26 to 50.
+    - The moon is `r = min(52, floor(width / 5) - 4)` at y 62.
+    - The pinned layout numbers follow from this: the first front grave sits at y 136, and 300 front graves give heights of 67,352 (width 224) and 11,352 (width 1280).
+    - All 12 demo graves now fit between the header (119.7 px) and the footer (57.3 px).
+12. **Header and Footer bar stay in view only at 960 px and wider (task 7).** At 390 px the wrapped header is about 250 px tall and the footer about 110. Keeping both in view there would leave almost no cemetery, so below 960 both scroll with the page. Requirement 9.4 holds at 960 and wider, the widths where the e2e checks it.
+13. **Critic round 4 (task 7).**
+    - Acted on:
+      - the tooltip as a padded card, with "Here lies" small, the name in small caps and the state in its colour;
+      - the replay banner as a compact card with its sources on one line;
+      - two summary lines in the header;
+      - Scan beside the field at 390 px;
+      - only the drawer title in the display face.
+    - Not done:
+      - a 300 px tooltip placed beside the grave, because the width and offset are pinned by requirement 7.1 and change 23;
+      - a front-row scale for a replay grave whose scan-date State is Alive, because the Tiers follow the scan date;
+      - stripping "https://" from the repository line, because existing header tests pin the text;
+      - restyled drawer signal labels and dates, and a round Play icon with a thinner track, because those are outside Phase 1.
+14. **Test notes (tasks 6 and 7).**
+    - Changes 19, 21 and 24 needed no edit: the tests pass as they are. The tooltip name stays in `strong.tooltip-name` inside the "Here lies" line.
+    - The tooltip shows the version twice: in "Here lies <name> <version>" (7.1), and in the existing "<version>, <State>" line, which three existing tests pin.
+    - In the drawer, "Here lies" is a line above the h2 title, so the dialog keeps its name "<name> <version>".
+
+15. **The ground runs under the Footer bar (task 7).** Design said the free height leaves room for the footer. The existing e2e test "at 1440 by 900 the canvas reaches the bottom of the viewport" (K2c) requires the canvas to reach the viewport bottom, so the ground runs to the bottom and the footer sits over it. The new e2e test checks that every demo grave ends above the footer's top edge.
 
 ## Notes and open items
 

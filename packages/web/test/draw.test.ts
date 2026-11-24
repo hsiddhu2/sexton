@@ -156,8 +156,8 @@ describe("Feature: cemetery-theme, Property 4: Painter call discipline", () => {
   it("gives a plan for zero packages Scenery", () => {
     const plan = planScene({ packages: [], width: 500, theme: "dark", selectedIndex: null, ghostPhase: 0 });
     // Spec cemetery-undead, Deliberate test change 12: a taller sky and the harvest moon on the right.
-    expect(plan.scenery.skyHeight).toBe(160);
-    expect(plan.scenery.moon).toEqual({ x: 400, y: 84, r: 64 });
+    expect(plan.scenery.skyHeight).toBe(120);
+    expect(plan.scenery.moon).toEqual({ x: 400, y: 62, r: 52 });
   });
 
   it("draws the same Plinth path object for one Grave of each State", () => {

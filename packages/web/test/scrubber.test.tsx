@@ -204,7 +204,8 @@ describe("the Play control", () => {
     vi.useRealTimers();
   });
 
-  it("is a native button named Play after the date text and before the slider, inside a polite live section", async () => {
+  // Spec cemetery-undead, Deliberate test change 20: in the Footer bar, Play comes first, then the label, date and slider.
+  it("is a native button named Play before the History date label and the slider, inside a polite live section", async () => {
     mount();
     await ready();
     const button = screen.getByRole("button", { name: "Play" });
@@ -213,8 +214,11 @@ describe("the Play control", () => {
     expect(button.getAttribute("type")).toBe("button");
     expect(button.hasAttribute("aria-pressed")).toBe(false);
     const date = document.querySelector(".scrub-date") as Element;
-    expect(date.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(button.compareDocumentPosition(slider()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const label = document.querySelector('label[for="history-date"]') as Element;
+    expect(button.compareDocumentPosition(label) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(label.compareDocumentPosition(date) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(date.compareDocumentPosition(slider()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(button.closest("footer.night-footer")).not.toBeNull();
     const line = document.querySelector(".scrub-live") as HTMLElement;
     expect(line.tagName).toBe("P");
     expect(line.getAttribute("aria-live")).toBe("polite");

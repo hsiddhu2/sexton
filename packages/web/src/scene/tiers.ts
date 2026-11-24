@@ -9,4 +9,4 @@ export const TIER_SCALE: Readonly<Record<TierId, number>> = { front: 1, middle: 
 /** Top of the screen first: the back Tier is drawn highest and first, the front lowest and last. */
 export const TIER_DRAW_ORDER: readonly TierId[] = ["back", "middle", "front"];
 /** Vertical gap between two non-empty Tiers. */
-export const TIER_GAP = 12;
+export const TIER_GAP = 0;

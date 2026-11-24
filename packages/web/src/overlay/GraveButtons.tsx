@@ -23,9 +23,11 @@ export interface GraveButtonsProps {
   readonly asOfDate?: string;
   /** Told the grave whose tooltip shows (hovered or focused), for the Lantern glow; null when none. */
   readonly onLantern?: (index: number | null) => void;
+  /** Serious mode hides the tooltip Punchline. */
+  readonly serious?: boolean;
 }
 
-export function GraveButtons({ plan, selectedIndex, packages, onSelect, onOpen, suppressTooltip = false, quietFocus, views, asOfDate, onLantern }: GraveButtonsProps) {
+export function GraveButtons({ plan, selectedIndex, packages, onSelect, onOpen, suppressTooltip = false, quietFocus, views, asOfDate, onLantern, serious = false }: GraveButtonsProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const { shownIndex, dispatch } = useGraveTooltip(suppressTooltip);
   useEffect(() => {
@@ -110,6 +112,8 @@ export function GraveButtons({ plan, selectedIndex, packages, onSelect, onOpen, 
           cell={shownCell}
           {...(shownIndex !== null && views?.[shownIndex] !== undefined ? { view: views[shownIndex] } : {})}
           {...(asOfDate !== undefined ? { asOfDate } : {})}
+          sceneWidth={plan.width}
+          serious={serious}
           onPointerEnter={() => {
             dispatch({ type: "tip-enter" });
           }}
