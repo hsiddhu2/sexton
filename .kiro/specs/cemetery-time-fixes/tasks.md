@@ -17,55 +17,68 @@ Run-time notes for the agents:
 
 ## Tasks
 
-- [ ] 1. Fresh-clone independence (F1)
+- [x] 1. Fresh-clone independence (F1)
   - Stops the api suite reading the gitignored demo scan, lets the web suite create the demo files itself, adds a static check against cross-workspace reads of generated files, and proves the result on a fresh clone.
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8_
-  - [ ] 1.1 Update `packages/api/test/timeline-size.test.ts`
+  - [x] 1.1 Update `packages/api/test/timeline-size.test.ts`
     - Apply Deliberate test change 1: drop `DEMO` and `readFileSync`, build the template package, the report and the policy in a `beforeAll` with `buildDemoScan({ fixturesDir })` from `../scripts/generate-demo-scan.mjs` and `ENGINE_FIXTURES` from `./support/fixture-transport.js`. Keep both assertions. The file stays in the `tsconfig.test.json` exclude list.
     - _Requirements: 1.3_
-  - [ ] 1.2 Add `packages/web/test/global-setup.ts` and update `packages/web/vitest.config.ts`
+    - Notes: the template package, report and policy come from `buildDemoScan({ fixturesDir: ENGINE_FIXTURES })` in a `beforeAll`. Both assertions kept. The file stays in the tsconfig.test.json exclude list.
+  - [x] 1.2 Add `packages/web/test/global-setup.ts` and update `packages/web/vitest.config.ts`
     - `setup()` checks `packages/web/public/demo/scan.json`. When it is missing it runs `execFileSync("npm", ["run", "demo:generate", "-w", "@sexton/api"], { cwd: <repository root>, stdio: "inherit" })` with fixed arguments and no shell. Add `globalSetup: ["test/global-setup.ts"]`. Keep `pretest`.
     - _Requirements: 1.4_
-  - [ ] 1.3 Add `packages/api/test/fresh-clone.test.ts`
+    - Notes: `setup()` runs the generator only when `public/demo/scan.json` is missing, with `execFileSync`, fixed arguments and no shell. `pretest` kept.
+  - [x] 1.3 Add `packages/api/test/fresh-clone.test.ts`
     - The static check of design.md "F1": walk `packages/*/test`, `packages/web/e2e` and `infra/test` (skip `fixtures` and `node_modules`), flag path-building lines that match the generated-path patterns, allow only the listed files with their reasons. Add the negative example (a synthetic line like the old `timeline-size.test.ts` line 8 is flagged). Add the static checks of requirement 1.7: `eslint.config.js` ignores `build/**`, the root `tsconfig.json` has `"files": []`, and each package `vitest.config.ts` includes only `test/**` paths.
     - _Requirements: 1.3, 1.5, 1.6, 1.7_
-  - [ ] 1.4 Run the api and web suites alone
+    - Notes: the check reads one line at a time and flags a line with a path call and a generated-path pattern. The allow list is the five files of design.md. The negative examples build their trigger strings by concatenation, so the test file does not flag itself. Also checks that the walk finds more than 100 files in every workspace and that each allowed file still names a generated path.
+  - [x] 1.4 Run the api and web suites alone
     - `npm test -w @sexton/api` then `npm test -w @sexton/web`, one at a time. Both exit 0. Confirm `replay-facts.test.ts` "are byte-identical on two generator runs and equal the files on disk" passes (requirement 1.5). Record the file and test counts in "Notes".
     - _Requirements: 1.2, 1.4, 1.5_
-  - [ ] 1.5 Orchestrator checks the bare web Vitest run
+    - Notes: `npm test -w @sexton/api` exit 0, 32 files, 286 tests (279 before, plus 7 in fresh-clone.test.ts). `npm test -w @sexton/web` exit 0, 39 files, 368 tests. `replay-facts.test.ts` "are byte-identical on two generator runs and equal the files on disk" passed.
+  - [x] 1.5 Orchestrator checks the bare web Vitest run
     - In a fresh clone (made in 1.6) with `packages/web/public/demo` absent, run `npx vitest run` in `packages/web` and confirm that the global setup creates the demo files and the suite exits 0.
     - _Requirements: 1.4_
-  - [ ] 1.6 Orchestrator runs the fresh-clone proof
+    - Notes: in the clone of 1.6, after the root run, `packages/web/public/demo` deleted. `npx vitest run` in `packages/web`: the global setup wrote the three demo files, exit 0, 39 files, 368 tests.
+  - [x] 1.6 Orchestrator runs the fresh-clone proof
     - Commit the task's work. From the repository root: `git clone --branch <branch under test> <local repository path> build/fresh-clone`. In `build/fresh-clone`: `npx npm@11 ci`, then `npm test -w @sexton/api` (before any other workspace has run), then `npm test`. Record in design.md "Notes and open items" ("Fresh-clone proof after task 1"): each exit code and the files and tests per package. Then run 1.5 in the same clone, and remove `build/fresh-clone`.
     - _Requirements: 1.1, 1.2, 1.8_
-  - [ ] 1.7 Security review of task 1
+    - Notes: commit 80c7543. api alone exit 0 (32 files, 286 tests, no demo folder created). Root `npm test` exit 0, 1836 tests. Per-package counts in design.md "Notes and open items". Clone removed.
+  - [x] 1.7 Security review of task 1
     - Invoke the security-reviewer agent on the files of 1.1 to 1.3. Record the findings in "Review notes". Fix every defect in this task.
     - _Requirements: 11.5_
+    - Review notes: READY, no defect. Notes kept: the check reads single lines, so a path call split over lines is not flagged; only .ts, .tsx and .mjs are walked, as design.md says; the allow list is per file; the global setup checks only scan.json, which is the file the web tests read; `execFileSync("npm")` needs npm.cmd on Windows, and CI runs on Ubuntu and macOS only; the nag.test.ts entry is not strictly needed, kept because design.md lists it.
 
-- [ ] 2. Registry publish times for the replays (F2)
+- [x] 2. Registry publish times for the replays (F2)
   - Adds the registry times, the keyv 5.6.0 deprecated and provenance facts and the two registry sources, moves the windows, regenerates the fixtures and updates the tests that pin the old values.
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10_
-  - [ ] 2.1 Update `packages/api/scripts/lib/replay-facts.mjs`
+  - [x] 2.1 Update `packages/api/scripts/lib/replay-facts.mjs`
     - As in design.md "F2" and "Replay facts": `SOURCE_URLS` gains `registryAxios` and `registryKeyv` (comment: eight URLs), each replay gains its registry source last, the five publish times, keyv 5.6.0 `deprecated: false` and `provenance: false`, the new `stops` (axios 23:21:58.168Z, 00:21:58.168Z, 03:29:00.000Z; keyv 08:35:00.763Z, 09:35:00.763Z), keyv `generatedAt` 2026-08-04T09:35:00.763Z, `factSources.publishedAt` the registry URL, keyv `factSources.deprecated`. Titles, summaries and the six older URLs stay.
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.7, 2.8_
-  - [ ] 2.2 Update `packages/api/scripts/generate-demo-scan.mjs`
+    - Notes: eight URLs, the registry source last in each replay, the five publish times, keyv 5.6.0 deprecated false and provenance false, Stops and keyv Scan date moved, `factSources.publishedAt` the registry, keyv `factSources.deprecated`. Titles, summaries and the six older URLs unchanged.
+  - [x] 2.2 Update `packages/api/scripts/generate-demo-scan.mjs`
     - `replayStateInputs` sets `inputs.deprecated` when the version has a boolean `deprecated`. `replaySignals` sets the `deprecated` signal from the installed version when it has a boolean `deprecated` (source `factSources.deprecated`), else unavailable as before. No other change.
     - _Requirements: 2.2, 2.6_
-  - [ ] 2.3 Regenerate and compare
+    - Notes: `replayStateInputs` sets `deprecated` from a boolean fact. `replaySignals` sets the `deprecated` signal from a boolean fact of the installed version, else unavailable. The installed versions have none, so both reports keep it unavailable.
+  - [x] 2.3 Regenerate and compare
     - Save copies of the three demo files under `build/`, run `npm run demo:generate -w @sexton/api`, and confirm with `cmp` that the three demo files are byte-identical and the printed digest is c8fb6cab465d46ca92cf83dbc10022b6a662c8fad68ec8f64d827ef16f43344d. Record the sizes, the digest and the generated Stops (instant, version, state, reason) of both fixtures in design.md "Notes and open items" and compare them with the table of "Replay facts". If a row differs, fix the generator. If the Engine rule makes the table wrong, correct the table and say why in "Review notes".
     - _Requirements: 2.4, 2.5, 2.6, 2.9_
-  - [ ] 2.4 Update the tests that pin the replay values
+    - Notes: the three demo files are byte-identical (cmp), digest c8fb6cab465d46ca92cf83dbc10022b6a662c8fad68ec8f64d827ef16f43344d. Every generated Stop equals the table of "Replay facts". Sizes and Stops in design.md "Notes and open items".
+  - [x] 2.4 Update the tests that pin the replay values
     - Apply Deliberate test changes 2, 3, 4, 5 (`packages/api/test/replay-facts.test.ts`), 6 (`packages/web/test/support/replay-fixture.ts`), 11 (`replay.test.tsx` import rename), the task 2 parts of 8 and 10 (the label "axios 1.14.0, Alive"), 16 and the task 2 parts of 17 and 18 (`packages/web/e2e/time.spec.ts`, labels Alive and four links; written, run by the orchestrator in 3.6).
     - _Requirements: 2.1, 2.2, 2.4, 2.5, 2.6, 2.7_
-  - [ ] 2.5 Extend `packages/api/test/replay-facts.test.ts`: Property 4
+    - Notes: Deliberate test changes 2 to 6, 11, 16, the task 2 parts of 8 and 10 ("axios 1.14.0, Alive") and of 17 and 18 (titles, Alive labels, four links). api replay-facts 6 of 6, web replay and validate-scan-response 35 of 35.
+  - [x] 2.5 Extend `packages/api/test/replay-facts.test.ts`: Property 4
     - **Property 4: The replays follow the registry facts**
     - **Validates: Requirements 2.3, 2.4, 2.5, 2.6, 2.10**
     - Instants drawn from each window with `fc.integer`, plus the Stop instants and the millisecond before each. An independent model of the facts (with `deprecated`). The fixture on disk passes the Validator.
     - Tag: `Feature: cemetery-time-fixes, Property 4: The replays follow the registry facts`.
     - _Requirements: 2.3, 2.4, 2.5, 2.6, 2.10_
-  - [ ] 2.6 Security review of task 2
+    - Notes: Property 4 in replay-facts.test.ts, 100 runs per replay, with the Stop instants, the millisecond before each and the Scan date as fixed cases. The bad publishes and Scan dates are literals from requirements 2.1 and 2.5. The review's note 1 added a literal check of the registry facts (a new test, not a change to an old one).
+  - [x] 2.6 Security review of task 2
     - Invoke the security-reviewer agent on the files of 2.1 to 2.5 and the two regenerated fixtures. Record the findings in "Review notes". Fix every defect in this task.
     - _Requirements: 11.5_
+    - Review notes: READY, no defect. Acted on: note 1, no test pinned the literal facts of 2.1 and 2.2, so a test now does. Notes kept: the keyv 5.6.0 provenance source (call 12) is a comment, since Segments carry no source; a replay whose installed version had a boolean deprecated would need `factSources.deprecated`, which axios lacks, and no fact gives one today; Property 4 reuses the model of Property 13, which adds no no-regression input, with no effect while lastPublish is present; Property 4 does not check the report state, the EXPECTED and trace tests do.
 
 - [ ] 3. Opening Stop and the Play control (F3)
   - A replay opens at its first Stop. A Play control steps one Stop every 1,500 ms through a pure reducer and a timer hook, and announces each step in a polite live line.

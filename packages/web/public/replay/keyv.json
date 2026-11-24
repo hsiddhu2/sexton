@@ -1,6 +1,6 @@
 {
   "report": {
-    "generatedAt": "2026-08-04T09:35:00.000Z",
+    "generatedAt": "2026-08-04T09:35:00.763Z",
     "packages": [
       {
         "name": "keyv",
@@ -9,35 +9,35 @@
         "stateReason": "install script added in 6.0.0",
         "signals": {
           "lastPublish": {
-            "value": "2026-08-04T09:35:00.000Z",
-            "source": "https://snyk.io/blog/inside-keyv-npm-compromise-preinstall-malware-trusted-provenance-ide-hooks/",
-            "fetchedAt": "2026-08-04T09:35:00.000Z",
+            "value": "2026-08-04T09:35:00.763Z",
+            "source": "https://registry.npmjs.org/keyv",
+            "fetchedAt": "2026-08-04T09:35:00.763Z",
             "available": true
           },
           "deprecated": {
             "value": null,
             "source": "https://snyk.io/blog/inside-keyv-npm-compromise-preinstall-malware-trusted-provenance-ide-hooks/",
-            "fetchedAt": "2026-08-04T09:35:00.000Z",
+            "fetchedAt": "2026-08-04T09:35:00.763Z",
             "available": false,
             "reason": "not in public reports"
           },
           "hasInstallScript": {
             "value": true,
             "source": "https://snyk.io/blog/inside-keyv-npm-compromise-preinstall-malware-trusted-provenance-ide-hooks/",
-            "fetchedAt": "2026-08-04T09:35:00.000Z",
+            "fetchedAt": "2026-08-04T09:35:00.763Z",
             "available": true
           },
           "advisories": {
             "value": null,
             "source": "https://snyk.io/blog/inside-keyv-npm-compromise-preinstall-malware-trusted-provenance-ide-hooks/",
-            "fetchedAt": "2026-08-04T09:35:00.000Z",
+            "fetchedAt": "2026-08-04T09:35:00.763Z",
             "available": false,
             "reason": "not in public reports"
           },
           "maintainers": {
             "value": null,
             "source": "https://snyk.io/blog/inside-keyv-npm-compromise-preinstall-malware-trusted-provenance-ide-hooks/",
-            "fetchedAt": "2026-08-04T09:35:00.000Z",
+            "fetchedAt": "2026-08-04T09:35:00.763Z",
             "available": false,
             "reason": "not in public reports"
           },
@@ -47,41 +47,41 @@
               "predicateType": null
             },
             "source": "https://snyk.io/blog/inside-keyv-npm-compromise-preinstall-malware-trusted-provenance-ide-hooks/",
-            "fetchedAt": "2026-08-04T09:35:00.000Z",
+            "fetchedAt": "2026-08-04T09:35:00.763Z",
             "available": true
           },
           "transitiveReach": {
             "value": null,
             "source": "https://snyk.io/blog/inside-keyv-npm-compromise-preinstall-malware-trusted-provenance-ide-hooks/",
-            "fetchedAt": "2026-08-04T09:35:00.000Z",
+            "fetchedAt": "2026-08-04T09:35:00.763Z",
             "available": false,
             "reason": "not in public reports"
           },
           "maintainerChange": {
             "value": null,
             "source": "https://snyk.io/blog/inside-keyv-npm-compromise-preinstall-malware-trusted-provenance-ide-hooks/",
-            "fetchedAt": "2026-08-04T09:35:00.000Z",
+            "fetchedAt": "2026-08-04T09:35:00.763Z",
             "available": false,
             "reason": "not in public reports"
           },
           "provenanceRegression": {
             "value": {
               "status": "no-regression",
-              "snapshotCaptureTime": "2026-08-04T09:35:00.000Z"
+              "snapshotCaptureTime": "2026-08-04T09:35:00.763Z"
             },
             "source": "https://snyk.io/blog/inside-keyv-npm-compromise-preinstall-malware-trusted-provenance-ide-hooks/",
-            "fetchedAt": "2026-08-04T09:35:00.000Z",
+            "fetchedAt": "2026-08-04T09:35:00.763Z",
             "available": true
           },
           "newInstallScript": {
             "value": [
               {
                 "version": "6.0.0",
-                "publishTime": "2026-08-04T09:35:00.000Z"
+                "publishTime": "2026-08-04T09:35:00.763Z"
               }
             ],
             "source": "https://snyk.io/blog/inside-keyv-npm-compromise-preinstall-malware-trusted-provenance-ide-hooks/",
-            "fetchedAt": "2026-08-04T09:35:00.000Z",
+            "fetchedAt": "2026-08-04T09:35:00.763Z",
             "available": true
           }
         },
@@ -110,7 +110,7 @@
             "signal": "state",
             "value": "Possessed",
             "source": null,
-            "fetchedAt": "2026-08-04T09:35:00.000Z",
+            "fetchedAt": "2026-08-04T09:35:00.763Z",
             "reason": "state is Possessed: install script added in 6.0.0"
           }
         ],
@@ -129,14 +129,14 @@
       "coveredFrom": null,
       "segments": [
         {
-          "from": "2026-08-04T08:35:00.000Z",
-          "state": "Restless",
-          "reason": "all state signals unavailable",
+          "from": "2026-08-04T08:35:00.763Z",
+          "state": "Alive",
+          "reason": "no rule matched",
           "ghost": false,
           "version": "5.6.0"
         },
         {
-          "from": "2026-08-04T09:35:00.000Z",
+          "from": "2026-08-04T09:35:00.763Z",
           "state": "Possessed",
           "reason": "install script added in 6.0.0",
           "ghost": false,
@@ -161,6 +161,10 @@
       {
         "label": "cacheable issue 1692",
         "url": "https://github.com/jaredwray/cacheable/issues/1692"
+      },
+      {
+        "label": "npm registry: keyv",
+        "url": "https://registry.npmjs.org/keyv"
       }
     ]
   }

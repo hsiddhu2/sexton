@@ -95,11 +95,13 @@ const SOURCE_HREFS = {
     "https://www.trendmicro.com/en_us/research/26/c/axios-npm-package-compromised.html",
     "https://www.csa.gov.sg/alerts-and-advisories/advisories/ad-2026-002/",
     "https://docs.npmjs.com/trusted-publishers",
+    "https://registry.npmjs.org/axios",
   ],
   keyv: [
     "https://snyk.io/blog/inside-keyv-npm-compromise-preinstall-malware-trusted-provenance-ide-hooks/",
     "https://osv.dev/vulnerability/MAL-2026-11524",
     "https://github.com/jaredwray/cacheable/issues/1692",
+    "https://registry.npmjs.org/keyv",
   ],
 } as const;
 
@@ -110,7 +112,7 @@ for (const id of ["axios", "keyv"] as const) {
     await expect(banner).toHaveCount(1);
     await expect(banner).toContainText("Reconstructed from public reports. Not a live scan.");
     const links = banner.locator("a");
-    await expect(links).toHaveCount(3);
+    await expect(links).toHaveCount(4);
     expect(await links.evaluateAll((as) => as.map((a) => a.getAttribute("href")))).toEqual([...SOURCE_HREFS[id]]);
     expect(await links.evaluateAll((as) => as.every((a) => a.getAttribute("target") === "_blank" && a.getAttribute("rel") === "noopener noreferrer"))).toBe(true);
     await expect(page.locator(".demo-label")).toHaveCount(0);
@@ -121,26 +123,26 @@ for (const id of ["axios", "keyv"] as const) {
   });
 }
 
-test("the axios replay shows Restless 1.14.0, then Possessed 1.14.1, then 1.14.0 again, with no Not-published mound", async ({ page, baseURL }) => {
+test("the axios replay shows Alive 1.14.0, then Possessed 1.14.1, then Alive 1.14.0 again, with no Not-published mound", async ({ page, baseURL }) => {
   await openReplay(page, baseURL, "?replay=axios");
   const grave = page.locator("button[data-grave-index]").first();
   const scrubber = page.getByRole("slider", { name: "History date" });
   await expect(scrubber).toHaveValue("2");
-  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Restless");
+  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
   await scrubber.focus();
   await scrubber.press("Home");
   await expect(scrubber).toHaveValue("0");
-  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Restless");
+  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
   await expect(grave).not.toHaveAttribute("aria-label", /not yet published/);
   await scrubber.press("ArrowRight");
   await expect(grave).toHaveAttribute("aria-label", "axios 1.14.1, Possessed");
   await grave.hover();
   await expect(page.getByRole("tooltip")).toContainText("provenance regression");
   await scrubber.press("ArrowRight");
-  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Restless");
+  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
 });
 
-test("the keyv replay shows Restless 5.6.0, then Possessed 6.0.0 at its end, and a second replay opens from the header", async ({ page, baseURL }) => {
+test("the keyv replay shows Alive 5.6.0, then Possessed 6.0.0 at its end, and a second replay opens from the header", async ({ page, baseURL }) => {
   await openReplay(page, baseURL, "?replay=keyv");
   const grave = page.locator("button[data-grave-index]").first();
   const scrubber = page.getByRole("slider", { name: "History date" });
@@ -148,12 +150,12 @@ test("the keyv replay shows Restless 5.6.0, then Possessed 6.0.0 at its end, and
   await expect(grave).toHaveAttribute("aria-label", "keyv 6.0.0, Possessed");
   await scrubber.focus();
   await scrubber.press("Home");
-  await expect(grave).toHaveAttribute("aria-label", "keyv 5.6.0, Restless");
+  await expect(grave).toHaveAttribute("aria-label", "keyv 5.6.0, Alive");
   await expect(grave).not.toHaveAttribute("aria-label", /not yet published/);
   await scrubber.press("End");
   await grave.hover();
   await expect(page.getByRole("tooltip")).toContainText("install script added in 6.0.0");
   await page.getByRole("button", { name: "axios 2026" }).click();
-  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Restless");
+  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
   await expect(page.locator('[role="note"]')).toContainText("axios");
 });

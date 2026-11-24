@@ -11,7 +11,7 @@ import { checkScanUrl } from "../src/load/check-scan-url.js";
 import { REPLAY_BANNER_TEXT } from "../src/replay/ReplayBanner.js";
 import { REPLAY_IDS, parseReplayParam, replayAddress, type ReplayId } from "../src/replay/replay-ids.js";
 import { stopsFor } from "../src/time/stops.js";
-import { EXPECTED_SEGMENTS, SIX_URLS, readReplay, readReplayText } from "./support/replay-fixture.js";
+import { EIGHT_URLS, EXPECTED_SEGMENTS, readReplay, readReplayText } from "./support/replay-fixture.js";
 
 afterEach(cleanup);
 beforeEach(() => {
@@ -70,7 +70,7 @@ describe("opening a replay (requirement 18)", () => {
     await ready();
     fireEvent.click(screen.getByRole("button", { name: "axios 2026" }));
     await waitFor(() => {
-      expect(label(container)).toBe("axios 1.14.0, Restless");
+      expect(label(container)).toBe("axios 1.14.0, Alive");
     });
     expect(urls).toEqual([`${ORIGIN}/demo/scan.json`, `${ORIGIN}/replay/axios.json`]);
     fireEvent.click(screen.getByRole("button", { name: "keyv 2026" }));
@@ -217,7 +217,7 @@ describe("the replay through the scrubber (requirement 20)", () => {
     const { container } = mount("?replay=axios");
     await ready();
     expect(slider().value).toBe("2");
-    expect(label(container)).toBe("axios 1.14.0, Restless");
+    expect(label(container)).toBe("axios 1.14.0, Alive");
   });
 });
 
@@ -251,7 +251,7 @@ const arbReplayBlock: fc.Arbitrary<ReplayInfo> = fc.record({
   sources: fc.array(
     fc.record({
       label: fc.oneof(fc.string({ maxLength: 30 }), fc.constant("<svg onload=x>")),
-      url: fc.oneof(fc.constantFrom(...HOSTILE), fc.string({ maxLength: 40 }), fc.constantFrom(...SIX_URLS)),
+      url: fc.oneof(fc.constantFrom(...HOSTILE), fc.string({ maxLength: 40 }), fc.constantFrom(...EIGHT_URLS)),
     }),
     { minLength: 1, maxLength: 6 },
   ),

@@ -161,6 +161,7 @@ export function replayStateInputs(replay, version, at) {
   const atMs = at.getTime();
   const inputs = {};
   if (current.publishedAt !== null) inputs.lastPublish = new Date(current.publishedAt);
+  if (typeof current.deprecated === "boolean") inputs.deprecated = current.deprecated;
   if (current.provenance === false) {
     const earlier = replay.versions.slice(0, index).reverse().find((v) => v.provenance === true);
     if (earlier !== undefined) {
@@ -195,7 +196,7 @@ function replaySignals(replay, installed, at) {
   const regression = inputs.provenanceRegression;
   return {
     lastPublish: installed.publishedAt === null ? none() : available(installed.publishedAt, src.publishedAt, at),
-    deprecated: none(),
+    deprecated: typeof installed.deprecated === "boolean" ? available(installed.deprecated, src.deprecated, at) : none(),
     hasInstallScript: installed.installScript === null ? none() : available(installed.installScript, src.installScript, at),
     advisories: none(),
     maintainers: none(),
