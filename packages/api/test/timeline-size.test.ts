@@ -1,17 +1,28 @@
 // The largest allowed timelines block stays well under the Lambda response limit. Spec cemetery-time, 8.11, 8.12.
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+// The template package, report and policy are built in memory from the committed engine fixtures, never read from
+// another workspace's generated files. Spec cemetery-time-fixes, 1.3.
+import { beforeAll, describe, expect, it } from "vitest";
+// @ts-expect-error plain JavaScript module without declarations
+import { buildDemoScan } from "../scripts/generate-demo-scan.mjs";
 import { validateScanResponse } from "../../web/src/load/validate-scan-response.js";
+import { ENGINE_FIXTURES } from "./support/fixture-transport.js";
 
-const DEMO = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "web", "public", "demo", "scan.json");
 const STATES = ["Possessed", "Dead", "Haunted", "Restless", "Alive"] as const;
+
+interface DemoScan {
+  readonly report: { generatedAt: string; packages: { name: string }[] };
+  readonly policy: unknown;
+}
+
+let demo: DemoScan;
+
+beforeAll(async () => {
+  demo = (await buildDemoScan({ fixturesDir: ENGINE_FIXTURES })) as DemoScan;
+});
 
 describe("timeline response size", () => {
   it("300 packages, 64 Segments each, 200 character reasons, serialise the block under the 6 MB Lambda limit and validate", () => {
     const names = Array.from({ length: 300 }, (_, i) => `package-${String(i).padStart(3, "0")}`);
-    const demo = JSON.parse(readFileSync(DEMO, "utf8")) as { report: { generatedAt: string; packages: { name: string }[] }; policy: unknown };
     const template = demo.report.packages[0] as { name: string };
     const packages = names.map((name) => ({ ...structuredClone(template), name }));
     const timelines = Object.fromEntries(
