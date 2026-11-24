@@ -895,12 +895,23 @@ pre.signal-value {
    and the scrubber's label, date, Play and slider share one row. Below 960 px the rules above apply. */
 @media (min-width: 960px) {
   .site-header {
-    gap: 8px 16px;
+    gap: 0 16px;
     padding: 8px 16px;
   }
-  /* At least half the row, so the form and the Replay group always start row 2 at the left. */
-  .header-top {
-    flex: 1 1 50%;
+  /* A zero-height line break: the form, the Replay group, the banner and the message always start row 2 at the
+     left, with or without the evidence links on row 1. The row gap is 0, so each row 2 item carries its own 8px. */
+  .site-header::after {
+    content: "";
+    order: 1;
+    flex-basis: 100%;
+    height: 0;
+  }
+  .repo-form,
+  .replay-group,
+  .replay-banner,
+  .header-message {
+    order: 2;
+    margin-top: 8px;
   }
   .repo-form {
     flex: 1 1 28rem;

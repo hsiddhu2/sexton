@@ -5,6 +5,7 @@ import { chromium, expect, test, type Page } from "@playwright/test";
 test.skip(!existsSync(chromium.executablePath()), "chromium is not installed");
 
 const SCREENSHOT = fileURLToPath(new URL("../../../docs/cemetery.png", import.meta.url));
+const REPLAY_SCREENSHOT = fileURLToPath(new URL("../../../docs/replay-axios.png", import.meta.url));
 const BUDGET_MS = 16;
 
 interface TimingWindow {
@@ -127,4 +128,29 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
   console.log(`median redraw of 300 graves after a scrubber move over 30 paints: ${movedMedian.toFixed(2)} ms`);
   expect(movedMedian).toBeLessThanOrEqual(BUDGET_MS);
   expect(cspViolations).toEqual([]);
+});
+
+// Spec cemetery-time-fixes, task 6.1 (requirement 9.2): the README picture of a replay.
+test("the axios replay at its Possessed stop, for the README", async ({ page, baseURL }) => {
+  const origin = new URL(baseURL ?? "http://localhost:4173").origin;
+  await page.route("**/*", async (route) => {
+    if (new URL(route.request().url()).origin === origin) await route.continue();
+    else await route.abort();
+  });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/?replay=axios");
+  const grave = page.locator("button[data-grave-index]").first();
+  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
+  const scrubber = page.getByRole("slider", { name: "History date" });
+  await scrubber.focus();
+  await scrubber.press("ArrowRight");
+  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.1, Possessed");
+  await expect(page.locator('[role="note"]')).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  // Move focus off the slider so no focus ring is in the picture, then wait two frames for the repaint.
+  await scrubber.blur();
+  await waitForFirstPaint(page);
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  await page.screenshot({ path: REPLAY_SCREENSHOT });
 });

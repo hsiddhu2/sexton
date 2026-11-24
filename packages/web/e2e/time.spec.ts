@@ -203,6 +203,15 @@ test("at 1440 by 900 on the demo the canvas top is at most 190, with the form an
   expect(sameRow(form, group)).toBe(true);
   const parts = await Promise.all(["label[for=history-date]", ".scrub-date", "button.scrub-play", "#history-date"].map(box));
   for (const p of parts) expect(Math.abs(middle(p) - middle(parts[0] ?? p))).toBeLessThan(12);
+  // A replay has no evidence links. The form and the Replay group still share row 2, starting at the left.
+  await page.goto("/?replay=axios");
+  await expect(page.locator("button[data-grave-index]")).toHaveCount(1);
+  const replayForm = await box(".repo-form");
+  const replayGroup = await box(".replay-group");
+  const replayTop = await box(".header-top");
+  expect(sameRow(replayForm, replayGroup)).toBe(true);
+  expect(replayForm.x).toBeLessThan(40);
+  expect(replayForm.y).toBeGreaterThanOrEqual(replayTop.y + replayTop.height);
 });
 
 for (const search of ["", "?replay=axios"]) {

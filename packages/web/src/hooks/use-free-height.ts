@@ -3,7 +3,8 @@ import { useEffect, useState, type RefObject } from "react";
 /** Pure. The viewport height under the element top, or 0 when it cannot be read. */
 export function freeHeight(innerHeight: number, top: number): number {
   if (!Number.isFinite(innerHeight) || innerHeight <= 0 || !Number.isFinite(top)) return 0;
-  return Math.max(0, Math.floor(innerHeight - top));
+  // Rounded up: a fractional top must not leave a sub-pixel strip under the ground.
+  return Math.max(0, Math.ceil(innerHeight - top));
 }
 
 /**

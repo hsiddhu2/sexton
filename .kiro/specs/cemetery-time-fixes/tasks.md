@@ -176,21 +176,25 @@ Run-time notes for the agents:
     - _Requirements: 11.5_
     - Review notes: READY, no defect. Acted on: the 0 row gap of `.scrub` is recorded as decision 5. Notes kept: below 960 px the group label wraps with the buttons, covered by the 360 px tests.
 
-- [ ] 6. Screenshots (F6)
+- [x] 6. Screenshots (F6)
   - Retakes the cemetery screenshot and adds the axios replay screenshot.
   - _Requirements: 9.1, 9.2, 9.3_
-  - [ ] 6.1 Extend `packages/web/e2e/smoke.spec.ts`
+  - [x] 6.1 Extend `packages/web/e2e/smoke.spec.ts`
     - Add the test "the axios replay at its Possessed stop, for the README" of design.md "F6": 1440 by 900, Reduced motion, foreign origins blocked, `/?replay=axios`, ArrowRight on the slider, wait for "axios 1.14.1, Possessed" and two animation frames, banner visible, drawer closed, write `docs/replay-axios.png`. Deliberate test change 19: the cemetery screenshot step stays as it is.
     - _Requirements: 9.1, 9.2_
-  - [ ] 6.2 Orchestrator writes both screenshots
+    - Notes: new test "the axios replay at its Possessed stop, for the README" in smoke.spec.ts. Deliberate test change 19: the cemetery screenshot step is unchanged.
+  - [x] 6.2 Orchestrator writes both screenshots
     - Run `npm run test:e2e -w @sexton/web`. Confirm both tests ran (not skipped) and that `docs/cemetery.png` and `docs/replay-axios.png` are 1440 by 900 with new modification times. Record in "Notes".
     - _Requirements: 9.1, 9.2_
-  - [ ] 6.3 Orchestrator reads both images itself
+    - Notes: `npm run test:e2e -w @sexton/web`: 22 passed, none skipped. Both files written at 02:22 and again on the final run, 1440 by 900, PNG chunks IHDR, IDAT and IEND only. A first run surfaced two things fixed in the source: the replay put the form on row 1 (design.md decision 4, header row break) and the canvas-bottom e2e failed 1 run in 3 on the fractional canvas top (decision 6, `Math.ceil` in use-free-height.ts). The layout e2e gained a replay row check.
+  - [x] 6.3 Orchestrator reads both images itself
     - Open both files as images. Cemetery: drawer closed, the canvas starts at or above y 190, the "Replay an attack" label and the two buttons sit on the form row, Play and the slider sit on one row. Replay: the banner with four links, the axios open grave of Possessed with 1.14.1, the as-of line. Record what was seen under "Notes". If any item fails, fix the cause in the owning task and retake. Do not wait for the user.
     - _Requirements: 9.3_
-  - [ ] 6.4 Security review of task 6
+    - Notes: read both images. docs/cemetery.png: drawer closed, canvas top about 164 (at or above 190), "Replay an attack" and both buttons on the form row, label, date, Play and slider on one row, 12 graves. docs/replay-axios.png: banner with the title, the not-a-live-scan line, the summary and four links (Trend Micro, CSA, npm docs, npm registry), the open Possessed grave "axios 1.14.1", the as-of line "as of 31 Mar 2026, 00:21 UTC" with Back to now, slider at Stop 1, drawer closed. First pass of the replay image showed the form on row 1 and the Replay group on row 2, fixed and retaken.
+  - [x] 6.4 Security review of task 6
     - Invoke the security-reviewer agent on `docs/cemetery.png` and `docs/replay-axios.png` (metadata only) and `packages/web/e2e/smoke.spec.ts`. Record the findings in "Review notes". Fix every defect in this task.
     - _Requirements: 11.5_
+    - Review notes: READY, no defect. Acted on: a unit test now pins `freeHeight` rounding up (test/free-height.test.ts). Notes kept: the paint wait relies on two frames after the Possessed label; the 1 px vertical overflow is recorded in decision 6; with a row gap of 0, a wrapped row 1 would get no gap, which cannot happen at 960 px and wider (row 1 needs about 708 px); the blue box in the pictures is the selected-grave ring.
 
 - [ ] 7. Steering web.md
   - Brings the cemetery rules in line with the built behaviour.
