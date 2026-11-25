@@ -141,7 +141,7 @@ Every top-level task ends with a review sub-task. It runs the gravedigger agent 
       - gravedigger (wf_4337fedc6894c9fb) at d459983: "Verdict: unsafe. D3 is fixed, but D4 remains a concrete defect at `migration-candidates.ts:49,68`." It found that the remove kind has one source, `chooseKind`, so no other path can reach a remove.
       - security-reviewer (wf_5010ba4ab7e4d7a6) on def3208..d459983: "Verdict: ready with notes. The D3 fix and its tests are correct, and the D4 exploration test is intentionally red until the next task." Its notes were that choose-kind.ts now exports several names and has a long first comment. Kept as they are: they are one concept, the kind choice, and its own constants.
 
-- [-] 5b. Fix D4: no sass-loader raise over a Non-registry range (added after the task 1 review)
+- [x] 5b. Fix D4: no sass-loader raise over a Non-registry range (added after the task 1 review)
   - [x] 5b.1 Write Property 10 in test/remediation/remediation-safety.test.ts and run it on the code before this fix
     - **EXPECTED OUTCOME**: Property 10 FAILS. Record the counterexample here. If it passes, stop.
     - _Bug_Condition: isBugConditionD4_
@@ -154,13 +154,17 @@ Every top-level task ends with a review sub-task. It runs the gravedigger agent 
   - [x] 5b.3 Run the gates, as in 3.4
     - _Requirements: 3.1 to 3.12_
     - Notes: tsc -b exit 0 and eslint exit 0. engine: 85 files, 1170 of 1170 passed. cli: 61 passed. api: 300 passed. web: 57 files, 525 of 525 passed. That run included the owner's one-line fix to `packages/web/test/readme.test.ts`, which adds "## Kiro project files" to the pinned headings and is committed on its own. Golden diff exit 0.
-  - [ ] 5b.4 Review: gravedigger and security-reviewer
+  - [x] 5b.4 Review: gravedigger and security-reviewer
     - Record both verdict lines. Expected: gravedigger reports D4 fixed.
     - _Requirements: 1.6, 2.7_
+    - Notes:
+      - gravedigger (wf_7b9813cc8c46af7a) at 9cb4514: "**safe**: D4 is fixed, D1 to D3 still hold, and no new defect or note was found."
+      - security-reviewer (wf_d081b7d3ed41ba64) on d459983..9cb4514: ready with notes, no defects. Its note was that design.md names `isResolvableRange` while the code uses `isUsableRange`. That helper is the same predicate plus a string check, so an undefined range also gives `unknown`, which is the safer side. 5b.2's notes record it.
 
-- [ ] 6. Change log and final checkpoint
-  - [ ] 6.1 Add the 0.9 change-log line to docs/requirements.md, worded as design.md "Changes required" gives it, with the date of the change. Edit no requirement text.
+- [-] 6. Change log and final checkpoint
+  - [x] 6.1 Add the 0.9 change-log line to docs/requirements.md, worded as design.md "Changes required" gives it, with the date of the change. Edit no requirement text.
     - _Requirements: 2.6_
+    - Notes: main took 0.9 in submission-readiness, merged at 6da99d9, so this spec's line is 1.0, the next free number. Its wording adds the D4 clause. No requirement text was edited.
   - [ ] 6.2 Final gates
     - `npx tsc -b`, `npx eslint . --max-warnings=0`, and `npm test` for engine, cli, api, web and sexton-infra. The golden diff from 2.3 must be empty. `git diff --stat` must touch only the allowed paths at the top of this file.
     - _Requirements: 3.1 to 3.11_
