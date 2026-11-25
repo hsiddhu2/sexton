@@ -357,7 +357,18 @@ Notes kept as they are: "FOR EACH" and "FOR ANY" criteria follow history-signals
 20. **Web count tests.** Besides the three files of Decisions 9, four web tests count signal rows (drawer-model, drawer, markdown, pr-preview) and go from ten to twelve. They are counts, not reason text, and fall under "Deliberate test changes".
 21. **A missing publisher name reads "no name"** in the evidence summary and the PR body, outside the code span, so it cannot be mistaken for a publisher called "unknown".
 
+## Owner decisions of 25 Nov 2026, with task 10
+
+- Main with phase 2 merged in; change-log line 0.8.
+- The four approved lines added; the axios story gains "plain-crypto-js 4.2.1 was published 22 minutes before axios 1.14.1." (the facts give 22 minutes 46 seconds).
+- The PR body Possessed warning now reads "Check the maintainer, provenance, install-script, new dependency or publisher change before you merge."
+- The README state-table Possessed row names the two new conditions.
+- A missing publisher name reads "unknown" in the publisher-changed reason (`UNKNOWN_PUBLISHER` in state.ts), never an empty gap. The status rules make `changed` need both names, so this guards hand-built or replay values; tested in state-new-signals.test.ts. The web patterns accept any non-empty text for each name.
+- product.md is left alone.
+
 ## Notes and open items
+
+- **Open item, semver maintainer finding (owner decision, 25 Nov).** The registry's per-version maintainer lists for semver 7.8.5 and 7.8.6 differ: owlstronaut was replaced by martinrrm. When the recorder saved per-version `maintainers`, the existing as-of maintainer rule (timeline/as-of.ts, spec cemetery-time) gave the demo a Possessed "maintainer change in the last 90 days" Segment on semver from 2026-11-02T17:05:43.359Z to the scan date, while the scan itself says Alive (snapshot history is empty). The fixtures therefore hold no per-version maintainers (Decisions 16). To decide later: whether a per-version maintainer change seen only in packument data should count on the timeline, and if so whether the scan-date rule should read the same data so the two agree.
 
 - Review of tasks 1 to 6 (independent, 25 Nov): verdict not ready, two defects, both fixed with tests:
   1. A range over 256 characters was cut and then checked, so the cut text could resolve (for example `>=1.0.0` + 250 spaces + `<0.0.0-0` resolved 2.0.0). Fixed: the diff marks it `tooLong`, the client makes no request and the entry reason is "range is not a semver range".
@@ -365,7 +376,7 @@ Notes kept as they are: "FOR EACH" and "FOR ANY" criteria follow history-signals
   Notes acted on: the abbreviated read is skipped when the full read failed; Property 9 runs 1000 times; "no name" (Decisions 21); the client Property 4 test now checks the signal shape. Notes kept: the design snippets differ in small names from the code (Decisions 19).
 - Demo: 0 state changes and 0 timeline changes across the twelve demo packages. Every fixture publisher is `same`; node-sass 7.0.3 added npmlog ^5.0.0 (5.0.1, 2021) and request ^2.88.0 (2.88.2, 2020), no install script; event-stream has no Earlier version.
 - Replays: Segments byte-identical in content; the files gain the two signals as evidence. axios's report version (1.14.0) has both unavailable "not in public reports"; keyv 6.0.0 publisherChange is `same` and newDependency unavailable.
-- The PR body's Possessed warning still names "the maintainer, provenance or install-script change". It was not extended to the two new rules, to keep the remediation texts unchanged. Open item for the owner.
+- The PR body's Possessed warning was extended to the two new reasons on the owner's decision of 25 Nov (above).
 - Express after (25 Nov 2026, engine 0.2.0, built CLI, `build/ns-express-after/scan.json`): 44 packages, 2 Dead, 14 Restless, 28 Alive, 0 Possessed. Every package has the same version, state and reason as before (0 changes). publisherChange: 29 same, 9 changed token to token, 6 changed token to trusted publisher, none from trusted publisher to token. newDependency: no package added a dependency. The stop line (more than 2 new Possessed) is far from reached. The New dependency rule stays unmeasured on express (Decisions 13).
 - docs/requirements.md: R-SG-10, R-SG-11 and the R-ST-2 Possessed line added, change-log line written as 0.7 and renumbered to the next free number when main is merged in (task 10.1). README: the two signal lists only. The README state table row for Possessed (line 29, "A maintainer changed in the last 90 days, provenance regressed, or a new install script appeared") is outside this lane's README part and does not name the two new conditions. Open item for the owner, with steering product.md (Decisions 14).
 - Review of tasks 1 to 8 (independent, 25 Nov): verdict ready, no defect. Notes acted on: a replay publisher fact with method `unknown` now leaves publisherChange unavailable; new-dependency facts are looked up with `Object.hasOwn`; the recorder skips a new dependency name that is itself a fixture package (its own recorded files answer it), so `new-dependencies/request` is removed; the recorder counts a name as present before only when its value is a string, as the engine does; two comments fixed. Notes kept: duplicate new-dependency routes in multi-package scans are harmless (first match wins); keyv's publisherChange cites Snyk only, while its rc.1 half comes from the registry listed in the replay sources.

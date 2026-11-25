@@ -118,18 +118,22 @@ Adds the publisherChange and newDependency signals and their two Possessed rules
     - The change-log number is set when main is merged in (task 10).
     - _Requirements: 8.3, 8.4_
 
-- [ ] 10. Web lines, after main has Cemetery undead phase 2
+- [x] 10. Web lines, after main has Cemetery undead phase 2
   - _Requirements: 8.3, 9.2, 9.3, 9.4, 9.5_
 
-  - [ ] 10.1 Merge main into spec/new-signals; stop and report if main has no phase 2
+  - [x] 10.1 Merge main into spec/new-signals; stop and report if main has no phase 2
     - Set the change-log number in docs/requirements.md to the next free one.
     - _Requirements: 8.3, 9.4_
 
-  - [ ] 10.2 Add the approved epitaph and speech-bubble lines with tests
+  - [x] 10.2 Add the approved epitaph and speech-bubble lines with tests
     - _Requirements: 9.2, 9.3_
 
-  - [ ] 10.3 Add one sentence to the axios replay summary: plain-crypto-js 4.2.1 was published 22 minutes before axios 1.14.1; regenerate the replay files
+  - [x] 10.3 Add one sentence to the axios replay summary: plain-crypto-js 4.2.1 was published 22 minutes before axios 1.14.1; regenerate the replay files
     - _Requirements: 9.5_
+
+  - [x] 10.4 Owner additions of 25 Nov 2026: the PR body Possessed warning names the two new reasons; the README state-table Possessed row matches; a missing publisher name reads "unknown" in the publisher-changed reason, with a test
+    - _Requirements: 3.1, 6.2_
+  - Notes: main 86bc37d (phase 2) merged in as b7649cc; the only conflict was the change-log line, now 0.7 (phase 2) and 0.8 (this spec). New web lines in epitaph/epitaph.ts and speech/bubble-table.ts with rows in epitaph.test.ts and bubbles.test.tsx (twelve templates, twelve lines). Replays regenerated: only the axios summary changed. Root gates after the merge: 2,048 tests, exit 0.
 
 - [ ] 11. Final checks
   - Root gates, a fresh clone with `npx npm@11 ci` and the gates, an independent review of the whole branch, the report in private/reports/K3-new-signals.md. Nothing is pushed.

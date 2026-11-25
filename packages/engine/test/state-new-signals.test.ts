@@ -46,7 +46,7 @@ function newRuleReason(i: StateInputs): string | null {
   }
   const pc = i.publisherChange;
   if (pc !== undefined && pc.status === "changed" && pc.earlier.method === "trusted-publisher" && pc.installed.method === "token") {
-    return `publisher changed in ${pc.installed.version}: ${pc.earlier.publisher ?? ""} to ${pc.installed.publisher ?? ""}`;
+    return `publisher changed in ${pc.installed.version}: ${pc.earlier.publisher ?? "unknown"} to ${pc.installed.publisher ?? "unknown"}`;
   }
   return null;
 }
@@ -64,6 +64,15 @@ describe("new-signals Possessed rules: examples", () => {
       state: "Possessed",
       stateReason: "publisher changed in 1.0.1: GitHub Actions to someone",
     });
+  });
+
+  it("names a missing publisher \"unknown\", never an empty gap (owner decision, 25 Nov 2026)", () => {
+    const value: PublisherChangeValue = { ...TRUSTED_TO_TOKEN, installed: record("1.0.1", null, "token") };
+    const r = evaluateState({ ...HEALTHY, publisherChange: value }, NOW);
+    expect(r).toEqual({ state: "Possessed", stateReason: "publisher changed in 1.0.1: GitHub Actions to unknown" });
+    expect(r.stateReason).not.toMatch(/: {2}|: to | to $/);
+    const both = evaluateState({ ...HEALTHY, publisherChange: { ...value, earlier: record("1.0.0", null, "trusted-publisher") } }, NOW);
+    expect(both.stateReason).toBe("publisher changed in 1.0.1: unknown to unknown");
   });
 
   it.each([

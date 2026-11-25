@@ -339,7 +339,11 @@ describe("the new signals in the replays (spec new-signals, Requirement 5)", () 
     expect(replayPublisherChange(REPLAYS.axios, "1.14.0")).toBeUndefined();
   });
 
-  it("the story text is unchanged (owner decision at go)", () => {
+  it("the story keeps its reason and gains the plain-crypto-js sentence (owner decisions, 25 Nov 2026)", () => {
     expect(REPLAYS.axios.summary).toContain("Sexton marks 1.14.1 Possessed because provenance regressed.");
+    expect(REPLAYS.axios.summary).toContain("plain-crypto-js 4.2.1 was published 22 minutes before axios 1.14.1.");
+    // True of the facts: 2026-03-30T23:59:12.278Z to 2026-03-31T00:21:58.168Z is 22 minutes and 46 seconds.
+    const minutes = (Date.parse("2026-03-31T00:21:58.168Z") - Date.parse("2026-03-30T23:59:12.278Z")) / 60_000;
+    expect(Math.floor(minutes)).toBe(22);
   });
 });

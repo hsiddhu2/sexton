@@ -28,7 +28,7 @@ Each package gets exactly one state. The rules run in this order, and the first 
 
 | State | When |
 |---|---|
-| Possessed | A maintainer changed in the last 90 days, provenance regressed, or a new install script appeared |
+| Possessed | A maintainer changed in the last 90 days, provenance regressed, a new install script appeared, a new dependency has an install script or was published within 7 days, or the publisher changed from a trusted publisher to a token |
 | Dead | The installed version is deprecated, or the last publish was more than 24 months ago and it has an advisory |
 | Haunted | It has a High or Critical advisory |
 | Restless | The last publish was more than 24 months ago, or it has a Low or Moderate advisory |

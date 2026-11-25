@@ -17,6 +17,9 @@ import {
 
 export { STATE_ORDER };
 
+/** A missing publisher name in the publisher-changed reason. Spec new-signals, owner decision of 25 Nov 2026. */
+export const UNKNOWN_PUBLISHER = "unknown";
+
 /** A last publish strictly older than this many months is stale. Spec state-age-rule. */
 export const STALE_AFTER_MONTHS = 24;
 
@@ -94,7 +97,7 @@ export function evaluateState(inputs: StateInputs, now: Date): StateResult {
   ) {
     return {
       state: "Possessed",
-      stateReason: `publisher changed in ${publisher.installed.version}: ${publisher.earlier.publisher ?? ""} to ${publisher.installed.publisher ?? ""}`,
+      stateReason: `publisher changed in ${publisher.installed.version}: ${publisher.earlier.publisher ?? UNKNOWN_PUBLISHER} to ${publisher.installed.publisher ?? UNKNOWN_PUBLISHER}`,
     };
   }
 

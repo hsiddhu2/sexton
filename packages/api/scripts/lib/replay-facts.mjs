@@ -38,7 +38,7 @@ export const REPLAYS = Object.freeze({
     package: "axios",
     title: "Replay: axios npm compromise, 31 March 2026",
     summary:
-      "axios 1.14.1 was published by hand from a compromised maintainer account, with no provenance, and it added the dependency plain-crypto-js 4.2.1, whose postinstall ran the payload. npm removed 1.14.1 at about 03:29 UTC, so a fresh install resolves 1.14.0 again. Sexton marks 1.14.1 Possessed because provenance regressed.",
+      "axios 1.14.1 was published by hand from a compromised maintainer account, with no provenance, and it added the dependency plain-crypto-js 4.2.1, whose postinstall ran the payload. plain-crypto-js 4.2.1 was published 22 minutes before axios 1.14.1. npm removed 1.14.1 at about 03:29 UTC, so a fresh install resolves 1.14.0 again. Sexton marks 1.14.1 Possessed because provenance regressed.",
     generatedAt: "2026-03-31T03:29:00.000Z",
     sources: [
       { label: "Trend Micro: axios npm package compromised", url: SOURCE_URLS.trendmicro },

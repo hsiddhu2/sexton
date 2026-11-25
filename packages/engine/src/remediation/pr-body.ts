@@ -19,7 +19,7 @@ export const LIST_LIMIT = 20;
 export const REDUCED_LIST_LIMIT = 5;
 
 export const POSSESSED_WARNING =
-  "> **Warning:** this package is Possessed. Check the maintainer, provenance or install-script change before you merge.";
+  "> **Warning:** this package is Possessed. Check the maintainer, provenance, install-script, new dependency or publisher change before you merge.";
 export const MAJOR_UPGRADE_LINE = "Major upgrade: the chosen version is outside the declared range.";
 export const RANGE_STYLE_LINE = "Range style preserved.";
 export const REMOVE_SCOPE_LINE = "The edit removes it from every dependency section of package.json that lists it.";
