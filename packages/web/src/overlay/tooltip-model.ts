@@ -140,3 +140,34 @@ export function tipReducer(state: TipState, event: TipEvent): TipState {
       return state.quiet ? state : TIP_START;
   }
 }
+
+/** The tooltip's height before it is measured: about its height with five lines. */
+export const TOOLTIP_EST_H = 172;
+
+/**
+ * The place of a tooltip (spec cemetery-undead-fixes, bug 3): right of its cell, left of it, above it (centred, its
+ * bottom 8 px above the cell) or over it, the first that lies inside the Scene and covers no other grave's name label.
+ * When none does, or the Scene is not known, the place `tooltipRect` gives.
+ */
+export function tooltipPlace(
+  cell: Rect,
+  scene: { readonly width: number; readonly height: number } | undefined,
+  height: number,
+  labels: readonly Rect[],
+): { readonly left: number; readonly top: number; readonly width: number } {
+  if (scene === undefined) return tooltipRect(cell);
+  const w = TOOLTIP_WIDTH;
+  const places: readonly (readonly [number, number])[] = [
+    [cell.x + cell.w + 8, cell.y + 4],
+    [cell.x - w - 8, cell.y + 4],
+    [cell.x + cell.w / 2 - w / 2, cell.y - height - 8],
+    [Math.min(cell.x + 8, Math.max(0, scene.width - w - 8)), cell.y + 4],
+  ];
+  for (const [left, top] of places) {
+    if (left < 0 || top < 0 || left + w > scene.width || top + height > scene.height) continue;
+    const r = { x: left, y: top, w, h: height };
+    if (labels.some((l) => r.x < l.x + l.w && l.x < r.x + r.w && r.y < l.y + l.h && l.y < r.y + r.h)) continue;
+    return { left, top, width: w };
+  }
+  return tooltipRect(cell, scene.width);
+}

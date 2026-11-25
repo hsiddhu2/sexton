@@ -15,10 +15,10 @@ import { GRAVE_GEOMETRY, BOTTOM_LINE_MIN_GAP, BOTTOM_LINE_OFFSET, CELL_WIDTH, MA
 import { inDanceWindow, poseAt, seedOf } from "./motion.js";
 import { CHURCH_PATH, TREE_PATH, batWing, churchPath, treePath } from "./silhouettes.js";
 import { POSE_COUNT, type ClipId } from "./characters/vector.js";
-import { HALO_FEATHER, haloMask, type HaloMask } from "./halo.js";
+import { HALO_BLUR, HALO_FEATHER, HALO_GROW, haloMask, type HaloMask } from "./halo.js";
 import { drawPriest } from "./characters/priest.js";
 import { canSprite, drawSprite, sprite } from "./sprites.js";
-import { FORM_BOX } from "./art-box.js";
+import { FORM_BOX, formParts } from "./art-box.js";
 import { BURST_PARTICLES, burstFrame, FINAL_POSE, particleAt, SHARD_PATH, type BurstFrame } from "./burst.js";
 import { loadDelay, loadMomentMs, riseAt } from "./rise.js";
 import { BURIAL_SINK_PX, burialFrame } from "../time/burial.js";
@@ -409,8 +409,15 @@ function drawGlow(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan): void 
 }
 
 /** The Halo layer is drawn at this fraction of a CSS pixel: it is soft everywhere, and its cuts are feathered. */
-const HALO_LAYER_SCALE = 0.5;
-const HALO_CUT_MARGIN = 2;
+/**
+ * The Halo layer is drawn at a quarter of a CSS pixel: it is soft everywhere, so a fresh layer for 150 Possessed graves
+ * stays inside the frame budget (spec cemetery-undead-fixes, 2.9). Each solid cut is painted HALO_CUT_MARGIN wider
+ * than the mask says, two layer pixels, so the layer's smoothing never leaves a trace of the Halo inside a cut.
+ */
+const HALO_LAYER_SCALE = 0.25;
+/** The Halo's sources are drawn at an eighth of a CSS pixel and scaled up: they are smooth gradients. */
+const HALO_SOURCE_SCALE = 0.125;
+const HALO_CUT_MARGIN = 8;
 interface HaloLayer {
   readonly key: string;
   readonly canvas: HTMLCanvasElement;
@@ -420,9 +427,89 @@ interface HaloLayer {
 }
 let haloLayer: HaloLayer | null = null;
 
+/** E2E only: forget the Halo layer, so the next paint repaints it. */
+export function resetHaloLayer(): void {
+  haloLayer = null;
+}
+
+/** E2E only: the Halo layer's alpha, 0 to 255, at a scene point, or null outside the layer or with no layer. */
+export function haloLayerAlphaAt(x: number, y: number): number | null {
+  if (haloLayer === null) return null;
+  const lx = Math.floor((x - haloLayer.x) * HALO_LAYER_SCALE);
+  const ly = Math.floor((y - haloLayer.y) * HALO_LAYER_SCALE);
+  if (lx < 0 || ly < 0 || lx >= haloLayer.canvas.width || ly >= haloLayer.canvas.height) return null;
+  const data = haloLayer.canvas.getContext("2d")?.getImageData(lx, ly, 1, 1).data;
+  return data === undefined ? null : (data[3] ?? null);
+}
+
 /**
- * Paints the Halo's sources, then cuts every region of the mask out of it with a feathered edge. The layer covers only
- * the box around the sources, so a tall scene pays for the Halo where it is, not for its whole height.
+ * The cut sprite of a grave's parts, by Form, size, Ghost and pennant, in scene pixels at the grave's place: the parts
+ * grown, rounded and blurred, then the parts solid with the cut margin over them, at HALO_LAYER_SCALE, with room for
+ * the blur.
+ */
+function partSprites(g: GravePlan, ink: string): { cut: HTMLCanvasElement; box: Rect } | null {
+  const parts = formParts({ ...g, rect: { x: 0, y: 0, w: g.rect.w, h: g.rect.h } });
+  if (parts.length === 0) return null;
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+  for (const p of parts) {
+    x0 = Math.min(x0, p.x);
+    y0 = Math.min(y0, p.y);
+    x1 = Math.max(x1, p.x + p.w);
+    y1 = Math.max(y1, p.y + p.h);
+  }
+  const key = `${g.shape}|${String(g.rect.w)}|${g.ghost === null ? "-" : "g"}|${g.marker ? "m" : "-"}`;
+  const m = HALO_CUT_MARGIN;
+  const pad = HALO_GROW + 4 * HALO_BLUR;
+  const box: Rect = { x: x0 - pad, y: y0 - pad, w: x1 - x0 + 2 * pad, h: y1 - y0 + 2 * pad };
+  const cut = sprite(`cut|${key}`, box, HALO_LAYER_SCALE, (c) => {
+    c.fillStyle = ink;
+    c.beginPath();
+    for (const p of parts) c.roundRect(p.x - HALO_GROW, p.y - HALO_GROW, p.w + 2 * HALO_GROW, p.h + 2 * HALO_GROW, HALO_GROW);
+    c.filter = `blur(${String(HALO_BLUR * HALO_LAYER_SCALE)}px)`;
+    c.fill();
+    c.filter = "none";
+    c.beginPath();
+    for (const p of parts) c.rect(p.x - m, p.y - m, p.w + 2 * m, p.h + 2 * m);
+    c.fill();
+  });
+  if (cut === null) return null;
+  return { cut, box: { x: box.x + g.rect.x, y: box.y + g.rect.y, w: box.w, h: box.h } };
+}
+
+/** True on a browser canvas with filters and rounded rectangles, found once. */
+let haloBrowserCache: boolean | null = null;
+function haloInBrowser(): boolean {
+  if (haloBrowserCache === null) {
+    // A real browser canvas with filters, found whether or not sprites are on at the time (review).
+    const probe = document.createElement("canvas").getContext("2d");
+    haloBrowserCache =
+      typeof CanvasRenderingContext2D !== "undefined" && probe instanceof CanvasRenderingContext2D && typeof (probe as unknown as { filter?: unknown }).filter === "string" && typeof probe.roundRect === "function";
+  }
+  return haloBrowserCache;
+}
+
+/** The sources the sources canvas holds now. */
+let haloSourcesKey = "";
+
+/** Canvases the Halo reuses from one repaint to the next: allocating them each time cost several milliseconds. */
+const haloCanvases: { layer: HTMLCanvasElement | null; sources: HTMLCanvasElement | null } = { layer: null, sources: null };
+function haloCanvas(which: "layer" | "sources", w: number, h: number): HTMLCanvasElement {
+  const c = haloCanvases[which] ?? document.createElement("canvas");
+  haloCanvases[which] = c;
+  if (c.width !== w) c.width = w;
+  if (c.height !== h) c.height = h;
+  return c;
+}
+
+/**
+ * Paints the Halo's sources, then cuts every region of the mask out of it. The layer covers only the box around the
+ * sources. In a browser: each source is a sprite per radius and colour; each grave's parts are a solid cut sprite and
+ * a soft, blurred cut sprite per Form and size; the other cuts are one solid path and one blurred path of grown,
+ * rounded copies, so the edge follows the grave with no straight seam (spec cemetery-undead-fixes, bug 1 and 2.9).
+ * Without a filter (the unit tests), the strips of cemetery-undead-2 remain.
  */
 function paintHaloLayer(mask: HaloMask, plan: ScenePlan): HaloLayer | null {
   const sceneW = Math.min(plan.width, MAX_BACKING);
@@ -442,25 +529,82 @@ function paintHaloLayer(mask: HaloMask, plan: ScenePlan): HaloLayer | null {
   x1 = Math.min(sceneW, Math.ceil(x1));
   y1 = Math.min(sceneH, Math.ceil(y1));
   if (!(x1 > x0 && y1 > y0)) return null;
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.ceil((x1 - x0) * HALO_LAYER_SCALE));
-  canvas.height = Math.max(1, Math.ceil((y1 - y0) * HALO_LAYER_SCALE));
+  const lw = Math.max(1, Math.ceil((x1 - x0) * HALO_LAYER_SCALE));
+  const lh = Math.max(1, Math.ceil((y1 - y0) * HALO_LAYER_SCALE));
+  const browser = haloInBrowser();
+  const canvas = browser ? haloCanvas("layer", lw, lh) : document.createElement("canvas");
+  if (!browser) {
+    canvas.width = lw;
+    canvas.height = lh;
+  }
   const t = canvas.getContext("2d");
   if (t === null) return null;
   const colours = PALETTE[plan.theme];
+  if (browser) {
+    // The reused canvas is cleared; a new one is already empty.
+    t.setTransform(1, 0, 0, 1, 0, 0);
+    t.globalCompositeOperation = "source-over";
+    t.clearRect(0, 0, lw, lh);
+  }
   t.scale(HALO_LAYER_SCALE, HALO_LAYER_SCALE);
   t.translate(-x0, -y0);
-  for (const src of mask.sources) {
-    const g = t.createRadialGradient(src.cx, src.cy, 0, src.cx, src.cy, src.r);
+  const paintSource = (c: PaintContext2D, src: HaloMask["sources"][number]): void => {
+    const g = c.createRadialGradient(src.cx, src.cy, 0, src.cx, src.cy, src.r);
     g.addColorStop(0, src.colour + HALO_ALPHA_BYTE);
     g.addColorStop(1, src.colour + ALPHA_ZERO_BYTE);
-    t.fillStyle = g;
-    t.fillRect(src.cx - src.r, src.cy - src.r, src.r * 2, src.r * 2);
-  }
+    c.fillStyle = g as CanvasGradient;
+    c.fillRect(src.cx - src.r, src.cy - src.r, src.r * 2, src.r * 2);
+  };
+  if (browser) {
+    // The sources are smooth, so they are drawn on their own canvas at HALO_SOURCE_SCALE and scaled up once.
+    const lowW = Math.max(1, Math.ceil((x1 - x0) * HALO_SOURCE_SCALE));
+    const lowH = Math.max(1, Math.ceil((y1 - y0) * HALO_SOURCE_SCALE));
+    // A hover or a selection changes the cuts, not the sources: the sources canvas is kept while they stay the same.
+    const sourcesKey = `${String(x0)},${String(y0)},${String(lowW)},${String(lowH)};${mask.sources.map((q) => `${String(q.cx)},${String(q.cy)},${String(q.r)},${q.colour}`).join(";")}`;
+    const reuse = haloSourcesKey === sourcesKey && haloCanvases.sources !== null;
+    const sc = haloCanvas("sources", lowW, lowH).getContext("2d");
+    if (sc === null) return null;
+    if (!reuse) {
+      haloSourcesKey = sourcesKey;
+      sc.setTransform(1, 0, 0, 1, 0, 0);
+      sc.clearRect(0, 0, lowW, lowH);
+      for (const src of mask.sources) {
+        // Drawn about its own centre, so one sprite serves every source of this radius and colour.
+        const image = sprite(`halo|${src.colour}|${String(Math.round(src.r * 100) / 100)}`, { x: -src.r, y: -src.r, w: src.r * 2, h: src.r * 2 }, HALO_SOURCE_SCALE, (c) => {
+          c.translate(-src.cx, -src.cy);
+          paintSource(c, src);
+        });
+        if (image !== null) sc.drawImage(image, (src.cx - src.r - x0) * HALO_SOURCE_SCALE, (src.cy - src.r - y0) * HALO_SOURCE_SCALE, image.width, image.height);
+      }
+    }
+    t.drawImage(sc.canvas, x0, y0, lowW / HALO_SOURCE_SCALE, lowH / HALO_SOURCE_SCALE);
+  } else for (const src of mask.sources) paintSource(t, src);
   // destination-out keeps only the alpha of what is drawn: the ink token, opaque inside a cut, fading to none.
   t.globalCompositeOperation = "destination-out";
   const solid = colours.ink;
   const none = colours.ink + ALPHA_ZERO_BYTE;
+  if (browser) {
+    // Every cut solid, a little wider than the mask says so the layer's smoothing leaves no trace inside it.
+    t.fillStyle = solid;
+    t.beginPath();
+    for (const c of mask.others) t.rect(c.x - HALO_CUT_MARGIN, c.y - HALO_CUT_MARGIN, c.w + 2 * HALO_CUT_MARGIN, c.h + 2 * HALO_CUT_MARGIN);
+    t.fill();
+    // A grave's parts are the same for every grave of its Form and size: one sprite holds their solid cut and its soft
+    // edge together.
+    for (const g of mask.parted) {
+      const sp = partSprites(g, solid);
+      // At the sprite's true size: its canvas is rounded up to whole pixels (review).
+      if (sp !== null) t.drawImage(sp.cut, sp.box.x, sp.box.y, sp.cut.width / HALO_LAYER_SCALE, sp.cut.height / HALO_LAYER_SCALE);
+    }
+    // The soft edge: every cut grown and rounded through one blur (a filter works in the layer's own pixels), and the
+    // parts' soft edges from their blurred sprites.
+    t.beginPath();
+    for (const c of mask.others) t.roundRect(c.x - HALO_GROW, c.y - HALO_GROW, c.w + 2 * HALO_GROW, c.h + 2 * HALO_GROW, HALO_GROW);
+    t.filter = `blur(${String(HALO_BLUR * HALO_LAYER_SCALE)}px)`;
+    t.fill();
+    t.filter = "none";
+    return { key: mask.key, canvas, x: x0, y: y0 };
+  }
   const f = HALO_FEATHER;
   // Each cut is painted HALO_CUT_MARGIN wider than the mask says, so the half-scale layer's smoothing can never leave
   // a trace of the Halo inside a cut (review note, task 3). The painted Halo is then at most the model's.

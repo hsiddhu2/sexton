@@ -5,6 +5,7 @@ import type { ScenePlan } from "../scene/layout.js";
 import { reduceSelection } from "../selection/selection.js";
 import { graveLabel } from "./grave-label.js";
 import { GraveTooltip, TOOLTIP_ID } from "./GraveTooltip.js";
+import { labelRect } from "../scene/art-box.js";
 import { useGraveTooltip } from "./use-grave-tooltip.js";
 
 export interface GraveButtonsProps {
@@ -33,6 +34,33 @@ export function GraveButtons({ plan, selectedIndex, packages, onSelect, onOpen, 
   useEffect(() => {
     onLantern?.(shownIndex);
   }, [shownIndex, onLantern]);
+  // The tooltip takes no pointer events, so clicks reach what lies under it. While it shows, a pointer over its area
+  // still counts as over the tooltip, wherever it opens (spec cemetery-undead-fixes, bug 3; WCAG 1.4.13, hoverable).
+  useEffect(() => {
+    if (shownIndex === null) return undefined;
+    let over = false;
+    const onMove = (e: PointerEvent): void => {
+      const tip = document.getElementById(TOOLTIP_ID);
+      if (tip === null) return;
+      const r = tip.getBoundingClientRect();
+      const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+      if (inside === over) return;
+      over = inside;
+      if (inside) {
+        dispatch({ type: "tip-enter" });
+        return;
+      }
+      // Back over its own grave (the part the tooltip does not cover): the grave holds the tooltip again (review).
+      const button = document.querySelector<HTMLElement>(`button[data-grave-index="${String(shownIndex)}"]`);
+      const b = button?.getBoundingClientRect();
+      const onGrave = b !== undefined && e.clientX >= b.left && e.clientX <= b.right && e.clientY >= b.top && e.clientY <= b.bottom;
+      dispatch(onGrave ? { type: "pointer-enter", index: shownIndex } : { type: "tip-leave" });
+    };
+    document.addEventListener("pointermove", onMove);
+    return () => {
+      document.removeEventListener("pointermove", onMove);
+    };
+  }, [shownIndex, dispatch]);
   const shownPkg = shownIndex === null ? undefined : packages[shownIndex];
   const shownCell = shownIndex === null ? undefined : plan.graves[shownIndex]?.rect;
 
@@ -113,6 +141,8 @@ export function GraveButtons({ plan, selectedIndex, packages, onSelect, onOpen, 
           {...(shownIndex !== null && views?.[shownIndex] !== undefined ? { view: views[shownIndex] } : {})}
           {...(asOfDate !== undefined ? { asOfDate } : {})}
           sceneWidth={plan.width}
+          sceneHeight={plan.groundHeight}
+          labels={plan.graves.filter((g) => g.index !== shownIndex).map((g) => labelRect(g))}
           serious={serious}
           onPointerEnter={() => {
             dispatch({ type: "tip-enter" });

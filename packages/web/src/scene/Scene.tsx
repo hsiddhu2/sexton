@@ -17,12 +17,12 @@ function SceneView({ plan }: SceneProps) {
 
   useEffect(() => {
     let ctx: CanvasRenderingContext2D | null = null;
-    const paint = (current: ScenePlan): void => {
+    const paint = (current: ScenePlan, nowMs: number = Date.now()): void => {
       const canvas = canvasRef.current;
       if (canvas === null) return;
       ctx ??= canvas.getContext("2d");
       if (ctx === null) return;
-      drawScene(ctx, current, backingStore(current.width, current.groundHeight, window.devicePixelRatio).scale, Date.now());
+      drawScene(ctx, current, backingStore(current.width, current.groundHeight, window.devicePixelRatio).scale, nowMs);
     };
     const scheduler = createRedrawScheduler(
       {

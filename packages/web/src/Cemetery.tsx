@@ -248,7 +248,8 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
             ) : (
               <>
                 <Scene plan={plan} />
-                <Bubbles plan={plan} lines={lines} hidden={serious || drawerOpen} reducedMotion={reducedMotion} />
+                {/* No Bubble while the Burst caption shows: the caption speaks for the grave (spec cemetery-undead-fixes). */}
+                <Bubbles plan={plan} lines={lines} hidden={serious || drawerOpen || atBurst} reducedMotion={reducedMotion} />
                 {atBurst && plan.graves[0] !== undefined ? (
                   // Plain text over the scene, not a live region: the Play line already announces the Stop (9.2).
                   <p className="burst-caption" style={{ left: artRect(plan.graves[0]).x + artRect(plan.graves[0]).w / 2, top: plan.graves[0].rect.y }}>
