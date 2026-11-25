@@ -105,6 +105,15 @@
     }
   ],
   "versions": {
-    "2.29.4": {}
+    "2.29.4": {
+      "_npmUser": {
+        "name": "ichernev"
+      }
+    },
+    "2.29.3": {
+      "_npmUser": {
+        "name": "ichernev"
+      }
+    }
   }
 }

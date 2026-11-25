@@ -10,6 +10,9 @@ export const BUBBLE_LINES: Readonly<Record<ReasonFamily, string>> = {
   "maintainer-change": "Who has the keys now?",
   "provenance-regression": "Papers? I left them in the last version.",
   "install-script": "I brought a script. It runs on install.",
+  // Spec new-signals, task 10.2 (approved by the owner on 25 Nov 2026).
+  "new-dependency": "I brought a plus-one. Nobody checked the list.",
+  "publisher-change": "Published by hand. The robot usually does it.",
   "stale-with-advisory": "Two years down here, and the hole is open.",
   "severe-advisory": "Boo. Severity High, or worse.",
   "no-signals": "Couldn't read my papers. Ask me again later.",

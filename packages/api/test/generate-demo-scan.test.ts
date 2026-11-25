@@ -136,9 +136,10 @@ describe("demo evidence pack", () => {
     expect(pack.body.remediation.plans.find((p) => p.packageName === "node-sass")).toMatchObject({ kind: "migrate", status: "proposed", title: "Sexton: migrate node-sass to sass" });
   });
 
-  it("keeps the evidence digest recorded before timelines existed, with or without timelines", async () => {
+  it("keeps the evidence digest recorded by spec new-signals, with or without timelines", async () => {
+    // Spec new-signals, design.md Decisions 11: c8fb6cab465d46ca92cf83dbc10022b6a662c8fad68ec8f64d827ef16f43344d before.
     const { pack } = (await buildDemoEvidence(scan)) as { pack: EvidencePack };
-    expect(pack.integrity.digest).toBe("c8fb6cab465d46ca92cf83dbc10022b6a662c8fad68ec8f64d827ef16f43344d");
+    expect(pack.integrity.digest).toBe("de2736eabb384057dd9946972ac4f8516ff7e12a2213d9cabc09ffeeb3f138f1");
     const { timelines: _timelines, ...without } = scan;
     void _timelines;
     const again = (await buildDemoEvidence(without as ScanResponse)) as { pack: EvidencePack };

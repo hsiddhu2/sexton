@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Records trimmed upstream responses for the fixture scan. Run from packages/engine with network access.
-// Usage: node scripts/record-fixtures.mjs [--intake | --remediation | --migration | --package <name>]
+// Usage: node scripts/record-fixtures.mjs [--intake | --remediation | --migration | --signals | --package <name>]
 // --package <name> runs the normal package loop for that one entry of packages.json and leaves the others as they are
 // (spec evidence-pack, decision 18).
 // --intake records only the repo-intake fixtures (raw manifests and full packuments) and skips the package loop.
@@ -8,6 +8,11 @@
 // and the OSV advisory IDs and details for every release above the installed version.
 // --migration records the same for every release of sass and sass-loader into test/fixtures/migration/packages
 // (spec migration-node-sass, task 8.1), apart from the remediation fixtures so their test is unchanged.
+// --signals adds the fields of spec new-signals to the recorded package fixtures and leaves every other field as it is:
+// `_npmUser` and `dependencies` of the installed version and of its Earlier version in packument.json (no per-version
+// `maintainers`: design.md "Notes and open items", task 7),
+// the Earlier version's hasInstallScript in abbreviated.json, and the trimmed packuments of each new dependency name
+// read in detail under test/fixtures/new-dependencies/<name>.
 // Trimming keeps only the fields the engine reads so the fixtures stay small and reviewable.
 
 import { mkdir, writeFile, readFile } from "node:fs/promises";
@@ -289,7 +294,130 @@ async function recordMigration() {
   }
 }
 
-if (process.argv.includes("--migration")) {
+// Spec new-signals. Copies of earlierVersion (src/history.ts) and the detail rules (src/new-dependency.ts) in plain
+// JavaScript, as this script already copies attestationsUrl and isValidPackageName.
+const NEW_DEPENDENCY_CAP = 5;
+const MAX_RANGE_LENGTH = 256;
+
+function publishedTimes(doc) {
+  const out = new Map();
+  for (const v of Object.keys(doc.versions ?? {})) {
+    const raw = doc.time?.[v];
+    const ms = typeof raw === "string" ? new Date(raw).getTime() : Number.NaN;
+    if (Number.isFinite(ms)) out.set(v, ms);
+  }
+  return out;
+}
+
+function isSemver(v) {
+  return semver.parse(v)?.raw === v;
+}
+
+function earlierVersionOf(doc, installed) {
+  if (!isSemver(installed)) return null;
+  const times = publishedTimes(doc);
+  const at = times.get(installed);
+  if (at === undefined) return null;
+  let best = null;
+  for (const [v, ms] of times) {
+    if (ms >= at || !isSemver(v) || !semver.lt(v, installed)) continue;
+    if (best === null || semver.gt(v, best)) best = v;
+  }
+  return best;
+}
+
+function signalFields(entry) {
+  const out = {};
+  const user = entry?._npmUser;
+  if (user !== null && typeof user === "object" && !Array.isArray(user)) {
+    out._npmUser = {
+      ...(typeof user.name === "string" ? { name: user.name } : {}),
+      ...(user.trustedPublisher !== null && typeof user.trustedPublisher === "object" ? { trustedPublisher: {} } : {}),
+    };
+  }
+  if (entry?.dependencies !== null && typeof entry?.dependencies === "object") out.dependencies = entry.dependencies;
+  return out;
+}
+
+function installScriptField(entry) {
+  return entry === undefined ? undefined : entry.hasInstallScript === undefined ? {} : { hasInstallScript: entry.hasInstallScript };
+}
+
+function isResolvableRange(range) {
+  try {
+    return range.length <= MAX_RANGE_LENGTH && semver.validRange(range) !== null;
+  } catch {
+    return false;
+  }
+}
+
+async function recordNewDependency(name, range, parentMs) {
+  const dir = join(fixturesDir, "new-dependencies", name.replace("/", "__"));
+  const url = `https://registry.npmjs.org/${encodeName(name)}`;
+  const full = await fetchWithBackoff(url);
+  if (full.status !== 200) {
+    console.log(`  new dependency ${name}: HTTP ${full.status}, not recorded (the engine reads it as unavailable)`);
+    return;
+  }
+  const doc = await full.json();
+  const time = {};
+  const versions = {};
+  for (const [v, ms] of publishedTimes(doc)) {
+    if (ms > parentMs) continue;
+    time[v] = doc.time[v];
+    versions[v] = {};
+  }
+  await write(join(dir, "packument.json"), { name: doc.name, time, versions });
+  const resolved = semver.maxSatisfying(Object.keys(versions), range);
+  const abbreviated = await getJson(url, { headers: { Accept: ABBREVIATED_ACCEPT } });
+  const entry = resolved === null ? undefined : installScriptField(abbreviated.versions?.[resolved]);
+  await write(join(dir, "abbreviated.json"), { name: abbreviated.name, versions: resolved === null || entry === undefined ? {} : { [resolved]: entry } });
+  console.log(`  new dependency ${name}@${range}: resolved ${resolved ?? "none"}`);
+}
+
+async function recordSignals() {
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  for (const { name, installedVersion } of manifest) {
+    const dir = join(fixturesDir, "packages", name.replace("/", "__"));
+    const url = `https://registry.npmjs.org/${encodeName(name)}`;
+    const full = await getJson(url);
+    const abbreviated = await getJson(url, { headers: { Accept: ABBREVIATED_ACCEPT } });
+    const recorded = JSON.parse(await readFile(join(dir, "packument.json"), "utf8"));
+    const recordedAbbreviated = JSON.parse(await readFile(join(dir, "abbreviated.json"), "utf8"));
+    // The Earlier version is chosen from the recorded time map, so later publishes cannot move it.
+    const earlier = earlierVersionOf({ time: recorded.time, versions: full.versions }, installedVersion);
+    for (const v of [installedVersion, earlier]) {
+      if (v === null || full.versions?.[v] === undefined) continue;
+      recorded.versions[v] = { ...(recorded.versions[v] ?? {}), ...signalFields(full.versions[v]) };
+    }
+    if (earlier !== null) {
+      const entry = installScriptField(abbreviated.versions?.[earlier]);
+      if (entry !== undefined) recordedAbbreviated.versions[earlier] = entry;
+    }
+    await write(join(dir, "packument.json"), recorded);
+    await write(join(dir, "abbreviated.json"), recordedAbbreviated);
+    console.log(`recorded signals ${name}@${installedVersion}: earlier ${earlier ?? "none"}`);
+    if (earlier === null) continue;
+    const before = full.versions?.[earlier]?.dependencies ?? {};
+    const after = full.versions?.[installedVersion]?.dependencies ?? {};
+    const added = Object.keys(after)
+      .filter((n) => typeof after[n] === "string" && !(Object.hasOwn(before, n) && typeof before[n] === "string"))
+      .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+      .slice(0, NEW_DEPENDENCY_CAP);
+    const parentMs = new Date(recorded.time[installedVersion]).getTime();
+    for (const dep of added) {
+      if (!isValidPackageName(dep) || !isResolvableRange(after[dep])) continue;
+      // A name that is itself a fixture package is answered by its own recorded files (the routes skip it here).
+      if (manifest.some((p) => p.name === dep)) continue;
+      await recordNewDependency(dep, after[dep], parentMs);
+    }
+  }
+}
+
+if (process.argv.includes("--signals")) {
+  await recordSignals();
+  console.log(`recorded at ${new Date().toISOString()}`);
+} else if (process.argv.includes("--migration")) {
   await recordMigration();
   console.log(`recorded at ${new Date().toISOString()}`);
 } else if (process.argv.includes("--remediation")) {

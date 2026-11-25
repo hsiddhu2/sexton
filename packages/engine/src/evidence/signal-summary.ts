@@ -3,7 +3,7 @@
 // signal value goes through escapeField. Pure.
 
 import { escapeField } from "../remediation/escape-field.js";
-import type { PackageSignals, SignalName } from "../types.js";
+import type { PackageSignals, PublishRecord, SignalName } from "../types.js";
 
 export type SignalSummaries = { readonly [K in SignalName]: (value: NonNullable<PackageSignals[K]["value"]>) => string };
 
@@ -11,6 +11,14 @@ const F = escapeField;
 
 function yesNo(value: boolean): string {
   return value ? "yes" : "no";
+}
+
+function publisher(record: PublishRecord): string {
+  return `${record.publisher === null ? "no name" : F(record.publisher)} (${record.method})`;
+}
+
+function unknownOr(value: string | null): string {
+  return value === null ? "unknown" : F(value);
 }
 
 function names(list: readonly string[]): string {
@@ -41,4 +49,19 @@ export const SIGNAL_SUMMARIES: SignalSummaries = {
         ? `no regression, snapshot ${F(value.snapshotCaptureTime)}`
         : `history insufficient: ${F(value.reason)}`,
   newInstallScript: (value) => (value.length === 0 ? "none" : value.map((e) => `${F(e.version)} at ${F(e.publishTime)}`).join(", ")),
+  publisherChange: (value) => {
+    if (value.status === "no-earlier-version") return "no earlier version";
+    if (value.status === "same") return `same: ${publisher(value.installed)}`;
+    if (value.status === "unknown") return `unknown: ${publisher(value.earlier)} to ${publisher(value.installed)} in ${F(value.installed.version)}`;
+    return `changed: ${publisher(value.earlier)} to ${publisher(value.installed)} in ${F(value.installed.version)}`;
+  },
+  newDependency: (value) => {
+    if (value.status === "no-earlier-version") return "no earlier version";
+    if (value.addedCount === 0) return "none";
+    const rows = value.added.map(
+      (d) =>
+        `${F(d.name)} ${F(d.range)} -> ${unknownOr(d.resolvedVersion)} (published ${unknownOr(d.resolvedPublishTime)}, install script ${d.installScript === null ? "unknown" : yesNo(d.installScript)})`,
+    );
+    return `${String(value.addedCount)} new: ${rows.join("; ")}${value.capped ? ", capped at 5" : ""}`;
+  },
 };

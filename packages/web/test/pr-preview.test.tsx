@@ -41,12 +41,12 @@ describe("PrPreview", () => {
   const bodies = (readDemoScan() as { remediations: { packageName: string; prBody: string }[] }).remediations;
   const body = (name: string): string => bodies.find((r) => r.packageName === name)?.prBody ?? "";
 
-  it("renders the lodash body with headings, one table of 11 rows, a rule and no pre", () => {
+  it("renders the lodash body with headings, one table of 13 rows, a rule and no pre", () => {
     const { container } = render(<PrPreview source={body("lodash")} />);
     expect(container.querySelector("h4")).not.toBeNull();
     expect(container.querySelector("h5")).not.toBeNull();
     expect(container.querySelectorAll("table")).toHaveLength(1);
-    expect(container.querySelectorAll("tr")).toHaveLength(11);
+    expect(container.querySelectorAll("tr")).toHaveLength(13);
     expect(container.querySelector("thead")).not.toBeNull();
     expect(container.querySelector("hr")).not.toBeNull();
     expect(container.querySelector("pre")).toBeNull();

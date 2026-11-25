@@ -3024,6 +3024,21 @@
     }
   ],
   "versions": {
-    "18.3.1": {}
+    "18.3.1": {
+      "_npmUser": {
+        "name": "react-bot"
+      },
+      "dependencies": {
+        "loose-envify": "^1.1.0"
+      }
+    },
+    "18.3.0": {
+      "_npmUser": {
+        "name": "react-bot"
+      },
+      "dependencies": {
+        "loose-envify": "^1.1.0"
+      }
+    }
   }
 }

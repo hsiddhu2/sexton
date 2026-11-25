@@ -14,6 +14,8 @@ import {
   type ScanMetadata,
   type MaintainerChangeEvent,
   type MaintainerChangeValue,
+  type NewDependencyEntry,
+  type NewDependencyValue,
   type NewInstallScriptEvent,
   type OriginalSignals,
   type PackageHealth,
@@ -21,6 +23,9 @@ import {
   type Policy,
   type ProvenanceRegressionValue,
   type ProvenanceValue,
+  type PublisherChangeValue,
+  type PublishMethod,
+  type PublishRecord,
   type Rule,
   type Signal,
 } from "../src/types.js";
@@ -93,6 +98,39 @@ export const newInstallScriptArb: fc.Arbitrary<NewInstallScriptEvent[]> = fc.arr
 
 type MutableStateInputs = { -readonly [K in keyof StateInputs]: StateInputs[K] };
 
+// Spec new-signals.
+const smallVersionArb = fc.stringMatching(/^[0-9]\.[0-9]\.[0-9]$/);
+export const publishMethodArb: fc.Arbitrary<PublishMethod> = fc.constantFrom("trusted-publisher", "token", "unknown");
+export const publishRecordArb: fc.Arbitrary<PublishRecord> = fc.record({
+  version: smallVersionArb,
+  publisher: fc.option(fc.constantFrom("alice", "bob", "GitHub Actions"), { nil: null }),
+  method: publishMethodArb,
+  publishTime: isoArb,
+});
+export const publisherChangeValueArb: fc.Arbitrary<PublisherChangeValue> = fc.oneof(
+  fc.record({ status: fc.constant("no-earlier-version" as const), installed: fc.option(publishRecordArb, { nil: null }) }),
+  fc.record({ status: fc.constantFrom("same" as const, "changed" as const, "unknown" as const), installed: publishRecordArb, earlier: publishRecordArb }),
+);
+export const newDependencyEntryArb: fc.Arbitrary<NewDependencyEntry> = fc.record({
+  name: fc.constantFrom("a", "b", "c", "plain-x", "@s/d"),
+  range: fc.constantFrom("^1.0.0", "~2.1.0", "git+https://x", "*"),
+  resolvedVersion: fc.option(smallVersionArb, { nil: null }),
+  resolvedPublishTime: fc.option(isoArb, { nil: null }),
+  installScript: fc.option(fc.boolean(), { nil: null }),
+  fresh: fc.boolean(),
+});
+export const newDependencyValueArb: fc.Arbitrary<NewDependencyValue> = fc.oneof(
+  fc.record({ status: fc.constant("no-earlier-version" as const), installedVersion: smallVersionArb }),
+  fc
+    .tuple(smallVersionArb, smallVersionArb, isoArb, fc.array(newDependencyEntryArb, { maxLength: 5 }), fc.nat(3))
+    .map(([installedVersion, earlierVersion, installedPublishTime, added, extra]): NewDependencyValue => {
+      const sorted = [...added].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+      const addedCount = sorted.length + (sorted.length === 5 ? extra : 0);
+      return { status: "compared", installedVersion, earlierVersion, installedPublishTime, addedCount, capped: addedCount > 5, added: sorted };
+    }),
+);
+
+
 /** Ten-signal state inputs. Each of the six new inputs is undefined (unavailable) or generated. */
 export const tenSignalInputsArb: fc.Arbitrary<StateInputs> = fc
   .tuple(
@@ -106,6 +144,20 @@ export const tenSignalInputsArb: fc.Arbitrary<StateInputs> = fc
     if (mc !== undefined) out.maintainerChange = mc;
     if (pr !== undefined) out.provenanceRegression = pr;
     if (ns !== undefined) out.newInstallScript = ns;
+    return out;
+  });
+
+/** Twelve-signal state inputs: the ten of history-signals plus optional publisherChange and newDependency. */
+export const twelveSignalInputsArb: fc.Arbitrary<StateInputs> = fc
+  .tuple(
+    tenSignalInputsArb,
+    fc.option(publisherChangeValueArb, { nil: undefined }),
+    fc.option(newDependencyValueArb, { nil: undefined }),
+  )
+  .map(([base, pc, nd]) => {
+    const out: MutableStateInputs = { ...base };
+    if (pc !== undefined) out.publisherChange = pc;
+    if (nd !== undefined) out.newDependency = nd;
     return out;
   });
 
@@ -227,6 +279,8 @@ export function arbPackageFor(generatedMs: number, name: fc.Arbitrary<string> = 
         maintainerChange: available({ status: "history-insufficient", events: [] }, FIXED_SOURCE, FIXED_AT),
         provenanceRegression: available({ status: "history-insufficient", reason: "none" }, FIXED_SOURCE, FIXED_AT),
         newInstallScript: available([], FIXED_SOURCE, FIXED_AT),
+        publisherChange: available({ status: "no-earlier-version", installed: null }, FIXED_SOURCE, FIXED_AT),
+        newDependency: available({ status: "no-earlier-version", installedVersion: "1.0.0" }, FIXED_SOURCE, FIXED_AT),
       };
       return {
         name: r.name,

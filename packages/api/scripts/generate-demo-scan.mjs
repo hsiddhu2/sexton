@@ -16,12 +16,17 @@ import {
   buildHealth,
   buildTimeline,
   bumpTargets,
+  dependencyDiff,
+  detailNames,
   evaluatePolicy,
   evaluateState,
   gatherBumpData,
   gatherMigrationData,
+  newDependencyValue,
   planRemediation,
+  publisherChangeValue,
   readPackageScripts,
+  resolveDependency,
   renderEvidenceMarkdown,
   runMigrations,
   scorePackages,
@@ -29,7 +34,7 @@ import {
   timelineFacts,
   unavailable,
 } from "@sexton/engine";
-import { fixtureRoutes, routedTransport } from "./lib/fixture-routes.mjs";
+import { fixtureRoutes, newDependencyRoutes, routedTransport } from "./lib/fixture-routes.mjs";
 import { hasRemediationFixture, remediationTransport } from "./lib/remediation-routes.mjs";
 import { NOT_IN_PUBLIC_REPORTS, REPLAYS, REPLAY_IDS } from "./lib/replay-facts.mjs";
 
@@ -90,7 +95,11 @@ export async function buildDemoScan({ fixturesDir = DEFAULT_FIXTURES_DIR, now = 
   const last = seed.snapshots[seed.snapshots.length - 1];
   if (last === undefined) throw new Error("seed has no snapshots");
 
-  const routes = [...refs.flatMap((p) => fixtureRoutes(fixturesDir, p.name, p.installedVersion)), ...seedRoutes(seed.name, last)];
+  const routes = [
+    ...refs.flatMap((p) => fixtureRoutes(fixturesDir, p.name, p.installedVersion)),
+    ...seedRoutes(seed.name, last),
+    ...newDependencyRoutes(fixturesDir),
+  ];
   const { transport, unrouted } = routedTransport(routes);
   const all = [...refs, { name: seed.name, installedVersion: SEED_VERSION }];
   const sinkInputs = new Map();
@@ -141,6 +150,8 @@ function demoTimelines(report, sinkInputs, now) {
       advisories: health.signals.advisories,
       advisoryDates,
       scanDate: now,
+      publisherChange: health.signals.publisherChange,
+      newDependency: health.signals.newDependency,
     });
     Object.defineProperty(timelines, health.name, { value: buildTimeline(facts, health, now), enumerable: true, writable: true, configurable: true });
   }
@@ -148,6 +159,65 @@ function demoTimelines(report, sinkInputs, now) {
 }
 
 const NINETY_DAYS_MS = 90 * 24 * 3_600_000;
+
+/**
+ * A packument built from the replay facts, so that the engine's own functions derive publisherChange and newDependency
+ * (spec new-signals, task 8.1). Only versions with a publish time are in it.
+ */
+function factsPackument(replay) {
+  const time = {};
+  const versions = {};
+  for (const v of replay.versions) {
+    if (v.publishedAt === null) continue;
+    time[v.version] = v.publishedAt;
+    const entry = {};
+    if (v.publisher !== null && v.publisher !== undefined && v.publisher.method !== "unknown") {
+      entry._npmUser = {
+        ...(v.publisher.name === null ? {} : { name: v.publisher.name }),
+        ...(v.publisher.method === "trusted-publisher" ? { trustedPublisher: {} } : {}),
+      };
+    }
+    if (v.dependencies !== null && v.dependencies !== undefined) entry.dependencies = v.dependencies;
+    versions[v.version] = entry;
+  }
+  return { time, versions };
+}
+
+function factOf(replay, version) {
+  return replay.versions.find((v) => v.version === version);
+}
+
+/** publisherChange of a version from the facts, or undefined when its Earlier version or a publisher fact is missing. */
+export function replayPublisherChange(replay, version) {
+  const value = publisherChangeValue(factsPackument(replay), version);
+  if (value.status === "no-earlier-version") return undefined;
+  const earlier = factOf(replay, value.earlier.version);
+  const known = (fact) => fact?.publisher != null && fact.publisher.method !== "unknown";
+  if (!known(factOf(replay, version)) || !known(earlier)) return undefined;
+  return value;
+}
+
+/** newDependency of a version from the facts, or undefined when its Earlier version or a dependencies fact is missing. */
+export function replayNewDependency(replay, version) {
+  const doc = factsPackument(replay);
+  const diff = dependencyDiff(doc, version);
+  if (diff.status === "no-earlier-version") return undefined;
+  if (factOf(replay, version)?.dependencies == null || factOf(replay, diff.earlierVersion)?.dependencies == null) return undefined;
+  const details = detailNames(diff).map((dep) => {
+    const facts = replay.newDependencies ?? {};
+    const fact = Object.hasOwn(facts, dep.name) ? facts[dep.name] : undefined;
+    const full =
+      fact === undefined || fact.resolvedVersion === null || fact.resolvedPublishTime === null
+        ? { ok: false, reason: NOT_IN_PUBLIC_REPORTS }
+        : { ok: true, doc: { time: { [fact.resolvedVersion]: fact.resolvedPublishTime }, versions: { [fact.resolvedVersion]: {} } } };
+    const abbreviated =
+      fact === undefined || fact.resolvedVersion === null || fact.installScript === null
+        ? { ok: false, reason: NOT_IN_PUBLIC_REPORTS }
+        : { ok: true, doc: { versions: { [fact.resolvedVersion]: fact.installScript ? { hasInstallScript: true } : {} } } };
+    return resolveDependency(dep, diff.installedPublishMs, full, abbreviated);
+  });
+  return newDependencyValue(diff, details);
+}
 
 /**
  * The StateInputs of one Resolved version at one instant, from the facts of that version and its earlier versions
@@ -177,6 +247,10 @@ export function replayStateInputs(replay, version, at) {
     // the facts have it, else the instant asked about), not a sourced fact. It does not change the state.
     inputs.provenanceRegression = { status: "no-regression", snapshotCaptureTime: current.publishedAt ?? at.toISOString() };
   }
+  const publisherChange = replayPublisherChange(replay, version);
+  if (publisherChange !== undefined) inputs.publisherChange = publisherChange;
+  const newDependency = replayNewDependency(replay, version);
+  if (newDependency !== undefined) inputs.newDependency = newDependency;
   const previous = replay.versions[index - 1];
   if (current.installScript === true && previous?.installScript === false && current.publishedAt !== null) {
     const seenMs = Date.parse(current.publishedAt);
@@ -187,7 +261,7 @@ export function replayStateInputs(replay, version, at) {
   return inputs;
 }
 
-/** The ten signals of the installed version at the Scan date. A fact no source gives is unavailable. */
+/** The twelve signals of the installed version at the Scan date. A fact no source gives is unavailable. */
 function replaySignals(replay, installed, at) {
   const first = replay.sources[0].url;
   const none = () => unavailable(NOT_IN_PUBLIC_REPORTS, first, at);
@@ -207,6 +281,8 @@ function replaySignals(replay, installed, at) {
     provenanceRegression: regression === undefined ? none() : available(regression, src.provenance, at),
     newInstallScript:
       installed.installScript === null ? none() : available(inputs.newInstallScript ?? [], src.installScript, at),
+    publisherChange: inputs.publisherChange === undefined ? none() : available(inputs.publisherChange, src.publisherChange, at),
+    newDependency: inputs.newDependency === undefined ? none() : available(inputs.newDependency, src.newDependency, at),
   };
 }
 

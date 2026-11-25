@@ -2,7 +2,15 @@
 // Requirements 6, 9.3. Pure: no clock, no I/O.
 // Every string from outside the engine goes through escapeField. Every other piece is fixed text.
 
-import { SIGNAL_NAMES, type PackageJsonEdit, type PackageSignals, type PrContext, type RemediationPlan, type SignalName } from "../types.js";
+import {
+  SIGNAL_NAMES,
+  type PackageJsonEdit,
+  type PackageSignals,
+  type PrContext,
+  type PublishRecord,
+  type RemediationPlan,
+  type SignalName,
+} from "../types.js";
 import { escapeField as F } from "./escape-field.js";
 import { RECIPE_NOTES } from "./recipe-notes.js";
 
@@ -11,7 +19,7 @@ export const LIST_LIMIT = 20;
 export const REDUCED_LIST_LIMIT = 5;
 
 export const POSSESSED_WARNING =
-  "> **Warning:** this package is Possessed. Check the maintainer, provenance or install-script change before you merge.";
+  "> **Warning:** this package is Possessed. Check the maintainer, provenance, install-script, new dependency or publisher change before you merge.";
 export const MAJOR_UPGRADE_LINE = "Major upgrade: the chosen version is outside the declared range.";
 export const RANGE_STYLE_LINE = "Range style preserved.";
 export const REMOVE_SCOPE_LINE = "The edit removes it from every dependency section of package.json that lists it.";
@@ -78,6 +86,24 @@ function renderValue(name: SignalName, signals: PackageSignals, limit: number): 
     }
     case "newInstallScript":
       return list((signals.newInstallScript.value ?? []).map((e) => `${F(e.version)} ${F(e.publishTime)}`), limit);
+    case "publisherChange": {
+      const v = signals.publisherChange.value;
+      if (v === null) return "none";
+      if (v.status === "no-earlier-version") return "no earlier version";
+      const who = (r: PublishRecord): string => `${r.publisher === null ? "no name" : F(r.publisher)} (${r.method}) ${F(r.version)} ${F(r.publishTime)}`;
+      return `${v.status}: ${who(v.earlier)} -> ${who(v.installed)}`;
+    }
+    case "newDependency": {
+      const v = signals.newDependency.value;
+      if (v === null) return "none";
+      if (v.status === "no-earlier-version") return "no earlier version";
+      const rows = v.added.map(
+        (d) =>
+          `${F(d.name)} ${F(d.range)} -> ${d.resolvedVersion === null ? "unresolved" : F(d.resolvedVersion)}, published ${d.resolvedPublishTime === null ? "unknown" : F(d.resolvedPublishTime)}, install script ${d.installScript === null ? "unknown" : yesNo(d.installScript)}`,
+      );
+      const text = list(rows, limit);
+      return `${String(v.addedCount)} since ${F(v.earlierVersion)}: ${text}${v.capped ? "; capped at 5" : ""}`;
+    }
   }
 }
 
