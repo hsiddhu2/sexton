@@ -105,37 +105,37 @@ Run-time notes:
   - [x] 5.5 Independent code review of task 5
     - _Requirements: 16.5_
 
-- [ ] 6. The Rise clip, the Load moment and the replay Burst (B5, B3)
+- [x] 6. The Rise clip, the Load moment and the replay Burst (B5, B3)
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 11.1, 11.2, 11.3, 11.4, 11.5_
-  - [ ] 6.1 Add `scene/rise.ts` and the Load moment
+  - [x] 6.1 Add `scene/rise.ts` and the Load moment
     - `riseAt`, `loadDelay`, the once-per-page-load flag and its test reset, and the clipped draw. No sound.
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5_
-  - [ ] 6.2 Add `scene/burst.ts` and the Burst
+  - [x] 6.2 Add `scene/burst.ts` and the Burst
     - `burstFrame`, the seeded particles, the Burst Stop from the Segments, the start on each arrival, the caption, the sting and the thud, the final pose under Reduced motion.
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.8_
-  - [ ] 6.3 Write `packages/web/test/burst-rise.test.ts`, and add the Burst phases to Property 2
+  - [x] 6.3 Write `packages/web/test/burst-rise.test.tsx`, and add the Burst phases to Property 2
     - **Property 8: The Burst and the rise are pure, bounded and end in the still pose**
     - **Validates: Requirements 9.1, 11.1, 11.2**
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 11.1, 11.2, 11.3, 11.4, 11.5_
-  - [ ] 6.4 e2e: the Burst budget and the Reduced motion final pose
+  - [x] 6.4 e2e: the Burst budget and the Reduced motion final pose
     - The timing hook paints the 300-grave plan with a Burst on its first grave at 30 phases. Its median is at most 16 ms. Under Reduced motion the axios replay at its Burst Stop shows the caption and the final pose.
     - _Requirements: 9.5, 9.7_
-  - [ ] 6.5 Screenshot loop, with the Burst mid-animation and at its final pose
+  - [x] 6.5 Screenshot loop, with the Burst mid-animation and at its final pose
     - _Requirements: 15.1, 15.2, 15.3_
-  - [ ] 6.6 Independent code review of task 6
+  - [x] 6.6 Independent code review of task 6
     - _Requirements: 16.5_
 
-- [ ] 7. The burial Priest (B4)
+- [x] 7. The burial Priest (B4)
   - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
-  - [ ] 7.1 Add `scene/characters/priest.ts`, the Priest in the burial and the Vigil
+  - [x] 7.1 Add `scene/characters/priest.ts`, the Priest in the burial and the Vigil
     - The walk and the read, the bell at phase 0.4, the Vigil under Reduced motion with the queue rule.
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
-  - [ ] 7.2 Write `packages/web/test/priest.test.ts`, and add the Priest phases to Property 2
+  - [x] 7.2 Write `packages/web/test/priest.test.tsx`, and add the Priest phases to Property 2
     - The existing burial tests run unedited.
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
-  - [ ] 7.3 Screenshot loop with a burial captured mid-walk and mid-read
+  - [x] 7.3 Screenshot loop with a burial captured mid-walk and mid-read
     - _Requirements: 15.1, 15.2, 15.3_
-  - [ ] 7.4 Independent code review of task 7
+  - [x] 7.4 Independent code review of task 7
     - _Requirements: 16.5_
 
 - [ ] 8. Speech bubbles (B2)
@@ -205,6 +205,13 @@ Run-time notes:
 - Task 4.4 screenshot loop: the header labels and the Sources line were in the round 2 and 3 captures and passed.
 - Review notes, tasks 2 to 4: READY, no defects. Acted on: each Halo cut is painted 2 px wider than the mask, so the half-scale layer's smoothing leaves no trace inside a cut. Left as notes: the footer hook finds the footer nodes again on a width or response change, not on every measure (there is one static footer today); the e2e's whole-canvas difference can also come from the Halo, which only weakens its sanity check; the Halo layer cache is module-level.
 - Review notes, task 5: NOT READY with 1 defect, fixed. A suspend's delayed context suspend was not cancelled by a resume, so turning Sound off and on, or hiding and showing the page, within about 60 ms left the toggle on and the page silent. The engine now keeps the timer and cancels it on resume and dispose; a test runs suspend, resume and the timers and expects no suspend. Acted on: the e2e waits for the AudioContext count with a poll; the thud's noise burst is kept apart from the sources started together. Left as notes: Property 7 does not advance timers (the new example covers the race); a ghost call can play when Sound turns on while the Lantern already sits on a grave with a Ghost.
+- Critic round 4 (task 6.5, build round-5): NOT READY at both sizes. The caption, the final pose and the Halo's return pass; the particles were tiny and read as stains. The Burst now throws 8 dirt clods and 10 triangular shards up and out to the edge of the Art box.
+- Critic round 5 (round-6): the Burst READY at both sizes. The Priest NOT READY: a thin dark column with no clerical sign. (Its other finding, the stone not back at phase 0.8, came from a wrong description in the request: the stone rises back over phases 0.65 to 1.)
+- Critic round 6 (round-7): the Priest NOT READY: a blank face, a collar lost in it, a body like a post.
+- Critic round 7 (task 7.3, round-8): the Priest READY at 1440. Acted on its two minor notes: a warmer face (the marker cream, not the skeletons' bone) and a wider collar notch. The Priest exists only during a burial, so it was captured at 1440 only, painted at fixed phases through the e2e hook.
+- Repaint medians at 300 graves after tasks 6 and 7: 2.85 to 3.00 ms idle, 2.40 to 2.80 ms after a scrubber move, 3.30 ms during a Burst (budget 16 ms).
+- Note for the owner, not in this spec: a 300-grave scan whose graves are all in the front row (all Possessed or Dead) repaints in 180 to 330 ms in headless Chromium, most of it the Possessed glow pass and the full-height fills that Phase 1 added. The smoke test's 300 graves are in the middle row and repaint in about 3 ms.
+- Review notes, tasks 6 and 7 (one review for both): READY, no defects. Acted on: the Burst's end timer has its own effect keyed on its start, so a second effect run cannot cancel it; an import order in draw.ts; the timing hook fails rather than timing a frame with no Burst. Left as notes: the Load moment flag is claimed in a state initialiser; a Vigil queued before Reduced motion is turned off still plays as a Vigil; the Load moment test does not mount a second scan.
 - Test sub-tasks are not optional in this plan.
 - Top-level tasks run in order. Each finishes, including its review, before the next starts.
 - Task 5 lands before tasks 6 and 7, so their sounds have an engine to call.

@@ -418,7 +418,7 @@ These criteria turned out testable as properties: 1.1, 1.2, 3.2, 3.3, 3.4, 7.1, 
 
 *For any* elapsed time (including negative, NaN and very large): every field of `burstFrame` is in [0, 1]; `burstFrame(t)` for t ≥ BURST_MS equals the final pose; `riseAt` is in [0, 1], non-decreasing in t, 0 at t ≤ 0 and 1 at t ≥ its duration. *For all* n from 1 to 300: the last `loadDelay` plus RISE_MS is at most 1,000 ms, and `loadDelay` is non-decreasing in the index (triage order).
 
-**Validates: Requirements 9.1, 11.1, 11.2.** Test: `test/burst-rise.test.ts`. Requirement 9.5 (the final pose under Reduced motion) is checked by example in the same file and in e2e.
+**Validates: Requirements 9.1, 11.1, 11.2.** Test: `test/burst-rise.test.tsx`. Requirement 9.5 (the final pose under Reduced motion) is checked by example in the same file and in e2e.
 
 ## Testing Strategy
 
@@ -435,8 +435,8 @@ All tests are network-free. Web Audio is never touched by a Vitest test: the eng
 | `test/halo.test.ts` (new) | Property 3. HALO_ALPHA_BYTE is used only for the Halo. |
 | `test/bubbles.test.ts` (new) | Properties 4, 5 and 6. Every table row by example. The layer is aria-hidden with pointer-events none, shows nothing in Serious mode, nothing while the drawer is open, and has no transition under Reduced motion. Fake timers step the slots. |
 | `test/sound.test.tsx` (new) | Property 7. The toggle has aria-pressed, reads "Sound off" or "Sound on", persists under `sexton:sound`, and creates nothing at mount even with "on" stored, until a key or pointer press. Each Voice spec by example. Suspend on hide, resume on show. |
-| `test/burst-rise.test.ts` (new) | Property 8. The Burst Stop of axios is 31 Mar 2026, 00:21 UTC and of keyv its Possessed Stop, found from the fixtures. Leaving and returning starts a new Burst. Reduced motion gives no start. The caption shows at the Burst Stop only. The Load moment plays once per page load and never under Reduced motion. |
-| `test/priest.test.ts` (new) | The Priest is drawn only during a burial or a Vigil, walks then reads, and the bell is asked for once. The Vigil lasts BURIAL_MS and waits for the drawer to close. |
+| `test/burst-rise.test.tsx` (new) | Property 8. The Burst Stop of axios is 31 Mar 2026, 00:21 UTC and of keyv its Possessed Stop, found from the fixtures. Leaving and returning starts a new Burst. Reduced motion gives no start. The caption shows at the Burst Stop only. The Load moment plays once per page load and never under Reduced motion. |
+| `test/priest.test.tsx` (new) | The Priest is drawn only during a burial or a Vigil, walks then reads, and the bell is asked for once. The Vigil lasts BURIAL_MS and waits for the drawer to close. |
 | `test/header.test.tsx`, `a11y.test.tsx`, `scrubber.test.tsx` | Deliberate changes 1 to 4, and the replay header labels (new tests). |
 | `test/layout.test.ts`, `draw.test.ts` | Deliberate changes 5 and 6. |
 | `test/fit.test.tsx`, `replay.test.tsx` | New: the "Sources:" line. Existing tests unchanged. |
@@ -512,6 +512,13 @@ As cemetery-undead "Visual critic protocol", with these captures: `/` and `/?rep
 8. **The e2e timing hook gains `labels()` and `paintVariant({ ghosts })`** for the label pixel check of task 2.4.
 9. **The noise reuses `mulberry32` from scene/scenery-seed.ts** with the same seed, rather than a second copy.
 10. **The sound test is `test/sound.test.tsx`**, not `.ts`: it also renders the page to check the toggle and run axe with Sound on (requirement 12.3).
+12. **The page clock is `Date.now()`.** The Burst and the Load moment take their starts from it, because `drawScene` already draws at `Date.now()`; design B3 said `performance.now()`.
+13. **The Burst leaves the plan after BURST_MS**, so the Halo returns over the still open grave; the caption stays while the Burst Stop is shown.
+14. **The Load moment flag lives in `scene/load-moment.ts`** (`claimLoadMoment`, `setLoadMomentPlayedForTests`), not in Cemetery.tsx. `test/setup.ts` marks it played before every test, so the existing tests see the scene at rest as before; the new tests clear it.
+15. **The e2e timing hook times the whole scene**: `redraw` paints the plan without the Load moment, so a page still rising does not time fewer graves. `redrawBurst` paints a Burst on the first open grave and fails without one. The Burst budget test uses the smoke test's 300 graves with left-padder first.
+16. **The Halo layer covers only the box around its sources**: on a tall scene a full-height layer cost about 50 ms a frame.
+17. **Burst particles**: 8 dirt clods and 10 triangular shards in the Possessed colour and bone, from the pit rim, bounded to x −15 to 79 shape units (critic round 4).
+18. **The Priest** is a 24 by 76 figure drawn 1.45 times: a stepped violet-grey cassock (`grassLight`) outlined in `border`, buttons, a white collar notch on a dark neck band, a face in the `marker` cream with eyes, a skullcap, and a book with a white cross. He walks from x 191 to 183 and reads at 183 (critic rounds 5 to 7). The bell rule is the pure `bellKey`.
 11. **The Sound toggle's glyph changes with its state** (a speaker with waves when on, crossed out when off). Its name is the text "Sound off" or "Sound on".
 
 ## Notes and open items

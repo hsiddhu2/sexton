@@ -16,6 +16,9 @@ import { inDanceWindow, poseAt, seedOf } from "./motion.js";
 import { CHURCH_PATH, TREE_PATH, batWing, churchPath, treePath } from "./silhouettes.js";
 import { POSE_COUNT, type ClipId } from "./characters/vector.js";
 import { HALO_FEATHER, haloMask, type HaloMask } from "./halo.js";
+import { drawPriest } from "./characters/priest.js";
+import { BURST_PARTICLES, burstFrame, FINAL_POSE, particleAt, SHARD_PATH, type BurstFrame } from "./burst.js";
+import { loadDelay, loadMomentMs, riseAt } from "./rise.js";
 import { BURIAL_SINK_PX, burialFrame } from "../time/burial.js";
 import { CHARACTER_BY_STATE, COSTUME_BY_STATE, drawCharacter, drawPartyCostume, STATE_BY_SHAPE } from "./characters/vector.js";
 import { pitEdgePath, detailPath, GHOST_BLUSH, GHOST_EYES, ghostPath, pitRimPath, plinthPath, SHAPES, shapePath, SPECKS } from "./shapes.js";
@@ -397,18 +400,45 @@ function drawGlow(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan): void 
 /** The Halo layer is drawn at this fraction of a CSS pixel: it is soft everywhere, and its cuts are feathered. */
 const HALO_LAYER_SCALE = 0.5;
 const HALO_CUT_MARGIN = 2;
-let haloLayer: { readonly key: string; readonly canvas: HTMLCanvasElement } | null = null;
+interface HaloLayer {
+  readonly key: string;
+  readonly canvas: HTMLCanvasElement;
+  /** The scene rectangle the layer covers: the box around its sources, inside the scene. */
+  readonly x: number;
+  readonly y: number;
+}
+let haloLayer: HaloLayer | null = null;
 
-/** Paints the Halo's sources, then cuts every region of the mask out of it with a feathered edge. */
-function paintHaloLayer(mask: HaloMask, plan: ScenePlan): HTMLCanvasElement | null {
+/**
+ * Paints the Halo's sources, then cuts every region of the mask out of it with a feathered edge. The layer covers only
+ * the box around the sources, so a tall scene pays for the Halo where it is, not for its whole height.
+ */
+function paintHaloLayer(mask: HaloMask, plan: ScenePlan): HaloLayer | null {
+  const sceneW = Math.min(plan.width, MAX_BACKING);
+  const sceneH = Math.min(plan.groundHeight, MAX_BACKING);
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+  for (const src of mask.sources) {
+    x0 = Math.min(x0, src.cx - src.r);
+    y0 = Math.min(y0, src.cy - src.r);
+    x1 = Math.max(x1, src.cx + src.r);
+    y1 = Math.max(y1, src.cy + src.r);
+  }
+  x0 = Math.max(0, Math.floor(x0));
+  y0 = Math.max(0, Math.floor(y0));
+  x1 = Math.min(sceneW, Math.ceil(x1));
+  y1 = Math.min(sceneH, Math.ceil(y1));
+  if (!(x1 > x0 && y1 > y0)) return null;
   const canvas = document.createElement("canvas");
-  const w = Math.min(plan.width, MAX_BACKING);
-  canvas.width = Math.max(1, Math.ceil(w * HALO_LAYER_SCALE));
-  canvas.height = Math.max(1, Math.ceil(Math.min(plan.groundHeight, MAX_BACKING) * HALO_LAYER_SCALE));
+  canvas.width = Math.max(1, Math.ceil((x1 - x0) * HALO_LAYER_SCALE));
+  canvas.height = Math.max(1, Math.ceil((y1 - y0) * HALO_LAYER_SCALE));
   const t = canvas.getContext("2d");
   if (t === null) return null;
   const colours = PALETTE[plan.theme];
   t.scale(HALO_LAYER_SCALE, HALO_LAYER_SCALE);
+  t.translate(-x0, -y0);
   for (const src of mask.sources) {
     const g = t.createRadialGradient(src.cx, src.cy, 0, src.cx, src.cy, src.r);
     g.addColorStop(0, src.colour + HALO_ALPHA_BYTE);
@@ -454,7 +484,7 @@ function paintHaloLayer(mask: HaloMask, plan: ScenePlan): HTMLCanvasElement | nu
       t.fillRect(dx < 0 ? cx - f : cx, dy < 0 ? cy - f : cy, f, f);
     }
   }
-  return canvas;
+  return { key: mask.key, canvas, x: x0, y: y0 };
 }
 
 /** The Halo, over the glow pass and under every grave (spec cemetery-undead-2, A3). Redrawn only when its mask changes. */
@@ -462,11 +492,35 @@ function drawHalo(ctx: PaintContext2D, plan: ScenePlan): void {
   const mask = haloMask(plan);
   if (mask.sources.length === 0 || typeof ctx.drawImage !== "function" || typeof document === "undefined") return;
   if (haloLayer?.key !== mask.key) {
-    const canvas = paintHaloLayer(mask, plan);
-    if (canvas === null) return;
-    haloLayer = { key: mask.key, canvas };
+    const layer = paintHaloLayer(mask, plan);
+    if (layer === null) return;
+    haloLayer = layer;
   }
-  ctx.drawImage(haloLayer.canvas, 0, 0, haloLayer.canvas.width / HALO_LAYER_SCALE, haloLayer.canvas.height / HALO_LAYER_SCALE);
+  ctx.drawImage(haloLayer.canvas, haloLayer.x, haloLayer.y, haloLayer.canvas.width / HALO_LAYER_SCALE, haloLayer.canvas.height / HALO_LAYER_SCALE);
+}
+
+let shardCache: Path2D | null = null;
+function shardPath(): Path2D {
+  shardCache ??= new Path2D(SHARD_PATH);
+  return shardCache;
+}
+
+/** The lid's rest centre and its place over the pit, in shape units, and how far it turns and rises in flight. */
+const LID_REST_X = 1.43;
+const LID_REST_Y = 50.52;
+const LID_CLOSED_X = 32;
+const LID_CLOSED_Y = 50;
+const LID_CLOSED_TURN = -0.559;
+const LID_ARC = 10;
+/** The zombie is hidden below the pit's centre line while it rises, in shape units. */
+const RISE_CLIP = { x: -20, y: -10, w: 104, h: 63.5 } as const;
+const RISE_DEPTH = 52;
+
+/** The Burst frame of a grave at an instant, or null when no Burst plays on it. A null start is the final pose. */
+function burstOf(grave: GravePlan, plan: ScenePlan, nowMs: number): BurstFrame | null {
+  const b = plan.burst;
+  if (b === null || b.index !== grave.index || grave.shape !== "open") return null;
+  return b.startMs === null ? FINAL_POSE : burstFrame(nowMs - b.startMs);
 }
 
 /** One grave, drawn in its cell frame at its Tier scale: every number below is cell-relative. */
@@ -519,6 +573,14 @@ export function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan
     ctx.lineWidth = PIT_EDGE_WIDTH;
     ctx.stroke(pitEdgePath());
   }
+  const burst = burstOf(grave, plan, nowMs);
+  if (burst !== null && burst.lid < 1) {
+    // The lid flies from over the pit to its resting place, rising in an arc (spec cemetery-undead-2, B3).
+    const p = burst.lid;
+    ctx.translate(LID_REST_X + (LID_CLOSED_X - LID_REST_X) * (1 - p), LID_REST_Y + (LID_CLOSED_Y - LID_REST_Y) * (1 - p) - LID_ARC * Math.sin(Math.PI * p));
+    ctx.rotate(LID_CLOSED_TURN * (1 - p));
+    ctx.translate(-LID_REST_X, -LID_REST_Y);
+  }
   const outline = shapePath(grave.shape);
   if (grave.shape !== "unmarked") {
     // The side face: the outline again, offset, shaded, so the stone reads as a block and not a flat shape.
@@ -558,7 +620,36 @@ export function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan
       ctx.scale(g.shapeScale, g.shapeScale);
       if (character !== null) {
         const { clip, pose } = clipAndPose(grave, plan, character.clips, nowMs);
-        drawCharacter(ctx, colours, character.id, clip, pose);
+        if (burst !== null && burst.rise < 1) {
+          // The zombie rises out of the pit: hidden below the pit's centre line, moved down by what is left to rise.
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(RISE_CLIP.x, RISE_CLIP.y, RISE_CLIP.w, RISE_CLIP.h);
+          ctx.clip();
+          ctx.translate(0, (1 - burst.rise) * RISE_DEPTH);
+          drawCharacter(ctx, colours, character.id, clip, pose);
+          ctx.restore();
+        } else drawCharacter(ctx, colours, character.id, clip, pose);
+      }
+      if (burst !== null && burst.particles < 1) {
+        // Dirt and shards on fixed paths out of the pit.
+        for (let i = 0; i < BURST_PARTICLES.length; i += 1) {
+          const pt = BURST_PARTICLES[i];
+          if (pt === undefined) continue;
+          const at = particleAt(pt, burst.particles);
+          if (pt.kind === "dirt") {
+            ctx.fillStyle = colours.costume.dirt;
+            ctx.fillRect(at.x, at.y, pt.size, pt.size);
+            continue;
+          }
+          ctx.fillStyle = i % 2 === 0 ? colours.states.Possessed : colours.costume.bone;
+          ctx.save();
+          ctx.translate(at.x, at.y);
+          ctx.rotate(pt.turn + pt.spin * burst.particles);
+          ctx.scale(pt.size, pt.size);
+          ctx.fill(shardPath());
+          ctx.restore();
+        }
       }
       if (costume === "party") drawPartyCostume(ctx, colours);
       ctx.restore();
@@ -599,6 +690,9 @@ export function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan
     for (const [mx, my, mw, mh] of MARKER_RECTS) ctx.fillRect(mx, my, mw, mh);
   }
 
+  // The Priest walks to the grave and reads during its burial, or stands still for the Vigil (spec cemetery-undead-2, B4).
+  if (plan.priest !== null && plan.priest.index === grave.index && !grave.pending) drawPriest(ctx, colours, plan.priest.phase);
+
   if (grave.inscription !== null) {
     ctx.fillStyle = colours.ink;
     // The name stays at least MIN_NAME_PX on screen whatever the Tier scale (critic round 5).
@@ -616,11 +710,33 @@ export function drawScene(ctx: PaintContext2D, plan: ScenePlan, scale: number, n
   ctx.clearRect(0, 0, plan.width, plan.groundHeight);
   drawScenery(ctx, plan, nowMs);
   const deco: DecorationColours = { shadow: colours.pit + SHADOW_ALPHA_BYTE, stone: colours.ink + STONE_ALPHA_BYTE };
-  for (const grave of plan.graves) drawGlow(ctx, grave, plan);
-  drawHalo(ctx, plan);
+  // The Load moment: each grave rises out of the ground in triage order; the glows wait for the last one (B5).
+  const rising = plan.riseStartMs !== null && nowMs - plan.riseStartMs < loadMomentMs(plan.graves.length);
+  if (!rising) {
+    for (const grave of plan.graves) drawGlow(ctx, grave, plan);
+    drawHalo(ctx, plan);
+  }
   for (const index of plan.paintOrder) {
     const grave = plan.graves[index];
-    if (grave !== undefined) drawGrave(ctx, grave, plan, deco, nowMs);
+    if (grave === undefined) continue;
+    if (!rising || plan.riseStartMs === null) {
+      drawGrave(ctx, grave, plan, deco, nowMs);
+      continue;
+    }
+    const up = riseAt(nowMs - plan.riseStartMs - loadDelay(grave.index, plan.graves.length));
+    if (up <= 0) continue;
+    if (up >= 1) {
+      drawGrave(ctx, grave, plan, deco, nowMs);
+      continue;
+    }
+    // Clipped to its cell and moved down by what is left to rise; its Ghost shows once it stands.
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(grave.rect.x, grave.rect.y, grave.rect.w, grave.rect.h);
+    ctx.clip();
+    ctx.translate(0, (1 - up) * grave.rect.h);
+    drawGrave(ctx, grave.ghost === null ? grave : { ...grave, ghost: null }, plan, deco, nowMs);
+    ctx.restore();
   }
   if (plan.ring !== null) {
     ctx.strokeStyle = colours.ring;

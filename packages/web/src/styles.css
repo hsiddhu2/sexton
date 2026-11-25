@@ -1301,3 +1301,41 @@ pre.signal-value {
 .replay-card .replay-summary {
   margin-bottom: 6px;
 }
+
+/* The replay Burst's caption, above its grave, as in the mockup (spec cemetery-undead-2, B3). */
+.burst-caption {
+  position: absolute;
+  z-index: 1;
+  margin: 0;
+  transform: translate(-50%, calc(-100% - 8px));
+  padding: 4px 10px;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Speech Bubbles, as in the mockup (spec cemetery-undead-2, B2): decoration over the scene, never a target. */
+.bubble-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+.bubble {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: var(--text);
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  pointer-events: none;
+}

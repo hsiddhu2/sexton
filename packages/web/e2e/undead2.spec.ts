@@ -15,6 +15,7 @@ interface HookWindow {
   __sextonTiming?: {
     labels(): Rect[];
     paintVariant(variant: { ghosts?: boolean }): void;
+    redrawBurst(n: number): number[];
   };
 }
 
@@ -37,6 +38,8 @@ for (const [width, height] of [
     await page.goto("/");
     await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
     await page.waitForFunction(() => (window as unknown as HookWindow).__sextonTiming !== undefined);
+    // Past the Load moment, which lasts under a second.
+    await page.clock.runFor(1_500);
     // With the clock still, paint once with every Ghost and once with none, and compare each label's pixels.
     const result = await page.evaluate(() => {
       const hook = (window as unknown as HookWindow).__sextonTiming;
@@ -112,4 +115,58 @@ test("no AudioContext exists before Sound is turned on, and a remembered on wait
   expect(await audioContexts(page)).toBe(0);
   await page.keyboard.press("Shift");
   await expect.poll(() => audioContexts(page)).toBe(1);
+});
+
+test("300 graves repaint within budget during a Burst", async ({ page, baseURL }) => {
+  await sameOriginOnly(page, baseURL);
+  const demo = (await (await page.request.get("/demo/scan.json")).json()) as {
+    report: { packages: { name: string; signals: { advisories: { available: boolean; value: unknown[] } } }[] };
+    timelines?: unknown;
+  };
+  // The smoke test's 300 graves (each a copy of the first package with advisories), with the Possessed left-padder
+  // first so the Burst has an open grave to play on.
+  const possessed = demo.report.packages.find((p) => p.name === "left-padder");
+  const template = demo.report.packages.find((p) => p.signals.advisories.available && p.signals.advisories.value.length > 0);
+  expect(possessed).toBeDefined();
+  expect(template).toBeDefined();
+  const big = structuredClone(demo);
+  big.report.packages = Array.from({ length: 300 }, (_, i) => ({ ...structuredClone(i === 0 ? possessed : template), name: `pkg-${String(i)}` })) as typeof demo.report.packages;
+  delete big.timelines;
+  await page.route((url) => url.pathname === "/test/scan-300-burst.json", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(big) }),
+  );
+  await page.goto("/?scan=/test/scan-300-burst.json");
+  await expect(page.locator("button[data-grave-index]")).toHaveCount(300);
+  await page.waitForFunction(() => (window as unknown as HookWindow).__sextonTiming !== undefined);
+  const times = await page.evaluate(() => (window as unknown as HookWindow).__sextonTiming?.redrawBurst(30) ?? []);
+  expect(times).toHaveLength(30);
+  const sorted = [...times].sort((a, b) => a - b);
+  const median = ((sorted[14] ?? 0) + (sorted[15] ?? 0)) / 2;
+  console.log(`median redraw of 300 graves during a Burst over 30 paints: ${median.toFixed(2)} ms`);
+  expect(median).toBeLessThanOrEqual(16);
+});
+
+test("under Reduced motion the axios replay shows the Burst's final pose and caption at once", async ({ page, baseURL }) => {
+  await sameOriginOnly(page, baseURL);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/?replay=axios");
+  await expect(page.locator("button[data-grave-index]")).toHaveCount(1);
+  const slider = page.getByRole("slider", { name: "History date" });
+  await slider.focus();
+  await slider.press("ArrowRight");
+  await expect(page.locator(".burst-caption")).toHaveText("The wind stops. A grave opens.");
+  // The final pose is the still open grave: the zombie stands, so its skin shows inside the grave's box.
+  const box = await page.locator("button[data-grave-index]").boundingBox();
+  expect(box).not.toBeNull();
+  const skin = await page.evaluate((b) => {
+    const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+    const r = canvas.getBoundingClientRect();
+    const k = canvas.width / r.width;
+    const data = (canvas.getContext("2d") as CanvasRenderingContext2D).getImageData(Math.round((b.x - r.left) * k), Math.round((b.y - r.top) * k), Math.round(b.width * k), Math.round(b.height * k)).data;
+    let hits = 0;
+    for (let i = 0; i < data.length; i += 4) if (Math.abs((data[i] ?? 0) - 0x7f) <= 6 && Math.abs((data[i + 1] ?? 0) - 0xae) <= 6 && Math.abs((data[i + 2] ?? 0) - 0x4e) <= 6) hits += 1;
+    return hits;
+  }, box ?? { x: 0, y: 0, width: 0, height: 0 });
+  expect(skin).toBeGreaterThan(500);
 });

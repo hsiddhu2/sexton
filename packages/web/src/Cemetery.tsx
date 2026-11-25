@@ -17,6 +17,12 @@ import { formAt, timelineOf, type FormView } from "./time/form-at.js";
 import { useBurial } from "./time/use-burial.js";
 import { triageOrder } from "./triage/triage.js";
 import { ghostCallDue } from "./sound/use-sound.js";
+import { BURST_CAPTION, burstStopFor } from "./replay/burst-stop.js";
+import { BURST_MS } from "./scene/burst.js";
+import { loadMomentMs } from "./scene/rise.js";
+import { claimLoadMoment } from "./scene/load-moment.js";
+import { bellKey } from "./scene/characters/priest.js";
+import { artRect } from "./scene/art-box.js";
 import type { VoiceId } from "./sound/voices.js";
 
 export interface CemeteryProps {
@@ -75,6 +81,66 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
     [order, logged, burial.held, burial.shown],
   );
   const burialIndex = burial.burial === null ? -1 : order.findIndex((p) => p.name === burial.burial?.name);
+  const vigilIndex = burial.vigil === null ? -1 : order.findIndex((p) => p.name === burial.vigil?.name);
+  const playRef = useRef(play);
+  playRef.current = play;
+  // The bell: once when the Priest starts reading, at burial phase WALK_END, or at the start of a Vigil (10.2).
+  const belled = useRef<string | null>(null);
+  const bell = bellKey(burial.burial, burial.vigil);
+  useEffect(() => {
+    if (bell === null) {
+      belled.current = null;
+      return;
+    }
+    if (belled.current === bell) return;
+    belled.current = bell;
+    playRef.current?.("bell");
+  }, [bell]);
+  // The Load moment: the first non-empty scan after a page load rises out of the ground, unless motion is reduced.
+  const [riseStart] = useState<number | null>(() => {
+    if (order.length === 0 || !claimLoadMoment()) return null;
+    return reducedMotion ? null : Date.now();
+  });
+  const [rising, setRising] = useState(riseStart !== null);
+  useEffect(() => {
+    if (riseStart === null) return undefined;
+    const timer = setTimeout(() => {
+      setRising(false);
+    }, loadMomentMs(order.length) + 50);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [riseStart, order.length]);
+  // The replay Burst: each arrival at the Burst Stop plays it once, with the sting and the thud (requirement 9).
+  const burstStopMs = useMemo(() => burstStopFor(response, order), [response, order]);
+  const [burstStart, setBurstStart] = useState<number | null>(null);
+  const [burstDone, setBurstDone] = useState(false);
+  const lastAsOf = useRef<number | null | undefined>(undefined);
+  useEffect(() => {
+    const previous = lastAsOf.current;
+    lastAsOf.current = asOfMs;
+    if (burstStopMs === null || asOfMs !== burstStopMs) {
+      setBurstStart(null);
+      return undefined;
+    }
+    if (previous === asOfMs) return undefined;
+    setBurstStart(Date.now());
+    setBurstDone(false);
+    playRef.current?.("sting");
+    playRef.current?.("thud");
+    return undefined;
+  }, [asOfMs, burstStopMs]);
+  // The Burst leaves the plan BURST_MS after its start, so the Halo returns (review note, tasks 6 and 7).
+  useEffect(() => {
+    if (burstStart === null) return undefined;
+    const timer = setTimeout(() => {
+      setBurstDone(true);
+    }, BURST_MS);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [burstStart]);
+  const atBurst = burstStart !== null && burstStopMs !== null && asOfMs === burstStopMs;
   const plan = useMemo(
     () =>
       planScene({
@@ -90,9 +156,16 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
         reducedMotion,
         lantern,
         ...(burial.burial !== null && burialIndex >= 0 ? { burial: { index: burialIndex, phase: burial.burial.phase } } : {}),
+        ...(burial.burial !== null && burialIndex >= 0
+          ? { priest: { index: burialIndex, phase: burial.burial.phase } }
+          : vigilIndex >= 0
+            ? { priest: { index: vigilIndex, phase: null } }
+            : {}),
         ...(views !== undefined ? { forms: views } : {}),
+        ...(atBurst && !burstDone ? { burst: { index: 0, startMs: burstStart } } : {}),
+        ...(rising && riseStart !== null ? { rise: { startMs: riseStart } } : {}),
       }),
-    [order, width, theme, selectedIndex, phase, minHeight, fit, views, marks, burial.burial, burialIndex, fontsReady, reducedMotion, lantern],
+    [order, width, theme, selectedIndex, phase, minHeight, fit, views, marks, burial.burial, burialIndex, vigilIndex, fontsReady, reducedMotion, lantern, atBurst, burstDone, burstStart, rising, riseStart],
   );
   // The ghost call: a grave with a Ghost gains the Lantern glow by hover or focus, at most once every 1,500 ms.
   const lastGhostCall = useRef<number | null>(null);
@@ -171,6 +244,12 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
             ) : (
               <>
                 <Scene plan={plan} />
+                {atBurst && plan.graves[0] !== undefined ? (
+                  // Plain text over the scene, not a live region: the Play line already announces the Stop (9.2).
+                  <p className="burst-caption" style={{ left: artRect(plan.graves[0]).x + artRect(plan.graves[0]).w / 2, top: plan.graves[0].rect.y }}>
+                    {BURST_CAPTION}
+                  </p>
+                ) : null}
                 <GraveButtons
                   plan={plan}
                   selectedIndex={selectedIndex}
