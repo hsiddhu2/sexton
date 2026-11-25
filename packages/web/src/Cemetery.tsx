@@ -117,7 +117,8 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
   const [burstStart, setBurstStart] = useState<number | null>(null);
   const [burstDone, setBurstDone] = useState(false);
   const lastAsOf = useRef<number | null | undefined>(undefined);
-  useEffect(() => {
+  // A layout effect, so the first paint at the Burst Stop is already the Burst's first frame (review note, task 9.6).
+  useLayoutEffect(() => {
     const previous = lastAsOf.current;
     lastAsOf.current = asOfMs;
     if (burstStopMs === null || asOfMs !== burstStopMs) {

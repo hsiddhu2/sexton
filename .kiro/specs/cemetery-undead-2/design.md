@@ -513,10 +513,6 @@ As cemetery-undead "Visual critic protocol", with these captures: `/` and `/?rep
 9. **The noise reuses `mulberry32` from scene/scenery-seed.ts** with the same seed, rather than a second copy.
 10. **The sound test is `test/sound.test.tsx`**, not `.ts`: it also renders the page to check the toggle and run axe with Sound on (requirement 12.3).
 11. **The Sound toggle's glyph changes with its state** (a speaker with waves when on, crossed out when off). Its name is the text "Sound off" or "Sound on".
-19. **Bubble fades use the Web Animations API** from the component: the style sheet may hold no transition, and no animation but the loading spinner's (an existing style test). Under Reduced motion there is no fade.
-20. **The "above" Bubble place moves sideways to stay inside the Scene.** At 390 px the centred place ran off the edge, so no Bubble ever showed.
-21. **The hovered or focused grave gets no Bubble**, and no Bubble sits in the band where its tooltip opens (critic round 8: a Bubble sat under the replay's tooltip).
-22. **The test files of tasks 6 to 8 are `.tsx`**: they render the page or the layer.
 12. **The page clock is `Date.now()`.** The Burst and the Load moment take their starts from it, because `drawScene` already draws at `Date.now()`; design B3 said `performance.now()`.
 13. **The Burst leaves the plan after BURST_MS**, so the Halo returns over the still open grave; the caption stays while the Burst Stop is shown.
 14. **The Load moment flag lives in `scene/load-moment.ts`** (`claimLoadMoment`, `setLoadMomentPlayedForTests`), not in Cemetery.tsx. `test/setup.ts` marks it played before every test, so the existing tests see the scene at rest as before; the new tests clear it.
@@ -524,8 +520,23 @@ As cemetery-undead "Visual critic protocol", with these captures: `/` and `/?rep
 16. **The Halo layer covers only the box around its sources**: on a tall scene a full-height layer cost about 50 ms a frame.
 17. **Burst particles**: 8 dirt clods and 10 triangular shards in the Possessed colour and bone, from the pit rim, bounded to x −15 to 79 shape units (critic round 4).
 18. **The Priest** is a 24 by 76 figure drawn 1.45 times: a stepped violet-grey cassock (`grassLight`) outlined in `border`, buttons, a white collar notch on a dark neck band, a face in the `marker` cream with eyes, a skullcap, and a book with a white cross. He walks from x 191 to 183 and reads at 183 (critic rounds 5 to 7). The bell rule is the pure `bellKey`.
+19. **Bubble fades use the Web Animations API** from the component: the style sheet may hold no transition, and no animation but the loading spinner's (an existing style test). Under Reduced motion there is no fade.
+20. **The "above" Bubble place moves sideways to stay inside the Scene.** At 390 px the centred place ran off the edge, so no Bubble ever showed.
+21. **The hovered or focused grave gets no Bubble**, and no Bubble sits in the band where its tooltip opens (critic round 8: a Bubble sat under the replay's tooltip).
+22. **The test files of tasks 6 to 8 are `.tsx`**: they render the page or the layer.
+23. **"The first scan after a page load" is the first scan with graves.** An empty first scan does not claim the Load moment, so the first scan that has graves rises.
+24. **The Burst starts in a layout effect**, so the first paint at the Burst Stop is the Burst's first frame, not its final pose (whole-branch review).
 
 ## Notes and open items
+
+- **Fresh-clone run on the final tree (task 9.5, A7).** Run on 25 Nov 2026 on commit a1d62c6: cloned to `build/fresh-clone` and installed with `npx npm@11 ci` (exit 0).
+  - `npm test -w @sexton/api` first: 296 tests pass.
+  - Root `npm test`: exit 0, 1988 tests (action 12, api 296, cli 60, engine 1059, web 510, infra 51).
+  - `packages/web/public/demo` deleted, then bare `npx vitest run` in `packages/web`: the global setup wrote the demo files; exit 0, 510 tests.
+  - The clone was then removed.
+- **Gates on the final tree (task 9.3).** Root typecheck and lint exit 0 with zero warnings; root `npm test` 1988 tests; `npm run test:e2e -w @sexton/web` 33 passed, none skipped. Repaint medians at 300 graves: 2.90 ms idle, 2.40 ms after a scrubber move, 3.20 ms during a Burst (budget 16 ms).
+- **Scope and bundle (task 9.4).** Every changed path since b513514 is in the allowed list; no `package.json` or lock file changed. `npm run build -w @sexton/web` passes its bundle check (16 files clean), and `dist` holds no audio file.
+- **For the owner.** The Halo does not show on a hovered or focused Possessed grave, which shows the Lantern glow alone by the one-glow rule; both README pictures hover a grave for its tooltip, so neither shows the Halo. A 300-grave scan whose graves are all in the front row repaints in 180 to 330 ms in headless Chromium, a cost Phase 1 added (the Possessed glow pass and the full-height fills); the budget test's 300 graves sit in the middle row.
 
 - **R-UI-8, the Bubble table and the Sound list** were decided by the owner on 25 Nov 2026 (see "The owner's decisions").
 - **The Character e2e and the `bone` token.** The Burst shards and the Priest's face use `bone`. The Character e2e assumes `bone` appears only in Costumes. It holds because the Burst plays only on a replay and the Priest only during a burial, and neither is on screen in that test.

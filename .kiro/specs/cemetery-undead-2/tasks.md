@@ -159,7 +159,7 @@ Run-time notes:
   - [x] 8.5 Independent code review of task 8
     - _Requirements: 16.5_
 
-- [ ] 9. README, credits, steering, screenshots, gates and the fresh-clone run
+- [x] 9. README, credits, steering, screenshots, gates and the fresh-clone run
   - _Requirements: 12.1, 12.2, 12.3, 12.4, 14.1, 14.2, 14.3, 14.4, 16.1, 16.2, 16.3, 16.4, 16.5_
   - [x] 9.1 README line, CREDITS.md and web.md
     - One README line: "Sound is off by default." CREDITS.md: every sound is generated in code. web.md per requirement 14.3.
@@ -167,18 +167,18 @@ Run-time notes:
   - [x] 9.2 Retake the README screenshots
     - docs/cemetery.png with two Bubbles; docs/replay-axios.png at the Burst's final pose with the caption (Deliberate test change 7).
     - _Requirements: 14.1_
-  - [ ] 9.3 Gates
+  - [x] 9.3 Gates
     - Root typecheck, lint with zero warnings, test, and `npm run test:e2e -w @sexton/web`. Record the counts and the repaint medians (idle, after a scrubber move, during a Burst) in "Notes".
     - _Requirements: 12.4, 16.3, 16.4_
-  - [ ] 9.4 Check the scope and the bundle
+  - [x] 9.4 Check the scope and the bundle
     - The changed paths against the allowed list. No package.json change. `npm run build -w @sexton/web` passes its bundle check, and `dist` holds no audio file.
     - _Requirements: 16.1, 16.2_
-  - [ ] 9.5 Fresh-clone run on the final tree (A7)
+  - [x] 9.5 Fresh-clone run on the final tree (A7)
     - As in cemetery-undead task 9.4. Record the results in design.md.
     - _Requirements: 16.4_
-  - [ ] 9.6 Independent code review of the whole branch
+  - [x] 9.6 Independent code review of the whole branch
     - _Requirements: 16.5_
-  - [ ] 9.7 Report and stop
+  - [x] 9.7 Report and stop
     - Write private/reports/K2e-cemetery-undead-2.md in the K2d report format, update private/PROGRESS.md and private/TRACKER.md, print the report and stop. Nothing is pushed. On the owner's `push`, follow the handoff's merge steps.
     - _Requirements: 16.1_
 
@@ -215,6 +215,7 @@ Run-time notes:
 - Critic round 8 (task 8.4, build round-9, the final pass over every capture): 390 READY; 1440 NOT READY on the two README pictures. A Bubble sat under the replay's tooltip: the hovered or focused grave now gets no Bubble, and no Bubble sits where its tooltip opens. The Halo is absent from both README pictures because each hovers a grave to show its tooltip, so by the one-glow rule that grave shows the Lantern glow alone: reported to the owner, not changed.
 - Critic round 9 (round-10, the README pictures): READY at 1440. Minor, left for the owner: the Bubbles stand a little away from their speakers (they take the first place clear of every name, right of the speaker's Art box).
 - Review notes, task 8 (with the README, CREDITS.md, web.md and Deliberate test change 7): NOT READY with 1 defect, fixed. Shown again after Serious mode or the drawer, the layer used the clock from before the pause and could show a stale slot's pair. A layout effect now reads the clock afresh before the paint, with a test. Left as notes: the fade itself is not exercised in jsdom; a fade can replay if Reduced motion is turned off during a show; the smoke test's 30 s wait equals the default test timeout (a show window comes within 6 s).
+- Review notes, task 9.6 (the whole branch): READY, no defects. Acted on: the Burst starts in a layout effect, so no frame of the final pose shows before it; the decisions are in order; the reading of "the first scan after a page load" is recorded (decision 23). Left as notes: the page-level calls of the sting, thud, bell and ghost call are tested through their pure rules, not through the page; a key press that arms a remembered Sound on while a grave with a Ghost has focus plays one ghost call; no test pins the Bubbles off the Burst caption (the geometry keeps them apart today).
 - Test sub-tasks are not optional in this plan.
 - Top-level tasks run in order. Each finishes, including its review, before the next starts.
 - Task 5 lands before tasks 6 and 7, so their sounds have an engine to call.
