@@ -14,6 +14,18 @@ const TABLE: readonly (readonly [State, fc.Arbitrary<string>, ReasonFamily, stri
   ["Possessed", fc.constant("maintainer change in the last 90 days"), "maintainer-change", "The keys changed hands. Nobody heard the door."],
   ["Possessed", fc.tuple(arbVersion, arbVersion).map(([a, b]) => `provenance regression: ${a} has no provenance, ${b} had it`), "provenance-regression", "It used to carry papers. This one came without."],
   ["Possessed", arbVersion.map((v) => `install script added in ${v}`), "install-script", "It came back with a script, and it runs before you do."],
+  [
+    "Possessed",
+    fc.tuple(arbVersion, fc.constantFrom("a", "plain-x", "@scope/dep")).map(([v, n]) => `new dependency in ${v}: ${n}`),
+    "new-dependency",
+    "It brought a new friend along. Check the friend.",
+  ],
+  [
+    "Possessed",
+    fc.tuple(arbVersion, fc.constantFrom("GitHub Actions", "alice", "unknown")).map(([v, n]) => `publisher changed in ${v}: GitHub Actions to ${n}`),
+    "publisher-change",
+    "A new hand signed this one. The pipeline did not.",
+  ],
   ["Dead", fc.constant("installed version is deprecated"), "deprecated", "Deprecated, not departed."],
   ["Dead", fc.integer({ min: 1, max: 120 }).map((m) => `no release in ${String(m)} months and an open advisory`), "stale-with-advisory", "Two years without a release, and a hole still open."],
   ["Haunted", fc.constant("advisory of severity High or Critical"), "severe-advisory", "Something serious walks these grounds."],

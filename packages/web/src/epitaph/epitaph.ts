@@ -8,6 +8,8 @@ export type ReasonFamily =
   | "maintainer-change"
   | "provenance-regression"
   | "install-script"
+  | "new-dependency"
+  | "publisher-change"
   | "deprecated"
   | "stale-with-advisory"
   | "severe-advisory"
@@ -28,6 +30,9 @@ const ROWS: readonly Row[] = [
   { state: "Possessed", family: "maintainer-change", pattern: /^maintainer change in the last 90 days$/, punchline: "The keys changed hands. Nobody heard the door." },
   { state: "Possessed", family: "provenance-regression", pattern: /^provenance regression: \S+ has no provenance, \S+ had it$/, punchline: "It used to carry papers. This one came without." },
   { state: "Possessed", family: "install-script", pattern: /^install script added in \S+$/, punchline: "It came back with a script, and it runs before you do." },
+  // Spec new-signals, task 10.2 (approved by the owner on 25 Nov 2026).
+  { state: "Possessed", family: "new-dependency", pattern: /^new dependency in \S+: \S+$/, punchline: "It brought a new friend along. Check the friend." },
+  { state: "Possessed", family: "publisher-change", pattern: /^publisher changed in \S+: .+ to .+$/, punchline: "A new hand signed this one. The pipeline did not." },
   { state: "Dead", family: "deprecated", pattern: /^installed version is deprecated$/, punchline: "Deprecated, not departed." },
   { state: "Dead", family: "stale-with-advisory", pattern: /^no release in \d+ months and an open advisory$/, punchline: "Two years without a release, and a hole still open." },
   { state: "Haunted", family: "severe-advisory", pattern: /^advisory of severity High or Critical$/, punchline: "Something serious walks these grounds." },

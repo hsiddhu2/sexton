@@ -70,7 +70,15 @@
   ],
   "versions": {
     "9.0.1": {
-      "deprecated": "uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028)."
+      "deprecated": "uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).",
+      "_npmUser": {
+        "name": "ctavan"
+      }
+    },
+    "9.0.0": {
+      "_npmUser": {
+        "name": "ctavan"
+      }
     }
   }
 }

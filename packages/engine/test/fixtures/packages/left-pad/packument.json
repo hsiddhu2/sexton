@@ -29,7 +29,15 @@
   ],
   "versions": {
     "1.3.0": {
-      "deprecated": "use String.prototype.padStart()"
+      "deprecated": "use String.prototype.padStart()",
+      "_npmUser": {
+        "name": "stevemao"
+      }
+    },
+    "1.2.0": {
+      "_npmUser": {
+        "name": "stevemao"
+      }
     }
   }
 }

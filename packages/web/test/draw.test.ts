@@ -6,6 +6,7 @@ import {
   ALPHA_ZERO_BYTE,
   FOG_PEAK_ALPHA_BYTE,
   GLOW_ALPHA_BYTE,
+  HALO_ALPHA_BYTE,
   GRAIN_ALPHA_BYTE,
   LANTERN_ALPHA_BYTE,
   MOON_HALO_ALPHA_BYTE,
@@ -92,6 +93,8 @@ const SCENERY_METHODS = new Set([
   "translate",
   "scale",
   "restore",
+  // Spec cemetery-undead-2, Deliberate test change 6: the Halo layer is drawn once, after the glow pass.
+  "drawImage",
 ]);
 
 function planFor(
@@ -136,6 +139,10 @@ describe("Feature: cemetery-theme, Property 4: Painter call discipline", () => {
           expect(names.filter((m) => m === "strokeRect")).toHaveLength(plan.ring === null ? 0 : 1);
           if (plan.ring !== null) expect(names[names.length - 1]).toBe("strokeRect");
 
+          // Spec cemetery-undead-2, Deliberate test change 6: one Halo drawImage per frame while a Possessed grave
+          // without the Lantern glow is on screen, and none otherwise.
+          const halo = plan.graves.some((g) => g.shape === "open" && plan.lantern !== g.index);
+          expect(names.filter((m) => m === "drawImage")).toHaveLength(halo ? 1 : 0);
           expect(log.assigned.some((a) => a.prop === "globalAlpha")).toBe(false);
           const allowed = tokens(theme);
           const alphaTokens = [
@@ -143,7 +150,7 @@ describe("Feature: cemetery-theme, Property 4: Painter call discipline", () => {
             ...[...allowed].map((t) => t + ALPHA_ZERO_BYTE),
             ...[...allowed].map((t) => t + MOON_HALO_ALPHA_BYTE),
             ...[...allowed].map((t) => t + SHADOW_ALPHA_BYTE),
-            ...[LANTERN_ALPHA_BYTE, GLOW_ALPHA_BYTE, VIGNETTE_ALPHA_BYTE, GRAIN_ALPHA_BYTE].flatMap((b) => [...allowed].map((t) => t + b)),
+            ...[LANTERN_ALPHA_BYTE, GLOW_ALPHA_BYTE, VIGNETTE_ALPHA_BYTE, GRAIN_ALPHA_BYTE, HALO_ALPHA_BYTE].flatMap((b) => [...allowed].map((t) => t + b)),
           ];
           const ok = new Set([...allowed, ...alphaTokens]);
           for (const a of log.assigned) {

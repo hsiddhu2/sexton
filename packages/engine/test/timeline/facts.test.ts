@@ -174,9 +174,10 @@ describe("timelineFacts on the recorded fixtures", () => {
     expect(out.coveredFrom).toBeNull();
   });
 
-  it("node-sass has the install script flag true for 7.0.3 and null for the others", () => {
+  it("node-sass has the install script flag true for 7.0.3 and its Earlier version 7.0.2, and null for the others", () => {
+    // Spec new-signals, task 7.1: the recorder adds the Earlier version's flag.
     const out = timelineFacts(load("node-sass", "7.0.3"));
-    for (const v of out.versions) expect(v.installScript).toBe(v.version === "7.0.3" ? true : null);
+    for (const v of out.versions) expect(v.installScript).toBe(v.version === "7.0.3" || v.version === "7.0.2" ? true : null);
     expect(out.versions.some((v) => v.version === "7.0.3")).toBe(true);
   });
 });

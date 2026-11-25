@@ -2,7 +2,8 @@ import type { PackageHealth } from "@sexton/api";
 import type { Rect } from "../scene/layout.js";
 import type { FormView } from "../time/form-at.js";
 import { punchline } from "../epitaph/epitaph.js";
-import { tooltipContent, tooltipRect } from "./tooltip-model.js";
+import { useLayoutEffect, useRef, useState } from "react";
+import { tooltipContent, tooltipPlace, TOOLTIP_EST_H } from "./tooltip-model.js";
 
 export const TOOLTIP_ID = "grave-tooltip";
 
@@ -13,19 +14,31 @@ export interface GraveTooltipProps {
   readonly asOfDate?: string;
   /** The width of the Scene, to keep the tooltip inside it. */
   readonly sceneWidth?: number;
+  /** The height of the Scene, and the other graves' name labels the tooltip keeps off where it can (bug 3). */
+  readonly sceneHeight?: number;
+  readonly labels?: readonly Rect[];
   /** Serious mode hides the Punchline (spec cemetery-undead, 8.2). */
   readonly serious?: boolean;
   readonly onPointerEnter: () => void;
   readonly onPointerLeave: () => void;
 }
 
-export function GraveTooltip({ pkg, cell, view, asOfDate, sceneWidth, serious = false, onPointerEnter, onPointerLeave }: GraveTooltipProps) {
+export function GraveTooltip({ pkg, cell, view, asOfDate, sceneWidth, sceneHeight, labels = [], serious = false, onPointerEnter, onPointerLeave }: GraveTooltipProps) {
   const content = tooltipContent(pkg, view, asOfDate);
-  const { left, top, width } = tooltipRect(cell, sceneWidth);
+  // Measured before paint, so the first frame already sits in its place.
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [height, setHeight] = useState(TOOLTIP_EST_H);
+  useLayoutEffect(() => {
+    const h = ref.current?.offsetHeight ?? 0;
+    if (h > 0 && h !== height) setHeight(h);
+  });
+  const scene = sceneWidth === undefined ? undefined : { width: sceneWidth, height: sceneHeight ?? Number.POSITIVE_INFINITY };
+  const { left, top, width } = tooltipPlace(cell, scene, height, labels);
   const pending = view !== undefined && view.state === null;
   const line = serious || pending ? null : punchline(content.state, content.reason);
   return (
     <div
+      ref={ref}
       id={TOOLTIP_ID}
       role="tooltip"
       className="grave-tooltip"

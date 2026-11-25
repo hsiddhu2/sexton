@@ -127,6 +127,15 @@
     }
   ],
   "versions": {
-    "4.17.21": {}
+    "4.17.21": {
+      "_npmUser": {
+        "name": "bnjmnt4n"
+      }
+    },
+    "4.17.20": {
+      "_npmUser": {
+        "name": "bnjmnt4n"
+      }
+    }
   }
 }

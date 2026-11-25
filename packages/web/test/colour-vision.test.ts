@@ -141,3 +141,15 @@ describe("the tokens added by cemetery-undead", () => {
     }
   });
 });
+
+describe("cemetery-undead-2, requirement 4: the pit edge stands apart from the selection ring", () => {
+  it("strokes the pit edge in costume.flower, at least 20 CIEDE2000 from the ring and the focus colour", () => {
+    for (const theme of ["light", "dark"] as const) {
+      const p = PALETTE[theme];
+      const edge = lab(channels(p.costume.flower).map(linear) as unknown as Rgb);
+      for (const gold of [p.ring, p.focus]) {
+        expect(deltaE2000(edge, lab(channels(gold).map(linear) as unknown as Rgb)), `${p.costume.flower} against ${gold}`).toBeGreaterThanOrEqual(20);
+      }
+    }
+  });
+});

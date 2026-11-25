@@ -76,7 +76,7 @@ describe("focus trap", () => {
 });
 
 describe("Drawer component", () => {
-  it("has dialog semantics, shows all ten signals in order, the state, rules and remediation as text", () => {
+  it("has dialog semantics, shows all twelve signals in order, the state, rules and remediation as text", () => {
     const { response, pkg } = withExtras();
     const { container } = render(<Drawer model={drawerModel(response, pkg)} onClose={() => undefined} />);
     const dialog = screen.getByRole("dialog", { name: `${pkg.name} ${pkg.installedVersion}` });
@@ -110,7 +110,7 @@ describe("Drawer component", () => {
     const dialog = screen.getByRole("dialog");
     expect(dialog.querySelectorAll("pre")).toHaveLength(0);
     for (const n of SIGNAL_NAMES) expect(dialog.textContent).toContain(`unavailable: why-${n}`);
-    expect(dialog.querySelectorAll(".drawer-missing li")).toHaveLength(10);
+    expect(dialog.querySelectorAll(".drawer-missing li")).toHaveLength(12);
     expect(dialog.textContent).toContain("no failing policy rules for this package");
     expect(dialog.textContent).toContain("no remediation proposed yet");
   });
@@ -169,7 +169,7 @@ describe("Drawer in Cemetery", () => {
     expect(screen.getByRole("dialog")).toBeTruthy();
   });
 
-  it("opens for a package with all ten signals unavailable without throwing", () => {
+  it("opens for a package with all twelve signals unavailable without throwing", () => {
     const response = cheapScan(1);
     (response.report.packages as unknown as PackageHealth[])[0] = allUnavailable(cheapPackage("pkg-0", "Alive"));
     const { container } = render(<Cemetery response={response} theme="light" reducedMotion={true} />);

@@ -1,6 +1,6 @@
 // Test helpers: a scripted transport and a fixed clock. No network anywhere in tests.
 
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CachedFetcher, MemoryCacheStore } from "../src/cache.js";
@@ -54,7 +54,28 @@ function readJson(path: string): unknown {
   return JSON.parse(readFileSync(path, "utf8")) as unknown;
 }
 
-/** Builds routes for one package from its recorded fixtures. */
+/**
+ * Routes for the recorded packuments of new dependency names (spec new-signals, task 7.2). A name that is itself a
+ * fixture package is answered by that package's own routes, so it is left out here.
+ */
+export function newDependencyRoutes(): Route[] {
+  const root = join(FIXTURES_DIR, "new-dependencies");
+  if (!existsSync(root)) return [];
+  return readdirSync(root)
+    .sort()
+    .filter((folder) => !existsSync(join(FIXTURES_DIR, "packages", folder)))
+    .flatMap((folder) => {
+      const name = folder.replace("__", "/");
+      const encoded = name.startsWith("@") ? `@${encodeURIComponent(name.slice(1))}` : encodeURIComponent(name);
+      const dir = join(root, folder);
+      return [
+        { url: `https://registry.npmjs.org/${encoded}`, accept: "application/json", json: readJson(join(dir, "packument.json")) },
+        { url: `https://registry.npmjs.org/${encoded}`, accept: ABBREVIATED_ACCEPT, json: readJson(join(dir, "abbreviated.json")) },
+      ];
+    });
+}
+
+/** Builds routes for one package from its recorded fixtures, followed by the new-dependency routes. */
 export function fixtureRoutes(name: string, version: string): Route[] {
   const dir = fixtureDirFor(name);
   const encoded = name.startsWith("@") ? `@${encodeURIComponent(name.slice(1))}` : encodeURIComponent(name);
@@ -93,5 +114,6 @@ export function fixtureRoutes(name: string, version: string): Route[] {
       routes.push({ url: `https://api.osv.dev/v1/vulns/${encodeURIComponent(v.id)}`, json: readJson(join(vulnsDir, `${v.id}.json`)) });
     }
   }
+  routes.push(...newDependencyRoutes());
   return routes;
 }

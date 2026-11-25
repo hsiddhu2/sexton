@@ -108,3 +108,31 @@ describe("Feature: cli-and-action, Property 47: importSites conditions", () => {
     );
   });
 });
+
+describe("scan table: Publisher and New deps columns (spec new-signals, Requirement 6.3)", () => {
+  it("shows the publisher status and the count of new dependencies, 5+ when capped, and none without an earlier version", () => {
+    const base = fc.sample(arbHostileHealth, { numRuns: 1, seed: 7 })[0];
+    if (base === undefined) throw new Error("no sample");
+    const at = "2026-11-12T00:00:00.000Z";
+    const src = "https://registry.npmjs.org/x";
+    const record = { version: "1.0.0", publisher: "a", method: "token" as const, publishTime: at };
+    const row = (publisherChange: HealthReport["packages"][number]["signals"]["publisherChange"], newDependency: HealthReport["packages"][number]["signals"]["newDependency"]) => {
+      const report: HealthReport = {
+        generatedAt: at,
+        packages: [{ ...base, name: "x", installedVersion: "1.0.1", state: "Alive", stateReason: "r", signals: { ...base.signals, publisherChange, newDependency } }],
+      };
+      return renderTable(report)[1]?.trimEnd() ?? "";
+    };
+    const compared = { status: "compared" as const, installedVersion: "1.0.1", earlierVersion: "1.0.0", installedPublishTime: at, added: [], capped: false, addedCount: 2 };
+    expect(row({ value: { status: "changed", earlier: record, installed: record }, source: src, fetchedAt: at, available: true }, { value: compared, source: src, fetchedAt: at, available: true })).toMatch(/changed\s+2$/);
+    expect(
+      row(
+        { value: { status: "no-earlier-version", installed: null }, source: src, fetchedAt: at, available: true },
+        { value: { ...compared, capped: true, addedCount: 9, added: Array.from({ length: 5 }, (_, i) => ({ name: `d${String(i)}`, range: "^1.0.0", resolvedVersion: null, resolvedPublishTime: null, installScript: null, fresh: false })) }, source: src, fetchedAt: at, available: true },
+      ),
+    ).toMatch(/none\s+5\+$/);
+    expect(row({ value: null, source: src, fetchedAt: at, available: false, reason: "HTTP 503" }, { value: null, source: src, fetchedAt: at, available: false, reason: "HTTP 503" })).toMatch(
+      /unavailable\s+unavailable$/,
+    );
+  });
+});

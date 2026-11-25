@@ -165,21 +165,22 @@ describe("keyboard reach (Requirement 10.5)", () => {
     const user = userEvent.setup();
     const { container } = mount({ apiBase: API });
     await ready();
-    // Spec cemetery-undead, Deliberate test change 17: the header (the disabled Sound button is not a stop), then the
-    // roving grave, then the Footer bar: Play, History date and the two Replay buttons.
+    // Spec cemetery-undead, Deliberate test change 17: the header, then the roving grave, then the Footer bar: Play,
+    // History date and the two Replay buttons. Spec cemetery-undead-2, Deliberate test change 2: Sound is now a stop
+    // after Scan, so 12 presses and the grave at position 7.
     const seen: string[] = [];
     const reached: HTMLElement[] = [];
-    for (let i = 0; i < 11; i += 1) {
+    for (let i = 0; i < 12; i += 1) {
       await user.tab();
       const el = document.activeElement as HTMLElement;
       reached.push(el);
       seen.push(el.getAttribute("aria-label") ?? (el.textContent === "" ? el.getAttribute("name") : el.textContent) ?? el.tagName);
     }
-    expect(seen.slice(0, 6)).toEqual(["Download evidence pack as JSON", "Download evidence pack as Markdown", "repo", "Scan", "Serious mode", "Legend"]);
+    expect(seen.slice(0, 7)).toEqual(["Download evidence pack as JSON", "Download evidence pack as Markdown", "repo", "Scan", "Sound off", "Serious mode", "Legend"]);
     const first = container.querySelector<HTMLElement>('button[data-grave-index][tabindex="0"]');
     expect(first).not.toBeNull();
-    expect(reached[6]).toBe(first);
-    expect(seen.slice(7)).toEqual(["Play", "History date", "axios, Mar 2026", "keyv, Aug 2026"]);
+    expect(reached[7]).toBe(first);
+    expect(seen.slice(8)).toEqual(["Play", "History date", "axios, Mar 2026", "keyv, Aug 2026"]);
     // The roving stop is the only grave in the tab sequence.
     expect(container.querySelectorAll('button[data-grave-index]:not([tabindex="-1"])')).toHaveLength(1);
   });
@@ -249,6 +250,8 @@ describe("focus indicator (Requirement 10.7)", () => {
       ".scrub input:focus-visible",
       ".scrub-play:focus-visible",
       ".serious-toggle:focus-visible",
+      // Spec cemetery-undead-2, Deliberate test change 3.
+      ".sound-toggle:focus-visible",
       ".replay-button:focus-visible",
       ".repo-form button:focus-visible",
       ".repo-form input:focus-visible",

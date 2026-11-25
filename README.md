@@ -6,6 +6,8 @@ Sexton finds the dependencies that will hurt you, proves it, and opens the pull 
 
 Characters are original vector art. The ghost is original art.
 
+Sound is off by default. The Sound button turns it on, and every sound is made in code.
+
 Status: pre-release. Release 0.1 is due on 4 Dec 2026. Each feature below says whether it is on `main` today, in progress, or planned.
 
 ## The problem
@@ -14,7 +16,7 @@ Supply-chain attacks arrive through packages that looked fine in the lockfile. T
 
 ## What Sexton does
 
-- **Signals.** It scores up to 300 direct dependencies per scan on ten signals. These ten measure the five product signals in the roadmap, from last publish date and known advisories to maintainer change, provenance and transitive reach. Every signal carries its source URL and fetch time. On `main` today.
+- **Signals.** It scores up to 300 direct dependencies per scan on twelve signals. These twelve measure the seven product signals in the roadmap, from last publish date and known advisories to maintainer change, provenance, transitive reach, a change of publisher and a newly added dependency. Every signal carries its source URL and fetch time. On `main` today.
 - **History.** It keeps a dated snapshot of each package's maintainers, install scripts and attestations, because no registry API keeps that history. A maintainer change or lost provenance is computed from the history, not from one read. The snapshot engine is on `main`. The hosted daily job is in progress.
 - **Policy.** You commit a `sexton.policy.yml` with four rule types and package matchers. Sexton evaluates it and fails CI when a rule breaks. The policy engine, `sexton check` and the GitHub Action are on `main`.
 - **Remediation pull requests.** For each dangerous package it proposes one fix: a version bump, a removal, or a migration such as node-sass to sass. The pull request carries its evidence. The plans are on `main` in the engine and the CLI. Hosted scans on `main` carry the plans too, without removals, and name the commit they read; the hosted site shows them after its next deploy. Opening the pull request is on `main` for the demo repository `hsiddhu2/sexton-demo` only, and arrives on the hosted site at its next deploy. Every other repository shows the plan and the pull request body, with no button.
@@ -26,7 +28,7 @@ Each package gets exactly one state. The rules run in this order, and the first 
 
 | State | When |
 |---|---|
-| Possessed | A maintainer changed in the last 90 days, provenance regressed, or a new install script appeared |
+| Possessed | A maintainer changed in the last 90 days, provenance regressed, a new install script appeared, a new dependency has an install script or was published within 7 days, or the publisher changed from a trusted publisher to a token |
 | Dead | The installed version is deprecated, or the last publish was more than 24 months ago and it has an advisory |
 | Haunted | It has a High or Critical advisory |
 | Restless | The last publish was more than 24 months ago, or it has a Low or Moderate advisory |
@@ -134,7 +136,7 @@ Releases are sequenced, not promised by date. Release 0.1 lists each item's stat
 ### 0.1
 
 - npm, direct dependencies, public GitHub repositories. Repository intake is on `main`.
-- Five signals: abandonment, advisories, install scripts, maintainer change, provenance regression. On `main`.
+- Seven signals: abandonment, advisories, install scripts, maintainer change, provenance regression, publisher change, new dependency. On `main`.
 - Daily snapshotter for maintainers and attestations. The engine is on `main`, and the hosted schedule is in progress.
 - Policy file with four rule types and packageRules matchers. On `main`.
 - Remediation pull requests: bump, remove, and one migration (node-sass to sass), planned

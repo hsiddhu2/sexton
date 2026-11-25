@@ -1,6 +1,6 @@
 # Sexton: Product Requirements
 
-Version 0.5, 24 Nov 2026. Owner: Harpreet Singh Siddhu. This document is the single source of truth for what Sexton is and is not. Every spec, every design decision and every line of the write-up traces back to a numbered requirement here. If something is not in this document, it is not in scope. Changes to this document are versioned and dated.
+Version 0.7, 25 Nov 2026. Owner: Harpreet Singh Siddhu. This document is the single source of truth for what Sexton is and is not. Every spec, every design decision and every line of the write-up traces back to a numbered requirement here. If something is not in this document, it is not in scope. Changes to this document are versioned and dated.
 
 ## 1. Product statement
 
@@ -78,6 +78,8 @@ R-SG-6. FOR EACH direct dependency, THE SYSTEM SHALL read the resolved dependenc
 R-SG-7. THE SYSTEM SHALL cache every registry, deps.dev and OSV response for 24 hours keyed by package and version and SHALL NOT fetch the same key twice within that window.
 R-SG-8. THE SYSTEM SHALL send a User-Agent identifying Sexton and a contact address on every outbound request.
 R-SG-9. WHEN any upstream returns HTTP 429, THE SYSTEM SHALL back off with jitter, retry at most three times, and on final failure SHALL mark that signal as "unavailable" for that package rather than failing the scan.
+R-SG-10. FOR EACH direct dependency, THE SYSTEM SHALL compare who published the installed version, and how (a trusted publisher through OIDC or a token by hand), with the greatest earlier semver version published before it, and SHALL record both publishers, both methods and both publish times.
+R-SG-11. FOR EACH direct dependency, THE SYSTEM SHALL record each dependency the installed version added since that earlier version, at most five per package, with its range, the version that range resolved to when the installed version was published, that version's publish time and whether it has an install script, and SHALL record when the cap is hit.
 
 ### 5.3 Snapshotter
 
@@ -89,7 +91,7 @@ R-SN-3. THE SYSTEM SHALL expose a package's snapshot history to the signals engi
 
 R-ST-1. THE SYSTEM SHALL assign exactly one state to each direct dependency from this set: Alive, Restless, Haunted, Dead, Possessed.
 R-ST-2. State rules, evaluated in order, first match wins:
-- Possessed: a maintainer change event in the last 90 days, OR a provenance regression, OR a new install script appeared in a version published in the last 90 days.
+- Possessed: a maintainer change event in the last 90 days, OR a provenance regression, OR a new install script appeared in a version published in the last 90 days, OR a newly added dependency has an install script or was published at most 7 days before the installed version, OR the publisher changed from a trusted publisher to a token. The last two are checked after the first three.
 - Dead: deprecated flag set on the installed version, OR (last publish more than 24 months ago AND one or more advisories of any severity on the installed version).
 - Haunted: one or more advisories of severity High or Critical on the installed version.
 - Restless: last publish more than 24 months ago, OR one or more advisories of severity Low or Moderate.
@@ -137,6 +139,7 @@ R-UI-4. Selecting a grave SHALL show the package's signals with sources, its sta
 R-UI-5. The scene SHALL be readable without the legend by a first-time viewer. Verified by one person outside the project before submission.
 R-UI-6. The scene SHALL render 300 graves without visible lag on a 2020 laptop.
 R-UI-7. The UI SHALL meet WCAG 2.1 AA for text contrast and keyboard navigation. Every grave SHALL be reachable by keyboard.
+R-UI-8. THE SYSTEM MAY play sound generated in code and show short speech bubbles over the cemetery. Sound SHALL be off by default and SHALL not start before the user turns it on. Speech bubbles SHALL never cover a grave's name, SHALL be hidden in Serious mode, and SHALL carry no information the grave's tooltip and drawer do not.
 
 ### 5.9 CLI and Action
 
@@ -200,3 +203,5 @@ Every Kiro spec names the requirements it implements. Every PR names the spec. T
 0.4, 23 Nov 2026. R-UI-1: Not-published form and pull request marker. R-UI-4: drawer shows the scan date. Time features: history scrubber, burial, replay.
 0.5, 24 Nov 2026. R-UI-1: Alive and Restless get distinct forms; characters and costumes act out each state.
 0.6, 24 Nov 2026. R-UI-1: a replay draws its one grave full size. The cemetery footer stays in view at 960 px and wider only, because below that the wrapped controls would leave almost no cemetery on screen.
+0.7, 25 Nov 2026. R-UI-8: sound off by default and speech bubbles. R-UI-1: a grave's art never covers another grave's name; the replay header labels its window end and the time shown; a replay's grave bursts open at its Possessed stop; a burial has a priest; the graves rise on first load.
+0.8, 25 Nov 2026. R-SG-10 publisher change and R-SG-11 new dependency signals. R-ST-2: two Possessed conditions added after the existing three.

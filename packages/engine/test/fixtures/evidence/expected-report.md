@@ -2,7 +2,7 @@
 
 ## Integrity
 
-- Digest: `d797b6ec90836aa7c2f3fb030dce8e308fae006568121f48223604b852ae3ae7`
+- Digest: `212bb42bab4b875d0cdbf747878f22e756a5f37eaa24a61c9ad3f0382ed37a5c`
 - Algorithm: `SHA-256` over the `RFC 8785` canonical form of `body`, UTF-8 encoded
 
 This digest shows an edit only to a reviewer who got it from somewhere else. It is not a signature.
@@ -14,7 +14,7 @@ To check it, run `jq -cjS .body <evidence JSON file> | shasum -a 256` and compar
 - Repository: `https://github.com/sexton-demo/fixture`
 - Commit: not recorded (`commit not recorded, the scan read the default branch head`)
 - Generated at: `2026-11-12T00:00:00.000Z`
-- Engine version: `0.1.0`
+- Engine version: `0.2.0`
 - Policy: version 1, source `default`, digest none
 - package.json digest: not recorded
 - package-lock.json digest: not recorded
@@ -73,6 +73,8 @@ Failures:
 | maintainerChange | history insufficient | `https://registry.npmjs.org/event-stream` | `2026-11-12T00:00:00.000Z` |
 | provenanceRegression | history insufficient: `history is empty` | `https://registry.npmjs.org/-/npm/v1/attestations/event-stream@3.3.6` | `2026-11-12T00:00:00.000Z` |
 | newInstallScript | none | `https://registry.npmjs.org/event-stream` | `2026-11-12T00:00:00.000Z` |
+| publisherChange | no earlier version | `https://registry.npmjs.org/event-stream` | `2026-11-12T00:00:00.000Z` |
+| newDependency | no earlier version | `https://registry.npmjs.org/event-stream` | `2026-11-12T00:00:00.000Z` |
 
 Advisories:
 - `GHSA-mh6f-8j2x-4483` `Critical`: `Critical severity vulnerability that affects event-stream and flatmap-stream`
@@ -91,6 +93,8 @@ Advisories:
 | maintainerChange | history insufficient | `https://registry.npmjs.org/left-pad` | `2026-11-12T00:00:00.000Z` |
 | provenanceRegression | history insufficient: `history is empty` | `https://registry.npmjs.org/-/npm/v1/attestations/left-pad@1.3.0` | `2026-11-12T00:00:00.000Z` |
 | newInstallScript | none | `https://registry.npmjs.org/left-pad` | `2026-11-12T00:00:00.000Z` |
+| publisherChange | same: `stevemao` (token) | `https://registry.npmjs.org/left-pad` | `2026-11-12T00:00:00.000Z` |
+| newDependency | none | `https://registry.npmjs.org/left-pad` | `2026-11-12T00:00:00.000Z` |
 
 ### `node-sass` `7.0.3`
 
@@ -106,6 +110,8 @@ Advisories:
 | maintainerChange | history insufficient | `https://registry.npmjs.org/node-sass` | `2026-11-12T00:00:00.000Z` |
 | provenanceRegression | history insufficient: `history is empty` | `https://registry.npmjs.org/-/npm/v1/attestations/node-sass@7.0.3` | `2026-11-12T00:00:00.000Z` |
 | newInstallScript | none | `https://registry.npmjs.org/node-sass` | `2026-11-12T00:00:00.000Z` |
+| publisherChange | same: `xzyfer` (token) | `https://registry.npmjs.org/node-sass` | `2026-11-12T00:00:00.000Z` |
+| newDependency | 2 new: `npmlog` `^5.0.0` -> `5.0.1` (published `2021-09-02T14:33:09.109Z`, install script no); `request` `^2.88.0` -> `2.88.2` (published `2020-02-11T16:35:36.122Z`, install script no) | `https://registry.npmjs.org/node-sass` | `2026-11-12T00:00:00.000Z` |
 
 ### `request` `2.88.2`
 
@@ -121,6 +127,8 @@ Advisories:
 | maintainerChange | history insufficient | `https://registry.npmjs.org/request` | `2026-11-12T00:00:00.000Z` |
 | provenanceRegression | history insufficient: `history is empty` | `https://registry.npmjs.org/-/npm/v1/attestations/request@2.88.2` | `2026-11-12T00:00:00.000Z` |
 | newInstallScript | none | `https://registry.npmjs.org/request` | `2026-11-12T00:00:00.000Z` |
+| publisherChange | same: `mikeal` (token) | `https://registry.npmjs.org/request` | `2026-11-12T00:00:00.000Z` |
+| newDependency | none | `https://registry.npmjs.org/request` | `2026-11-12T00:00:00.000Z` |
 
 Advisories:
 - `GHSA-p8p7-x288-28g6` `Moderate`: `Server-Side Request Forgery in Request`
@@ -139,6 +147,8 @@ Advisories:
 | maintainerChange | history insufficient | `https://registry.npmjs.org/uuid` | `2026-11-12T00:00:00.000Z` |
 | provenanceRegression | history insufficient: `history is empty` | `https://registry.npmjs.org/-/npm/v1/attestations/uuid@9.0.1` | `2026-11-12T00:00:00.000Z` |
 | newInstallScript | none | `https://registry.npmjs.org/uuid` | `2026-11-12T00:00:00.000Z` |
+| publisherChange | same: `ctavan` (token) | `https://registry.npmjs.org/uuid` | `2026-11-12T00:00:00.000Z` |
+| newDependency | none | `https://registry.npmjs.org/uuid` | `2026-11-12T00:00:00.000Z` |
 
 Advisories:
 - `GHSA-w5hq-g745-h8pq` `Moderate`: `uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided`
@@ -157,6 +167,8 @@ Advisories:
 | maintainerChange | history insufficient | `https://registry.npmjs.org/lodash` | `2026-11-12T00:00:00.000Z` |
 | provenanceRegression | history insufficient: `history is empty` | `https://registry.npmjs.org/-/npm/v1/attestations/lodash@4.17.21` | `2026-11-12T00:00:00.000Z` |
 | newInstallScript | none | `https://registry.npmjs.org/lodash` | `2026-11-12T00:00:00.000Z` |
+| publisherChange | same: `bnjmnt4n` (token) | `https://registry.npmjs.org/lodash` | `2026-11-12T00:00:00.000Z` |
+| newDependency | none | `https://registry.npmjs.org/lodash` | `2026-11-12T00:00:00.000Z` |
 
 Advisories:
 - `GHSA-r5fr-rjxr-66jc` `High`: `lodash vulnerable to Code Injection via '_.template' imports key names`
@@ -176,6 +188,8 @@ Advisories:
 | maintainerChange | history insufficient | `https://registry.npmjs.org/colors` | `2026-11-12T00:00:00.000Z` |
 | provenanceRegression | history insufficient: `history is empty` | `https://registry.npmjs.org/-/npm/v1/attestations/colors@1.4.0` | `2026-11-12T00:00:00.000Z` |
 | newInstallScript | none | `https://registry.npmjs.org/colors` | `2026-11-12T00:00:00.000Z` |
+| publisherChange | same: `dabh` (token) | `https://registry.npmjs.org/colors` | `2026-11-12T00:00:00.000Z` |
+| newDependency | none | `https://registry.npmjs.org/colors` | `2026-11-12T00:00:00.000Z` |
 
 ### `express` `4.18.2`
 
@@ -191,6 +205,8 @@ Advisories:
 | maintainerChange | history insufficient | `https://registry.npmjs.org/express` | `2026-11-12T00:00:00.000Z` |
 | provenanceRegression | history insufficient: `history is empty` | `https://registry.npmjs.org/-/npm/v1/attestations/express@4.18.2` | `2026-11-12T00:00:00.000Z` |
 | newInstallScript | none | `https://registry.npmjs.org/express` | `2026-11-12T00:00:00.000Z` |
+| publisherChange | same: `dougwilson` (token) | `https://registry.npmjs.org/express` | `2026-11-12T00:00:00.000Z` |
+| newDependency | none | `https://registry.npmjs.org/express` | `2026-11-12T00:00:00.000Z` |
 
 Advisories:
 - `GHSA-qw6h-vgh9-j6wx` `Low`: `express vulnerable to XSS via response.redirect()`
@@ -210,6 +226,8 @@ Advisories:
 | maintainerChange | history insufficient | `https://registry.npmjs.org/moment` | `2026-11-12T00:00:00.000Z` |
 | provenanceRegression | history insufficient: `history is empty` | `https://registry.npmjs.org/-/npm/v1/attestations/moment@2.29.4` | `2026-11-12T00:00:00.000Z` |
 | newInstallScript | none | `https://registry.npmjs.org/moment` | `2026-11-12T00:00:00.000Z` |
+| publisherChange | same: `ichernev` (token) | `https://registry.npmjs.org/moment` | `2026-11-12T00:00:00.000Z` |
+| newDependency | none | `https://registry.npmjs.org/moment` | `2026-11-12T00:00:00.000Z` |
 
 Advisories:
 - `GHSA-4p3w-j4w9-5jqw` `Moderate`: `moment vulnerable to Path Traversal via crafted non-string locale name`
@@ -228,6 +246,8 @@ Advisories:
 | maintainerChange | history insufficient | `https://registry.npmjs.org/react` | `2026-11-12T00:00:00.000Z` |
 | provenanceRegression | history insufficient: `history is empty` | `https://registry.npmjs.org/-/npm/v1/attestations/react@18.3.1` | `2026-11-12T00:00:00.000Z` |
 | newInstallScript | none | `https://registry.npmjs.org/react` | `2026-11-12T00:00:00.000Z` |
+| publisherChange | same: `react-bot` (token) | `https://registry.npmjs.org/react` | `2026-11-12T00:00:00.000Z` |
+| newDependency | none | `https://registry.npmjs.org/react` | `2026-11-12T00:00:00.000Z` |
 
 ### `semver` `7.8.6`
 
@@ -243,11 +263,13 @@ Advisories:
 | maintainerChange | history insufficient | `https://registry.npmjs.org/semver` | `2026-11-12T00:00:00.000Z` |
 | provenanceRegression | history insufficient: `history is empty` | `https://registry.npmjs.org/-/npm/v1/attestations/semver@7.8.6` | `2026-11-12T00:00:00.000Z` |
 | newInstallScript | none | `https://registry.npmjs.org/semver` | `2026-11-12T00:00:00.000Z` |
+| publisherChange | same: `GitHub Actions` (trusted-publisher) | `https://registry.npmjs.org/semver` | `2026-11-12T00:00:00.000Z` |
+| newDependency | none | `https://registry.npmjs.org/semver` | `2026-11-12T00:00:00.000Z` |
 
 ## SBOM
 
 - Spec version: `1.5`
-- Serial number: `urn:uuid:63dcdc93-2b6d-8586-ac76-079a30b0e8b8`
+- Serial number: `urn:uuid:53ba4171-321e-81f4-8d6e-9720275e7ae4`
 - Components: 11
 
 - `pkg:npm/colors@1.4.0`

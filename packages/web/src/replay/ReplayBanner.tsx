@@ -1,6 +1,7 @@
 import type { ReplayInfo } from "@sexton/api";
 
 export const REPLAY_BANNER_TEXT = "Reconstructed from public reports. Not a live scan.";
+export const SOURCES_LEAD = "Sources:";
 
 /** A link only for an address that starts with https:// and holds no white space or control character. */
 export function isSafeSourceUrl(url: string): boolean {
@@ -27,9 +28,12 @@ export function ReplayBanner({ replay, date, notes = [], className }: ReplayBann
       </p>
       <p className="replay-notlive">{REPLAY_BANNER_TEXT}</p>
       <p className="replay-summary">{replay.summary}</p>
-      <ul className="replay-sources">
+      {/* One line, as in the mockup: "Sources:" then the sources, separated by commas (spec cemetery-undead-2, A6). */}
+      <p className="replay-sources">
+        {SOURCES_LEAD}
         {replay.sources.map((source, i) => (
-          <li key={i}>
+          <span key={i} className="replay-source">
+            {i === 0 ? " " : ", "}
             {isSafeSourceUrl(source.url) ? (
               <a href={source.url} target="_blank" rel="noopener noreferrer">
                 {source.label}
@@ -37,9 +41,9 @@ export function ReplayBanner({ replay, date, notes = [], className }: ReplayBann
             ) : (
               source.label
             )}
-          </li>
+          </span>
         ))}
-      </ul>
+      </p>
       {notes.map((note) => (
         <p key={note} className="scrub-note">
           {note}

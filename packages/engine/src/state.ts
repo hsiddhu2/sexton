@@ -1,18 +1,24 @@
 // The pure state function. Requirements 2, 11, 12, 13, 14. No I/O here.
 
+import { possessingDependency } from "./new-dependency.js";
 import { fromIso, isAvailable } from "./signal.js";
 import {
   STATE_ORDER,
   type Advisory,
   type MaintainerChangeValue,
+  type NewDependencyValue,
   type NewInstallScriptEvent,
   type NewSignals,
   type PackageSignals,
   type ProvenanceRegressionValue,
+  type PublisherChangeValue,
   type State,
 } from "./types.js";
 
 export { STATE_ORDER };
+
+/** A missing publisher name in the publisher-changed reason. Spec new-signals, owner decision of 25 Nov 2026. */
+export const UNKNOWN_PUBLISHER = "unknown";
 
 /** A last publish strictly older than this many months is stale. Spec state-age-rule. */
 export const STALE_AFTER_MONTHS = 24;
@@ -34,6 +40,9 @@ export interface StateInputs {
   readonly maintainerChange?: MaintainerChangeValue;
   readonly provenanceRegression?: ProvenanceRegressionValue;
   readonly newInstallScript?: readonly NewInstallScriptEvent[];
+  /** Spec new-signals. undefined means unavailable. */
+  readonly publisherChange?: PublisherChangeValue;
+  readonly newDependency?: NewDependencyValue;
 }
 
 export interface StateResult {
@@ -53,7 +62,9 @@ export function monthsBefore(now: Date, months: number): Date {
  * Age alone never gives Dead: Dead needs deprecation, or staleness together with an advisory.
  * Rules only use conditions whose signals are available. Requirement 9, 11, 14, as corrected
  * by spec state-age-rule.
- * Possessed comes only from the three Possession inputs. Requirement 9.8.
+ * Possessed comes only from the Possession inputs. Requirement 9.8. Spec new-signals adds two rules after the
+ * existing three: a new dependency with an install script or published within 7 days of the parent, then a publisher
+ * change from a trusted publisher to a token.
  */
 export function evaluateState(inputs: StateInputs, now: Date): StateResult {
   // Possessed, first, before the all-unavailable shortcut. Requirement 9.1, 9.12.
@@ -70,6 +81,24 @@ export function evaluateState(inputs: StateInputs, now: Date): StateResult {
   const added = inputs.newInstallScript?.[0];
   if (added !== undefined) {
     return { state: "Possessed", stateReason: `install script added in ${added.version}` };
+  }
+  // Spec new-signals, Requirement 3.1, 3.2, 3.4.
+  const dependency = inputs.newDependency;
+  const planted = dependency === undefined ? undefined : possessingDependency(dependency);
+  if (dependency !== undefined && planted !== undefined) {
+    return { state: "Possessed", stateReason: `new dependency in ${dependency.installedVersion}: ${planted.name}` };
+  }
+  const publisher = inputs.publisherChange;
+  if (
+    publisher !== undefined &&
+    publisher.status === "changed" &&
+    publisher.earlier.method === "trusted-publisher" &&
+    publisher.installed.method === "token"
+  ) {
+    return {
+      state: "Possessed",
+      stateReason: `publisher changed in ${publisher.installed.version}: ${publisher.earlier.publisher ?? UNKNOWN_PUBLISHER} to ${publisher.installed.publisher ?? UNKNOWN_PUBLISHER}`,
+    };
   }
 
   const hasPublish = inputs.lastPublish !== undefined;
@@ -117,7 +146,7 @@ export function evaluateState(inputs: StateInputs, now: Date): StateResult {
 /** Adapts signal envelopes to state inputs and evaluates. ISO at the boundary, Date inside. Requirement 2. */
 export function stateFromSignals(
   signals: Pick<PackageSignals, "lastPublish" | "deprecated" | "advisories"> &
-    Partial<Pick<NewSignals, "maintainerChange" | "provenanceRegression" | "newInstallScript">>,
+    Partial<Pick<NewSignals, "maintainerChange" | "provenanceRegression" | "newInstallScript" | "publisherChange" | "newDependency">>,
   now: Date,
 ): StateResult {
   const inputs: { -readonly [K in keyof StateInputs]: StateInputs[K] } = {};
@@ -138,6 +167,12 @@ export function stateFromSignals(
   }
   if (signals.newInstallScript !== undefined && isAvailable(signals.newInstallScript)) {
     inputs.newInstallScript = signals.newInstallScript.value;
+  }
+  if (signals.publisherChange !== undefined && isAvailable(signals.publisherChange)) {
+    inputs.publisherChange = signals.publisherChange.value;
+  }
+  if (signals.newDependency !== undefined && isAvailable(signals.newDependency)) {
+    inputs.newDependency = signals.newDependency.value;
   }
   return evaluateState(inputs, now);
 }

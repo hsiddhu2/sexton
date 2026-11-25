@@ -29,6 +29,8 @@ export function makePackage(o: PackageOptions): PackageHealth {
     maintainerChange: available({ status: "history-insufficient", events: [] }, SRC, FETCHED),
     provenanceRegression: available({ status: "history-insufficient", reason: "none" }, SRC, FETCHED),
     newInstallScript: available([], SRC, FETCHED),
+    publisherChange: available({ status: "no-earlier-version", installed: null }, SRC, FETCHED),
+    newDependency: available({ status: "no-earlier-version", installedVersion: "1.0.0" }, SRC, FETCHED),
   };
   return {
     name: o.name,

@@ -1,6 +1,6 @@
 // Timeline types. Spec cemetery-time, requirements 8 to 10. No I/O here.
 
-import type { Severity, State } from "../types.js";
+import type { NewDependencyValue, PublisherChangeValue, Severity, State } from "../types.js";
 
 export const TIMELINE_MAX_VERSIONS = 50;
 export const TIMELINE_MAX_ADVISORIES = 20;
@@ -34,6 +34,9 @@ export interface TimelineFacts {
   readonly coveredFrom: string | null;
   /** Null means unavailable before the scan date. At most 20. */
   readonly advisories: readonly TimelineAdvisory[] | null;
+  /** Spec new-signals, 4.1: the scan's values. Null or absent means unavailable. */
+  readonly publisherChange?: PublisherChangeValue | null;
+  readonly newDependency?: NewDependencyValue | null;
 }
 
 /** What a grave shows: one State or the Not-published form (state null), and whether it has a Ghost. */
