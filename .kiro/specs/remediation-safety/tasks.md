@@ -1,0 +1,127 @@
+# Implementation Plan
+
+Run the exploration tests on the UNFIXED code (kiro/depth at 58b157d) before any fix. All paths are under packages/engine unless stated. No network in tests, and no fixture is re-recorded. No dependency is added. Paths a task may change: `src/remediation`, `test/remediation` and its goldens, `docs/requirements.md` (one change-log line) and this spec folder. In `src/remediation/pr-body.ts`, change only the lines that design.md names, because another branch edits the signal rows of that file.
+
+Every top-level task ends with a review sub-task. It runs the gravedigger agent over `packages/engine/src/remediation` and the security-reviewer agent over the task's diff, and records both verdict lines in that sub-task's notes. The spec is done only when gravedigger's last line is "safe" or "safe with notes".
+
+- [ ] 1. Write the bug condition exploration tests
+  - **Property 1: Bug Condition D1** - A Non-registry range is never overwritten
+  - **Property 2: Bug Condition D2** - An Incomplete scan is never reported as "none"
+  - **Property 3: Bug Condition D3** - No remove for an Implicit-use name
+  - **CRITICAL**: These tests MUST FAIL on the unfixed code. A failure confirms the bug.
+  - **DO NOT attempt to fix the test or the code when it fails**
+  - _Bug_Condition: isBugConditionD1, isBugConditionD2, isBugConditionD3 from design.md_
+  - _Expected_Behavior: bugfix 2.1 to 2.5_
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.1, 2.2, 2.3, 2.4, 2.5_
+  - [ ] 1.1 Write Property 1 in test/remediation/remediation-safety.test.ts
+    - Cases, each its own `it`: installed `1.0.0`, Haunted, origin `dependencies`, bump data `{ ok: true, published: ["1.0.0", "1.0.1"], deprecated: new Set(), advisories: new Map([["1.0.1", []]]) }`, declared range one of `file:../foo`, `link:../foo`, `git+https://github.com/o/foo.git`, `github:o/foo`, `https://example.com/foo-1.0.0.tgz`, `npm:@fork/foo@^1.2.0`, `workspace:*`, `latest`, and `^` followed by `"1".repeat(256)`.
+    - Assert `status` `unavailable` and the reason. Import `REASON_RANGE_NOT_REGISTRY` from `src/remediation/precheck.js`; until it exists, use the literal string from design.md so the test compiles. Also assert no `edit`, no `chosenVersion`, `buildPrIntent` null and `bumpTargets` empty.
+    - Property over `fc.string({ maxLength: 40 })` filtered to `!isResolvableRange`, plus `arbBumpData` filtered to `ok`. numRuns 1000.
+    - _Requirements: 1.1, 1.2, 2.1, 2.2, 2.3_
+  - [ ] 1.2 Write Property 2 in the same file
+    - Build plans with `runMigrations` and an `InMemoryFileSource`, the way `test/remediation/migration-plan.test.ts:107-119` does.
+    - Cases: 201 `.scss` files named `s000.scss` to `s200.scss` with `/deep/` only in `s200.scss`; one `big.scss` of `.a /deep/ .b {}\n` plus 262144 `x`; one listed path `../escape.scss` next to a clean `a.scss`.
+    - Assert the "## Review before merging" section has the incomplete line and no line equal to `none`.
+    - Property: an arbitrary Complete-scan file set plus one injected cause of incompleteness. numRuns 1000.
+    - _Requirements: 1.3, 1.4, 2.4_
+  - [ ] 1.3 Write Property 3 in the same file
+    - Cases `@types/node`, `@types/express` and `tslib`, each Possessed in `dependencies` with `importSites` 0 and no Recipe. Assert `kind` is not `remove` and there is no `remove-dependency` Edit.
+    - Property: `fc.constantFrom("tslib", "@babel/runtime", "@swc/helpers", "core-js", "regenerator-runtime")`, or `@types/` plus a valid name part, with either origin. numRuns 1000.
+    - _Requirements: 1.5, 2.5_
+  - [ ] 1.4 Run on the unfixed code and record the counterexamples
+    - Run `npx vitest run test/remediation/remediation-safety.test.ts` from packages/engine. **EXPECTED OUTCOME**: Properties 1, 2 and 3 FAIL.
+    - Record each shrunk counterexample here. The expected ones are plan `proposed` with set-range `^1.0.1` for `file:../foo`; the body section `## Review before merging`, blank line, `none` for the 201-file set; and kind `remove` for `@types/node`.
+    - If any case passes on the unfixed code, stop and re-check the root cause in design.md before going on.
+    - _Requirements: 1.1, 1.3, 1.5_
+  - [ ] 1.5 Review: gravedigger and security-reviewer
+    - Run gravedigger over `packages/engine/src/remediation` and security-reviewer over `git diff` of this task. Record both verdict lines here. Expected: gravedigger still "unsafe", because nothing is fixed yet; security-reviewer ready, because only a test file was added.
+    - _Requirements: 1.1, 1.3, 1.5_
+
+- [ ] 2. Write the preservation property tests and run them on the unfixed code
+  - **Property 4 to 9: Preservation** - Everything outside the three bug conditions is unchanged
+  - **IMPORTANT**: Write them observation-first and run them on the UNFIXED code. They MUST PASS there. If one fails, narrow its domain to exclude the bug conditions and run again. Never change source code to make one pass.
+  - _Preservation: Properties 4 to 9 from design.md_
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.11_
+  - [ ] 2.1 Write Properties 4 to 9 in test/remediation/remediation-safety.test.ts
+    - P4 never downgrade, over `arbReportAndOptions`.
+    - P5 planner equals `selectBump` on Registry ranges, over `arbSelectInput`.
+    - P6 range style on Registry ranges.
+    - P7 branch names over `arbReportAndOptions`.
+    - P8 body escaping with `arbHostileHealth`, plus Complete-scan and not-performed migrate bodies.
+    - P9 kind and status outside the bug conditions.
+    - numRuns 1000 for each.
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.11_
+  - [ ] 2.2 Run Properties 4 to 9 on the unfixed code and record the results
+    - **EXPECTED OUTCOME**: P4 to P9 PASS, and P1 to P3 still FAIL.
+    - Record every domain narrowing here, with its reason.
+    - _Requirements: 3.1 to 3.9, 3.11_
+  - [ ] 2.3 Record the golden baseline
+    - Run `npm test -w @sexton/engine` and `npm test -w @sexton/web`, then `git diff --exit-code -- test/fixtures packages/web/public/replay`. Record that the goldens of bugfix 3.10 are unchanged.
+    - _Requirements: 3.10_
+  - [ ] 2.4 Review: gravedigger and security-reviewer
+    - Record both verdict lines here.
+    - _Requirements: 3.1 to 3.11_
+
+- [ ] 3. Fix D1: no bump over a Non-registry range
+  - [ ] 3.1 Add the range check to src/remediation/precheck.ts
+    - Add `REASON_RANGE_NOT_REGISTRY` and the check after the intake-entry check, for kind `bump` only, as design.md "Changes required" says. Import `isResolvableRange` from `../intake/resolve.js`. Change no other file in src for this task.
+    - In test/remediation/remediation-safety.test.ts, replace the literal string with the import from 1.1.
+    - _Bug_Condition: isBugConditionD1_
+    - _Expected_Behavior: bugfix 2.1, 2.2, 2.3_
+    - _Requirements: 2.1, 2.2, 2.3, 3.11_
+  - [ ] 3.2 Add the precheck unit tests from design.md "Unit tests"
+    - _Requirements: 2.1, 3.2, 3.11_
+  - [ ] 3.3 Verify that Property 1 now passes
+    - Re-run the same test file without editing Property 1. **EXPECTED OUTCOME**: Property 1 PASSES, and P4 to P9 still PASS.
+    - _Requirements: 2.1, 2.2, 2.3_
+  - [ ] 3.4 Run the gates
+    - `npx tsc -b` and `npx eslint . --max-warnings=0` from the root. `npm test -w @sexton/engine`, `-w @sexton/cli`, `-w @sexton/api` and `-w @sexton/web`. The golden diff from 2.3 must be empty.
+    - _Requirements: 3.1 to 3.10_
+  - [ ] 3.5 Review: gravedigger and security-reviewer
+    - Record both verdict lines. Expected: gravedigger reports D1 fixed.
+    - _Requirements: 2.1, 2.2, 2.3_
+
+- [ ] 4. Fix D2: an Incomplete scan says so
+  - [ ] 4.1 Change migrationSections in src/remediation/pr-body.ts
+    - Add `INCOMPLETE_SCAN_LINE` next to `NOT_SCANNED_LINE`, and replace line 163 with the three lines in design.md. Touch no other line of the file, so the other branch's signal-row change merges cleanly.
+    - _Bug_Condition: isBugConditionD2_
+    - _Expected_Behavior: bugfix 2.4_
+    - _Requirements: 2.4, 3.6, 3.7_
+  - [ ] 4.2 Add the body unit test from design.md "Unit tests": two sites, a capped scan, then the line
+    - _Requirements: 2.4_
+  - [ ] 4.3 Verify that Property 2 now passes
+    - **EXPECTED OUTCOME**: Property 2 PASSES, and P4 to P9 still PASS. `migration-plan.test.ts` and `migration-fixtures.test.ts` pass unchanged.
+    - _Requirements: 2.4, 3.6, 3.7, 3.10_
+  - [ ] 4.4 Run the gates, as in 3.4
+    - _Requirements: 3.1 to 3.10_
+  - [ ] 4.5 Review: gravedigger and security-reviewer
+    - Record both verdict lines. Expected: gravedigger reports D2 fixed.
+    - _Requirements: 2.4_
+
+- [ ] 5. Fix D3: no remove for an Implicit-use name
+  - [ ] 5.1 Change src/remediation/choose-kind.ts
+    - Add `IMPLICIT_USE_NAMES`, `IMPLICIT_USE_PREFIX` and `isImplicitUse`, and guard the remove branch, as design.md says. No change in packages/cli.
+    - _Bug_Condition: isBugConditionD3_
+    - _Expected_Behavior: bugfix 2.5_
+    - _Requirements: 2.5, 3.8_
+  - [ ] 5.2 Add the chooseKind unit tests from design.md "Unit tests", including the near-miss names
+    - _Requirements: 2.5, 3.8_
+  - [ ] 5.3 Verify that Property 3 now passes
+    - **EXPECTED OUTCOME**: Property 3 PASSES, and P4 to P9 still PASS. Property 9 "Remove needs import sites" in `plan.test.ts` passes unchanged.
+    - _Requirements: 2.5, 3.8_
+  - [ ] 5.4 Run the gates, as in 3.4
+    - _Requirements: 3.1 to 3.10_
+  - [ ] 5.5 Review: gravedigger and security-reviewer
+    - Record both verdict lines. Expected: gravedigger reports D3 fixed.
+    - _Requirements: 2.5_
+
+- [ ] 6. Change log and final checkpoint
+  - [ ] 6.1 Add the 0.9 change-log line to docs/requirements.md, worded as design.md "Changes required" gives it, with the date of the change. Edit no requirement text.
+    - _Requirements: 2.6_
+  - [ ] 6.2 Final gates
+    - `npx tsc -b`, `npx eslint . --max-warnings=0`, and `npm test` for engine, cli, api, web and sexton-infra. The golden diff from 2.3 must be empty. `git diff --stat` must touch only the allowed paths at the top of this file.
+    - _Requirements: 3.1 to 3.11_
+  - [ ] 6.3 Review: gravedigger and security-reviewer
+    - Run gravedigger over `packages/engine/src/remediation` and security-reviewer over the whole spec's diff. Record both verdict lines here.
+    - **The spec is done only when gravedigger's last line is "safe" or "safe with notes".** If it is "unsafe", list its defects here and stop; do not mark this task done.
+    - _Requirements: 2.1 to 2.6, 3.1 to 3.11_
