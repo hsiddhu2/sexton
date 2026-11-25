@@ -79,8 +79,8 @@ The spec does not change the text of any existing state reason, the rule order a
 1. WHEN the publisherChange status is `changed` AND the Earlier version's Publish method is `trusted-publisher` AND the Installed version's Publish method is `token`, THE Engine SHALL assign Possessed with the reason `publisher changed in <installed version>: <earlier publisher> to <installed publisher>`.
 2. WHEN a detailed newDependency entry has the Install script flag true, or has a Resolved dependency version that is Fresh, THE Engine SHALL assign Possessed with the reason `new dependency in <installed version>: <name>`, where name is the first such entry in ascending name order.
 3. WHILE neither the Publisher rule nor the New dependency rule matches, THE publisherChange and newDependency signals SHALL NOT change the state or the state reason.
-4. THE Engine SHALL evaluate the Possessed rules in this order, first match wins: New dependency rule, Publisher rule, then the Existing rules in their existing order.
-5. THE Engine SHALL keep the exact text of every existing state reason.
+4. THE Engine SHALL evaluate the Possessed rules in this order, first match wins: the Existing rules in their existing order, then the New dependency rule, then the Publisher rule.
+5. THE Engine SHALL keep the exact text of every existing state reason, and SHALL give the same state and reason as before this spec whenever an Existing rule matches.
 6. FOR ANY state inputs, adding the publisherChange and newDependency inputs SHALL either leave the state and reason unchanged or give Possessed.
 7. FOR ANY package whose Installed version and Earlier version have equal Publishers, equal Publish methods and Dependencies maps with the same names, THE Engine SHALL give the same state and reason as with both new signals unavailable.
 8. WHEN publisherChange and newDependency are unavailable, THE Engine SHALL give the same state and reason as before this spec for any other inputs.
@@ -100,13 +100,13 @@ The spec does not change the text of any existing state reason, the rule order a
 
 ### Requirement 5: Replays
 
-**User Story:** As a reviewer, I want the axios replay to name the planted dependency, so that the replay shows the rule that would have caught the attack.
+**User Story:** As a reviewer, I want the replays to carry the two new signals as evidence, so that the planted dependency is on record beside the rule that fired.
 
 #### Acceptance Criteria
 
 1. THE replay facts SHALL hold, for each sourced version, its Publisher and Publish method and its Dependencies map when a public source gives them, and null when none does.
 2. THE replay facts SHALL hold, for each sourced New dependency, the Resolved dependency version, its publish time and its Install script flag when a public source gives them, and null when none does.
-3. WHEN the axios replay is generated, THE Segment from 2026-03-31T00:21:58.168Z SHALL be Possessed with the reason `new dependency in 1.14.1: plain-crypto-js`.
+3. WHEN the axios replay is generated, THE Segment from 2026-03-31T00:21:58.168Z SHALL be Possessed with the reason `provenance regression: 1.14.1 has no provenance, 1.14.0 had it`, and the New dependency rule SHALL also match on the replay facts of 1.14.1, as evidence.
 4. WHEN the keyv replay is generated, THE Segment from 2026-08-04T09:35:00.763Z SHALL be Possessed with the reason `install script added in 6.0.0`.
 5. WHERE a replay's installed version at the Scan date has no Earlier version in the facts, THE replay SHALL record publisherChange and newDependency as unavailable with the reason "not in public reports".
 6. WHERE the facts give no Dependencies map for the installed version or its Earlier version, THE replay SHALL record newDependency as unavailable with the reason "not in public reports".
@@ -154,6 +154,7 @@ The spec does not change the text of any existing state reason, the rule order a
 #### Acceptance Criteria
 
 1. THE web lists SHALL name publisherChange and newDependency, so that the compile-time tie to the API contract holds.
+5. WHEN main contains Cemetery undead phase 2, THE axios replay summary SHALL gain one sentence saying that plain-crypto-js 4.2.1 was published 22 minutes before axios 1.14.1.
 2. WHEN main contains Cemetery undead phase 2, THE epitaph table and the speech-bubble table SHALL each gain one line for the reason starting `publisher changed in` and one for the reason starting `new dependency in`.
 3. THE new lines SHALL be true of the reason and SHALL name no real person or project.
 4. IF main does not contain Cemetery undead phase 2 when every other task is done, THEN the implementation SHALL stop and report.

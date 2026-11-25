@@ -9,7 +9,7 @@ Two Possession signals join the ten of history-signals:
 
 Both come from the full packument scoring already holds. newDependency also reads two packuments per added dependency name, through the cache.
 
-Two Possessed rules read them, and they sit before the Existing rules:
+Two Possessed rules read them, and they sit after the Existing rules (owner decision at `go`, 25 Nov 2026):
 
 1. New dependency rule: an added dependency whose resolved version has an install script, or was published at most 7 days before the parent version. Reason `new dependency in <version>: <name>`.
 2. Publisher rule: the publisher name changed and the method went from trusted publisher to token. Reason `publisher changed in <version>: <old> to <new>`.
@@ -120,7 +120,7 @@ Calls the pure functions, then reads each detail name with `readFullPackument` a
 
 ### state.ts
 
-`StateInputs` gains optional `publisherChange` and `newDependency`. `evaluateState` checks, before the Existing rules:
+`StateInputs` gains optional `publisherChange` and `newDependency`. `evaluateState` checks, after the Existing rules and before the all-unavailable shortcut:
 
 ```ts
 const fresh = inputs.newDependency?.status === "compared"
@@ -198,7 +198,7 @@ keyv: 6.0.0-rc.1 GitHub Actions trusted-publisher (registry), 6.0.0 GitHub Actio
 
 `replayStateInputs` builds `publisherChange` and `newDependency` from the facts with the Earlier version taken from the facts list by the same semver rule, and leaves them out when a needed fact is null. Expected Segments:
 
-- axios: 23:21:58 Alive; 00:21:58 Possessed `new dependency in 1.14.1: plain-crypto-js` (was `provenance regression: 1.14.1 has no provenance, 1.14.0 had it`; provenance regression still holds as evidence; publisherChange is `unknown` because the 1.14.1 name is left out); 03:29 Alive. The replay summary text in replay-facts.mjs ("Sexton marks 1.14.1 Possessed because provenance regressed") changes to name the new dependency rule.
+- axios: 23:21:58 Alive; 00:21:58 Possessed `provenance regression: 1.14.1 has no provenance, 1.14.0 had it`, unchanged. The New dependency rule also matches on the 1.14.1 facts and is kept as evidence; publisherChange is `unknown` because the 1.14.1 name is left out; 03:29 Alive. The replay files change only by the evidence. The story text keeps its words until task 10, which adds one sentence: plain-crypto-js 4.2.1 was published 22 minutes before axios 1.14.1.
 - keyv: 08:35 Alive; 09:35 Possessed `install script added in 6.0.0`, unchanged. publisherChange for 6.0.0 is `same` (both trusted publisher).
 
 The replay report signals of the Scan-date version: axios's is 1.14.0, whose Earlier version (1.13.6) is not in the facts, so both signals are unavailable "not in public reports". keyv's 6.0.0 has publisherChange available (`same`) and newDependency unavailable "not in public reports".
@@ -243,18 +243,17 @@ No path throws. The client catches every rejection and turns it into an entry re
 3. **Two requests per new dependency name, not one.** The handoff allows one. The `time` map is only in the full packument. The steering file api-etiquette.md says "Install-script presence comes from the abbreviated packument". Steering is binding, so the Install script flag comes from the abbreviated packument and the publish times from the full one. With the cap that is at most 10 extra requests per package, both cached under the existing keys.
 4. **Resolution at the Parent publish time.** The rule asks whether the dependency was new when the parent was published. Resolving at the scan date would pick versions published after the parent and make the 7-day test meaningless.
 5. **No 90-day window.** Provenance regression has none, and the two rules describe a fact of the Installed version that does not age. The express data shows no old match. Revisit if the after run shows one.
-6. **Rule order.** New dependency rule, Publisher rule, then the Existing rules unchanged. The new rules name the concrete change inside the Installed version, which is what a reviewer acts on. The keyv replay keeps its reason because only the install-script rule matches there. The axios replay reason changes from provenance regression to the new dependency, as the handoff asks. Existing reason texts are not changed.
+6. **Rule order (owner decision at `go`, 25 Nov 2026).** The Existing rules stay first and unchanged, then the New dependency rule, then the Publisher rule. Every package an Existing rule marks keeps its state and reason. Both replays keep their reasons and their Segments; the new signals are evidence there.
 7. **A publisher change between two trusted publishes, or token to token, is evidence only.** Express has 15 token-to-token or token-to-trusted changes, every one a normal maintainer rotation. In practice the Publisher rule means "trusted publisher to token", because a trusted publish always records the name "GitHub Actions": a legitimate manual hotfix after trusted publishing also fires it. That is the brief's rule, kept as written, and the after run measures it.
 8. **No policy rule type.** `forbid_state: [Possessed]` in the default policy already fails both rules.
 9. **Web paths touched before the last task.** The handoff keeps packages/web for the last task. These paths change earlier, each because the brief's own outputs require it, and need the owner's approval:
    - `src/load/lists.ts`, `test/lists.test.ts`, `test/arbitraries.ts` (task 1): `lists.ts` asserts at compile time that its `SIGNAL_NAMES` equals the API contract's, so two new signal names fail the root typecheck unless the list, its test and the signal generator gain them in the same commit.
    - `public/replay/axios.json`, `public/replay/keyv.json` (task 8): the replay generator writes them; the brief asks for the new axios reason.
-   - `test/replay.test.tsx`, `test/support/replay-fixture.ts`, `e2e/time.spec.ts` (task 8): they quote the old axios reason.
    - `public/demo/scan.json`, `evidence.json`, `evidence.md` are generated at test time and not committed; they change with the fixtures and the version.
-   No web source file other than `lists.ts` changes before task 10.
+   No web source file other than `lists.ts`, and no web test that quotes the axios reason, changes before task 10. Approved by the owner at `go`, 25 Nov 2026.
 10. **Engine version 0.2.0.** Two signals change the evidence body shape. `packages/api` and `packages/cli` pin `@sexton/engine` exactly, so their pins move to 0.2.0 and the lockfile is updated with `npm install` (no new package).
 11. **Demo evidence digest.** Before: `c8fb6cab465d46ca92cf83dbc10022b6a662c8fad68ec8f64d827ef16f43344d`. After: recorded by the fixtures task.
-12. **The compromised account's name is left out of the replay facts.** It is sourced, but no output needs it: the new-dependency reason wins at 00:21 and the report version is 1.14.0. In the spirit of Requirement 9.3, the replay does not name the person whose account was taken. publisherChange for 1.14.1 is therefore `unknown`.
+12. **The compromised account's name is left out of the replay facts.** It is sourced, but no output needs it: the reason at 00:21 is provenance regression and the report version is 1.14.0. In the spirit of Requirement 9.3, the replay does not name the person whose account was taken. publisherChange for 1.14.1 is therefore `unknown`.
 13. **The New dependency rule is unmeasured on express.** No express package added a dependency, so the after run exercises only the Publisher rule. Known false-alarm sources: a long-standing package added as a dependency that happened to publish within 7 days of the parent, and a native dependency whose `hasInstallScript` comes from a binding.gyp rather than a named script. Both are recorded as accepted risks of the brief's rule. The demo fixtures and the replays exercise the rule.
 14. **product.md is steering and stays as it is.** It lists three Possessed conditions and says these signals "come in a later spec". Steering is outside this lane's paths. Follow-up for the owner: update product.md (the Kiro lane owns steering).
 15. **Client file.** structure.md says one client file per upstream. `clients/new-dependency.ts` is a second registry.npmjs.org client, following the precedent of `clients/maintainers.ts`.
@@ -263,7 +262,7 @@ No path throws. The client catches every rejection and turns it into an entry re
 
 - Tests that count signals (ten) count twelve: `index.test.ts`, `score.test.ts`, `score-unresolved.test.ts`, the web list test, and any test that lists `SIGNAL_NAMES` literally.
 - The golden evidence files and the CLI table expectations change with the two signals and the version bump.
-- The axios replay expectation in `api/test/replay-facts.test.ts` and in web replay tests that quote the 00:21 reason change to `new dependency in 1.14.1: plain-crypto-js`. Each changed assertion is listed in the task notes.
+- No replay reason changes. Tests that check the replay signals gain the two signals as evidence. Each changed assertion is listed in the task notes.
 
 ## Correctness Properties
 
@@ -297,7 +296,7 @@ For any JSON values as packuments (the package's, the dependencies', abbreviated
 
 ### Property 5: Rule precise
 
-For any inputs, the state is Possessed through the new rules if and only if an oracle written in the test says so: some detailed entry has `installScript === true` or `fresh === true`, or the status is `changed` with the methods `trusted-publisher` then `token`. The reason is the New dependency rule's when both match, and names the first matching entry by name.
+For any inputs, the state is Possessed through the new rules if and only if an oracle written in the test says so: some detailed entry has `installScript === true` or `fresh === true`, or the status is `changed` with the methods `trusted-publisher` then `token`. When an Existing rule matches, its state and reason win. Otherwise the reason is the New dependency rule's when both new rules match, and names the first matching entry by name.
 
 **Validates: Requirements 3.1, 3.2, 3.4**
 
@@ -342,6 +341,12 @@ Spec review, 25 Nov 2026, by an independent reviewer who had not seen the work. 
 Notes acted on: the recorder records per-version `maintainers` and the Earlier version's `hasInstallScript`, so that the new version key cannot invent a maintainer change or a missing install-script flag (design "Recorder and fixtures"); the state.ts snippet uses the right field names; the axios replay summary text is updated (task 8.1); the error row on a failed full read is corrected; Decisions 7, 13, 14 and 15 record the Publisher rule in practice, the unmeasured New dependency rule, product.md and the client file; Requirements 5.6 and 5.7 cover facts without dependencies or method; the compromised account's name is left out of the replay facts (Decisions 12); ranges are capped at 256 characters.
 
 Notes kept as they are: "FOR EACH" and "FOR ANY" criteria follow history-signals; Requirement 2.5 holds within one scan's cache, while the DynamoDB cache may refuse very large items, as it does for every packument today; Property 3's Scan-date half is true by construction and stays as a guard.
+
+## Owner decisions at go (25 Nov 2026)
+
+- Rule order: the three Existing rules first and unchanged, then the New dependency rule, then the Publisher rule.
+- The axios replay keeps its provenance regression reason and its story text. No web test quoting the axios reason changes. Task 8 only regenerates the replay files with the new signals as evidence. Task 10 adds one sentence to the axios story about plain-crypto-js being published 22 minutes earlier.
+- All other decisions accepted. Approved lines: epitaph "A new hand signed this one. The pipeline did not." and bubble "Published by hand. The robot usually does it." for `publisher changed in`; epitaph "It brought a new friend along. Check the friend." and bubble "I brought a plus-one. Nobody checked the list." for `new dependency in`.
 
 ## Notes and open items
 

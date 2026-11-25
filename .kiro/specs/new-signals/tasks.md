@@ -51,7 +51,7 @@ Adds the publisherChange and newDependency signals and their two Possessed rules
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9_
 
   - [ ] 4.1 Extend StateInputs, evaluateState and stateFromSignals
-    - New dependency rule, then Publisher rule, then the Existing rules unchanged. Existing reason texts unchanged.
+    - The Existing rules unchanged and first, then the New dependency rule, then the Publisher rule. Existing reason texts unchanged.
     - _Requirements: 3.1, 3.2, 3.4, 3.5_
 
   - [ ] 4.2 Properties 1, 2 (state half) and 5, 1000 runs, in test/state-new-signals.test.ts
@@ -99,11 +99,11 @@ Adds the publisherChange and newDependency signals and their two Possessed rules
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7_
 
   - [ ] 8.1 Extend replay-facts.mjs and replayStateInputs / replaySignals in generate-demo-scan.mjs
-    - Facts and sources as in design.md "Replays", the 1.14.1 publisher name left out. Update the axios replay summary text. Regenerate packages/web/public/replay/axios.json and keyv.json with the generator.
+    - Facts and sources as in design.md "Replays", the 1.14.1 publisher name left out. The story text stays. Regenerate packages/web/public/replay/axios.json and keyv.json with the generator; only the evidence changes.
     - _Requirements: 5.1, 5.2, 5.5, 5.6, 5.7_
 
-  - [ ] 8.2 Tests: axios 00:21 Segment `new dependency in 1.14.1: plain-crypto-js`; keyv 09:35 `install script added in 6.0.0`
-    - Update the web replay tests that quote the old axios reason, listed in the task notes.
+  - [ ] 8.2 Tests: axios 00:21 Segment keeps `provenance regression: 1.14.1 has no provenance, 1.14.0 had it` and the New dependency rule matches its facts; keyv 09:35 keeps `install script added in 6.0.0`
+    - No web test that quotes the axios reason changes.
     - _Requirements: 5.3, 5.4_
 
 - [ ] 9. Measurement and documents
@@ -118,7 +118,7 @@ Adds the publisherChange and newDependency signals and their two Possessed rules
     - _Requirements: 8.3, 8.4_
 
 - [ ] 10. Web lines, after main has Cemetery undead phase 2
-  - _Requirements: 8.3, 9.2, 9.3, 9.4_
+  - _Requirements: 8.3, 9.2, 9.3, 9.4, 9.5_
 
   - [ ] 10.1 Merge main into spec/new-signals; stop and report if main has no phase 2
     - Set the change-log number in docs/requirements.md to the next free one.
@@ -126,6 +126,9 @@ Adds the publisherChange and newDependency signals and their two Possessed rules
 
   - [ ] 10.2 Add the approved epitaph and speech-bubble lines with tests
     - _Requirements: 9.2, 9.3_
+
+  - [ ] 10.3 Add one sentence to the axios replay summary: plain-crypto-js 4.2.1 was published 22 minutes before axios 1.14.1; regenerate the replay files
+    - _Requirements: 9.5_
 
 - [ ] 11. Final checks
   - Root gates, a fresh clone with `npx npm@11 ci` and the gates, an independent review of the whole branch, the report in private/reports/K3-new-signals.md. Nothing is pushed.
