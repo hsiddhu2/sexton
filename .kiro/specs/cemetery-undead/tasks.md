@@ -240,6 +240,28 @@ Run-time notes:
     - _Requirements: 15.5_
     - Review notes: NOT READY, one defect, fixed. The smoke-test screenshot step (blur and mouse move, no assertion change) was cited as change 19, but no listed change covered it. It is now Deliberate test change 27, and both citations are corrected. Clean: paths, secrets, network, origins, injection, random sources, numRuns, budget, package files, wording, trailers, no Kiro logo. Notes acted on: change 26 now says it drops the replay-row sub-check; the Backdrop and Tiers sections point to decisions 5, 6 and 11 for the final values (no cache, sky 120, no Tier gap).
 
+- [x] 10. K2d fix 1: match the approved mockups
+  - [x] 10.1 Rule changes: a replay draws its grave full size, and the Footer bar stays in view at 960 px and wider only
+    - Amend requirements 5.8 and 9.4, add the 0.6 line to docs/requirements.md, record it in design.md.
+    - _Requirements: 5.8, 9.4_
+    - Notes: R-UI-1 and the 0.6 change-log line amended; requirement 5.8 added and 9.4 reworded; design.md decision 17.
+  - [x] 10.2 Grave size and fill, ground and horizon, the Possessed grave
+    - Tall stones with a side face, rows spread to fill the width, the sky grows to the fit height, a lit hill, the open pit with its lid and glow.
+    - _Requirements: 3.1, 5.3, 5.6, 6.1, 6.2_
+    - Notes: Property 7 in test/fit.test.tsx. Deliberate test changes 30 and 32. The glow alpha is unchanged (contrast).
+  - [x] 10.3 Replay layout
+    - The story card over the scene, the three Stop cards in the Footer bar, the header at its normal height.
+    - _Requirements: 5.8, 9.3, 9.7, 9.8_
+    - Notes: canvas top 72.6 px on the axios replay at 1440 by 900. Deliberate test change 31.
+  - [x] 10.4 Tooltip, wordmark and the missing Character test
+    - The version shows once and the tooltip sits beside its grave; the wordmark mark is removed; a browser test checks the zombie and the skeleton are drawn.
+    - _Requirements: 3.1, 7.1, 9.1_
+    - Notes: Deliberate test changes 28, 29 and 33.
+  - [x] 10.5 README screenshots, gates, Visual critic rounds against the mockup PNGs and an independent review
+    - _Requirements: 14.1, 15.3, 15.4, 15.5_
+    - Notes: root tests 1913 (web 435), typecheck and lint clean, e2e 26 passed; 300-grave medians 2.90 ms and 2.70 ms; canvas top 119.7 px on the demo and 72.6 px on the axios replay at 1440 by 900. Critic: round 1 and 2 NOT READY, round 3 READY at 1440 and 390 (design.md decision 17).
+    - Review notes: READY, no defects. Notes acted on: Property 7 states how many pairs it checks; change 33 names the renamed test; the "Not published" Stop card wording is in decision 17. Notes left open: the footer height hook watches the footer node it found first (the footer is not replaced on a new load); the open grave's lid paints past its cell (drawn only, never a hit area); the Character e2e relies on the skin and bone tokens staying unique to Costumes.
+
 ## Notes
 
 - Spec review, 24 Nov 2026, three rounds by independent reviewers:

@@ -460,6 +460,12 @@ For every State colour against every Backdrop stop and every Glow stop the contr
 
 **Validates: Requirements 1.4, 1.5, 1.6, 1.7**
 
+### Property 7: The sky fills the fit height and the graves never overlap
+
+*For all* package lists of up to 300 packages, ALL widths, ALL fit heights (including none and unreadable ones) and either replay flag: the sky is between 120 and 420; apart from a replay's lone grave, every rectangle is the plan without a fit height moved down by the sky growth, with its size and x unchanged; when the graves fit, they end PADDING above the fit height; every rectangle lies inside the Scene and below the sky; and no two rectangles overlap (every pair up to 60 graves, and above 60 the first 60 against every seventh later grave; Property 1 checks every pair of the layout the sky only moves).
+
+**Validates: requirements 5.6, 5.8, 9.4.** Test: `test/fit.test.tsx`.
+
 ## Testing Strategy
 
 The approach has three parts:
@@ -529,6 +535,31 @@ Every existing test not listed here must pass unmodified. Titles are from the in
 
 `e2e/smoke.spec.ts`
 27. "demo loads under the CSP, then 300 graves redraw within budget". Addition, added during task 8 and reviewed in task 9.5. Before the README screenshot the step blurs the active element and moves the mouse to (1, 899), so the download clicks leave no focus or hover ring in docs/cemetery.png. No assertion changes, and the 16 ms budget check is unchanged.
+
+K2d fix 1 (24 Nov 2026), after the owner's review against the mockup PNGs:
+
+`test/tooltip.test.tsx`, `test/replay.test.tsx`, `test/scrubber.test.tsx`
+28. "shows the version, state and reason of each Stop in the grave name, tooltip and drawer" (replay) and "shows the Segment version in the button name, tooltip and drawer title, …" (scrubber). Old: the tooltip text contains "<version>, <State>". New: the version shows once, in "Here lies <name> <version>"; the State line is the State alone, checked on `.tooltip-state`, and the text no longer contains "<version>, <State>".
+
+`test/header.test.tsx`
+29. "has the title text 'Sexton cemetery', …". Old: the h1 holds an aria-hidden svg mark. New: the h1 holds no svg; the wordmark is the name alone, as in the mockup. The title text check is unchanged.
+
+`test/layout.test.ts`
+30. The Tier model and "puts the first package at the left of its Tier's first row, at the Tier's scale". Old: the graves of a row sit one cell width apart. New: they spread apart up to 1.07, 1.2 and 1.4 cell widths (front, middle, back) to fill the row, and the row is centred on its used width. The first front grave of three at width 1280 moves from x 352 to x 339, the second is 205 to its right. Rectangle sizes, the y values and the 300-grave heights are unchanged.
+
+`test/replay.test.tsx`
+31. "shows the title, the exact text and one link per source on the scene screen and inside the drawer", and Property 21. Old: the banner is inside the header, and Property 21 renders it through `Header`. New: the banner is the `.replay-card` inside main, not in the header; Property 21 renders `ReplayBanner` with that class. The banner text, title, links, `target` and `rel` checks are unchanged.
+
+`test/draw.test.ts`
+32. "draws the same Plinth path object for one Grave of each State", Property 4 (cemetery-polish) and its shadow-order check. Old: two path fills per grave (stone and plinth), six scenery path fills, unit arcs n plus 4 per ghost, and the stone's fill is the first path fill after the shadow. New: path fills per grave by shape (four for a stone: the side face twice, the stone and the plinth; five for the open grave, which adds its mound; two for the mound of the Not-published form); eight scenery path fills (the hill twice: its lit edge and the ground); one more unit arc and argument-less fill per open grave (the pit); and the stone's fill is the path fill that its stroke follows. In "paints equal decoration for two graves of one State", a Possessed pair first opens two glow frames, since every glow is now drawn in one pass before the graves; the two glow frames are checked equal, then the grave frames as before. The plinth is still one shared path object, and every colour check is unchanged.
+
+`test/tooltip.test.tsx`
+33. "positions the tooltip at offset (8, 4) with width 240", renamed "…, or beside its cell inside the Scene". Old: with the scene width given, the tooltip sits over its cell at offset (8, 4), moved left to stay inside the Scene. New: it sits beside its cell, right of it when it fits, else left of it, else over it as before; the top is still cell.y + 4 and the width 240, and it stays inside the Scene from a visible cell. Without the scene width nothing changes.
+
+`e2e/smoke.spec.ts`
+34. "demo loads under the CSP, then 300 graves redraw within budget" and "the axios replay at its Possessed stop, for the README". Additions, no assertion removed: before docs/cemetery.png the step hovers left-padder and waits for its tooltip and Punchline; before docs/replay-axios.png the step checks the replay card (banner text, four links), three Stop cards with the 00:21 one current, a canvas top of at most 120, then hovers the grave and waits for its Punchline (item 8 of K2d fix 1).
+
+New tests, not changes: `test/fit.test.tsx` (Property 7, the replay cell, the fit height, the Stop cards and the replay card), and in `e2e/smoke.spec.ts` the Character check on the Possessed and a Dead grave.
 
 Change 26 also drops the replay sub-check of the old test (the form and the Replay group on one row, the form at x below 40), because the Replay group moved into the Footer bar.
 
@@ -646,6 +677,24 @@ Checklist:
     - Two blocking points, both fixed. Grave names stay at least 12 px on screen whatever the Tier scale: the font is MIN_NAME_PX / scale in the cell frame, never below 15. The open drawer now has a scrim, a `.backdrop::before` in the bg token at opacity 0.55. A pseudo-element is never an event target, so a press on it is still a press on the backdrop, and the Repository URL box rule holds.
     - The final round answered READY at 1440 and 390.
     - The README screenshot step now blurs focus and moves the mouse away first, so no hover or focus ring from the download clicks shows. It changes no assertion (Deliberate test change 27).
+
+17. **K2d fix 1: match the approved mockups (24 Nov 2026).** The owner overruled the critic's READY: the scene was smaller and flatter than the mockups, and the replay showed one small grave in an empty field.
+    - Rule changes approved by the owner: a replay draws its grave full size (requirement 5.8), and the Footer bar stays in view at 960 px and wider only (requirement 9.4). Both are in docs/requirements.md 0.6. Decision 12 is now the requirement, not a departure.
+    - Stones are tall, as in the mockup: each stone is about 34 by 56 in its 64 box, drawn at 2.75 (was 2), so a front stone is about 94 by 152 px at 1440 by 900. Each stone has a side face (its outline again, offset and shaded with the ink token at the shadow byte). Ghosts are drawn twice as large and float over their stone tops; the planned ghost box and its drift are unchanged.
+    - Rows fill the width: the graves of a row spread apart up to 1.07, 1.2 and 1.4 cell widths (front, middle, back). Front graves at 1440 are 205 px apart, as in the mockup (206). Rectangles stay one cell, so none overlap (Property 1).
+    - The sky grows: when the graves fit in the fit height (the free height less a Footer bar that stays in view), the sky grows up to 420 px so the graves stand at the bottom (Property 7). The moon grows with it (r up to 0.3 of the sky). Stars and bats spread over the taller sky.
+    - The ground: a low hill meets the sky, lit along its top edge by a 3 px band in skyHorizon, shaded from groundTop to bg over the upper half of the ground; the violet horizon glow is in the sky above it. Every colour is an existing token or backdrop stop, so the contrast tests are unchanged.
+    - The Possessed grave: a wide dark pit (the pit token) above the plinth, in a mound of earth (the surface token), the lid tilted off to the left in the state colour with a crack, the pit's edge drawn as a thin line in the lantern token, and the Possessed glow centred over the pit at radius 200. Every glow is drawn in one pass on the ground before any grave, so a wide glow never tints a neighbouring stone. Its alpha is unchanged: alphas of 0x40, 0x50 and 0x60 were tried and each fails the existing glow contrast check (2.84, 2.89 and 2.62 against 3), so the glow can only grow in size.
+    - The replay: its one grave is drawn at up to 1.8, and its width leaves 60 cell units each side for the lid, so at 390 px the lid stays on screen. Its story is a card over the scene, top left (the chosen Stop's date, the title, the banner text, the summary, the sources and, before the scan date, the scrubber captions). The Stops are three dated cards in the Footer bar (a Stop before the version was published reads "Not published", the Legend's wording); the slider stays for the keyboard, out of sight, and the current card shows its focus. The header keeps its normal height: canvas top 72.6 px on the axios replay at 1440 by 900.
+    - The tooltip shows the version once and sits beside its grave (right, else left, else over it), as in the mockups. This reverses the two refusals in decisions 8 and 13 (enlarging a lone replay grave, and a tooltip beside the grave), now that the owner asked for them.
+    - The wordmark mark is removed from the DOM (was hidden, decision 3).
+    - Play is a round button with a play or pause glyph at 960 px and wider; its name stays "Play" or "Pause".
+    - Critic requests declined: a stronger Possessed glow (the contrast check above); a shorter replay story (the summary is source data, and the scrubber captions must stay, requirement 9.8), so the card is wider (34rem) and the captions smaller instead; tucking the back row behind the middle row (rectangles never overlap); a one-row header at 390 px (outside this fix); a softer zombie silhouette (the Character art is unchanged apart from its size).
+    - Visual critic rounds against the mockup PNGs, each by a fresh reviewer seeing only images:
+      - Round 1: NOT READY at 1440 and 390. Acted on: a lit hill edge in skyHorizon and a darker ground lower down; a gold edge on the pit; the replay grave's width leaves room for its lid at 390; a wider story card with smaller captions. Declined, with the reasons above: a stronger glow, a shorter story, a one-row 390 header.
+      - Round 2: NOT READY at 1440 and 390: the glow was not visible and the plinth hid the pit. Acted on: the pit is wider and above the plinth, the zombie stands in it, and the glow grows to radius 200 in its own pass before the graves.
+      - Round 3: READY at 1440 and READY at 390. Its notes (a label for the replay header's two times, the pit edge close to the ring's gold, spreading the middle and back rows wider) are left for the owner.
+    - Not changed: the state colours, the contrast tests, the glow alphas, the 240 px tooltip width, the plinth in the state colour.
 
 ## Notes and open items
 

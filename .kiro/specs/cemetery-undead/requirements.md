@@ -131,6 +131,7 @@ Paths: this spec changes `packages/web`, the root `package-lock.json` (dev-only 
 5. THE grave buttons SHALL keep triage order in the DOM and in the keyboard order, and their accessible names SHALL not change.
 6. FOR ALL package lists of up to 300 packages and ALL widths (a width below the minimum Scene width of 224 is laid out at 224), THE grave rectangles SHALL not overlap, SHALL lie inside the Scene, and SHALL keep the Tier of their scan-date State whatever date the scrubber shows.
 7. THE Not-published form SHALL keep the position of the package's scan-date Tier.
+8. WHEN a replay is shown, THE Scene SHALL draw the replay's one grave full size, at the Replay scale of 1.8, or smaller only so that it fits the Scene width and the fit height. Amended by the owner on 24 Nov 2026 (K2d fix 1, docs/requirements.md 0.6).
 
 ### Requirement 6: The night backdrop
 
@@ -187,7 +188,7 @@ Paths: this spec changes `packages/web`, the root `package-lock.json` (dev-only 
 1. THE header SHALL hold, in this DOM order: the wordmark, the repository and scan line with the as-of line and Back to now when shown, the evidence links, the Repository URL form, the Sound button, the Serious mode toggle, and the Legend.
 2. THE Sound button SHALL be a native button named "Sound off", disabled, with the description "Sound arrives in the next release" reachable by assistive technology.
 3. THE Footer bar SHALL hold, in this DOM order: Play, the History date label, the date text and slider, and the "Replay an attack" group. THE Footer bar SHALL come after the Scene in the DOM.
-4. THE Footer bar SHALL stay in view at the bottom of the viewport, and THE Scene's free height SHALL leave room for it so that the ground still reaches the Footer bar.
+4. WHILE the viewport is 960 CSS pixels wide or wider, THE Footer bar SHALL stay in view at the bottom of the viewport, and THE graves SHALL end above it while the ground runs under it to the viewport bottom. Below 960 px THE Footer bar SHALL scroll with the page, because the wrapped controls would otherwise leave almost no cemetery on screen. Amended by the owner on 24 Nov 2026 (K2d fix 1, docs/requirements.md 0.6).
 5. WHEN the demo scan is shown at the Scan date at a viewport of 1440 by 900, THE Canvas top SHALL be at 190 or less.
 6. WHILE the viewport is 390 CSS pixels wide, and also at 360, THE Web app SHALL cause no horizontal scroll with the demo and with the axios replay.
 7. THE keyboard order SHALL follow the DOM: Back to now when shown, the evidence links, Repository URL, Scan, Serious mode, Legend, the banner links of a replay, the roving grave, Play, History date, then the two Replay buttons.
