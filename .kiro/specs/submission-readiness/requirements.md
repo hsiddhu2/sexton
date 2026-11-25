@@ -105,7 +105,7 @@ It does not change packages/web/src, packages/web/e2e, the pictures in docs, the
 2. THE spec SHALL list every finding in design.md with its path, line, kind and what was done.
 3. WHERE a finding is in a path this spec may change, THE spec SHALL fix it, or SHALL record why it stays.
 4. WHERE a finding is in a path this spec may not change, THE spec SHALL record it in the report for the lane that owns the path.
-5. THE spec SHALL NOT remove a line from a guard that exists to detect one of these findings, such as .githooks, .gitignore, eslint.config.js, .kiro/hooks or a test that checks for a secret pattern.
+5. THE spec SHALL NOT remove a line from a guard that exists to detect one of these findings, such as .gitignore, eslint.config.js, .kiro/hooks or a test that checks for a secret pattern.
 
 ### Requirement 7: Browser tests in CI
 
