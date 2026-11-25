@@ -41,28 +41,29 @@ export function fitHeight(free: number, footer: number, pinned: boolean): number
 
 /**
  * The height of the Footer bar while it stays in view over the scene (960 px and wider), else 0 (K2d fix 1).
- * Re-measured when the bar changes size, for example when a replay shows its Stop cards.
+ * Every `.night-footer` node is measured and observed, and the nodes are found again when `key` changes (a new
+ * response can replace a footer). The height is the tallest sticky node (spec cemetery-undead-2, A8).
  */
-export function usePinnedFooterHeight(width: number): number {
+export function usePinnedFooterHeight(width: number, key?: unknown): number {
   const [height, setHeight] = useState(0);
   useEffect(() => {
-    const footer = document.querySelector<HTMLElement>(".night-footer");
-    if (footer === null) {
-      setHeight(0);
-      return;
-    }
+    const footers = Array.from(document.querySelectorAll<HTMLElement>(".night-footer"));
     const measure = (): void => {
-      const pinned = window.getComputedStyle(footer).position === "sticky";
-      setHeight(pinned ? Math.ceil(footer.getBoundingClientRect().height) : 0);
+      let tallest = 0;
+      for (const footer of footers) {
+        if (!footer.isConnected || window.getComputedStyle(footer).position !== "sticky") continue;
+        tallest = Math.max(tallest, Math.ceil(footer.getBoundingClientRect().height));
+      }
+      setHeight(tallest);
     };
     measure();
     window.addEventListener("resize", measure);
-    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(measure) : null;
-    observer?.observe(footer);
+    const observer = typeof ResizeObserver === "function" && footers.length > 0 ? new ResizeObserver(measure) : null;
+    for (const footer of footers) observer?.observe(footer);
     return () => {
       window.removeEventListener("resize", measure);
       observer?.disconnect();
     };
-  }, [width]);
+  }, [width, key]);
   return height;
 }

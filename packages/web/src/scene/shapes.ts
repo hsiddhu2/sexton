@@ -28,8 +28,9 @@ export const SHAPES: Record<ShapeId, ShapeDef> = {
   },
   // Open grave: a dark pit in a mound of earth, the lid tilted off to the left. The lid takes the state colour.
   open: {
-    d: "M5.76 65.78 L14.24 52.22 L-12.9 35.26 L-21.38 48.82 Z",
-    detail: "M-14 44 L-8 41 L-4 47 L4 50 L8 56",
+    // Moved 5 units right of its Phase 1 place, so its stroke stays inside the Art box (spec cemetery-undead-2, A1).
+    d: "M10.76 65.78 L19.24 52.22 L-7.9 35.26 L-16.38 48.82 Z",
+    detail: "M-9 44 L-3 41 L1 47 L9 50 L13 56",
     tiltDegrees: 0,
     pit: { x: 9, y: 48, w: 46, h: 11, rim: "M2 60 Q32 40 62 60 Z" },
   },
@@ -58,7 +59,7 @@ export const SOLID_BOXES: Record<ShapeId, readonly SolidBox[]> = {
     { x: 12, y: 17, w: 40, h: 8 },
   ],
   cracked: [{ x: 14, y: 25, w: 36, h: 35 }],
-  open: [{ x: -8, y: 45, w: 8, h: 7 }],
+  open: [{ x: -3, y: 45, w: 8, h: 7 }],
   unmarked: [{ x: 12, y: 50, w: 40, h: 10 }],
 };
 
@@ -97,10 +98,10 @@ export const SPECKS: Record<ShapeId, readonly Speck[]> = {
     { x: 22, y: 38 },
   ],
   open: [
-    { x: -6, y: 46 },
-    { x: -3, y: 48 },
-    { x: -2, y: 46 },
-    { x: -5, y: 50 },
+    { x: -1, y: 46 },
+    { x: 2, y: 48 },
+    { x: 3, y: 46 },
+    { x: 0, y: 50 },
   ],
   unmarked: [
     { x: 20, y: 52 },

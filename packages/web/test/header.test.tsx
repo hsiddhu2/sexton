@@ -285,9 +285,12 @@ describe("Header bar (cemetery-polish task 8)", () => {
       "Serious mode",
       "Legend",
     ]);
+    // Spec cemetery-undead-2, Deliberate test change 1: the Sound button is a working toggle, off by default, with
+    // aria-pressed and no description.
     const sound = screen.getByRole("button", { name: "Sound off" }) as HTMLButtonElement;
-    expect(sound.disabled).toBe(true);
-    expect(document.getElementById(sound.getAttribute("aria-describedby") ?? "")?.textContent).toBe("Sound arrives in the next release");
+    expect(sound.disabled).toBe(false);
+    expect(sound.getAttribute("aria-pressed")).toBe("false");
+    expect(sound.hasAttribute("aria-describedby")).toBe(false);
   });
 });
 

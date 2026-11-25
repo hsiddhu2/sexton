@@ -16,6 +16,11 @@ export interface BurialState {
   readonly held: ReadonlySet<string>;
   /** The burial that plays now, or null. */
   readonly burial: { readonly name: string; readonly phase: number } | null;
+  /**
+   * Under Reduced motion, the Vigil in place of a burial: the Priest stands still beside the grave for BURIAL_MS, with
+   * no stone motion (spec cemetery-undead-2, requirement 10.3). It waits for the drawer to close, as a burial does.
+   */
+  readonly vigil: { readonly name: string; readonly startMs: number } | null;
   /** Call when the request ends with the status `opened` or `existing`. */
   readonly request: (packageName: string) => void;
 }
@@ -26,16 +31,43 @@ export function useBurial({ reducedMotion, drawerOpen }: BurialInput): BurialSta
   const [queue, setQueue] = useState<readonly string[]>([]);
   const [active, setActive] = useState<{ readonly name: string; readonly phase: number } | null>(null);
   const played = useRef(new Set<string>());
+  const [vigilQueue, setVigilQueue] = useState<readonly string[]>([]);
+  const [vigil, setVigil] = useState<{ readonly name: string; readonly startMs: number } | null>(null);
+  const kept = useRef(new Set<string>());
 
   const request = useCallback(
     (packageName: string): void => {
       setSession((list) => (list.includes(packageName) ? list : [...list, packageName]));
-      if (reducedMotion || played.current.has(packageName)) return;
+      if (reducedMotion) {
+        if (kept.current.has(packageName)) return;
+        kept.current.add(packageName);
+        setVigilQueue((list) => [...list, packageName]);
+        return;
+      }
+      if (played.current.has(packageName)) return;
       played.current.add(packageName);
       setQueue((list) => [...list, packageName]);
     },
     [reducedMotion],
   );
+
+  useEffect(() => {
+    if (drawerOpen || vigil !== null) return;
+    const next = vigilQueue[0];
+    if (next === undefined) return;
+    setVigilQueue(vigilQueue.slice(1));
+    setVigil({ name: next, startMs: Date.now() });
+  }, [drawerOpen, vigil, vigilQueue]);
+
+  useEffect(() => {
+    if (vigil === null) return undefined;
+    const timer = setTimeout(() => {
+      setVigil(null);
+    }, BURIAL_MS);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [vigil]);
 
   useEffect(() => {
     if (reducedMotion) {
@@ -76,5 +108,5 @@ export function useBurial({ reducedMotion, drawerOpen }: BurialInput): BurialSta
   const hidden = new Set(queue);
   if (active !== null && !burialFrame(active.phase).marker) hidden.add(active.name);
   const shown = new Set(session.filter((name) => !hidden.has(name)));
-  return { session: new Set(session), shown, held: hidden, burial: active, request };
+  return { session: new Set(session), shown, held: hidden, burial: active, vigil, request };
 }

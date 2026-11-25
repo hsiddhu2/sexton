@@ -51,6 +51,10 @@ export const COSTUME_BY_STATE: Readonly<Record<State, CostumeId | null>> = {
 };
 
 const TAU = 2 * Math.PI;
+/** The zombie's size and place in the shape box. Its centre stays at x 32. */
+const ZOMBIE_SCALE = 1.15;
+const ZOMBIE_DX = 32 - 32 * ZOMBIE_SCALE;
+const ZOMBIE_DY = -7;
 
 /** A rectangle rotated about its own top-centre, for limbs. */
 function limb(ctx: PaintContext2D, x: number, y: number, w: number, h: number, angle: number): void {
@@ -158,10 +162,11 @@ function hand(ctx: PaintContext2D, c: PaletteTheme, pose: number): void {
 /** Draws one Pose of a Character in shape-box units. */
 export function drawCharacter(ctx: PaintContext2D, c: PaletteTheme, id: CharacterId, clip: ClipId, pose: number): void {
   if (id === "zombie") {
-    // The largest figure in the scene: drawn 1.35 times larger, feet in the pit above the plinth.
+    // The largest figure in the scene: drawn ZOMBIE_SCALE times larger, feet in the pit at the plinth top, horns
+    // inside the top of the cell so they never reach the name of the row behind (spec cemetery-undead-2, A1).
     ctx.save();
-    ctx.translate(-11, -26);
-    ctx.scale(1.35, 1.35);
+    ctx.translate(ZOMBIE_DX, ZOMBIE_DY);
+    ctx.scale(ZOMBIE_SCALE, ZOMBIE_SCALE);
     zombie(ctx, c, pose);
     ctx.restore();
   }
@@ -171,10 +176,11 @@ export function drawCharacter(ctx: PaintContext2D, c: PaletteTheme, id: Characte
 
 /** The party hat and flowers of the Alive stone, in shape-box units. Still. */
 export function drawPartyCostume(ctx: PaintContext2D, c: PaletteTheme): void {
+  // The hat stands on the stone top with its bobble inside the top of the cell (spec cemetery-undead-2, A1).
   ctx.fillStyle = c.costume.hat;
-  for (let row = 1; row < 14; row += 1) ctx.fillRect(32 - row * 0.7, -6 + row, row * 1.4 + 1, 1);
+  for (let row = 1; row < 10; row += 1) ctx.fillRect(32 - row * 0.7, 1 + row, row * 1.4 + 1, 1);
   ctx.fillStyle = c.costume.flower;
-  ctx.fillRect(30, -9, 4, 4);
+  ctx.fillRect(30, -2, 4, 4);
   for (const x of [14, 20, 44, 50]) ctx.fillRect(x, 56, 3, 3);
   ctx.fillStyle = c.costume.skin;
   for (const x of [14, 20, 44, 50]) ctx.fillRect(x + 0.5, 59, 2, 2);

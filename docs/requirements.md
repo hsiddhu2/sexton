@@ -1,6 +1,6 @@
 # Sexton: Product Requirements
 
-Version 0.5, 24 Nov 2026. Owner: Harpreet Singh Siddhu. This document is the single source of truth for what Sexton is and is not. Every spec, every design decision and every line of the write-up traces back to a numbered requirement here. If something is not in this document, it is not in scope. Changes to this document are versioned and dated.
+Version 0.7, 25 Nov 2026. Owner: Harpreet Singh Siddhu. This document is the single source of truth for what Sexton is and is not. Every spec, every design decision and every line of the write-up traces back to a numbered requirement here. If something is not in this document, it is not in scope. Changes to this document are versioned and dated.
 
 ## 1. Product statement
 
@@ -137,6 +137,7 @@ R-UI-4. Selecting a grave SHALL show the package's signals with sources, its sta
 R-UI-5. The scene SHALL be readable without the legend by a first-time viewer. Verified by one person outside the project before submission.
 R-UI-6. The scene SHALL render 300 graves without visible lag on a 2020 laptop.
 R-UI-7. The UI SHALL meet WCAG 2.1 AA for text contrast and keyboard navigation. Every grave SHALL be reachable by keyboard.
+R-UI-8. THE SYSTEM MAY play sound generated in code and show short speech bubbles over the cemetery. Sound SHALL be off by default and SHALL not start before the user turns it on. Speech bubbles SHALL never cover a grave's name, SHALL be hidden in Serious mode, and SHALL carry no information the grave's tooltip and drawer do not.
 
 ### 5.9 CLI and Action
 
@@ -200,3 +201,4 @@ Every Kiro spec names the requirements it implements. Every PR names the spec. T
 0.4, 23 Nov 2026. R-UI-1: Not-published form and pull request marker. R-UI-4: drawer shows the scan date. Time features: history scrubber, burial, replay.
 0.5, 24 Nov 2026. R-UI-1: Alive and Restless get distinct forms; characters and costumes act out each state.
 0.6, 24 Nov 2026. R-UI-1: a replay draws its one grave full size. The cemetery footer stays in view at 960 px and wider only, because below that the wrapped controls would leave almost no cemetery on screen.
+0.7, 25 Nov 2026. R-UI-8: sound off by default and speech bubbles. R-UI-1: a grave's art never covers another grave's name; the replay header labels its window end and the time shown; a replay's grave bursts open at its Possessed stop; a burial has a priest; the graves rise on first load.
