@@ -57,13 +57,19 @@ export function tooltipContent(pkg: PackageHealth, view?: FormView, asOfDate?: s
 }
 
 /**
- * Anchored at its Cell: left = cell.x + 8, top = cell.y + 4, width 240. It may extend past a scaled Cell, and it is
- * kept inside the Scene when the scene width is given (spec cemetery-undead, 7.1).
+ * Anchored at its Cell (spec cemetery-undead, 7.1). With the scene width given, it sits beside the cell, as in the
+ * mockups (K2d fix 1): right of the cell when it fits, else left of it, else over the cell at offset (8, 4), kept
+ * inside the Scene. Without the scene width it is over the cell at offset (8, 4). The top is always cell.y + 4.
  */
 export function tooltipRect(cell: Rect, sceneWidth?: number): { readonly left: number; readonly top: number; readonly width: number } {
-  const left = cell.x + 8;
-  const max = sceneWidth === undefined ? left : Math.max(0, sceneWidth - TOOLTIP_WIDTH - 8);
-  return { left: Math.min(left, max), top: cell.y + 4, width: TOOLTIP_WIDTH };
+  const top = cell.y + 4;
+  const over = cell.x + 8;
+  if (sceneWidth === undefined) return { left: over, top, width: TOOLTIP_WIDTH };
+  const right = cell.x + cell.w + 8;
+  if (right >= 0 && right + TOOLTIP_WIDTH <= sceneWidth) return { left: right, top, width: TOOLTIP_WIDTH };
+  const left = cell.x - TOOLTIP_WIDTH - 8;
+  if (left >= 0 && left + TOOLTIP_WIDTH <= sceneWidth) return { left, top, width: TOOLTIP_WIDTH };
+  return { left: Math.min(over, Math.max(0, sceneWidth - TOOLTIP_WIDTH - 8)), top, width: TOOLTIP_WIDTH };
 }
 
 export interface TipState {

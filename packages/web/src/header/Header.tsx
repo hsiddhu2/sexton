@@ -6,8 +6,6 @@ import { failingRulesText } from "./failing-rules-text.js";
 import { Legend } from "./Legend.js";
 import { ScanTime } from "./ScanTime.js";
 import { Wordmark } from "./Wordmark.js";
-import type { ReplayInfo } from "@sexton/api";
-import { ReplayBanner } from "../replay/ReplayBanner.js";
 import { ReplayButtons } from "../replay/ReplayButtons.js";
 import type { ReplayId } from "../replay/replay-ids.js";
 
@@ -24,8 +22,6 @@ export interface HeaderProps {
   readonly fieldRef?: RefObject<HTMLInputElement | null>;
   /** Renders the Replay buttons after the Scan button when present. */
   readonly onReplay?: (id: ReplayId) => void;
-  /** Set while a replay is loaded: the banner shows in the header area. */
-  readonly replay?: ReplayInfo;
   /** Set while the As-of date is before the scan date. */
   readonly asOf?: { readonly iso: string; readonly onBack: () => void };
   /** Serious mode toggle (spec cemetery-undead, 8.1). Shown when onSerious is given. */
@@ -41,7 +37,7 @@ function DownloadGlyph() {
   );
 }
 
-export function Header({ model, theme, apiConfigured, onSubmit, fieldRef, asOf, onReplay, replay, serious = false, onSerious }: HeaderProps) {
+export function Header({ model, theme, apiConfigured, onSubmit, fieldRef, asOf, onReplay, serious = false, onSerious }: HeaderProps) {
   const [value, setValue] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const submit = (event: FormEvent<HTMLFormElement>): void => {
@@ -132,7 +128,6 @@ export function Header({ model, theme, apiConfigured, onSubmit, fieldRef, asOf, 
       )}
       <Legend theme={theme} />
       {onReplay === undefined ? null : <ReplayButtons onReplay={onReplay} />}
-      {replay === undefined ? null : <ReplayBanner replay={replay} />}
       {message === null ? null : (
         <p role="alert" className="header-message">
           {message}

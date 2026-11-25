@@ -173,7 +173,9 @@ describe("versioned Segments (requirement 12.9)", () => {
     expect(button(container, "pkg-1").getAttribute("aria-label")).toBe("pkg-1 1.0.0, Restless");
     fireEvent.pointerEnter(button(container, "pkg-0"));
     const tip = screen.getByRole("tooltip");
-    expect(tip.textContent).toContain("9.9.9, Possessed");
+    // K2d fix 1, Deliberate test change 28: the version shows once, in the "Here lies" line.
+    expect(tip.querySelector(".epitaph-line")?.textContent).toBe("Here lies pkg-0 9.9.9");
+    expect(tip.querySelector(".tooltip-state")?.textContent).toBe("Possessed");
     expect(tip.textContent).toContain("as of 31 Mar 2026, 00:21 UTC");
     fireEvent.click(button(container, "pkg-0"));
     const dialog = screen.getByRole("dialog");

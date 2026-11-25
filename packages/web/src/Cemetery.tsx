@@ -5,12 +5,14 @@ import type { RemediateView } from "./load/remediate-client.js";
 import { drawerModel } from "./drawer/drawer-model.js";
 import { useContainerWidth } from "./hooks/use-container-width.js";
 import { useFontsReady } from "./hooks/use-fonts-ready.js";
-import { useFreeHeight } from "./hooks/use-free-height.js";
+import { fitHeight, useFreeHeight, usePinnedFooterHeight } from "./hooks/use-free-height.js";
 import { useGhostPhase } from "./hooks/use-ghost-phase.js";
 import { scanTimeView } from "./header/format-scan-time.js";
 import { GraveButtons } from "./overlay/GraveButtons.js";
 import { hasGhost, planScene, type Theme } from "./scene/layout.js";
 import { Scene } from "./scene/Scene.js";
+import { ReplayBanner } from "./replay/ReplayBanner.js";
+import { DRAWER_SCAN_DATE_TEXT, SCRUB_NOTE_TEXT } from "./time/Scrubber.js";
 import { formAt, timelineOf, type FormView } from "./time/form-at.js";
 import { useBurial } from "./time/use-burial.js";
 import { triageOrder } from "./triage/triage.js";
@@ -40,6 +42,8 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
   const quietFocus = useRef(false);
   const width = useContainerWidth(containerRef);
   const minHeight = useFreeHeight(containerRef, width);
+  const footerHeight = usePinnedFooterHeight(width);
+  const fit = fitHeight(minHeight, footerHeight, footerHeight > 0);
   const anyGhost = useMemo(() => order.some(hasGhost), [order]);
   const phase = useGhostPhase(anyGhost, reducedMotion);
   // A new plan object once the canvas fonts load, so the Scene repaints with them (spec cemetery-undead, 2.4).
@@ -76,13 +80,15 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
         selectedIndex,
         ghostPhase: phase,
         minHeight,
+        fitHeight: fit,
+        replay: response.replay !== undefined,
         marks,
         reducedMotion,
         lantern,
         ...(burial.burial !== null && burialIndex >= 0 ? { burial: { index: burialIndex, phase: burial.burial.phase } } : {}),
         ...(views !== undefined ? { forms: views } : {}),
       }),
-    [order, width, theme, selectedIndex, phase, minHeight, views, marks, burial.burial, burialIndex, fontsReady, reducedMotion, lantern],
+    [order, width, theme, selectedIndex, phase, minHeight, fit, views, marks, burial.burial, burialIndex, fontsReady, reducedMotion, lantern],
   );
   const request = burial.request;
   const onRemediateWithBurial = useMemo(
@@ -136,6 +142,15 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
     <>
       <div inert={openPackage !== undefined}>
         <main className="scene-main">
+          {/* A replay's story sits in a card over the scene, top left, as in the mockup (K2d fix 1). */}
+          {response.replay === undefined ? null : (
+            <ReplayBanner
+              replay={response.replay}
+              className="replay-card"
+              {...(asOfMs !== null ? { date: scanTimeView(new Date(asOfMs).toISOString()).text } : {})}
+              notes={beforeScan ? [SCRUB_NOTE_TEXT, DRAWER_SCAN_DATE_TEXT] : []}
+            />
+          )}
           <div ref={containerRef} className="scene-container">
             {order.length === 0 ? (
               <p className="cemetery-empty">no direct dependencies in this scan</p>

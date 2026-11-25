@@ -260,7 +260,8 @@ describe("Header bar (cemetery-polish task 8)", () => {
       <Header model={headerModel(cheapScan(1), true)} theme="dark" apiConfigured={true} onSubmit={noSubmit} />,
     );
     expect(container.querySelector("h1")?.textContent).toBe("Sexton cemetery");
-    expect(container.querySelector("h1 svg")?.getAttribute("aria-hidden")).toBe("true");
+    // K2d fix 1, Deliberate test change 29: the wordmark is the name alone, as in the mockup; the h1 holds no mark.
+    expect(container.querySelector("h1 svg")).toBeNull();
     const placeholder = (screen.getByLabelText("Repository URL") as HTMLInputElement).placeholder;
     expect(placeholder).toBe("Paste a public repository URL");
     expect(placeholder).not.toMatch(/\.(com|org|io)/);

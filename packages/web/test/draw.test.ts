@@ -74,6 +74,10 @@ function graveStart(calls: readonly Logged[], plan: ScenePlan): number {
   return at === -1 ? calls.length : at - 1;
 }
 
+/** K2d fix 1, Deliberate test change 32: path fills per grave by shape, and unit arcs beyond the shadow (the pit). */
+const pathFills = (shape: string): number => (shape === "unmarked" ? 2 : shape === "open" ? 5 : 4);
+const pitArcs = (shape: string): number => (shape === "open" ? 1 : 0);
+
 const SCENERY_METHODS = new Set([
   "setTransform",
   "clearRect",
@@ -166,10 +170,12 @@ describe("Feature: cemetery-theme, Property 4: Painter call discipline", () => {
     const log = logger();
     drawScene(log.ctx, plan, 1);
     // Spec cemetery-undead, Deliberate test change 9: the scenery fills six paths (church, tree, four bats) first.
+    // K2d fix 1, Deliberate test change 32: and the hill twice (its lit edge, then the ground); each grave fills its
+    // path count from PATH_FILLS (side face twice, stone, plinth, and the mound of the open grave).
     const withPath = log.calls.slice(graveStart(log.calls, plan)).filter((c) => c.method === "fill" && c.args.length === 1).map((c) => c.args[0]);
-    expect(withPath).toHaveLength(packages.length * 2);
+    expect(withPath).toHaveLength(plan.graves.reduce((sum, g) => sum + pathFills(g.shape), 0));
     expect(withPath.filter((p) => p === plinthPath())).toHaveLength(packages.length);
-    expect(log.calls.slice(0, graveStart(log.calls, plan)).filter((c) => c.method === "fill" && c.args.length === 1)).toHaveLength(6);
+    expect(log.calls.slice(0, graveStart(log.calls, plan)).filter((c) => c.method === "fill" && c.args.length === 1)).toHaveLength(8);
   });
 });
 
@@ -289,9 +295,11 @@ describe("Feature: cemetery-polish, Property 4: Painter call discipline for star
           const ghosts = plan.graves.filter((g) => g.ghost !== null).length;
           expect(rest.filter((c) => c.method === "scale" && c.args[0] === 72 && c.args[1] === 8)).toHaveLength(n);
           // Each ghost adds two eye and two blush ovals (a unit arc and an argument-less fill each).
-          expect(rest.filter((c) => c.method === "arc" && c.args[2] === 1)).toHaveLength(n + 4 * ghosts);
-          expect(rest.filter((c) => c.method === "fill" && c.args.length === 0)).toHaveLength(n + 4 * ghosts);
-          expect(rest.filter((c) => c.method === "fill" && c.args.length === 1)).toHaveLength(n * 2 + ghosts);
+          // Deliberate test change 32: the open grave's pit is one more unit arc; path fills follow pathFills.
+          const pits = plan.graves.reduce((sum, g) => sum + pitArcs(g.shape), 0);
+          expect(rest.filter((c) => c.method === "arc" && c.args[2] === 1)).toHaveLength(n + 4 * ghosts + pits);
+          expect(rest.filter((c) => c.method === "fill" && c.args.length === 0)).toHaveLength(n + 4 * ghosts + pits);
+          expect(rest.filter((c) => c.method === "fill" && c.args.length === 1)).toHaveLength(plan.graves.reduce((sum, g) => sum + pathFills(g.shape), 0) + ghosts);
           const pit = PALETTE[theme].pit + SHADOW_ALPHA_BYTE;
           expect(log.assigned.filter((a) => a.prop === "fillStyle" && a.value === pit)).toHaveLength(n);
           expect(log.assigned.filter((a) => a.prop === "lineWidth" && a.value === 0.5)).toHaveLength(n);
@@ -312,7 +320,8 @@ describe("Feature: cemetery-polish, Property 4: Painter call discipline for star
             // the next save after the shadow opens the shape: its stroke comes after its fill
             expect(names[at + 7]).toBe("save");
             let f = at + 8;
-            while (f < calls.length && !(names[f] === "fill" && calls[f]?.args.length === 1)) f += 1;
+            // Deliberate test change 32: the stone's own fill is the path fill that its stroke follows (after the side face).
+            while (f < calls.length && !(names[f] === "fill" && calls[f]?.args.length === 1 && names[f + 1] === "stroke")) f += 1;
             const k1 = SPECKS[g?.shape ?? "rounded"].length;
             expect(names[f + 1]).toBe("stroke");
             expect(calls[f + 1]?.args[0]).toBe(calls[f]?.args[0]);
@@ -358,10 +367,18 @@ describe("Feature: cemetery-polish, Property 4: Painter call discipline for star
         body.forEach((c, i) => {
           if (c.method === "translate" && plan.graves.some((g) => g.rect.x === c.args[0] && g.rect.y === c.args[1]) && body[i - 1]?.method === "save") starts.push(i - 1);
         });
-        expect(starts).toHaveLength(2);
+        // K2d fix 1, Deliberate test change 32: the Possessed glows are drawn in one pass before the graves, each in
+        // its own frame, so a Possessed pair opens two glow frames first, and the glow frames are equal too.
+        const glows = state === "Possessed" ? 2 : 0;
+        expect(starts).toHaveLength(2 + glows);
+        if (glows === 2) {
+          const g0 = starts[0] ?? 0;
+          const g1 = starts[1] ?? 0;
+          expect(body.slice(g1, g1 + (g1 - g0)).map((c) => c.method)).toEqual(body.slice(g0, g1).map((c) => c.method));
+        }
         const [a, b] = plan.graves;
-        const s0 = starts[0] ?? 0;
-        const s1 = starts[1] ?? 0;
+        const s0 = starts[glows] ?? 0;
+        const s1 = starts[glows + 1] ?? 0;
         expect(s1 - s0).toBe(body.length - s1);
         const dx = (b?.rect.x ?? 0) - (a?.rect.x ?? 0);
         const dy = (b?.rect.y ?? 0) - (a?.rect.y ?? 0);

@@ -16,6 +16,8 @@ export const PADDING = 16;
 export const SKY_HEIGHT = 120;
 /** Stars sit in the top band of the sky only, as before. */
 export const STAR_BAND_HEIGHT = 80;
+/** The tallest sky: when the graves fit in the fit height, the sky grows so the graves stand at the bottom (K2d fix 1). */
+export const MAX_SKY_HEIGHT = 420;
 export const MIN_WIDTH = CELL_WIDTH + 2 * PADDING;
 export const MAX_INSCRIPTIONS_PACKAGES = 60;
 export const INSCRIPTION_UNITS = 16;
@@ -35,9 +37,9 @@ export interface Rect {
 
 /** Cell-relative geometry of one Grave. Constants, never per package. */
 export const GRAVE_GEOMETRY = {
-  shapeX: 32,
-  shapeY: 48,
-  shapeScale: 2,
+  shapeX: 8,
+  shapeY: 7,
+  shapeScale: 2.75,
   plinth: { x: 44, y: 172, w: 104, h: 26, r: 5 },
   ghostX: 84,
   ghostTop: 12,
@@ -62,7 +64,7 @@ export interface GravePlan {
 }
 
 export const STAR_AREA = 800;
-/** Bat positions as [fraction of the width, y]. Fixed, so they depend on the width only. */
+/** Bat positions as [fraction of the width, y in a 120 px sky]. They scale with the sky height. */
 const BAT_SPOTS: readonly (readonly [number, number])[] = [
   [0.2, 40],
   [0.5, 26],
@@ -138,6 +140,13 @@ export interface SceneInput {
   readonly ghostPhase: number;
   /** Free height of the viewport under the header. Unreadable values count as 0. */
   readonly minHeight?: number;
+  /**
+   * The height the graves should end within: the free height less a Footer bar that stays in view (K2d fix 1).
+   * When the graves fit, the sky grows so they stand at the bottom of it. Absent or unreadable, the sky is SKY_HEIGHT.
+   */
+  readonly fitHeight?: number;
+  /** A replay: its one grave is drawn full size, at up to REPLAY_SCALE (K2d fix 1, requirement 5.8). */
+  readonly replay?: boolean;
   /** One Form per grave, in triage order; undefined entries keep the scan Form. */
   readonly forms?: readonly (FormView | undefined)[];
   /** One flag per grave: a pull request was opened for it. */
@@ -168,17 +177,19 @@ function makeTuft(x: number, base: number, h: number, dir: -1 | 1, tone: "dark" 
   return { x, base, h, dir, tone, rects };
 }
 
-/** Pure. Decoration that depends on the layout width only. */
-export function sceneryFor(width: number): Scenery {
-  if (lastScenery !== null && lastScenery.width === width) return lastScenery.scenery;
+/** Pure. Decoration that depends on the layout width and the sky height only. */
+export function sceneryFor(width: number, skyHeight: number = SKY_HEIGHT): Scenery {
+  if (lastScenery !== null && lastScenery.width === width && lastScenery.sky === skyHeight) return lastScenery.scenery;
+  const sky = skyHeight;
+  const band = Math.max(STAR_BAND_HEIGHT, sky - 40);
   // The backing store never exceeds MAX_BACKING CSS pixels, so decoration is capped there too.
   const w = Number.isNaN(width) ? 0 : Math.min(width, MAX_BACKING);
   const starSpan = Math.max(w - 1, 0);
-  const stars = unitStars(Math.floor((w * STAR_BAND_HEIGHT) / STAR_AREA)).map((s, i): Star => {
+  const stars = unitStars(Math.floor((w * band) / STAR_AREA)).map((s, i): Star => {
     const near = i % 3 === 0;
     return {
       x: Math.floor(s.u * starSpan),
-      y: 4 + Math.floor(s.v * 69),
+      y: 4 + Math.floor(s.v * (band - 11)),
       size: near ? 2 : 1,
       layer: near ? "near" : "far",
     };
@@ -192,21 +203,31 @@ export function sceneryFor(width: number): Scenery {
       grass.push(makeTuft(x, 8 + Math.floor(t.v * 9), 4 + Math.floor(t.r * 5), t.r2 < 0.5 ? -1 : 1, t.r3 < 0.5 ? "dark" : "light"));
     }
   }
+  // The harvest moon grows with a taller sky, as in the mockup, and always fits inside it.
+  const moonR = Math.min(Math.floor(width / 5) - 4, Math.max(52, Math.floor(sky * 0.3)));
   const scenery: Scenery = {
-    skyHeight: SKY_HEIGHT,
-    horizonY: SKY_HEIGHT,
-    moon: { x: Math.floor(width - width / 5), y: 62, r: Math.min(52, Math.floor(width / 5) - 4) },
-    fog: { y: SKY_HEIGHT - 40, h: 160 },
+    skyHeight: sky,
+    horizonY: sky,
+    moon: { x: Math.floor(width - width / 5), y: sky > SKY_HEIGHT ? Math.round(sky * 0.4) : 62, r: moonR },
+    fog: { y: sky - 40, h: 160 },
     groundFade: 640,
     stars,
     grass,
-    bats: BAT_SPOTS.map(([u, y]) => ({ x: Math.floor(u * Math.max(w - 28, 0)), y })),
+    bats: BAT_SPOTS.map(([u, y]) => ({ x: Math.floor(u * Math.max(w - 28, 0)), y: Math.round((y * sky) / SKY_HEIGHT) })),
   };
-  lastScenery = { width, scenery };
+  lastScenery = { width, sky, scenery };
   return scenery;
 }
 
-let lastScenery: { readonly width: number; readonly scenery: Scenery } | null = null;
+let lastScenery: { readonly width: number; readonly sky: number; readonly scenery: Scenery } | null = null;
+
+/** The scale of a replay's one grave, before it is fitted to the width and the fit height. */
+export const REPLAY_SCALE = 1.8;
+/** How far the open grave's lid reaches past its cell, in cell units. */
+export const REPLAY_OVERHANG = 60;
+
+/** How far apart graves of a Tier may spread to fill a row, as a multiple of the Tier cell width (K2d fix 1). */
+export const PITCH_CAP: Readonly<Record<TierId, number>> = { front: 1.07, middle: 1.2, back: 1.4 };
 
 /** A ghost means one or more advisories, and nothing else (5.1). */
 export function hasGhost(pkg: PackageHealth): boolean {
@@ -229,12 +250,21 @@ export function tierCell(tier: TierId): { readonly w: number; readonly h: number
   return { w: Math.round(CELL_WIDTH * s), h: Math.round(CELL_HEIGHT * s) };
 }
 
+/** Pure. The cell of a replay's one grave: REPLAY_SCALE, or less so it fits the width and the fit height. */
+export function replayCell(width: number, fit: number | undefined): { readonly w: number; readonly h: number } {
+  // The open grave's lid lies up to REPLAY_OVERHANG cell units past each side, so the width leaves room for it.
+  const byWidth = (Math.min(width, MAX_BACKING) - 2 * PADDING) / (CELL_WIDTH + 2 * REPLAY_OVERHANG);
+  const byHeight = typeof fit === "number" && Number.isFinite(fit) && fit > 0 ? (fit - SKY_HEIGHT - 2 * PADDING) / CELL_HEIGHT : REPLAY_SCALE;
+  const s = Math.max(1, Math.min(REPLAY_SCALE, byWidth, byHeight));
+  return { w: Math.floor(CELL_WIDTH * s), h: Math.floor(CELL_HEIGHT * s) };
+}
+
 export function planScene(input: SceneInput): ScenePlan {
   const width = Number.isFinite(input.width) ? Math.max(MIN_WIDTH, Math.floor(input.width)) : MIN_WIDTH;
   const n = input.packages.length;
-  const scenery = sceneryFor(width);
   const reducedMotion = input.reducedMotion === true;
   if (n === 0) {
+    const scenery = sceneryFor(width);
     return { width, height: 0, columns: 0, rows: 0, rowLines: [], paintOrder: [], dancers: new Set(), reducedMotion, lantern: null, groundHeight: 0, theme: input.theme, graves: [], ring: null, scenery };
   }
   // Tiers follow the scan-date State, so a grave never moves while the scrubber does (spec cemetery-undead, 5.6).
@@ -242,31 +272,43 @@ export function planScene(input: SceneInput): ScenePlan {
   input.packages.forEach((pkg, index) => {
     byTier[TIER_OF[pkg.state]].push(index);
   });
-  const rects: Rect[] = new Array<Rect>(n);
-  const rowLines: number[] = [];
+  // Rectangles are planned from the top of the field, then moved down by the sky height.
+  const local: Rect[] = new Array<Rect>(n);
+  const localLines: number[] = [];
   const paintOrder: number[] = [];
-  let y = SKY_HEIGHT + PADDING;
+  let y = PADDING;
   let first = true;
+  const span = Math.min(width, MAX_BACKING) - 2 * PADDING;
   for (const tier of TIER_DRAW_ORDER) {
     const members = byTier[tier];
     if (members.length === 0) continue;
     if (!first) y += TIER_GAP;
     first = false;
-    const cell = tierCell(tier);
+    const cell = n === 1 && input.replay === true ? replayCell(width, input.fitHeight) : tierCell(tier);
     const cols = Math.max(1, Math.floor((width - 2 * PADDING) / cell.w));
     const tierRows = Math.ceil(members.length / cols);
     members.forEach((index, k) => {
-      // Each row is centred in the drawable width (the backing store stops at MAX_BACKING), as in the mockup.
+      // Each row is centred in the drawable width (the backing store stops at MAX_BACKING), and its graves spread
+      // apart up to PITCH_CAP to fill the row, as in the mockup. The rectangle stays one cell, so none overlap.
       const row = Math.floor(k / cols);
       const inRow = Math.min(cols, members.length - row * cols);
-      const span = Math.min(width, MAX_BACKING) - 2 * PADDING;
-      const left = PADDING + Math.max(0, Math.floor((span - inRow * cell.w) / 2));
-      rects[index] = { x: left + (k % cols) * cell.w, y: y + row * cell.h, w: cell.w, h: cell.h };
+      const pitch = Math.max(cell.w, Math.min(Math.floor(cell.w * PITCH_CAP[tier]), Math.floor(span / inRow)));
+      const used = (inRow - 1) * pitch + cell.w;
+      const left = PADDING + Math.max(0, Math.floor((span - used) / 2));
+      local[index] = { x: left + (k % cols) * pitch, y: y + row * cell.h, w: cell.w, h: cell.h };
       paintOrder.push(index);
     });
-    for (let r = 1; r <= tierRows; r += 1) rowLines.push(y + r * cell.h);
+    for (let r = 1; r <= tierRows; r += 1) localLines.push(y + r * cell.h);
     y += tierRows * cell.h;
   }
+  const field = y + PADDING;
+  // The sky grows to fill the fit height, so the graves stand at the bottom above the Footer bar (K2d fix 1).
+  const fit = typeof input.fitHeight === "number" && Number.isFinite(input.fitHeight) ? Math.floor(input.fitHeight) : 0;
+  const sky = Math.min(MAX_SKY_HEIGHT, Math.max(SKY_HEIGHT, fit - field));
+  const scenery = sceneryFor(width, sky);
+  const rects: Rect[] = local.map((r) => ({ x: r.x, y: r.y + sky, w: r.w, h: r.h }));
+  const rowLines = localLines.map((line) => line + sky);
+  y = field - PADDING + sky;
   const columns = Math.max(1, Math.floor((width - 2 * PADDING) / CELL_WIDTH));
   const rows = rowLines.length;
   const height = y + PADDING;

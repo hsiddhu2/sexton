@@ -38,7 +38,7 @@ export function GraveTooltip({ pkg, cell, view, asOfDate, sceneWidth, serious = 
         <strong className="tooltip-name">{content.name}</strong> {content.version}
       </span>
       <span className="tooltip-line">
-        {content.version}, <span className={`tooltip-state tooltip-state-${content.stateText === content.state ? content.state.toLowerCase() : "pending"}`}>{content.stateText}</span>
+        <span className={`tooltip-state tooltip-state-${content.stateText === content.state ? content.state.toLowerCase() : "pending"}`}>{content.stateText}</span>
       </span>
       <span className="tooltip-line">{content.reason}</span>
       {line === null ? null : <span className="tooltip-line epitaph-punchline">{line}</span>}

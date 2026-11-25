@@ -8,10 +8,20 @@ export function isSafeSourceUrl(url: string): boolean {
   return url.startsWith("https://") && !/[\s\u0000-\u001f\u007f]/.test(url);
 }
 
+export interface ReplayBannerProps {
+  readonly replay: ReplayInfo;
+  /** The card over the scene shows the chosen Stop's date first (K2d fix 1). */
+  readonly date?: string;
+  /** The card over the scene: the scrubber captions sit in it while a replay shows its Stop cards. */
+  readonly notes?: readonly string[];
+  readonly className?: string;
+}
+
 /** The note that every replay screen carries. Text only, links only for https addresses (requirement 19). */
-export function ReplayBanner({ replay }: { readonly replay: ReplayInfo }) {
+export function ReplayBanner({ replay, date, notes = [], className }: ReplayBannerProps) {
   return (
-    <aside role="note" className="replay-banner">
+    <aside role="note" className={className === undefined ? "replay-banner" : `replay-banner ${className}`}>
+      {date === undefined ? null : <p className="replay-date">{date}</p>}
       <p className="replay-title">
         <strong>{replay.title}</strong>
       </p>
@@ -30,6 +40,11 @@ export function ReplayBanner({ replay }: { readonly replay: ReplayInfo }) {
           </li>
         ))}
       </ul>
+      {notes.map((note) => (
+        <p key={note} className="scrub-note">
+          {note}
+        </p>
+      ))}
     </aside>
   );
 }

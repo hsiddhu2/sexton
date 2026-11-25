@@ -15,11 +15,13 @@ const allOf = (n: number, state: PackageHealth["state"]): PackageHealth[] => pac
 /**
  * Spec cemetery-undead, Deliberate test changes 3 to 6: an independent model of the Tier layout. Back Tier first
  * (Alive, 0.64), middle (Haunted and Restless, 0.8), front (Possessed and Dead, 1); no gap between Tiers; every row
- * centred in the drawable width; sky 120 and padding 16 (design.md, decisions 6 and 11).
+ * centred in the drawable width; sky 120 and padding 16 (design.md, decisions 6 and 11). K2d fix 1, Deliberate test
+ * change 30: the graves of a row spread apart up to 1.07, 1.2 and 1.4 cell widths (front, middle, back) to fill it.
  */
 function tierModel(packages: readonly PackageHealth[], width: number): { rects: Rect[]; height: number; rows: number } {
   const tierOf = (s: string): number => (s === "Alive" ? 0 : s === "Haunted" || s === "Restless" ? 1 : 2);
   const scales = [0.64, 0.8, 1];
+  const caps = [1.4, 1.2, 1.07];
   const rects: Rect[] = [];
   let y = 120 + 16;
   let rows = 0;
@@ -36,8 +38,10 @@ function tierModel(packages: readonly PackageHealth[], width: number): { rects: 
     members.forEach((index, k) => {
       const row = Math.floor(k / cols);
       const inRow = Math.min(cols, members.length - row * cols);
-      const left = 16 + Math.max(0, Math.floor((Math.min(width, 16384) - 32 - inRow * w) / 2));
-      rects[index] = { x: left + (k % cols) * w, y: y + row * h, w, h };
+      const span = Math.min(width, 16384) - 32;
+      const pitch = Math.max(w, Math.min(Math.floor(w * (caps[t] ?? 1)), Math.floor(span / inRow)));
+      const left = 16 + Math.max(0, Math.floor((span - ((inRow - 1) * pitch + w)) / 2));
+      rects[index] = { x: left + (k % cols) * pitch, y: y + row * h, w, h };
     });
     rows += tierRows;
     y += tierRows * h;
@@ -88,10 +92,12 @@ describe("Feature: cemetery-ui, Property 8: Layout is deterministic and no two g
 
   it("puts the first package at the left of its Tier's first row, at the Tier's scale", () => {
     const plan = planScene({ packages: allOf(3, "Dead"), width: 1280, theme: "light", selectedIndex: null, ghostPhase: 0 });
-    // Three front cells of 192 centred in 1248: left = 16 + (1248 - 576) / 2.
-    expect(plan.graves[0]?.rect).toEqual({ x: 352, y: 136, w: 192, h: 224 });
+    // Three front cells of 192, 205 apart (192 times 1.07, floored), centred in 1248: left = 16 + (1248 - 602) / 2.
+    expect(plan.graves[0]?.rect).toEqual({ x: 339, y: 136, w: 192, h: 224 });
+    expect(plan.graves[1]?.rect.x).toBe(339 + 205);
     const back = planScene({ packages: allOf(3, "Alive"), width: 1280, theme: "light", selectedIndex: null, ghostPhase: 0 });
-    expect(back.graves[0]?.rect).toEqual({ x: 16 + Math.floor((1248 - 3 * 123) / 2), y: 136, w: 123, h: 143 });
+    // Back cells of 123, 172 apart (123 times 1.4, floored).
+    expect(back.graves[0]?.rect).toEqual({ x: 16 + Math.floor((1248 - (2 * 172 + 123)) / 2), y: 136, w: 123, h: 143 });
   });
 
   it("changes columns at width 415 and 416", () => {

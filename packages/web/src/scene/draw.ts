@@ -16,7 +16,7 @@ import { CHURCH_PATH, TREE_PATH, batWing, churchPath, treePath } from "./silhoue
 import { POSE_COUNT, type ClipId } from "./characters/vector.js";
 import { BURIAL_SINK_PX, burialFrame } from "../time/burial.js";
 import { CHARACTER_BY_STATE, COSTUME_BY_STATE, drawCharacter, drawPartyCostume, STATE_BY_SHAPE } from "./characters/vector.js";
-import { detailPath, GHOST_BLUSH, GHOST_EYES, ghostPath, pitRimPath, plinthPath, SHAPES, shapePath, SPECKS } from "./shapes.js";
+import { pitEdgePath, detailPath, GHOST_BLUSH, GHOST_EYES, ghostPath, pitRimPath, plinthPath, SHAPES, shapePath, SPECKS } from "./shapes.js";
 
 export interface GradientLike {
   addColorStop(offset: number, colour: string): void;
@@ -62,17 +62,27 @@ const GRAIN_TILE = 128;
 const GRAIN_DOTS = 900;
 const GRAIN_SEED = 0x5e7701c3;
 const LANTERN_RADIUS = 0.6;
-const GHOST_DRAW_SCALE = 1.6;
+const GHOST_DRAW_SCALE = 2;
 const MIN_NAME_PX = 12;
 const INSCRIPTION_UNITS_PX = 15;
 /** The family part of the inscription font, so the name has one source. */
 const NAME_FAMILY = GRAVE_GEOMETRY.inscription.font.replace(/^\d+px /, "");
-const GHOST_SHIFT_X = 10;
-const GHOST_SHIFT_Y = 36;
+/** The side face of a stone: its outline again, this far right and up in shape units, shaded with SHADOW_ALPHA_BYTE. */
+/** The ghost is drawn this far from its planned point, in cell units, so it floats over the top of its stone. */
+const GHOST_SHIFT_X = -4;
+const GHOST_SHIFT_Y = -40;
+const SIDE_DX = 3;
+const SIDE_DY = -1.5;
+
+/** The ground rises this far in the middle of the width, so it meets the sky as a hill, not a straight line. */
+const HILL_RISE = 22;
+const HILL_EDGE = 3;
+const PIT_EDGE_WIDTH = 0.6;
+/** The violet glow of the horizon, just above the hill, as a fraction of the sky height. */
+const HORIZON_GLOW = 0.45;
 const BAT_SCALE = 1.7;
 /** The church (150 high) and tree fit inside the 120 px sky. */
 const SILHOUETTE_SCALE = 0.72;
-const HORIZON_FEATHER = 56;
 /** Moon craters as [dx, dy, r], in moon radii. */
 const CRATERS: readonly (readonly [number, number, number])[] = [
   [-0.35, -0.2, 0.18],
@@ -82,7 +92,6 @@ const CRATERS: readonly (readonly [number, number, number])[] = [
 const HALO_OUTER = 2.5;
 const CRACK_LINE_WIDTH = 2;
 const RING_LINE_WIDTH = 3;
-const PIT_RIM_LINE_WIDTH = 1.5;
 
 const SHADOW_RX = 72;
 const SHADOW_RY = 8;
@@ -92,7 +101,9 @@ const STONE_LINE_WIDTH = 0.5;
 const MARKER_BASE_Y = 168;
 const MOUND_RX = 60;
 const MOUND_RY = 14;
-const GLOW_RADIUS = 96;
+const GLOW_RADIUS = 200;
+/** The Possessed glow is centred over the pit, at this cell y (K2d fix 1). */
+const GLOW_CY = 104;
 /** The pennant at fixed Cell offsets: pole, then three flag rows. Right of every stone box, above the Plinth top. */
 const MARKER_RECTS: readonly (readonly [number, number, number, number])[] = [
   [160, 124, 2, 44],
@@ -153,6 +164,26 @@ function drawTufts(ctx: PaintContext2D, plan: ScenePlan): void {
     }
   }
 }
+
+const hillCache = new Map<string, Path2D>();
+function cachedPath(key: string, d: () => string): Path2D {
+  let path = hillCache.get(key);
+  if (path === undefined) {
+    if (hillCache.size > 16) hillCache.clear();
+    path = new Path2D(d());
+    hillCache.set(key, path);
+  }
+  return path;
+}
+
+/** The top of the ground above the horizon line: a gentle hill, low at both edges. */
+function hillPath(width: number, horizon: number): Path2D {
+  const w = Math.min(width, MAX_BACKING);
+  return cachedPath(`g${String(w)},${String(horizon)}`, () =>
+    `M0 ${String(horizon)} C${String(w * 0.2)} ${String(horizon - HILL_RISE)} ${String(w * 0.8)} ${String(horizon - HILL_RISE)} ${String(w)} ${String(horizon)} Z`,
+  );
+}
+
 
 function drawScenery(ctx: PaintContext2D, plan: ScenePlan, nowMs: number): void {
   const colours = PALETTE[plan.theme];
@@ -221,17 +252,13 @@ function drawScenery(ctx: PaintContext2D, plan: ScenePlan, nowMs: number): void 
     ctx.restore();
   }
 
-  const ground = ctx.createLinearGradient(0, s.horizonY, 0, s.horizonY + s.groundFade);
-  ground.addColorStop(0, colours.groundTop);
-  ground.addColorStop(1, colours.bg);
-  ctx.fillStyle = ground as CanvasGradient;
-  ctx.fillRect(0, s.horizonY, plan.width, Math.max(0, plan.groundHeight - s.horizonY));
-  // Feather the horizon: the violet glow of the sky runs down into the ground, so there is no hard edge.
-  const feather = ctx.createLinearGradient(0, s.horizonY, 0, s.horizonY + HORIZON_FEATHER);
-  feather.addColorStop(0, colours.skyHorizon);
-  feather.addColorStop(1, colours.skyHorizon + ALPHA_ZERO_BYTE);
-  ctx.fillStyle = feather as CanvasGradient;
-  ctx.fillRect(0, s.horizonY, plan.width, HORIZON_FEATHER);
+  // The lit horizon: the violet of the sky gathers above the hill.
+  const glowH = s.skyHeight * HORIZON_GLOW;
+  const lit = ctx.createLinearGradient(0, s.horizonY - glowH, 0, s.horizonY);
+  lit.addColorStop(0, colours.skyHorizon + ALPHA_ZERO_BYTE);
+  lit.addColorStop(1, colours.skyHorizon);
+  ctx.fillStyle = lit as CanvasGradient;
+  ctx.fillRect(0, s.horizonY - glowH, plan.width, glowH);
 
   // The fence along the horizon: posts and two rails.
   ctx.fillStyle = colours.silhouette;
@@ -240,6 +267,22 @@ function drawScenery(ctx: PaintContext2D, plan: ScenePlan, nowMs: number): void 
   for (let x = 2; x < fenceEnd; x += FENCE_STEP) ctx.fillRect(x, s.horizonY - FENCE_HEIGHT, 2, FENCE_HEIGHT + 2);
   ctx.fillRect(0, s.horizonY - FENCE_HEIGHT + 4, plan.width, 1);
   ctx.fillRect(0, s.horizonY - 6, plan.width, 1);
+
+  // The ground: a low hill in front of the fence, lit along its top edge, darker towards the front (K2d fix 1).
+  const hillTop = s.horizonY - HILL_RISE;
+  const ground = ctx.createLinearGradient(0, hillTop, 0, hillTop + Math.max(s.groundFade / 3, (plan.groundHeight - hillTop) * 0.55));
+  ground.addColorStop(0, colours.groundTop);
+  ground.addColorStop(1, colours.bg);
+  ctx.fillStyle = ground as CanvasGradient;
+  ctx.fillRect(0, s.horizonY, plan.width, Math.max(0, plan.groundHeight - s.horizonY));
+  // The lit edge: the hill once in the fog colour, raised by HILL_EDGE, then the hill in the ground colour over it.
+  ctx.save();
+  ctx.translate(0, -HILL_EDGE);
+  ctx.fillStyle = colours.skyHorizon;
+  ctx.fill(hillPath(plan.width, s.horizonY));
+  ctx.restore();
+  ctx.fillStyle = ground as CanvasGradient;
+  ctx.fill(hillPath(plan.width, s.horizonY));
 
   const fog = ctx.createLinearGradient(0, s.fog.y, 0, s.fog.y + s.fog.h);
   fog.addColorStop(0, colours.fog + ALPHA_ZERO_BYTE);
@@ -325,6 +368,28 @@ function clipAndPose(grave: GravePlan, plan: ScenePlan, clips: readonly ClipId[]
   return { clip, pose: poseAt(nowMs, count, plan.reducedMotion, seedOf(grave.name) % count) };
 }
 
+/**
+ * At most one glow under a grave: the Lantern glow on the hovered or focused grave, else the Possessed glow. All glows
+ * are drawn on the ground before any grave, so a wide glow never tints a neighbouring stone (K2d fix 1).
+ */
+function drawGlow(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan): void {
+  const lantern = plan.lantern === grave.index;
+  if (!lantern && STATE_BY_SHAPE[grave.shape] !== "Possessed") return;
+  const colours = PALETTE[plan.theme];
+  const scale = grave.rect.w / CELL_WIDTH;
+  ctx.save();
+  ctx.translate(grave.rect.x, grave.rect.y);
+  ctx.scale(scale, scale);
+  const cy = lantern ? MARKER_BASE_Y - 20 : GLOW_CY;
+  const radius = lantern ? CELL_WIDTH * LANTERN_RADIUS : GLOW_RADIUS;
+  const glow = ctx.createRadialGradient(SHADOW_CX, cy, 0, SHADOW_CX, cy, radius);
+  glow.addColorStop(0, lantern ? colours.lantern + LANTERN_ALPHA_BYTE : grave.fill + GLOW_ALPHA_BYTE);
+  glow.addColorStop(1, (lantern ? colours.lantern : grave.fill) + ALPHA_ZERO_BYTE);
+  ctx.fillStyle = glow as CanvasGradient;
+  ctx.fillRect(SHADOW_CX - radius, cy - radius, radius * 2, radius * 2);
+  ctx.restore();
+}
+
 /** One grave, drawn in its cell frame at its Tier scale: every number below is cell-relative. */
 function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan, deco: DecorationColours, nowMs: number): void {
   const colours = PALETTE[plan.theme];
@@ -336,18 +401,6 @@ function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan, deco:
   ctx.save();
   ctx.translate(grave.rect.x, grave.rect.y);
   ctx.scale(scale, scale);
-
-  // At most one glow under a grave: the Lantern glow on the hovered or focused grave, else the Possessed glow.
-  const lantern = plan.lantern === grave.index;
-  if (lantern || formState === "Possessed") {
-    const cy = MARKER_BASE_Y - 20;
-    const radius = lantern ? CELL_WIDTH * LANTERN_RADIUS : GLOW_RADIUS;
-    const glow = ctx.createRadialGradient(SHADOW_CX, cy, 0, SHADOW_CX, cy, radius);
-    glow.addColorStop(0, lantern ? colours.lantern + LANTERN_ALPHA_BYTE : grave.fill + GLOW_ALPHA_BYTE);
-    glow.addColorStop(1, (lantern ? colours.lantern : grave.fill) + ALPHA_ZERO_BYTE);
-    ctx.fillStyle = glow as CanvasGradient;
-    ctx.fillRect(SHADOW_CX - radius, cy - radius, radius * 2, radius * 2);
-  }
 
   ctx.save();
   ctx.translate(SHADOW_CX, SHADOW_CY);
@@ -373,17 +426,31 @@ function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan, deco:
   ctx.translate(-SHAPE_HALF * g.shapeScale, -SHAPE_HALF * g.shapeScale);
   ctx.scale(g.shapeScale, g.shapeScale);
   if (def.pit !== null) {
-    ctx.fillStyle = colours.pit;
-    ctx.fillRect(def.pit.x, def.pit.y, def.pit.w, def.pit.h);
+    // The mound of dug earth, then the dark mouth of the pit in it (K2d fix 1).
     const rim = pitRimPath(grave.shape);
     if (rim !== null) {
-      ctx.strokeStyle = colours.border;
-      ctx.lineWidth = PIT_RIM_LINE_WIDTH;
-      ctx.stroke(rim);
+      ctx.fillStyle = colours.surface;
+      ctx.fill(rim);
     }
+    const { x, y, w, h } = def.pit;
+    drawOvals(ctx, [[x + w / 2, y + h / 2, w / 2, h / 2]], colours.pit);
+    // The pit's edge catches the lantern light, as in the mockup. A line, not a glow: the one-glow rule holds.
+    ctx.strokeStyle = colours.lantern;
+    ctx.lineWidth = PIT_EDGE_WIDTH;
+    ctx.stroke(pitEdgePath());
+  }
+  const outline = shapePath(grave.shape);
+  if (grave.shape !== "unmarked") {
+    // The side face: the outline again, offset, shaded, so the stone reads as a block and not a flat shape.
+    ctx.save();
+    ctx.translate(SIDE_DX, SIDE_DY);
+    ctx.fillStyle = grave.fill;
+    ctx.fill(outline);
+    ctx.fillStyle = colours.ink + SHADOW_ALPHA_BYTE;
+    ctx.fill(outline);
+    ctx.restore();
   }
   ctx.fillStyle = grave.fill;
-  const outline = shapePath(grave.shape);
   ctx.fill(outline);
   ctx.strokeStyle = deco.stone;
   ctx.lineWidth = STONE_LINE_WIDTH;
@@ -437,7 +504,7 @@ function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan, deco:
     ctx.save();
     // The ghost position is planned in scene pixels; its drift is not scaled.
     ctx.translate((grave.ghost.x - grave.rect.x) / scale, (grave.ghost.y - grave.rect.y) / scale);
-    // Drawn 1.6 times larger and lower, so the ghost overlaps the top of its stone, as in the mockup.
+    // Drawn twice as large and higher, floating over the top of its stone, as in the mockup.
     ctx.translate(GHOST_SHIFT_X, GHOST_SHIFT_Y);
     ctx.scale(GHOST_DRAW_SCALE, GHOST_DRAW_SCALE);
     ctx.fillStyle = colours.ghost;
@@ -469,6 +536,7 @@ export function drawScene(ctx: PaintContext2D, plan: ScenePlan, scale: number, n
   ctx.clearRect(0, 0, plan.width, plan.groundHeight);
   drawScenery(ctx, plan, nowMs);
   const deco: DecorationColours = { shadow: colours.pit + SHADOW_ALPHA_BYTE, stone: colours.ink + STONE_ALPHA_BYTE };
+  for (const grave of plan.graves) drawGlow(ctx, grave, plan);
   for (const index of plan.paintOrder) {
     const grave = plan.graves[index];
     if (grave !== undefined) drawGrave(ctx, grave, plan, deco, nowMs);

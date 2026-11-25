@@ -6,9 +6,8 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { App } from "../src/App.js";
 import { Drawer } from "../src/drawer/Drawer.js";
 import { drawerModel } from "../src/drawer/drawer-model.js";
-import { Header } from "../src/header/Header.js";
 import { checkScanUrl } from "../src/load/check-scan-url.js";
-import { REPLAY_BANNER_TEXT } from "../src/replay/ReplayBanner.js";
+import { REPLAY_BANNER_TEXT, ReplayBanner } from "../src/replay/ReplayBanner.js";
 import { REPLAY_IDS, parseReplayParam, replayAddress, type ReplayId } from "../src/replay/replay-ids.js";
 import { stopsFor } from "../src/time/stops.js";
 import { EIGHT_URLS, EXPECTED_SEGMENTS, readReplay, readReplayText } from "./support/replay-fixture.js";
@@ -144,7 +143,10 @@ describe("the banner (requirement 19)", () => {
       await ready();
       const notes = container.querySelectorAll('[role="note"]');
       expect(notes).toHaveLength(1);
-      expect(container.querySelector("header")?.contains(notes[0] ?? null)).toBe(true);
+      // K2d fix 1, Deliberate test change 31: the banner is a card over the scene, in main, not in the header.
+      expect(container.querySelector("header")?.contains(notes[0] ?? null)).toBe(false);
+      expect(container.querySelector("main")?.contains(notes[0] ?? null)).toBe(true);
+      expect(notes[0]?.classList.contains("replay-card")).toBe(true);
       expect(notes[0]?.textContent).toContain(REPLAY_BANNER_TEXT);
       expect(notes[0]?.textContent).toContain(replay.title);
       const links = [...(notes[0]?.querySelectorAll("a") ?? [])];
@@ -194,8 +196,12 @@ describe("the replay through the scrubber (requirement 20)", () => {
         expect(label(container)).toBe(`${id} ${expected.version}, ${expected.state}`);
         expect(label(container)).not.toContain("not yet published");
         fireEvent.pointerEnter(grave(container));
-        const tip = screen.getByRole("tooltip").textContent ?? "";
-        expect(tip).toContain(`${expected.version}, ${expected.state}`);
+        const tooltip = screen.getByRole("tooltip");
+        const tip = tooltip.textContent ?? "";
+        // K2d fix 1, Deliberate test change 28: the version shows once, in the "Here lies" line; the State line is the State.
+        expect(tooltip.querySelector(".epitaph-line")?.textContent).toBe(`Here lies ${id} ${expected.version}`);
+        expect(tooltip.querySelector(".tooltip-state")?.textContent).toBe(expected.state);
+        expect(tip).not.toContain(`${expected.version}, ${expected.state}`);
         expect(tip).toContain(expected.reason);
         fireEvent.pointerLeave(grave(container));
       }
@@ -312,7 +318,8 @@ describe("Property 21: The banner is on every replay screen and links only to ht
     fc.assert(
       fc.property(arbReplayBlock, (replay) => {
         const screens = screensOf(
-          renderToStaticMarkup(<Header model={null} theme="dark" apiConfigured={false} onSubmit={() => null} replay={replay} />),
+          // K2d fix 1, Deliberate test change 31: the scene screen's banner is the card over the scene.
+          renderToStaticMarkup(<ReplayBanner replay={replay} className="replay-card" />),
           renderToStaticMarkup(<Drawer model={model} replay={replay} onClose={noop} />),
         );
         expect(screens).toHaveLength(2);

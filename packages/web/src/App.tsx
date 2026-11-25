@@ -10,6 +10,7 @@ import { replayAddress, type ReplayId } from "./replay/replay-ids.js";
 import { applyPalette, type Theme } from "./scene/palette.js";
 import { HISTORY_OMITTED_TEXT, Scrubber } from "./time/Scrubber.js";
 import { ReplayButtons } from "./replay/ReplayButtons.js";
+import { stopCards } from "./replay/stop-cards.js";
 import { stopsFor } from "./time/stops.js";
 import { usePlay } from "./time/use-play.js";
 import { browserStorage, readSerious, writeSerious } from "./epitaph/serious.js";
@@ -65,6 +66,7 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
   const { index, seek } = player;
   const last = stopInfo === null ? 0 : stopInfo.stops.length - 1;
   const showScrubber = stopInfo !== null && stopInfo.hasTimelines;
+  const cards = useMemo(() => (state.status === "ready" && stopInfo !== null ? stopCards(state.response, stopInfo.stops) : null), [state, stopInfo]);
   const asOfMs = showScrubber ? (stopInfo.stops[index] ?? null) : null;
   const asOf = showScrubber && index < last && asOfMs !== null
     ? {
@@ -77,7 +79,7 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
     : undefined;
   return (
     <>
-      <Header model={model} theme={theme} apiConfigured={apiBase !== null} onSubmit={loader.submitRepo} fieldRef={repoFieldRef} serious={serious} onSerious={toggleSerious} {...(state.status === "ready" && state.response.replay !== undefined ? { replay: state.response.replay } : {})} {...(asOf !== undefined ? { asOf } : {})} />
+      <Header model={model} theme={theme} apiConfigured={apiBase !== null} onSubmit={loader.submitRepo} fieldRef={repoFieldRef} serious={serious} onSerious={toggleSerious} {...(asOf !== undefined ? { asOf } : {})} />
       {state.status === "loading" ? (
         <LoadingCard />
       ) : state.status === "error" ? (
@@ -121,6 +123,7 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
             onPlay={player.play}
             onPause={player.pause}
             announce={player.announce}
+            cards={cards}
           />
         ) : state.status === "ready" && state.response.timelinesOmitted === "too-large" ? (
           <p className="history-omitted">{HISTORY_OMITTED_TEXT}</p>

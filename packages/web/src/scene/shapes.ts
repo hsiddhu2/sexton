@@ -10,25 +10,28 @@ export interface ShapeDef {
   readonly pit: { readonly x: number; readonly y: number; readonly w: number; readonly h: number; readonly rim: string } | null;
 }
 
-/** Four distinct outlines in a 64 by 64 box. The tilt is a constant of the shape, never per package. */
+/**
+ * Four distinct outlines in a 64 by 64 box, every stone standing on y 60. The stones are tall, as in the approved
+ * mockup (K2d fix 1). The tilt is a constant of the shape, never per package.
+ */
 export const SHAPES: Record<ShapeId, ShapeDef> = {
   // Alive: a tall rounded stone, upright (a party hat and flowers are its Costume). Spec cemetery-undead, 3.5.
-  rounded: { d: "M14 60 V24 A18 18 0 0 1 50 24 V60 Z", detail: null, tiltDegrees: 0, pit: null },
-  // Restless: a broad stone, tilted (a hand claws out of the dirt in front of it). Spec cemetery-undead, 3.3.
-  tilted: { d: "M12 60 V26 A20 20 0 0 1 52 26 V60 Z", detail: null, tiltDegrees: -6, pit: null },
-  cross: { d: "M26 60 V38 H10 V26 H26 V6 H38 V26 H54 V38 H38 V60 Z", detail: null, tiltDegrees: 0, pit: null },
+  rounded: { d: "M15 60 V22 A17 17 0 0 1 49 22 V60 Z", detail: null, tiltDegrees: 0, pit: null },
+  // Restless: a tall stone, tilted (a hand claws out of the dirt in front of it). Spec cemetery-undead, 3.3.
+  tilted: { d: "M14 60 V24 A18 18 0 0 1 50 24 V60 Z", detail: null, tiltDegrees: 6, pit: null },
+  cross: { d: "M27 60 V25 H12 V17 H27 V2 H37 V17 H52 V25 H37 V60 Z", detail: null, tiltDegrees: 0, pit: null },
   cracked: {
-    d: "M12 60 V30 A20 20 0 0 1 52 30 V60 Z",
-    detail: "M30 24 L26 38 L34 46 L30 60",
+    d: "M14 60 V25 A18 18 0 0 1 50 25 V60 Z",
+    detail: "M30 7 L34 20 L29 31 L34 44 L30 58",
     tiltDegrees: -8,
     pit: null,
   },
-  // Open grave: a dark pit sunk into the ground, a mound of earth beside it, the lid tilted off. Lid and mound take the state colour.
+  // Open grave: a dark pit in a mound of earth, the lid tilted off to the left. The lid takes the state colour.
   open: {
-    d: "M2 58 L8 30 L30 38 L24 62 Z M48 60 Q56 36 64 60 Z",
-    detail: null,
+    d: "M5.76 65.78 L14.24 52.22 L-12.9 35.26 L-21.38 48.82 Z",
+    detail: "M-14 44 L-8 41 L-4 47 L4 50 L8 56",
     tiltDegrees: 0,
-    pit: { x: 16, y: 42, w: 30, h: 18, rim: "M16 42 H46 V60 H16 Z" },
+    pit: { x: 9, y: 48, w: 46, h: 11, rim: "M2 60 Q32 40 62 60 Z" },
   },
   // Not-published form: a low mound with no stone. Not a form of any State.
   unmarked: { d: "M8 60 Q8 44 32 44 Q56 44 56 60 Z", detail: null, tiltDegrees: 0, pit: null },
@@ -48,56 +51,56 @@ export interface Speck {
 
 /** Axis-aligned rectangles that lie inside each shape. Every speck sits inside one. */
 export const SOLID_BOXES: Record<ShapeId, readonly SolidBox[]> = {
-  rounded: [{ x: 14, y: 24, w: 36, h: 36 }],
-  tilted: [{ x: 12, y: 26, w: 40, h: 34 }],
+  rounded: [{ x: 15, y: 22, w: 34, h: 38 }],
+  tilted: [{ x: 14, y: 24, w: 36, h: 36 }],
   cross: [
-    { x: 26, y: 6, w: 12, h: 54 },
-    { x: 10, y: 26, w: 44, h: 12 },
+    { x: 27, y: 2, w: 10, h: 58 },
+    { x: 12, y: 17, w: 40, h: 8 },
   ],
-  cracked: [{ x: 12, y: 30, w: 40, h: 30 }],
-  open: [{ x: 10, y: 40, w: 14, h: 14 }],
+  cracked: [{ x: 14, y: 25, w: 36, h: 35 }],
+  open: [{ x: -8, y: 45, w: 8, h: 7 }],
   unmarked: [{ x: 12, y: 50, w: 40, h: 10 }],
 };
 
 /** Stone texture: 1 by 1 shape unit squares, the same for every grave of a shape. */
 export const SPECKS: Record<ShapeId, readonly Speck[]> = {
   rounded: [
-    { x: 20, y: 32 },
-    { x: 40, y: 30 },
+    { x: 20, y: 30 },
+    { x: 40, y: 28 },
     { x: 28, y: 42 },
     { x: 42, y: 48 },
     { x: 20, y: 52 },
-    { x: 34, y: 54 },
+    { x: 34, y: 56 },
   ],
   tilted: [
-    { x: 18, y: 34 },
-    { x: 40, y: 32 },
+    { x: 18, y: 32 },
+    { x: 42, y: 30 },
     { x: 28, y: 42 },
     { x: 44, y: 48 },
     { x: 20, y: 52 },
-    { x: 34, y: 54 },
+    { x: 34, y: 56 },
   ],
   cross: [
-    { x: 30, y: 12 },
+    { x: 30, y: 8 },
     { x: 33, y: 20 },
     { x: 28, y: 44 },
     { x: 34, y: 52 },
-    { x: 14, y: 30 },
-    { x: 46, y: 32 },
+    { x: 15, y: 20 },
+    { x: 47, y: 21 },
   ],
   cracked: [
-    { x: 16, y: 32 },
-    { x: 44, y: 30 },
+    { x: 18, y: 30 },
+    { x: 44, y: 28 },
     { x: 18, y: 48 },
     { x: 42, y: 44 },
-    { x: 46, y: 54 },
-    { x: 36, y: 36 },
+    { x: 46, y: 56 },
+    { x: 22, y: 38 },
   ],
   open: [
-    { x: 12, y: 42 },
-    { x: 18, y: 44 },
-    { x: 14, y: 48 },
-    { x: 20, y: 50 },
+    { x: -6, y: 46 },
+    { x: -3, y: 48 },
+    { x: -2, y: 46 },
+    { x: -5, y: 50 },
   ],
   unmarked: [
     { x: 20, y: 52 },
@@ -106,6 +109,14 @@ export const SPECKS: Record<ShapeId, readonly Speck[]> = {
     { x: 36, y: 57 },
   ],
 };
+
+/** The lit edge of the open grave's pit, in shape units: the pit ellipse's outline (K2d fix 1). */
+export const PIT_EDGE_PATH = "M9 53.5 A23 5.5 0 1 0 55 53.5 A23 5.5 0 1 0 9 53.5 Z";
+let pitEdgeCache: Path2D | null = null;
+export function pitEdgePath(): Path2D {
+  pitEdgeCache ??= new Path2D(PIT_EDGE_PATH);
+  return pitEdgeCache;
+}
 
 export const SHAPE_BY_STATE: Record<State, ShapeId> = {
   Alive: "rounded",

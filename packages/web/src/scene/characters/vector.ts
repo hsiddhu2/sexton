@@ -158,9 +158,9 @@ function hand(ctx: PaintContext2D, c: PaletteTheme, pose: number): void {
 /** Draws one Pose of a Character in shape-box units. */
 export function drawCharacter(ctx: PaintContext2D, c: PaletteTheme, id: CharacterId, clip: ClipId, pose: number): void {
   if (id === "zombie") {
-    // The largest figure in the scene: drawn 1.35 times larger, feet in the pit.
+    // The largest figure in the scene: drawn 1.35 times larger, feet in the pit above the plinth.
     ctx.save();
-    ctx.translate(-11, -20);
+    ctx.translate(-11, -26);
     ctx.scale(1.35, 1.35);
     zombie(ctx, c, pose);
     ctx.restore();
