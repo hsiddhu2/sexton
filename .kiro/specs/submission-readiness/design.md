@@ -306,8 +306,8 @@ A full search of tracked files (`git grep` for "no API", "no registry", "only da
 
 | Kind | Found | Done |
 |---|---|---|
-| Tool or vendor name | Only in .githooks/commit-msg and .githooks/pre-commit, which reject AI trailers; "Kiro" throughout, which belongs | Guards kept |
-| Private path | 36 mentions in 20 files: 19 spec files, build/reviews/05-remediation.md:3 and build/reviews/10c-remediate.md:36 | All reworded (owner decision 4); each line still says what happened. Guards kept: .gitignore, .githooks, eslint.config.js, .kiro/hooks/security.json, packages/web/test/lint-config.test.ts. A recorded lodash lockfile holds the npm package named `private`, which is data |
+| Tool or vendor name | Only in the two git hook files then tracked, which reject attribution trailers; "Kiro" throughout, which belongs | Hooks kept at the time. On 25 November 2026, after this spec merged, the git hooks moved to the machine's shared hooks folder and left the repository (chore: keep git hooks local), as the updated project rules require |
+| Private path | 36 mentions in 20 files: 19 spec files, build/reviews/05-remediation.md:3 and build/reviews/10c-remediate.md:36 | All reworded (owner decision 4); each line still says what happened. Guards kept: .gitignore, eslint.config.js, .kiro/hooks/security.json, packages/web/test/lint-config.test.ts. A recorded lodash lockfile holds the npm package named `private`, which is data |
 | Machine path | none (`/Users/`, the owner's account name) | — |
 | Secret | none; token patterns only in guards and tests | — |
 | TODO, FIXME, XXX | none | — |
