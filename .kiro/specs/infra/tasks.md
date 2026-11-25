@@ -148,7 +148,7 @@ Ordering constraints, recorded here:
 - [x] 10. IAM and cdk-nag checks with properties 13 and 14
   - _Requirements: 8.1, 8.2, 8.3, 9.4, 9.6, 10.3, 10.4_
   - [x] 10.1 Implement infra/lib/nag-suppressions.ts and apply it in bin/sexton.ts
-    - The table from design.md "cdk-nag suppressions", applied with cdk-nag 3's `Validations.of(construct).acknowledge`, one acknowledgement per finding ID. Run a real `cdk synth` with cdk-nag once; any rule that fires and is not in the table is fixed, or written into private/PROGRESS.md under "Waiting on HP" if it cannot be fixed.
+    - The table from design.md "cdk-nag suppressions", applied with cdk-nag 3's `Validations.of(construct).acknowledge`, one acknowledgement per finding ID. Run a real `cdk synth` with cdk-nag once; any rule that fires and is not in the table is fixed, or written into the owner's progress notes under "Waiting on HP" if it cannot be fixed.
     - _Requirements: 10.3, 10.4_
   - [x] 10.2 Write infra/test/iam.test.ts
     - Property 13 (IAM policy shape) as an example test over every policy-bearing resource in both templates, with the BucketDeployment invalidation statement and the log group `Arn` attributes (which end in `:*`) as the only allow-listed wildcards, each rendered and checked to hold exactly one `:*`, never `:*:`, and to cover a Lambda stream ARN, matched on exact action sets. Also asserts no role reads the GitHub token secret and no managed policy ARN is attached to the scan or snapshotter role.
@@ -186,7 +186,7 @@ Ordering constraints, recorded here:
   - [ ] 13.2 Independent review
     - A reviewer that has not seen the implementation gets this spec folder, the diff against main, docs/requirements.md and the steering files. Fix every defect it reports (secret, I/O outside the seams, injection, IAM wider than least privilege, a correctness bug, a test asserting the opposite of its requirement, a file outside ownership). Record notes in build/reviews/10-infra.md.
     - _Requirements: 8.2, 8.3, 9.4, 10.3_
-  - [ ] 13.3 Commit on spec/infra and update private/PROGRESS.md
+  - [ ] 13.3 Commit on spec/infra and update the owner's progress notes
     - Commit under the configured identity with no trailers. No push. Record hashes, open items and anything waiting on HP.
     - _Requirements: 11.1_
 
@@ -199,7 +199,7 @@ Ordering constraints, recorded here:
     - Build web with `VITE_SEXTON_API=/api`. Confirm `cdk synth` shows neither placeholder warning. Deploy `SextonData-dev`, then `SextonEdge-dev` with `--parameters AlarmEmail=<from HP>`. One pass.
     - _Requirements: 4.6, 5.1_
   - [ ] 14.3 Verify and record
-    - The CloudFront URL serves the demo. A direct unsigned call to the function URL returns 403. `GET {url}/api/scan?repo=https://github.com/expressjs/express` returns a ScanResponse under 60 seconds cold and under 20 seconds warm, measured with `curl -w` and recorded in build/reviews/10-infra.md. 101 rapid requests from one IP get blocked within about a minute. A manual invoke of the snapshotter appends snapshots (checked with a Query on one `snap#` partition). The three snapshotter metrics appear in the `Sexton` namespace after the manual invoke. The bundled handlers load (no `Cannot find module` at init). The confirmed or corrected `X-Amz-Cf-Id` behaviour is written into design.md; any doc and behaviour mismatch is filed under private/filing.
+    - The CloudFront URL serves the demo. A direct unsigned call to the function URL returns 403. `GET {url}/api/scan?repo=https://github.com/expressjs/express` returns a ScanResponse under 60 seconds cold and under 20 seconds warm, measured with `curl -w` and recorded in build/reviews/10-infra.md. 101 rapid requests from one IP get blocked within about a minute. A manual invoke of the snapshotter appends snapshots (checked with a Query on one `snap#` partition). The three snapshotter metrics appear in the `Sexton` namespace after the manual invoke. The bundled handlers load (no `Cannot find module` at init). The confirmed or corrected `X-Amz-Cf-Id` behaviour is written into design.md; any doc and behaviour mismatch is filed with the owner's notes, outside the repository.
     - _Requirements: 4.6, 5.1, 5.5, 7.3, 10.2_
 
 ## Task Dependency Graph

@@ -1,6 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { INVALID_URL_MESSAGE, formatRepoUrl, parseRepoUrl } from "../../src/intake/url.js";
+import { INVALID_URL_MESSAGE, formatRepoUrl, isValidOwner, isValidRepo, parseRepoUrl } from "../../src/intake/url.js";
 import { arbOwner, arbRepo } from "../arbitraries.js";
 
 const PREFIX = "https://github.com/";
@@ -156,5 +156,39 @@ describe("parseRepoUrl examples", () => {
 
   it("formats the canonical URL", () => {
     expect(formatRepoUrl({ owner: "O", repo: "R" })).toBe("https://github.com/O/R");
+  });
+});
+
+describe("isValidOwner agrees with parseRepoUrl (spec submission-readiness, Requirement 5.8)", () => {
+  it("rejects the reserved owner orgs, as parseRepoUrl does", () => {
+    expect(isValidOwner("orgs")).toBe(false);
+    expect(isValidOwner("orgs-x")).toBe(true);
+    expect(parseRepoUrl("https://github.com/orgs/x").ok).toBe(false);
+  });
+
+  it("never returns an owner holding a slash", () => {
+    const parsed = parseRepoUrl("https://github.com/a/b/tree/x");
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) expect(parsed.repo.owner).toBe("a");
+    expect(isValidOwner("a/b/tree")).toBe(false);
+  });
+
+  it("Feature: submission-readiness, Property 1: owner check agrees with the URL parser", () => {
+    // Validates: Requirement 5.8
+    const ownerArb = fc
+      .oneof(
+        fc.constant("orgs"),
+        arbOwner,
+        fc.string({ unit: fc.constantFrom("a", "Z", "0", "-", "_", ".", "?", "#", "\\", " ", "\t", "\u0000", "é"), maxLength: 12 }),
+        arbOwner.map((o) => `${o}..`),
+        arbOwner.map((o) => `.${o}`),
+      )
+      .filter((o) => !o.includes("/"));
+    fc.assert(
+      fc.property(ownerArb, arbRepo.filter(isValidRepo), (owner, repo) => {
+        expect(parseRepoUrl(`https://github.com/${owner}/${repo}`).ok).toBe(isValidOwner(owner));
+      }),
+      { numRuns: 1000 },
+    );
   });
 });

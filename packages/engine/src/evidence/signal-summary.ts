@@ -3,6 +3,7 @@
 // signal value goes through escapeField. Pure.
 
 import { escapeField } from "../remediation/escape-field.js";
+import { UNKNOWN_PUBLISHER } from "../state.js";
 import type { PackageSignals, PublishRecord, SignalName } from "../types.js";
 
 export type SignalSummaries = { readonly [K in SignalName]: (value: NonNullable<PackageSignals[K]["value"]>) => string };
@@ -14,7 +15,7 @@ function yesNo(value: boolean): string {
 }
 
 function publisher(record: PublishRecord): string {
-  return `${record.publisher === null ? "no name" : F(record.publisher)} (${record.method})`;
+  return `${record.publisher === null ? UNKNOWN_PUBLISHER : F(record.publisher)} (${record.method})`;
 }
 
 function unknownOr(value: string | null): string {

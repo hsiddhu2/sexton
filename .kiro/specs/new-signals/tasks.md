@@ -136,6 +136,6 @@ Adds the publisherChange and newDependency signals and their two Possessed rules
   - Notes: main 86bc37d (phase 2) merged in as b7649cc; the only conflict was the change-log line, now 0.7 (phase 2) and 0.8 (this spec). New web lines in epitaph/epitaph.ts and speech/bubble-table.ts with rows in epitaph.test.ts and bubbles.test.tsx (twelve templates, twelve lines). Replays regenerated: only the axios summary changed. Root gates after the merge: 2,048 tests, exit 0.
 
 - [x] 11. Final checks
-  - Root gates, a fresh clone with `npx npm@11 ci` and the gates, an independent review of the whole branch, the report in private/reports/K3-new-signals.md. Nothing is pushed.
+  - Root gates, a fresh clone with `npx npm@11 ci` and the gates, an independent review of the whole branch, the K3 report (kept outside the repository). Nothing is pushed.
   - Notes: fresh clone of 8a051ea, `npx npm@11 ci` and root gates exit 0, 2,048 tests, clean tree after the run. Whole-branch review: ready (design.md Notes).
   - _Requirements: 7.5, 8.1_

@@ -52,5 +52,5 @@ Adds the `sexton` CLI (scan, check, evidence, verify) and a composite GitHub Act
   - _Requirements: 10.1 to 10.3_
 
 - [x] 10. Close
-  - Run the built CLI by hand against this repository and against expressjs/express; root gates; independent reviews before each commit in build/reviews/09-cli-and-action.md; merge to main with --no-ff; PROGRESS, TRACKER, private/reports/09-cli-and-action.md.
+  - Run the built CLI by hand against this repository and against expressjs/express; root gates; independent reviews before each commit in build/reviews/09-cli-and-action.md; merge to main with --no-ff; PROGRESS, TRACKER, the report for 09 (kept outside the repository).
   - _Requirements: 6.1, 7.2_

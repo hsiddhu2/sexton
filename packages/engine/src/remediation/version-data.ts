@@ -6,7 +6,7 @@ import { UpstreamError } from "../http.js";
 import { readFullPackument } from "../clients/npm.js";
 import { fetchAdvisory, OsvPaginationError, OsvShapeError, queryVulnIdsBatch } from "../clients/osv.js";
 import type { ClientContext } from "../clients/context.js";
-import { mapWithConcurrency } from "../score.js";
+import { mapWithConcurrency } from "../util/concurrency.js";
 import type { Advisory, BumpDataResult, BumpFailure } from "../types.js";
 import { readPublished } from "./read-published.js";
 

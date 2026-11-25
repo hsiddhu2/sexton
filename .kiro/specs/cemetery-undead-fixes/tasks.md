@@ -73,7 +73,7 @@ Run-time notes:
     - _Requirements: 2.2_
   - [x] 7.4 Independent review of the branch; fix every defect; record the notes
     - _Requirements: 2.1 to 2.8, 3.1 to 3.10_
-  - [x] 7.5 Write private/reports/K2f-cemetery-fixes.md, update the trackers, print the report and stop
+  - [x] 7.5 Write the K2f report (kept outside the repository), update the trackers, print the report and stop
     - _Requirements: 2.1 to 2.8_
 
 ## Notes

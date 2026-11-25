@@ -1,6 +1,6 @@
 # Reviews: spec 05 remediation
 
-Independent reviews run before each commit by a subagent that had not seen the implementation. Verdict rules from private/CLAUDE.md: "not ready" only for a code or spec defect, everything else a note.
+Independent reviews run before each commit by a subagent that had not seen the implementation. Verdict rules from the project review rules: "not ready" only for a code or spec defect, everything else a note.
 
 ## Review 1: spec (requirements.md, design.md, cemetery-ui .config.kiro), before 2cb0ec6
 

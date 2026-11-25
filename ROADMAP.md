@@ -5,7 +5,7 @@ Sexton is a product with a long road. Release 0.1 is the Kiroween 2026 slice. Ev
 ## 0.1 (Kiroween 2026)
 
 - npm, direct dependencies, public GitHub repos
-- Five signals: abandonment, advisories, install scripts, maintainer change, provenance regression
+- Seven signals: abandonment, advisories, install scripts, maintainer change, provenance regression, publisher change, new dependency
 - Daily snapshotter for maintainers and attestations
 - Policy file with four rule types and packageRules matchers
 - Remediation PRs: bump, remove, one migration (node-sass to sass)

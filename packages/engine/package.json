@@ -15,8 +15,8 @@
     "build": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
-    "fixtures:record": "node scripts/record-fixtures.mjs",
-    "fixtures:record:intake": "node scripts/record-fixtures.mjs --intake",
+    "fixtures:record": "npm run build && node scripts/record-fixtures.mjs",
+    "fixtures:record:intake": "npm run build && node scripts/record-fixtures.mjs --intake",
     "schema:write": "node scripts/write-schema.mjs"
   }
 }
