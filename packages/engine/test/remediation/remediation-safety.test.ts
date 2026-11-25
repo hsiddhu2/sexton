@@ -22,8 +22,9 @@ import { selectBump } from "../../src/remediation/select-bump.js";
 import { SIGNAL_NAMES } from "../../src/types.js";
 import { arbBumpData, arbHostileHealth, arbReportAndOptions, arbSelectInput, healthySignals, RANGE_MARKER } from "./arbitraries.js";
 
-/** The fixed texts of design.md. Replaced by imports when each fix lands (tasks 3.1 and 4.1). */
-const REASON_RANGE_NOT_REGISTRY = "declared range is not a registry semver range, so a bump would replace its source";
+import { indexIntake, precheck, REASON_RANGE_NOT_REGISTRY } from "../../src/remediation/precheck.js";
+
+/** The fixed text of design.md. Replaced by an import when the D2 fix lands (task 4.1). */
 const INCOMPLETE_SCAN_LINE = "Stylesheets and scripts: scan incomplete, some files were not read. Check them by hand.";
 
 const POLICY: PolicyResult = { source: "default", pass: true, rules: [] };
@@ -339,5 +340,27 @@ describe("remediation-safety preservation", () => {
       }),
       { numRuns: 1000 },
     );
+  });
+});
+
+// Unit tests -----------------------------------------------------------------------------------------------------------
+
+describe("precheck, D1 range check", () => {
+  const check = (range: string, importSites?: number) => {
+    const intakeByName = indexIntake([intake("foo", range)]);
+    return precheck(pkg("foo"), importSites === undefined ? {} : { importSites: new Map([["foo", importSites]]) }, intakeByName);
+  };
+  for (const range of NON_REGISTRY_RANGES) {
+    it(`refuses a bump over ${JSON.stringify(range.slice(0, 40))}`, () => {
+      expect(check(range)).toEqual({ ok: false, kind: "bump", reason: REASON_RANGE_NOT_REGISTRY });
+    });
+  }
+  for (const range of ["^1.0.0", "~1.2.0", "1.2.3", "*", "", ">=1 <3"]) {
+    it(`accepts a bump over ${JSON.stringify(range)}`, () => {
+      expect(check(range)).toMatchObject({ ok: true, kind: "bump", branch: "sexton/bump-foo" });
+    });
+  }
+  it("does not apply to a remove", () => {
+    expect(check("file:../foo", 0)).toMatchObject({ ok: true, kind: "remove" });
   });
 });

@@ -44,7 +44,7 @@ Every top-level task ends with a review sub-task. It runs the gravedigger agent 
       - gravedigger (wf_4e3af43f8e2aeb10) at fff60f8: "unsafe". D1, D2 and D3 stand at precheck.ts:17-26 and plan.ts:82, pr-body.ts:163, and choose-kind.ts:15. New defect D4: a non-registry sass-loader is raised with a caret range (migration-candidates.ts:63-69, node-sass-recipe.ts:72-77). D4 was added to bugfix.md and design.md, and task 5b was added. Its note about `capped` staying false at exactly 200 reads was checked and does not apply: `readRelevant` (node-sass-recipe.ts:45-51) attempts a read for every style and script file, so any unread file means a refused read, and that sets `capped`.
       - security-reviewer (wf_7683f4d10cf7e2aa) on 7c84f45..fff60f8: "ready with notes: no listed defect, the tests assert the spec's expected behaviour, and the failures recorded in `tasks.md` match the unfixed code described in design.md."
 
-- [-] 2. Write the preservation property tests and run them on the unfixed code
+- [x] 2. Write the preservation property tests and run them on the unfixed code
   - **Property 4 to 9: Preservation** - Everything outside the three bug conditions is unchanged
   - **IMPORTANT**: Write them observation-first and run them on the UNFIXED code. They MUST PASS there. If one fails, narrow its domain to exclude the bug conditions and run again. Never change source code to make one pass.
   - _Preservation: Properties 4 to 9 from design.md_
@@ -68,25 +68,29 @@ Every top-level task ends with a review sub-task. It runs the gravedigger agent 
     - Run `npm test -w @sexton/engine` and `npm test -w @sexton/web`, then `git diff --exit-code -- test/fixtures packages/web/public/replay`. Record that the goldens of bugfix 3.10 are unchanged.
     - _Requirements: 3.10_
     - Notes: engine 85 files, 1136 tests: 1118 passed, 18 failed, all 18 the exploration tests. web 57 files, 525 tests: 524 passed, 1 failed. The failure is `test/readme.test.ts > keeps the other section headings unchanged`. It predates this spec: the README's "Kiro project files" section, added on kiro/depth in abcc396, is a new `##` heading. It is outside this spec's paths and is left for the owner. `git diff --exit-code` on the goldens: exit 0.
-  - [ ] 2.4 Review: gravedigger and security-reviewer
+  - [x] 2.4 Review: gravedigger and security-reviewer
     - Record both verdict lines here.
     - _Requirements: 3.1 to 3.11_
+    - Notes:
+      - gravedigger (wf_a3bcd144032c50a6) at e278940: "Unsafe: D1 to D4 each turn a concrete input into a worse repository or a false "none", and none is fixed in e278940." It found no new defect. It made two notes: the recipe removes a non-registry node-sass without saying so (design Decision 2), and the order of the incomplete line against the notes should be pinned by a test (taken up in 4.2).
+      - security-reviewer (wf_4e33f67324b031c7) on fff60f8..e278940: "Verdict: ready with notes." It found no defects and called P4 to P9 non-vacuous. Its note that P9 checks only the kind rule and the absence of the D1 reason, not every status, is accepted; P5 covers the bump status on Registry ranges.
 
-- [ ] 3. Fix D1: no bump over a Non-registry range
-  - [ ] 3.1 Add the range check to src/remediation/precheck.ts
+- [-] 3. Fix D1: no bump over a Non-registry range
+  - [x] 3.1 Add the range check to src/remediation/precheck.ts
     - Add `REASON_RANGE_NOT_REGISTRY` and the check after the intake-entry check, for kind `bump` only, as design.md "Changes required" says. Import `isResolvableRange` from `../intake/resolve.js`. Change no other file in src for this task.
     - In test/remediation/remediation-safety.test.ts, replace the literal string with the import from 1.1.
     - _Bug_Condition: isBugConditionD1_
     - _Expected_Behavior: bugfix 2.1, 2.2, 2.3_
     - _Requirements: 2.1, 2.2, 2.3, 3.11_
-  - [ ] 3.2 Add the precheck unit tests from design.md "Unit tests"
+  - [x] 3.2 Add the precheck unit tests from design.md "Unit tests"
     - _Requirements: 2.1, 3.2, 3.11_
-  - [ ] 3.3 Verify that Property 1 now passes
+  - [x] 3.3 Verify that Property 1 now passes
     - Re-run the same test file without editing Property 1. **EXPECTED OUTCOME**: Property 1 PASSES, and P4 to P9 still PASS.
     - _Requirements: 2.1, 2.2, 2.3_
-  - [ ] 3.4 Run the gates
+  - [x] 3.4 Run the gates
     - `npx tsc -b` and `npx eslint . --max-warnings=0` from the root. `npm test -w @sexton/engine`, `-w @sexton/cli`, `-w @sexton/api` and `-w @sexton/web`. The golden diff from 2.3 must be empty.
     - _Requirements: 3.1 to 3.10_
+    - Notes: tsc -b exit 0 and eslint exit 0. engine: 1144 passed and 8 failed, all 8 the D2 and D3 exploration tests. All 18 D1 tests pass: 10 exploration and 8 precheck units. cli: 61 passed. api: 300 passed. web: 524 passed and 1 failed, the pre-existing `readme.test.ts` heading test (see 2.3). Golden diff exit 0. No existing test changed or failed.
   - [ ] 3.5 Review: gravedigger and security-reviewer
     - Record both verdict lines. Expected: gravedigger reports D1 fixed.
     - _Requirements: 2.1, 2.2, 2.3_
