@@ -1,7 +1,7 @@
 // Plain JavaScript copy of the routing logic in packages/engine/test/helpers.ts.
 // Reads recorded fixture data files only. Imports no TypeScript. Requirement 2.19.
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { ABBREVIATED_ACCEPT } from "@sexton/engine";
 
@@ -11,6 +11,24 @@ export function fixtureDirFor(fixturesDir, name) {
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
+}
+
+/** Routes for the recorded packuments of new dependency names (spec new-signals, task 7.2). Same rule as the engine helper. */
+export function newDependencyRoutes(fixturesDir) {
+  const root = join(fixturesDir, "new-dependencies");
+  if (!existsSync(root)) return [];
+  return readdirSync(root)
+    .sort()
+    .filter((folder) => !existsSync(join(fixturesDir, "packages", folder)))
+    .flatMap((folder) => {
+      const name = folder.replace("__", "/");
+      const encoded = name.startsWith("@") ? `@${encodeURIComponent(name.slice(1))}` : encodeURIComponent(name);
+      const dir = join(root, folder);
+      return [
+        { url: `https://registry.npmjs.org/${encoded}`, accept: "application/json", json: readJson(join(dir, "packument.json")) },
+        { url: `https://registry.npmjs.org/${encoded}`, accept: ABBREVIATED_ACCEPT, json: readJson(join(dir, "abbreviated.json")) },
+      ];
+    });
 }
 
 /** Builds the routes for one package from its recorded fixtures. */

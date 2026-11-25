@@ -15,13 +15,15 @@ import { arbAdvisoryMode, arbSceneWidth, scenePackage } from "./arbitraries.js";
 const NUM_RUNS = 100;
 afterEach(cleanup);
 
-/** The ten reason templates of the Engine's state rule, with their State. */
+/** The twelve reason templates of the Engine's state rule, with their State. */
 const TEMPLATES: readonly { readonly state: State; readonly make: (n: number) => string; readonly line: string }[] = [
   { state: "Dead", make: () => "installed version is deprecated", line: "Deprecated, not departed." },
   { state: "Restless", make: () => "advisory of severity Moderate or Low", line: "One more minor bump and I am coming out." },
   { state: "Possessed", make: () => "maintainer change in the last 90 days", line: "Who has the keys now?" },
   { state: "Possessed", make: (n) => `provenance regression: ${String(n)}.0.1 has no provenance, ${String(n)}.0.0 had it`, line: "Papers? I left them in the last version." },
   { state: "Possessed", make: (n) => `install script added in ${String(n)}.2.0`, line: "I brought a script. It runs on install." },
+  { state: "Possessed", make: (n) => `new dependency in ${String(n)}.0.1: dep-${String(n)}`, line: "I brought a plus-one. Nobody checked the list." },
+  { state: "Possessed", make: (n) => `publisher changed in ${String(n)}.0.1: GitHub Actions to unknown`, line: "Published by hand. The robot usually does it." },
   { state: "Dead", make: (n) => `no release in ${String(24 + n)} months and an open advisory`, line: "Two years down here, and the hole is open." },
   { state: "Haunted", make: () => "advisory of severity High or Critical", line: "Boo. Severity High, or worse." },
   { state: "Restless", make: () => "all state signals unavailable", line: "Couldn't read my papers. Ask me again later." },
@@ -50,7 +52,7 @@ describe("Feature: cemetery-undead-2, Property 4: Bubble lines come only from th
 
   it("keeps every line short and names no person or project", () => {
     const lines = Object.values(BUBBLE_LINES);
-    expect(lines).toHaveLength(10);
+    expect(lines).toHaveLength(12);
     for (const line of lines) {
       expect(line.length).toBeLessThanOrEqual(MAX_BUBBLE_CHARS);
       for (const word of FORBIDDEN) expect(line.toLowerCase()).not.toContain(word.toLowerCase());

@@ -154,6 +154,8 @@ describe("buildPrBody", () => {
         const entry: PackageHealth = { name: "target", installedVersion: "1.0.0", state, stateReason: "x", signals: healthySignals(), missingSignals: [] };
         const body = buildPrBody({ packageName: "target", installedVersion: "1.0.0", state, stateReason: "x", kind: "bump", status: "unavailable", reason: "r" }, contextFor(entry, failing));
         expect(body.includes(POSSESSED_WARNING)).toBe(state === "Possessed");
+        // Spec new-signals: the warning names the two new reasons too.
+        expect(POSSESSED_WARNING).toContain("new dependency or publisher change");
         const listed = body
           .split("\n")
           .map((l) => /^\d+\. Rule `(\d+)`/.exec(l)?.[1])

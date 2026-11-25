@@ -13,9 +13,11 @@ import {
   type Advisory,
   type HealthReport,
   type IntakePackage,
+  type NewDependencyValue,
   type PackageHealth,
   type PackageSignals,
   type PolicyResult,
+  type PublisherChangeValue,
   type Recipe,
   type RecipeOutcome,
   type RuleResult,
@@ -122,6 +124,8 @@ export function healthySignals(): PackageSignals {
     maintainerChange: sig({ status: "history-insufficient" as const, events: [] as const }),
     provenanceRegression: sig({ status: "history-insufficient" as const, reason: "none" }),
     newInstallScript: sig<readonly { version: string; publishTime: string }[]>([]),
+    publisherChange: sig<PublisherChangeValue>({ status: "no-earlier-version", installed: null }),
+    newDependency: sig<NewDependencyValue>({ status: "no-earlier-version", installedVersion: "1.0.0" }),
   };
 }
 
@@ -249,7 +253,7 @@ export const arbHostileHealth: fc.Arbitrary<PackageHealth> = fc
     state: fc.constantFrom(...STATE_ORDER),
     stateReason: arbHostileString,
     text: fc.array(arbHostileString, { minLength: 14, maxLength: 14 }),
-    unavailableMask: fc.array(fc.boolean(), { minLength: 10, maxLength: 10 }),
+    unavailableMask: fc.array(fc.boolean(), { minLength: 12, maxLength: 12 }),
   })
   .map((r) => {
     const t = (i: number): string => r.text[i] as string;
@@ -268,6 +272,26 @@ export const arbHostileHealth: fc.Arbitrary<PackageHealth> = fc
       ),
       provenanceRegression: avail({ status: "regression" as const, installedVersion: t(12), earlierVersion: t(13), snapshotCaptureTime: t(0) }, 12),
       newInstallScript: avail([{ version: t(13), publishTime: t(1) }], 13),
+      publisherChange: avail<PublisherChangeValue>(
+        {
+          status: "changed",
+          earlier: { version: t(2), publisher: t(3), method: "trusted-publisher", publishTime: t(4) },
+          installed: { version: t(5), publisher: t(6), method: "token", publishTime: t(7) },
+        },
+        10,
+      ),
+      newDependency: avail<NewDependencyValue>(
+        {
+          status: "compared",
+          installedVersion: t(8),
+          earlierVersion: t(9),
+          installedPublishTime: t(10),
+          addedCount: 6,
+          capped: true,
+          added: [{ name: t(11), range: t(12), resolvedVersion: t(13), resolvedPublishTime: t(0), installScript: true, fresh: true }],
+        },
+        11,
+      ),
     };
     const keys = Object.keys(signals) as (keyof PackageSignals)[];
     const masked = Object.fromEntries(

@@ -43,6 +43,8 @@ export async function buildTimelines(
         advisories,
         advisoryDates: dates,
         scanDate,
+        publisherChange: health.signals.publisherChange,
+        newDependency: health.signals.newDependency,
       });
       return [health.name, buildTimeline(facts, health, scanDate)] as const;
     } catch {

@@ -14,7 +14,7 @@ describe("scan", () => {
     expect(await runCli(["scan", "."], h.deps)).toBe(0);
     const out = h.out.join("");
     const lines = out.split("\n");
-    expect(lines[0]).toMatch(/^Package\s+Version\s+State\s+Reason\s+Advisories\s+Install script\s+Provenance\s+Last publish$/);
+    expect(lines[0]).toMatch(/^Package\s+Version\s+State\s+Reason\s+Advisories\s+Install script\s+Provenance\s+Last publish\s+Publisher\s+New deps$/);
     expect(lines[1]).toMatch(/^(colors|event-stream|left-pad|node-sass|request|uuid)\s+\S+\s+Dead /);
     expect(out).toContain("policy: failed (default policy, no sexton.policy.yml found)");
     expect(out).toContain("remediation: Sexton:");

@@ -16,6 +16,8 @@ describe("literal lists", () => {
       "maintainerChange",
       "provenanceRegression",
       "newInstallScript",
+      "publisherChange",
+      "newDependency",
     ]);
     expect([...RULE_TYPES]).toEqual(["forbid_state", "forbid_install_scripts", "max_age_months", "require_provenance"]);
     expect([...REMEDIATION_KINDS]).toEqual(["bump", "remove", "migrate"]);

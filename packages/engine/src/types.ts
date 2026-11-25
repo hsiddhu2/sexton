@@ -55,9 +55,11 @@ export const NEW_SIGNAL_NAMES = [
   "maintainerChange",
   "provenanceRegression",
   "newInstallScript",
+  "publisherChange",
+  "newDependency",
 ] as const;
 
-/** All ten signal names, derived so the lists cannot drift. Requirement 10.1. */
+/** All twelve signal names, derived so the lists cannot drift. Requirement 10.1. */
 export const SIGNAL_NAMES = [...ORIGINAL_SIGNAL_NAMES, ...NEW_SIGNAL_NAMES] as const;
 export type SignalName = (typeof SIGNAL_NAMES)[number];
 
@@ -109,7 +111,61 @@ export interface NewInstallScriptEvent {
   readonly publishTime: string;
 }
 
-/** The six new signals. Requirement 10.1, 10.2. */
+// Types for the new-signals spec (.kiro/specs/new-signals).
+
+/** How a version was published. Spec new-signals, Glossary. */
+export type PublishMethod = "trusted-publisher" | "token" | "unknown";
+
+/** Who published one version, how and when. Spec new-signals, Requirement 1.2. */
+export interface PublishRecord {
+  readonly version: string;
+  /** `_npmUser.name`, or null when absent. */
+  readonly publisher: string | null;
+  readonly method: PublishMethod;
+  /** ISO 8601 UTC. */
+  readonly publishTime: string;
+}
+
+/** Value of the publisherChange signal. Spec new-signals, Requirement 1. */
+export type PublisherChangeValue =
+  | { readonly status: "no-earlier-version"; readonly installed: PublishRecord | null }
+  | {
+      readonly status: "same" | "changed" | "unknown";
+      readonly installed: PublishRecord;
+      readonly earlier: PublishRecord;
+    };
+
+/** One dependency the installed version added. Spec new-signals, Requirement 2.4. */
+export interface NewDependencyEntry {
+  readonly name: string;
+  readonly range: string;
+  readonly resolvedVersion: string | null;
+  /** ISO 8601 UTC, or null. */
+  readonly resolvedPublishTime: string | null;
+  readonly installScript: boolean | null;
+  /** The resolved version was published at most 7 days before the parent version. */
+  readonly fresh: boolean;
+  /** Why a field is null. Fixed texts only. */
+  readonly reason?: string;
+}
+
+/** Value of the newDependency signal. Spec new-signals, Requirement 2. */
+export type NewDependencyValue =
+  | { readonly status: "no-earlier-version"; readonly installedVersion: string }
+  | {
+      readonly status: "compared";
+      readonly installedVersion: string;
+      readonly earlierVersion: string;
+      /** ISO 8601 UTC. */
+      readonly installedPublishTime: string;
+      /** Count of every new name, detailed or not. */
+      readonly addedCount: number;
+      readonly capped: boolean;
+      /** At most 5, ascending by name. */
+      readonly added: readonly NewDependencyEntry[];
+    };
+
+/** The eight new signals. Requirement 10.1, 10.2 of history-signals, extended by new-signals. */
 export interface NewSignals {
   readonly maintainers: Signal<readonly string[]>;
   readonly provenance: Signal<ProvenanceValue>;
@@ -117,9 +173,11 @@ export interface NewSignals {
   readonly maintainerChange: Signal<MaintainerChangeValue>;
   readonly provenanceRegression: Signal<ProvenanceRegressionValue>;
   readonly newInstallScript: Signal<readonly NewInstallScriptEvent[]>;
+  readonly publisherChange: Signal<PublisherChangeValue>;
+  readonly newDependency: Signal<NewDependencyValue>;
 }
 
-/** All ten signals. Requirement 10.1. */
+/** All twelve signals. Requirement 10.1. */
 export type PackageSignals = OriginalSignals & NewSignals;
 
 export interface PackageRef {

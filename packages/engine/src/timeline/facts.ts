@@ -1,7 +1,7 @@
 // Timeline facts from the documents scoring already holds. Spec cemetery-time, requirement 8.1 to 8.6. Pure.
 
 import { compareVersionOrder, type PublishedVersion } from "../history.js";
-import type { Advisory, ProvenanceValue, Signal } from "../types.js";
+import type { Advisory, NewDependencyValue, ProvenanceValue, PublisherChangeValue, Signal } from "../types.js";
 import {
   TIMELINE_MAX_ADVISORIES,
   TIMELINE_MAX_MAINTAINERS,
@@ -24,6 +24,9 @@ export interface TimelineFactsInput {
   readonly advisoryDates: ReadonlyMap<string, string | null>;
   /** Versions published after this instant are ignored. */
   readonly scanDate: Date;
+  /** Spec new-signals, 4.1. The scan's signals, or absent. */
+  readonly publisherChange?: Signal<PublisherChangeValue> | null;
+  readonly newDependency?: Signal<NewDependencyValue> | null;
 }
 
 const NON_VERSION_TIME_KEYS: ReadonlySet<string> = new Set(["created", "modified"]);
@@ -117,5 +120,16 @@ export function timelineFacts(input: TimelineFactsInput): TimelineFacts {
   const versions = ordered.map((v) => build(v.version, v.publishTime));
   if (installedDated === undefined) versions.push(build(input.installed, null));
 
-  return { installed: input.installed, versions, coveredFrom, advisories: advisoryFacts(input) };
+  return {
+    installed: input.installed,
+    versions,
+    coveredFrom,
+    advisories: advisoryFacts(input),
+    publisherChange: valueOf(input.publisherChange),
+    newDependency: valueOf(input.newDependency),
+  };
+}
+
+function valueOf<T>(signal: Signal<T> | null | undefined): T | null {
+  return signal === null || signal === undefined || !signal.available ? null : signal.value;
 }

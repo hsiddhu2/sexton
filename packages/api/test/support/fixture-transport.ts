@@ -1,7 +1,7 @@
 // A routed transport over the engine's recorded fixtures, with text() for github-raw. No network.
 // Same routing rules as packages/engine/test/helpers.ts. Unrouted requests are recorded and answer 404.
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ABBREVIATED_ACCEPT, type TextBody, type Transport, type TransportRequest, type TransportResponse } from "@sexton/engine";
@@ -39,6 +39,24 @@ export function fixturePackages(): readonly FixturePackage[] {
   return readJson(join(ENGINE_FIXTURES, "packages.json")) as FixturePackage[];
 }
 
+/** Routes for the recorded new-dependency packuments (spec new-signals, task 7.2), as the engine test helper builds them. */
+export function newDependencyRoutes(): Route[] {
+  const root = join(ENGINE_FIXTURES, "new-dependencies");
+  if (!existsSync(root)) return [];
+  return readdirSync(root)
+    .sort()
+    .filter((folder) => !existsSync(join(ENGINE_FIXTURES, "packages", folder)))
+    .flatMap((folder): Route[] => {
+      const name = folder.replace("__", "/");
+      const encoded = name.startsWith("@") ? `@${encodeURIComponent(name.slice(1))}` : encodeURIComponent(name);
+      const dir = join(root, folder);
+      return [
+        { url: `https://registry.npmjs.org/${encoded}`, accept: "application/json", json: readJson(join(dir, "packument.json")) },
+        { url: `https://registry.npmjs.org/${encoded}`, accept: ABBREVIATED_ACCEPT, json: readJson(join(dir, "abbreviated.json")) },
+      ];
+    });
+}
+
 /** The routes for one recorded package, as the engine's own fixture scan builds them. */
 export function packageRoutes(name: string, version: string): Route[] {
   const dir = join(ENGINE_FIXTURES, "packages", name.replace("/", "__"));
@@ -73,6 +91,7 @@ export function packageRoutes(name: string, version: string): Route[] {
       routes.push({ url: `https://api.osv.dev/v1/vulns/${encodeURIComponent(v.id)}`, json: readJson(join(vulnsDir, `${v.id}.json`)) });
     }
   }
+  routes.push(...newDependencyRoutes());
   return routes;
 }
 

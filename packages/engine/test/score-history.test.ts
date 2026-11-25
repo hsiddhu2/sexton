@@ -161,7 +161,7 @@ describe("failed graph (3.6)", () => {
   });
 });
 
-describe("missingSignals over ten names (10.3, 10.4)", () => {
+describe("missingSignals over twelve names (10.3, 10.4)", () => {
   const routes = [...pkgRoutes("pkg-a", { graph: graphBody(["pkg-a"], []) })];
 
   it("equals exactly the unavailable names, and history-insufficient is not missing", async () => {
@@ -172,7 +172,7 @@ describe("missingSignals over ten names (10.3, 10.4)", () => {
     expect(health.missingSignals).not.toContain("maintainerChange");
     expect(health.missingSignals).not.toContain("provenanceRegression");
     expect(health.missingSignals).toEqual(SIGNAL_NAMES.filter((n) => !health.signals[n].available));
-    expect(Object.keys(health.signals)).toHaveLength(10);
+    expect(Object.keys(health.signals)).toHaveLength(12);
   });
 
   it("treats history as empty when no store is supplied (10.3, 10.13)", async () => {

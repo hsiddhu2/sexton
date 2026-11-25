@@ -1,5 +1,6 @@
 // Pure history rules. Version order and the Recent window. Requirements 6.6, 7.2, 8.2, 8.7, 8.8. No I/O here.
 
+import semver from "semver";
 import { RECENT_WINDOW_MS, type Snapshot } from "./snapshot.js";
 import type {
   MaintainerChangeEvent,
@@ -63,6 +64,33 @@ export function publishedVersions(fullPackument: unknown): PublishedVersion[] {
     result.push({ version, publishTime, publishMs });
   }
   return result.sort(compareVersionOrder);
+}
+
+function isSemver(version: string): boolean {
+  try {
+    return semver.parse(version)?.raw === version;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The Earlier version of the installed one: among Published versions that are valid semver, published strictly before
+ * the installed version and lower than it, the greatest. Null when there is none or the installed version is not a
+ * semver Published version. Spec new-signals, Glossary and design.md Decisions 1.
+ */
+export function earlierVersion(fullPackument: unknown, installed: string): PublishedVersion | null {
+  if (!isSemver(installed)) return null;
+  const published = publishedVersions(fullPackument);
+  const current = published.find((v) => v.version === installed);
+  if (current === undefined) return null;
+  let best: PublishedVersion | null = null;
+  for (const candidate of published) {
+    if (candidate.publishMs >= current.publishMs || !isSemver(candidate.version)) continue;
+    if (!semver.lt(candidate.version, installed)) continue;
+    if (best === null || semver.gt(candidate.version, best.version)) best = candidate;
+  }
+  return best;
 }
 
 /** Recent (90 days): instant is not later than reference and at most 90 days before it. Numeric, inclusive. */

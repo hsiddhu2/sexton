@@ -3,6 +3,9 @@
   "versions": {
     "7.0.3": {
       "hasInstallScript": true
+    },
+    "7.0.2": {
+      "hasInstallScript": true
     }
   }
 }

@@ -5,6 +5,7 @@ import { fetchProvenanceSignal } from "./clients/attestations.js";
 import { describeFailure, type ClientContext } from "./clients/context.js";
 import { dependenciesUrl, DEPS_DEV_SOURCE, fetchDependencyGraph } from "./clients/deps-dev.js";
 import { fetchFullPackumentDocument, maintainersSignalFrom, type PackumentDocument } from "./clients/maintainers.js";
+import { fetchNewDependencySignal } from "./clients/new-dependency.js";
 import {
   fetchInstallScriptSignal,
   fetchPackumentSignals,
@@ -19,6 +20,7 @@ import { createFetchTransport, type RetryOptions, type Transport } from "./http.
 import { transitiveReach, unionGraph, type ResolvedGraph, type UnionGraph } from "./reach.js";
 import { available, fromIso, unavailable } from "./signal.js";
 import type { Snapshot, SnapshotStore } from "./snapshot.js";
+import { publisherChangeValue } from "./publisher.js";
 import { stateFromSignals } from "./state.js";
 import {
   SIGNAL_NAMES,
@@ -179,6 +181,8 @@ export async function scoreOne(ctx: ClientContext, pkg: PackageRef, options: Sco
   }
 
   const maintainers = maintainersSignalFrom(fullPackument);
+  const publisherChange = publisherChangeSignalFrom(fullPackument, installedVersion);
+  const newDependency = await fetchNewDependencySignal(ctx, installedVersion, fullPackument);
   const history = buildHistorySignals({
     name,
     installedVersion,
@@ -213,8 +217,17 @@ export async function scoreOne(ctx: ClientContext, pkg: PackageRef, options: Sco
     provenance,
     transitiveReach: transitiveReachSignal,
     ...history,
+    publisherChange,
+    newDependency,
   };
   return buildHealth(pkg, signals, reference);
+}
+
+/** Pure. The publisherChange signal from the full packument read. Spec new-signals, Requirement 1. */
+export function publisherChangeSignalFrom(full: PackumentDocument, installed: string): NewSignals["publisherChange"] {
+  const at = new Date(full.fetchedAt);
+  if (!full.ok) return unavailable(full.reason, full.source, at);
+  return available(publisherChangeValue(full.doc, installed), full.source, at);
 }
 
 /** Pure assembly of a health entry from signals. Requirement 10.1, 10.3, 14.2, 14.3. */
@@ -228,6 +241,8 @@ export function buildHealth(pkg: PackageRef, signals: OriginalSignals & Partial<
     maintainerChange: signals.maintainerChange ?? notEvaluated(),
     provenanceRegression: signals.provenanceRegression ?? notEvaluated(),
     newInstallScript: signals.newInstallScript ?? notEvaluated(),
+    publisherChange: signals.publisherChange ?? notEvaluated(),
+    newDependency: signals.newDependency ?? notEvaluated(),
   };
   const missingSignals: SignalName[] = SIGNAL_NAMES.filter((name) => !full[name].available);
   const { state, stateReason } = stateFromSignals(full, now);
