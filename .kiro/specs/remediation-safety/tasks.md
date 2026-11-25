@@ -4,7 +4,7 @@ Run the exploration tests on the UNFIXED code (kiro/depth at 58b157d) before any
 
 Every top-level task ends with a review sub-task. It runs the gravedigger agent over `packages/engine/src/remediation` and the security-reviewer agent over the task's diff, and records both verdict lines in that sub-task's notes. The spec is done only when gravedigger's last line is "safe" or "safe with notes".
 
-- [ ] 1. Write the bug condition exploration tests
+- [-] 1. Write the bug condition exploration tests
   - **Property 1: Bug Condition D1** - A Non-registry range is never overwritten
   - **Property 2: Bug Condition D2** - An Incomplete scan is never reported as "none"
   - **Property 3: Bug Condition D3** - No remove for an Implicit-use name
@@ -13,26 +13,30 @@ Every top-level task ends with a review sub-task. It runs the gravedigger agent 
   - _Bug_Condition: isBugConditionD1, isBugConditionD2, isBugConditionD3 from design.md_
   - _Expected_Behavior: bugfix 2.1 to 2.5_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.1, 2.2, 2.3, 2.4, 2.5_
-  - [ ] 1.1 Write Property 1 in test/remediation/remediation-safety.test.ts
+  - [x] 1.1 Write Property 1 in test/remediation/remediation-safety.test.ts
     - Cases, each its own `it`: installed `1.0.0`, Haunted, origin `dependencies`, bump data `{ ok: true, published: ["1.0.0", "1.0.1"], deprecated: new Set(), advisories: new Map([["1.0.1", []]]) }`, declared range one of `file:../foo`, `link:../foo`, `git+https://github.com/o/foo.git`, `github:o/foo`, `https://example.com/foo-1.0.0.tgz`, `npm:@fork/foo@^1.2.0`, `workspace:*`, `latest`, and `^` followed by `"1".repeat(256)`.
     - Assert `status` `unavailable` and the reason. Import `REASON_RANGE_NOT_REGISTRY` from `src/remediation/precheck.js`; until it exists, use the literal string from design.md so the test compiles. Also assert no `edit`, no `chosenVersion`, `buildPrIntent` null and `bumpTargets` empty.
     - Property over `fc.string({ maxLength: 40 })` filtered to `!isResolvableRange`, plus `arbBumpData` filtered to `ok`. numRuns 1000.
     - _Requirements: 1.1, 1.2, 2.1, 2.2, 2.3_
-  - [ ] 1.2 Write Property 2 in the same file
+  - [x] 1.2 Write Property 2 in the same file
     - Build plans with `runMigrations` and an `InMemoryFileSource`, the way `test/remediation/migration-plan.test.ts:107-119` does.
     - Cases: 201 `.scss` files named `s000.scss` to `s200.scss` with `/deep/` only in `s200.scss`; one `big.scss` of `.a /deep/ .b {}\n` plus 262144 `x`; one listed path `../escape.scss` next to a clean `a.scss`.
     - Assert the "## Review before merging" section has the incomplete line and no line equal to `none`.
     - Property: an arbitrary Complete-scan file set plus one injected cause of incompleteness. numRuns 1000.
     - _Requirements: 1.3, 1.4, 2.4_
-  - [ ] 1.3 Write Property 3 in the same file
+  - [x] 1.3 Write Property 3 in the same file
     - Cases `@types/node`, `@types/express` and `tslib`, each Possessed in `dependencies` with `importSites` 0 and no Recipe. Assert `kind` is not `remove` and there is no `remove-dependency` Edit.
     - Property: `fc.constantFrom("tslib", "@babel/runtime", "@swc/helpers", "core-js", "regenerator-runtime")`, or `@types/` plus a valid name part, with either origin. numRuns 1000.
     - _Requirements: 1.5, 2.5_
-  - [ ] 1.4 Run on the unfixed code and record the counterexamples
+  - [x] 1.4 Run on the unfixed code and record the counterexamples
     - Run `npx vitest run test/remediation/remediation-safety.test.ts` from packages/engine. **EXPECTED OUTCOME**: Properties 1, 2 and 3 FAIL.
     - Record each shrunk counterexample here. The expected ones are plan `proposed` with set-range `^1.0.1` for `file:../foo`; the body section `## Review before merging`, blank line, `none` for the 201-file set; and kind `remove` for `@types/node`.
     - If any case passes on the unfixed code, stop and re-check the root cause in design.md before going on.
     - _Requirements: 1.1, 1.3, 1.5_
+    - Notes: Ran on the unfixed code (7c84f45), `vitest run test/remediation/remediation-safety.test.ts` from packages/engine. 18 tests, 0 passed, 18 failed, each on its intended assertion. No case passed, so the root causes stand.
+      - D1, 9 cases: each returns `{ kind: "bump", status: "proposed" }` with a set-range Edit where `{ status: "unavailable", reason: REASON_RANGE_NOT_REGISTRY }` is expected. Property 1 shrunk counterexample: `["file:../foo", { ok: true, published: [], deprecated: new Set([]), advisories: new Map([]) }]`. With no candidate at all the plan is `no-safe-version`, not `unavailable`, so even an empty registry answer is planned over a `file:` range.
+      - D2, 3 cases: each section is `## Review before merging\n\nnone\n`. Property 2 shrunk counterexample: `[{}, "unsafe"]`, an empty clean set plus one unsafe listed path `../escape.scss`; the section is `none`.
+      - D3, 3 cases: each gives `kind "remove"`. Property 3 shrunk counterexample: `["tslib", "dependencies", "Possessed"]`.
   - [ ] 1.5 Review: gravedigger and security-reviewer
     - Run gravedigger over `packages/engine/src/remediation` and security-reviewer over `git diff` of this task. Record both verdict lines here. Expected: gravedigger still "unsafe", because nothing is fixed yet; security-reviewer ready, because only a test file was added.
     - _Requirements: 1.1, 1.3, 1.5_
