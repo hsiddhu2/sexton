@@ -82,6 +82,7 @@ Gets the repository ready for judges on 2 December 2026: two claims corrected, t
   - Compare LICENSE with the Apache License 2.0 text; check NOTICE, every package.json licence field, CREDITS.md against the font files and the vendored schemas, and that /.kiro is tracked and not ignored. List what the owner sets by hand on GitHub.
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
 
-- [ ] 9. Final checks
+- [x] 9. Final checks
+  - Notes: main is still a01fcce, so no merge was needed and the change-log line stays 0.9. Root gates 2,068 tests. Fresh clone of 90bbbb7 with `npx npm@11 ci`: gates exit 0, 2,068 tests, clean tree. Whole-branch review: three text defects, fixed before 90bbbb7 (design.md Review notes, build).
   - Merge main in, renumber the change-log line if needed, root gates, a fresh clone with `npx npm@11 ci` and the gates, an independent review of the whole branch, the K6b progress notes and the K6b report (kept outside the repository). Nothing is pushed.
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
