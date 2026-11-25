@@ -48,7 +48,9 @@ async function main() {
     }
   }
 
-  const target = typeof input?.cwd === "string" && input.cwd.length > 0 ? input.cwd : process.cwd();
+  // The shell tool's own cwd first, then the event's cwd, then where the hook runs (the project root).
+  const nonEmpty = (v) => (typeof v === "string" && v.length > 0 ? v : undefined);
+  const target = nonEmpty(input?.tool_input?.cwd) ?? nonEmpty(input?.cwd) ?? process.cwd();
   const check = spawnSync(process.execPath, [CLI, "check", target], { cwd: target, encoding: "utf8" });
   if (check.status === 0) {
     process.stdout.write(`sexton install gate: policy passed for ${target}, install allowed.\n`);

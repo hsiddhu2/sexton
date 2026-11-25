@@ -169,7 +169,7 @@ Releases are sequenced, not promised by date. Release 0.1 lists each item's stat
 - Signed evidence packs
 - Evidence pack export for SOC 2, DORA and CRA reporting
 
-## Built with Kiro
+## Kiro project files
 
 Specs, each with its requirements (or bugfix), design and tasks, in `.kiro/specs/`:
 
@@ -186,7 +186,10 @@ Specs, each with its requirements (or bugfix), design and tasks, in `.kiro/specs
 - `remediate`: `POST /api/remediate`, which opens the pull request.
 - `engine-version`: bugfix, the engine version when bundled into Lambda.
 - `state-age-rule`: bugfix, age alone gives Restless and Dead needs an advisory or deprecation.
+- `new-signals`: the publisherChange and newDependency signals and their two Possessed rules.
 - `cemetery-ui`, `cemetery-theme`, `cemetery-polish`, `cemetery-time`, `cemetery-time-fixes`, `cemetery-undead`: the web cemetery, its history scrubber and replays, and the night art.
+- `cemetery-undead-2`: sound, speech bubbles, the replay burst and the burial priest.
+- `cemetery-undead-fixes`: bugfix, defects in the web app and CI found after cemetery-undead-2.
 
 Steering in `.kiro/steering/`:
 

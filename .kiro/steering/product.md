@@ -13,7 +13,7 @@ A sexton keeps the churchyard: buries the dead, keeps the grounds, tolls the bel
 - Reviewers who have three minutes and a hosted demo.
 
 ## States, assigned in this order, first match wins
-- Possessed: maintainer changed in 90 days, or provenance regressed, or a new install script appeared.
+- Possessed: maintainer changed in 90 days, or provenance regressed, or a new install script appeared, or a new dependency has an install script or was published within 7 days of the parent, or the publisher changed from a trusted publisher to a token.
 - Dead: deprecated, or last publish more than 24 months ago and at least one advisory of any severity.
 - Haunted: any High or Critical advisory.
 - Restless: last publish more than 24 months ago, or any Low or Moderate advisory.
@@ -31,7 +31,7 @@ A sexton keeps the churchyard: buries the dead, keeps the grounds, tolls the bel
 - Two replays, axios (March 2026) and keyv (August 2026), are scan responses built offline from public reports and played through the scrubber. They are fixtures at /replay/axios.json and /replay/keyv.json on the web origin, not live scans. Only ?replay=axios or ?replay=keyv loads one; any other value loads nothing. A replay opens at its first Stop and always shows the banner "Reconstructed from public reports. Not a live scan."
 - The cemetery is night-only. Every colour is a token in packages/web/src/scene/palette.ts; styles.css holds no colour literal. State colours: Alive #8fe3d0, Restless #e69f00, Haunted #56b4e9, Dead #bfb8ad, Possessed #cc79a7.
 - Fonts are self-hosted in packages/web/public/fonts with their OFL files: Pirata One, IM Fell English SC, IM Fell English italic, Instrument Sans. No font request leaves the page origin.
-- Publisher-changed and new-dependency signals come in a later spec.
+- Sound and speech bubbles (R-UI-8): sound is generated in code, off by default, remembered per browser, and no AudioContext exists before the user turns it on. Speech bubbles are hidden in Serious mode and never placed over a grave's name.
 
 ## Rules that never change
 - Every signal carries its source URL and fetch timestamp.

@@ -3,14 +3,12 @@
   "hooks": [
     {
       "name": "install-gate",
-      "trigger": "PreToolUse",
       "description": "Before an npm install, npm i, npm ci or npm add runs, run sexton check on this repository and block the install when the policy fails.",
+      "trigger": "PreToolUse",
       "matcher": "shell",
-      "action": {
-        "type": "command",
-        "command": "node .kiro/hooks/scripts/install-gate.mjs",
-        "timeout": 120
-      }
+      "action": { "type": "command", "command": "node .kiro/hooks/scripts/install-gate.mjs" },
+      "timeout": 120,
+      "enabled": true
     }
   ]
 }

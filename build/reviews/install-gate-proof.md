@@ -80,3 +80,86 @@ passed  exit 0    41 ms  echo hello
 ```
 
 The first sweep let `npm --prefix infra install` through, because a flag that takes a value was not matched. The pattern was fixed before this sweep.
+
+## Working directory order
+
+Added 25 Nov 2026 after the merge of main. The script takes the directory to check from `tool_input.cwd` first, then the event's `cwd`, then `process.cwd()`, which is the project root where Kiro runs the hook. Each case uses the same failing scratch copy as Proof 2, rebuilt and deleted by the run.
+
+### A. tool_input.cwd is the failing scratch copy, event cwd is the repository
+
+Payload:
+
+```
+{"cwd":"/Users/harpreetsiddhu/Documents/Personal/Projects/Kiroween2026/sexton-kiro","tool_input":{"command":"npm install left-pad","cwd":"/tmp/sexton-scratch"}}
+```
+
+Output:
+
+```
+sexton install gate: sexton check exited 1 for /tmp/sexton-scratch, install blocked.
+FAIL  Temporary scratch rule, no living dependencies
+      fail: @eslint/js@10.0.1  state is Alive: no rule matched
+      fail: @types/node@22.10.2  state is Alive: no rule matched
+      fail: @types/semver@7.8.0  state is Alive: no rule matched
+      fail: eslint@10.15.0  state is Alive: no rule matched
+      fail: fast-check@3.23.1  state is Alive: no rule matched
+      fail: typescript@5.7.2  state is Alive: no rule matched
+      fail: typescript-eslint@8.72.2  state is Alive: no rule matched
+      fail: vitest@4.1.12  state is Alive: no rule matched
+exit=2
+```
+
+### B. tool_input.cwd is the repository, event cwd is the failing scratch copy
+
+Payload:
+
+```
+{"cwd":"/tmp/sexton-scratch","tool_input":{"command":"npm install left-pad","cwd":"/Users/harpreetsiddhu/Documents/Personal/Projects/Kiroween2026/sexton-kiro"}}
+```
+
+Output:
+
+```
+sexton install gate: policy passed for /Users/harpreetsiddhu/Documents/Personal/Projects/Kiroween2026/sexton-kiro, install allowed.
+exit=0
+```
+
+### C. no tool_input.cwd, event cwd is the failing scratch copy
+
+Payload:
+
+```
+{"cwd":"/tmp/sexton-scratch","tool_input":{"command":"npm install left-pad"}}
+```
+
+Output:
+
+```
+sexton install gate: sexton check exited 1 for /tmp/sexton-scratch, install blocked.
+FAIL  Temporary scratch rule, no living dependencies
+      fail: @eslint/js@10.0.1  state is Alive: no rule matched
+      fail: @types/node@22.10.2  state is Alive: no rule matched
+      fail: @types/semver@7.8.0  state is Alive: no rule matched
+      fail: eslint@10.15.0  state is Alive: no rule matched
+      fail: fast-check@3.23.1  state is Alive: no rule matched
+      fail: typescript@5.7.2  state is Alive: no rule matched
+      fail: typescript-eslint@8.72.2  state is Alive: no rule matched
+      fail: vitest@4.1.12  state is Alive: no rule matched
+exit=2
+```
+
+### D. neither cwd, the hook runs in the repository
+
+Payload:
+
+```
+{"tool_input":{"command":"npm install left-pad"}}
+```
+
+Output:
+
+```
+sexton install gate: policy passed for /Users/harpreetsiddhu/Documents/Personal/Projects/Kiroween2026/sexton-kiro, install allowed.
+exit=0
+```
+
