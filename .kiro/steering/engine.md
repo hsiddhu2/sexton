@@ -10,6 +10,7 @@ fileMatchPattern: "packages/engine/**/*.ts"
 - Dates are ISO strings at the boundary and Date objects inside. Never compare strings.
 - Severity is normalised to exactly one of Critical, High, Moderate, Low, Unknown before any rule reads it.
 - State type and order: #[[file:packages/engine/src/state.ts]]
+- evaluateState in state.ts is the only copy of the state rules. Order: Possessed, then Dead for a deprecated version, then Dead for stale (older than STALE_AFTER_MONTHS = 24) with any advisory, then Haunted, then Restless for stale alone, then Restless for a Moderate or Low advisory, then Alive. Age alone never gives Dead. A null or future lastPublish is never stale.
 - Evidence modules live in packages/engine/src/evidence. buildEvidencePack never rejects and never mutates its input.
 - The evidence digest is SHA-256 over the RFC 8785 canonical form of the body. It is not a signature.
 - The SBOM is CycloneDX 1.5 JSON, written by hand in evidence/sbom.ts.
