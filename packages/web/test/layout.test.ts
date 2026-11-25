@@ -17,11 +17,12 @@ const allOf = (n: number, state: PackageHealth["state"]): PackageHealth[] => pac
  * (Alive, 0.64), middle (Haunted and Restless, 0.8), front (Possessed and Dead, 1); no gap between Tiers; every row
  * centred in the drawable width; sky 120 and padding 16 (design.md, decisions 6 and 11). K2d fix 1, Deliberate test
  * change 30: the graves of a row spread apart up to 1.07, 1.2 and 1.4 cell widths (front, middle, back) to fill it.
+ * Spec cemetery-undead-2, Deliberate test change 5: the middle and back caps are 1.334 and 1.667.
  */
 function tierModel(packages: readonly PackageHealth[], width: number): { rects: Rect[]; height: number; rows: number } {
   const tierOf = (s: string): number => (s === "Alive" ? 0 : s === "Haunted" || s === "Restless" ? 1 : 2);
   const scales = [0.64, 0.8, 1];
-  const caps = [1.4, 1.2, 1.07];
+  const caps = [1.667, 1.334, 1.07];
   const rects: Rect[] = [];
   let y = 120 + 16;
   let rows = 0;
@@ -96,8 +97,8 @@ describe("Feature: cemetery-ui, Property 8: Layout is deterministic and no two g
     expect(plan.graves[0]?.rect).toEqual({ x: 339, y: 136, w: 192, h: 224 });
     expect(plan.graves[1]?.rect.x).toBe(339 + 205);
     const back = planScene({ packages: allOf(3, "Alive"), width: 1280, theme: "light", selectedIndex: null, ghostPhase: 0 });
-    // Back cells of 123, 172 apart (123 times 1.4, floored).
-    expect(back.graves[0]?.rect).toEqual({ x: 16 + Math.floor((1248 - (2 * 172 + 123)) / 2), y: 136, w: 123, h: 143 });
+    // Back cells of 123, 205 apart (123 times 1.667, floored), in line with the front columns.
+    expect(back.graves[0]?.rect).toEqual({ x: 16 + Math.floor((1248 - (2 * 205 + 123)) / 2), y: 136, w: 123, h: 143 });
   });
 
   it("changes columns at width 415 and 416", () => {

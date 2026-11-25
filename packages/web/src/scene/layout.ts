@@ -130,6 +130,14 @@ export interface ScenePlan {
   readonly graves: readonly GravePlan[];
   readonly ring: Rect | null;
   readonly scenery: Scenery;
+  /** The selected grave, which holds the ring, or null (spec cemetery-undead-2, A3). */
+  readonly selected: number | null;
+  /** The replay Burst: its grave and its start on the page clock, or a null start for the final pose (B3). */
+  readonly burst: { readonly index: number; readonly startMs: number | null } | null;
+  /** The burial Priest: its grave and the burial phase, or a null phase for the Vigil (B4). */
+  readonly priest: { readonly index: number; readonly phase: number | null } | null;
+  /** The start of the Load moment on the page clock, or null (B5). */
+  readonly riseStartMs: number | null;
 }
 
 export interface SceneInput {
@@ -156,6 +164,12 @@ export interface SceneInput {
   readonly reducedMotion?: boolean;
   /** The hovered or focused grave index, for the Lantern glow. */
   readonly lantern?: number | null;
+  /** Spec cemetery-undead-2, B3: the replay Burst on a grave, from its start on the page clock. */
+  readonly burst?: { readonly index: number; readonly startMs: number } | null;
+  /** Spec cemetery-undead-2, B4: the Priest on a grave, at a burial phase, or a null phase for the Vigil. */
+  readonly priest?: { readonly index: number; readonly phase: number | null } | null;
+  /** Spec cemetery-undead-2, B5: the Load moment's start on the page clock. */
+  readonly rise?: { readonly startMs: number } | null;
 }
 
 const round2 = (value: number): number => Math.round(value * 100) / 100;
@@ -226,8 +240,11 @@ export const REPLAY_SCALE = 1.8;
 /** How far the open grave's lid reaches past its cell, in cell units. */
 export const REPLAY_OVERHANG = 60;
 
-/** How far apart graves of a Tier may spread to fill a row, as a multiple of the Tier cell width (K2d fix 1). */
-export const PITCH_CAP: Readonly<Record<TierId, number>> = { front: 1.07, middle: 1.2, back: 1.4 };
+/**
+ * How far apart graves of a Tier may spread to fill a row, as a multiple of the Tier cell width (K2d fix 1). The middle
+ * and back caps give the front pitch of 205 px, so their rows line up with the front columns (spec cemetery-undead-2, A5).
+ */
+export const PITCH_CAP: Readonly<Record<TierId, number>> = { front: 1.07, middle: 1.334, back: 1.667 };
 
 /** A ghost means one or more advisories, and nothing else (5.1). */
 export function hasGhost(pkg: PackageHealth): boolean {
@@ -265,7 +282,7 @@ export function planScene(input: SceneInput): ScenePlan {
   const reducedMotion = input.reducedMotion === true;
   if (n === 0) {
     const scenery = sceneryFor(width);
-    return { width, height: 0, columns: 0, rows: 0, rowLines: [], paintOrder: [], dancers: new Set(), reducedMotion, lantern: null, groundHeight: 0, theme: input.theme, graves: [], ring: null, scenery };
+    return { width, height: 0, columns: 0, rows: 0, rowLines: [], paintOrder: [], dancers: new Set(), reducedMotion, lantern: null, groundHeight: 0, theme: input.theme, graves: [], ring: null, scenery, selected: null, burst: null, priest: null, riseStartMs: null };
   }
   // Tiers follow the scan-date State, so a grave never moves while the scrubber does (spec cemetery-undead, 5.6).
   const byTier: Record<TierId, number[]> = { front: [], middle: [], back: [] };
@@ -347,7 +364,24 @@ export function planScene(input: SceneInput): ScenePlan {
       : { x: selectedGrave.rect.x + 2, y: selectedGrave.rect.y + 2, w: selectedGrave.rect.w - 4, h: selectedGrave.rect.h - 4 };
   const lantern = typeof input.lantern === "number" && Number.isInteger(input.lantern) && input.lantern >= 0 && input.lantern < n ? input.lantern : null;
   const deadNames = input.packages.filter((p) => p.state === "Dead").map((p) => p.name);
-  return { width, height, columns, rows, rowLines, paintOrder, dancers: dancers(deadNames), reducedMotion, lantern, groundHeight, theme: input.theme, graves, ring, scenery };
+  const inRange = (i: unknown): i is number => typeof i === "number" && Number.isInteger(i) && i >= 0 && i < n;
+  const burstIn = input.burst;
+  // Under Reduced motion the Burst stores no start, and the draw shows its final pose (requirement 9.5).
+  const burst = burstIn != null && inRange(burstIn.index) && !graves[burstIn.index]?.pending
+    ? { index: burstIn.index, startMs: reducedMotion || !Number.isFinite(burstIn.startMs) ? null : burstIn.startMs }
+    : null;
+  const priestIn = input.priest;
+  const priest = priestIn != null && inRange(priestIn.index) && !graves[priestIn.index]?.pending
+    ? { index: priestIn.index, phase: priestIn.phase === null || reducedMotion ? null : Math.min(1, Math.max(0, Number.isFinite(priestIn.phase) ? priestIn.phase : 0)) }
+    : null;
+  const riseStartMs = input.rise != null && !reducedMotion && Number.isFinite(input.rise.startMs) ? input.rise.startMs : null;
+  return {
+    width, height, columns, rows, rowLines, paintOrder, dancers: dancers(deadNames), reducedMotion, lantern, groundHeight, theme: input.theme, graves, ring, scenery,
+    selected: selectedGrave === undefined ? null : selectedGrave.index,
+    burst,
+    priest,
+    riseStartMs,
+  };
 }
 
 export function backingStore(cssWidth: number, cssHeight: number, dpr: number): { scale: number; width: number; height: number } {

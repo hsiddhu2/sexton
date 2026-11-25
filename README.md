@@ -6,6 +6,8 @@ Sexton finds the dependencies that will hurt you, proves it, and opens the pull 
 
 Characters are original vector art. The ghost is original art.
 
+Sound is off by default. The Sound button turns it on, and every sound is made in code.
+
 Status: pre-release. Release 0.1 is due on 4 Dec 2026. Each feature below says whether it is on `main` today, in progress, or planned.
 
 ## The problem

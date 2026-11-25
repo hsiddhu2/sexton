@@ -456,6 +456,7 @@ main {
 
 .legend-toggle:focus-visible,
 .serious-toggle:focus-visible,
+.sound-toggle:focus-visible,
 .repo-form button:focus-visible,
 .repo-form input:focus-visible {
   outline: 3px solid var(--focus);
@@ -920,7 +921,6 @@ pre.signal-value {
 }
 .replay-sources {
   margin: 0;
-  padding-left: 20px;
 }
 .replay-banner a {
   color: var(--text);
@@ -934,19 +934,20 @@ pre.signal-value {
   width: auto;
 }
 
-/* Sound (Phase 2) and Serious mode (spec cemetery-undead, 8.1, 9.2). */
+/* Sound and Serious mode (spec cemetery-undead, 8.1; spec cemetery-undead-2, 8.1). */
 .sound-toggle {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  cursor: not-allowed;
+  cursor: pointer;
 }
 .sound-glyph {
   fill: none;
   stroke: currentColor;
   stroke-width: 1.5;
 }
-.serious-toggle[aria-pressed="true"] {
+.serious-toggle[aria-pressed="true"],
+.sound-toggle[aria-pressed="true"] {
   border-color: var(--focus);
   background: var(--surface);
 }
@@ -994,13 +995,7 @@ pre.signal-value {
   font-weight: 600;
 }
 /* The replay banner as a compact card, with its sources on one line. */
-.replay-banner .replay-sources {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 14px;
-  padding: 0;
-  list-style: none;
-}
+
 .epitaph-punchline,
 .drawer-epitaph {
   font-family: "IM Fell English", Georgia, serif;
@@ -1167,13 +1162,7 @@ pre.signal-value {
 .replay-card .replay-title {
   font-size: 1rem;
 }
-.replay-card .replay-sources {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  padding-left: 0;
-  list-style: none;
-}
+
 .replay-card a {
   color: var(--wordmark);
 }
@@ -1311,4 +1300,57 @@ pre.signal-value {
 }
 .replay-card .replay-summary {
   margin-bottom: 6px;
+}
+
+/* The replay Burst's caption, above its grave, as in the mockup (spec cemetery-undead-2, B3). */
+.burst-caption {
+  position: absolute;
+  z-index: 1;
+  margin: 0;
+  transform: translate(-50%, calc(-100% - 8px));
+  padding: 4px 10px;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Speech Bubbles, as in the mockup (spec cemetery-undead-2, B2): decoration over the scene, never a target. */
+.bubble-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+.bubble-group {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+/* The tail: a square in the bubble's own token, turned 45 degrees on the bubble's edge, so its free half is a point
+   whose tip is on the speaker. */
+.bubble-tail {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: var(--text);
+  transform: translate(-50%, -50%) rotate(45deg);
+  pointer-events: none;
+}
+.bubble {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: var(--text);
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  pointer-events: none;
 }

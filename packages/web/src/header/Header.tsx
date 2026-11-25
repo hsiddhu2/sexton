@@ -9,8 +9,6 @@ import { Wordmark } from "./Wordmark.js";
 import { ReplayButtons } from "../replay/ReplayButtons.js";
 import type { ReplayId } from "../replay/replay-ids.js";
 
-export const SOUND_NOTE_TEXT = "Sound arrives in the next release";
-
 export interface HeaderProps {
   /** Null while loading or after a load error: only the shell is shown. */
   readonly model: HeaderModel | null;
@@ -27,6 +25,10 @@ export interface HeaderProps {
   /** Serious mode toggle (spec cemetery-undead, 8.1). Shown when onSerious is given. */
   readonly serious?: boolean;
   readonly onSerious?: () => void;
+  /** A replay labels its two times: "Window ends" and "Showing" (spec cemetery-undead-2, A2). */
+  readonly replay?: boolean;
+  /** The Sound toggle (spec cemetery-undead-2, requirement 8.1). Off by default. */
+  readonly sound?: { readonly on: boolean; readonly onToggle: () => void };
 }
 
 function DownloadGlyph() {
@@ -37,7 +39,7 @@ function DownloadGlyph() {
   );
 }
 
-export function Header({ model, theme, apiConfigured, onSubmit, fieldRef, asOf, onReplay, serious = false, onSerious }: HeaderProps) {
+export function Header({ model, theme, apiConfigured, onSubmit, fieldRef, asOf, onReplay, serious = false, onSerious, replay = false, sound }: HeaderProps) {
   const [value, setValue] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const submit = (event: FormEvent<HTMLFormElement>): void => {
@@ -56,12 +58,14 @@ export function Header({ model, theme, apiConfigured, onSubmit, fieldRef, asOf, 
                 {model.demoLabel === null ? null : <span className="demo-label"> {model.demoLabel}</span>}
               </p>
               <p className="header-time">
+                {replay ? "Window ends " : null}
                 <ScanTime iso={model.scanTime} />
               </p>
               {asOf === undefined ? null : (
                 <p className="header-asof">
                   <span className="as-of">
-                    as of <ScanTime iso={asOf.iso} />
+                    {replay ? "Showing " : "as of "}
+                    <ScanTime iso={asOf.iso} />
                   </span>{" "}
                   <button type="button" className="asof-back" onClick={asOf.onBack}>
                     Back to now
@@ -111,16 +115,13 @@ export function Header({ model, theme, apiConfigured, onSubmit, fieldRef, asOf, 
         </button>
         {apiConfigured ? null : <span className="repo-disabled">{HOSTED_UNAVAILABLE_TEXT}</span>}
       </form>
-      {/* Sound comes in Phase 2: shown, disabled, with its note for assistive technology (spec cemetery-undead, 9.2). */}
-      <button type="button" className="sound-toggle" disabled aria-describedby="sound-note">
+      {/* A native toggle with aria-pressed, named by its state (spec cemetery-undead-2, requirement 8.1). */}
+      <button type="button" className="sound-toggle" aria-pressed={sound?.on === true} onClick={sound?.onToggle}>
         <svg className="sound-glyph" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-          <path d="M2 6h3l4-3v10l-4-3H2z M11 5l4 6 M15 5l-4 6" />
+          {sound?.on === true ? <path d="M2 6h3l4-3v10l-4-3H2z M11 5.5q2 2.5 0 5 M13 4q3.5 4 0 8" /> : <path d="M2 6h3l4-3v10l-4-3H2z M11 5l4 6 M15 5l-4 6" />}
         </svg>
-        Sound off
+        {sound?.on === true ? "Sound on" : "Sound off"}
       </button>
-      <span id="sound-note" className="visually-hidden">
-        {SOUND_NOTE_TEXT}
-      </span>
       {onSerious === undefined ? null : (
         <button type="button" className="serious-toggle" aria-pressed={serious} onClick={onSerious}>
           Serious mode
