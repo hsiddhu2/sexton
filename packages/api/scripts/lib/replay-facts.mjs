@@ -27,6 +27,10 @@ export const NOT_IN_PUBLIC_REPORTS = "not in public reports";
  *   window start, one hour before the bad publish. The last `from` is the Scan date (`generatedAt`): for axios the
  *   removal of 1.14.1, for keyv the publish of 6.0.0.
  * - `factSources`: the URL that a signal of the installed version cites.
+ * - Spec new-signals: `publisher` ({ name, method } or null) and `dependencies` (object or null) per version, and
+ *   `newDependencies`: per added dependency name, the version its range resolved to at the parent's publish time, that
+ *   version's publish time and its install script flag. The name of the account that published axios 1.14.1 is sourced
+ *   but left out (design.md Decisions 12), so that publisher is { name: null, method: "token" }.
  */
 export const REPLAYS = Object.freeze({
   axios: {
@@ -43,9 +47,27 @@ export const REPLAYS = Object.freeze({
       { label: "npm registry: axios", url: SOURCE_URLS.registryAxios },
     ],
     versions: [
-      { version: "1.14.0", publishedAt: "2026-03-27T19:01:40.915Z", installScript: null, provenance: true },
-      { version: "1.14.1", publishedAt: "2026-03-31T00:21:58.168Z", installScript: false, provenance: false },
+      {
+        version: "1.14.0",
+        publishedAt: "2026-03-27T19:01:40.915Z",
+        installScript: null,
+        provenance: true,
+        publisher: { name: "GitHub Actions", method: "trusted-publisher" },
+        dependencies: { "form-data": "^4.0.5", "proxy-from-env": "^2.1.0", "follow-redirects": "^1.15.11" },
+      },
+      {
+        version: "1.14.1",
+        publishedAt: "2026-03-31T00:21:58.168Z",
+        installScript: false,
+        provenance: false,
+        publisher: { name: null, method: "token" },
+        dependencies: { "form-data": "^4.0.5", "proxy-from-env": "^2.1.0", "follow-redirects": "^1.15.11", "plain-crypto-js": "^4.2.1" },
+      },
     ],
+    // plain-crypto-js 4.2.1: publish time from the registry time map, postinstall from Trend Micro.
+    newDependencies: {
+      "plain-crypto-js": { resolvedVersion: "4.2.1", resolvedPublishTime: "2026-03-30T23:59:12.278Z", installScript: true },
+    },
     stops: [
       { from: "2026-03-30T23:21:58.168Z", version: "1.14.0" },
       { from: "2026-03-31T00:21:58.168Z", version: "1.14.1" },
@@ -55,6 +77,8 @@ export const REPLAYS = Object.freeze({
       publishedAt: SOURCE_URLS.registryAxios,
       installScript: SOURCE_URLS.trendmicro,
       provenance: SOURCE_URLS.npmTrusted,
+      publisherChange: SOURCE_URLS.trendmicro,
+      newDependency: SOURCE_URLS.trendmicro,
     },
   },
   keyv: {
@@ -73,10 +97,26 @@ export const REPLAYS = Object.freeze({
     // 5.6.0: the registry document has no deprecated field and no dist.attestations, so deprecated and provenance
     // are false, both from the keyv registry URL.
     versions: [
-      { version: "5.6.0", publishedAt: "2026-01-21T00:39:26.982Z", installScript: false, provenance: false, deprecated: false },
-      { version: "6.0.0-rc.1", publishedAt: "2026-08-03T19:21:08.158Z", installScript: false, provenance: null },
-      { version: "6.0.0", publishedAt: "2026-08-04T09:35:00.763Z", installScript: true, provenance: true },
+      { version: "5.6.0", publishedAt: "2026-01-21T00:39:26.982Z", installScript: false, provenance: false, deprecated: false, publisher: null, dependencies: null },
+      {
+        version: "6.0.0-rc.1",
+        publishedAt: "2026-08-03T19:21:08.158Z",
+        installScript: false,
+        provenance: null,
+        publisher: { name: "GitHub Actions", method: "trusted-publisher" },
+        dependencies: null,
+      },
+      // Snyk: "The npm manifest identifies GitHub Actions as the trusted publisher for keyv@6.0.0". No source names its dependencies.
+      {
+        version: "6.0.0",
+        publishedAt: "2026-08-04T09:35:00.763Z",
+        installScript: true,
+        provenance: true,
+        publisher: { name: "GitHub Actions", method: "trusted-publisher" },
+        dependencies: null,
+      },
     ],
+    newDependencies: {},
     // 6.0.0-rc.1 is a prerelease that a fresh install of a stable range does not resolve, so it is never a Stop version.
     stops: [
       { from: "2026-08-04T08:35:00.763Z", version: "5.6.0" },
@@ -88,6 +128,8 @@ export const REPLAYS = Object.freeze({
       installScript: SOURCE_URLS.snyk,
       provenance: SOURCE_URLS.snyk,
       deprecated: SOURCE_URLS.registryKeyv,
+      publisherChange: SOURCE_URLS.snyk,
+      newDependency: SOURCE_URLS.snyk,
     },
   },
 });

@@ -1,11 +1,18 @@
 // Spec cemetery-time, task 7.2: the replay fixtures trace to the facts file and agree with the Engine. No network.
 // Spec cemetery-time-fixes, task 2: the registry publish times, eight source URLs and Property 4.
 import { readFileSync } from "node:fs";
-import { SIGNAL_NAMES, evaluateState, type StateInputs } from "@sexton/engine";
+import { SIGNAL_NAMES, evaluateState, possessingDependency, type StateInputs } from "@sexton/engine";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 // @ts-expect-error plain JavaScript modules without declarations
-import { buildReplay, replayOutputPath, replaySegments, serialiseDemoScan } from "../scripts/generate-demo-scan.mjs";
+import {
+  buildReplay,
+  replayNewDependency,
+  replayOutputPath,
+  replayPublisherChange,
+  replaySegments,
+  serialiseDemoScan,
+} from "../scripts/generate-demo-scan.mjs";
 // @ts-expect-error plain JavaScript module without declarations
 import { NOT_IN_PUBLIC_REPORTS, REPLAYS, REPLAY_IDS, SOURCE_URLS } from "../scripts/lib/replay-facts.mjs";
 import { validateScanResponse } from "../../web/src/load/validate-scan-response.js";
@@ -292,5 +299,47 @@ describe("the registry facts (requirements 2.1, 2.2)", () => {
     expect(REPLAYS.axios.factSources.publishedAt).toBe("https://registry.npmjs.org/axios");
     expect(REPLAYS.keyv.factSources.publishedAt).toBe("https://registry.npmjs.org/keyv");
     expect(REPLAYS.keyv.factSources.deprecated).toBe("https://registry.npmjs.org/keyv");
+  });
+});
+
+describe("the new signals in the replays (spec new-signals, Requirement 5)", () => {
+  it("axios keeps its provenance regression reason at 00:21, and the New dependency rule matches the 1.14.1 facts as evidence (5.3)", () => {
+    const segment = fixture("axios").timelines?.["axios"]?.segments.find((s) => s.from === "2026-03-31T00:21:58.168Z");
+    expect(segment).toMatchObject({ state: "Possessed", reason: "provenance regression: 1.14.1 has no provenance, 1.14.0 had it", version: "1.14.1" });
+    const added = replayNewDependency(REPLAYS.axios, "1.14.1");
+    expect(added).toEqual({
+      status: "compared",
+      installedVersion: "1.14.1",
+      earlierVersion: "1.14.0",
+      installedPublishTime: "2026-03-31T00:21:58.168Z",
+      addedCount: 1,
+      capped: false,
+      added: [
+        { name: "plain-crypto-js", range: "^4.2.1", resolvedVersion: "4.2.1", resolvedPublishTime: "2026-03-30T23:59:12.278Z", installScript: true, fresh: true },
+      ],
+    });
+    expect(possessingDependency(added)?.name).toBe("plain-crypto-js");
+    // The 1.14.1 publisher name is left out (design.md Decisions 12), so the comparison is unknown.
+    expect(replayPublisherChange(REPLAYS.axios, "1.14.1")?.status).toBe("unknown");
+  });
+
+  it("keyv keeps its install script reason, and its publisher is the same trusted publisher (5.4, 5.6)", () => {
+    const segment = fixture("keyv").timelines?.["keyv"]?.segments.find((s) => s.from === "2026-08-04T09:35:00.763Z");
+    expect(segment).toMatchObject({ state: "Possessed", reason: "install script added in 6.0.0" });
+    const signals = fixture("keyv").report.packages[0]?.signals;
+    expect(signals?.publisherChange).toMatchObject({ available: true, value: { status: "same", earlier: { version: "6.0.0-rc.1" } }, source: SOURCE_URLS.snyk });
+    expect(signals?.newDependency).toMatchObject({ available: false, reason: NOT_IN_PUBLIC_REPORTS });
+    expect(replayNewDependency(REPLAYS.keyv, "6.0.0")).toBeUndefined();
+  });
+
+  it("axios at the scan date (1.14.0, no Earlier version in the facts) has both signals unavailable (5.5)", () => {
+    const signals = fixture("axios").report.packages[0]?.signals;
+    expect(signals?.publisherChange).toMatchObject({ available: false, reason: NOT_IN_PUBLIC_REPORTS });
+    expect(signals?.newDependency).toMatchObject({ available: false, reason: NOT_IN_PUBLIC_REPORTS });
+    expect(replayPublisherChange(REPLAYS.axios, "1.14.0")).toBeUndefined();
+  });
+
+  it("the story text is unchanged (owner decision at go)", () => {
+    expect(REPLAYS.axios.summary).toContain("Sexton marks 1.14.1 Possessed because provenance regressed.");
   });
 });

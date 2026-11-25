@@ -178,7 +178,7 @@ describe("markdown constructs", () => {
     });
   });
 
-  it("parses every demo pull request body into a 4 column table with 10 rows and no link", () => {
+  it("parses every demo pull request body into a 4 column table with 12 rows and no link", () => {
     const scan = readDemoScan() as { remediations?: { prBody: string }[] };
     expect((scan.remediations ?? []).length).toBeGreaterThan(0);
     for (const r of scan.remediations ?? []) {
@@ -187,7 +187,7 @@ describe("markdown constructs", () => {
       expect(table?.kind).toBe("table");
       if (table?.kind !== "table") continue;
       expect(table.header).toHaveLength(4);
-      expect(table.rows).toHaveLength(10);
+      expect(table.rows).toHaveLength(12);
       for (const row of table.rows) expect(row).toHaveLength(4);
       expect(collectLinks(blocks)).toHaveLength(0);
     }

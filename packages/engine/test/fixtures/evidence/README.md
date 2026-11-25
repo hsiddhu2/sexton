@@ -18,4 +18,6 @@ Checked by hand on 21 Nov 2026:
 - The SBOM has eleven components, sorted by name, each with a purl and `bom-ref` equal to it, and validates against the vendored CycloneDX 1.5 schema.
 - `jq -cjS .body expected-pack.json | shasum -a 256` prints the same digest as `integrity.digest` (`d797b6ec…`), run with jq-1.7.1-apple.
 
+Regenerated on 25 Nov 2026 for spec new-signals (engine 0.2.0): each package gains the publisherChange and newDependency rows. Every recorded publisher is the same as on its Earlier version; node-sass 7.0.3 adds npmlog and request, both old and without an install script; event-stream has no Earlier version. No state changed. The digest is now `212bb42b…`, checked the same way with jq.
+
 The files embed `ENGINE_VERSION`, so a version bump changes both. Rewrite them with `SEXTON_WRITE_GOLDEN=1 npx vitest run test/evidence/golden.test.ts` and check the diff by hand.

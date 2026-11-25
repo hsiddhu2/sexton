@@ -126,12 +126,31 @@ function buildInputs(facts: TimelineFacts, seen: readonly number[], installedInd
   }
   if (added.length > 0) inputs.newInstallScript = added;
 
+  // publisherChange and newDependency compare the installed version with versions published before it, so from the
+  // installed version's Seen time on they are the scan's values. Spec new-signals, 4.2.
+  if (installed !== undefined && (seen[installedIndex] as number) <= asOfMs) {
+    if (facts.publisherChange !== undefined && facts.publisherChange !== null) inputs.publisherChange = facts.publisherChange;
+    if (facts.newDependency !== undefined && facts.newDependency !== null) inputs.newDependency = facts.newDependency;
+  }
+
   return { inputs, unavailable };
 }
 
 function ghostAsOf(facts: TimelineFacts, asOfMs: number): boolean {
   if (facts.advisories === null) return false;
   return facts.advisories.some((a) => new Date(a.publishedAt).getTime() <= asOfMs);
+}
+
+/**
+ * The state inputs stateAsOf gives the state rules at an As-of date before the scan date, or null when it gives none
+ * (at or after the scan date, or before the installed version is seen). Pure. Spec new-signals, 4.4.
+ */
+export function stateInputsAsOf(facts: TimelineFacts, scanDate: Date, asOf: Date): StateInputs | null {
+  if (asOf.getTime() >= scanDate.getTime()) return null;
+  const seen = seenTimes(facts.versions, scanDate);
+  const installedIndex = facts.versions.findIndex((v) => v.version === facts.installed);
+  if (installedIndex >= 0 && (seen[installedIndex] as number) > asOf.getTime()) return null;
+  return buildInputs(facts, seen, installedIndex, asOf).inputs;
 }
 
 /**

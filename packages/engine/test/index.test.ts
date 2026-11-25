@@ -53,9 +53,11 @@ describe("engine public surface (history-signals)", () => {
       "maintainerChange",
       "provenanceRegression",
       "newInstallScript",
+      "publisherChange",
+      "newDependency",
     ]);
     expect(engine.SIGNAL_NAMES).toEqual([...engine.ORIGINAL_SIGNAL_NAMES, ...engine.NEW_SIGNAL_NAMES]);
-    expect(engine.SIGNAL_NAMES).toHaveLength(10);
+    expect(engine.SIGNAL_NAMES).toHaveLength(12);
   });
 
   it.each(["parsePolicy", "formatPolicy", "evaluatePolicy", "inScope"] as const)(

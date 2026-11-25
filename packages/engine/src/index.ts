@@ -33,7 +33,7 @@ export type { ScoringDependencies } from "./score.js";
 // cemetery-time
 export { timelineFacts } from "./timeline/facts.js";
 export type { TimelineFactsInput } from "./timeline/facts.js";
-export { stateAsOf, seenTimes, currentForm, NOT_PUBLISHED_FORM, NOT_PUBLISHED_REASON } from "./timeline/as-of.js";
+export { stateAsOf, stateInputsAsOf, seenTimes, currentForm, NOT_PUBLISHED_FORM, NOT_PUBLISHED_REASON } from "./timeline/as-of.js";
 export { buildTimeline, MAX_REASON_LENGTH as TIMELINE_MAX_REASON_LENGTH } from "./timeline/build.js";
 export {
   TIMELINE_MAX_VERSIONS,
@@ -77,6 +77,7 @@ export type { NameEdge, ResolvedGraph, UnionGraph } from "./reach.js";
 
 export {
   compareVersionOrder,
+  earlierVersion,
   evaluateProvenanceRegression,
   isRecent,
   maintainerChangeValue,
@@ -85,6 +86,30 @@ export {
   publishedVersions,
 } from "./history.js";
 export type { MaintainerDiff, ProvenanceRegressionInput, ProvenanceRegressionOutcome, PublishedVersion } from "./history.js";
+
+// Spec new-signals.
+export { publishRecord, publisherChangeValue } from "./publisher.js";
+export {
+  dependenciesOf,
+  dependencyDiff,
+  detailNames,
+  FRESH_WINDOW_MS,
+  isFresh,
+  isResolvable,
+  NEW_DEPENDENCY_CAP,
+  newDependencyValue,
+  possessingDependency,
+  resolveDependency,
+} from "./new-dependency.js";
+export type { AddedDependency, DependencyDiff, DocRead } from "./new-dependency.js";
+export { fetchNewDependencySignal } from "./clients/new-dependency.js";
+export type {
+  NewDependencyEntry,
+  NewDependencyValue,
+  PublisherChangeValue,
+  PublishMethod,
+  PublishRecord,
+} from "./types.js";
 
 export { runSnapshotter } from "./snapshotter.js";
 export type { SnapshotterFailure, SnapshotterResult } from "./snapshotter.js";

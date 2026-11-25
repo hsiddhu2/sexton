@@ -60,12 +60,12 @@ describe("drawerModel", () => {
     );
   });
 
-  it("covers a package with all ten signals unavailable", () => {
+  it("covers a package with all twelve signals unavailable", () => {
     const pkg = allUnavailable(cheapPackage("a", "Alive"));
     const model = drawerModel(cheapScan(1), pkg);
-    expect(model.signals).toHaveLength(10);
+    expect(model.signals).toHaveLength(12);
     expect(model.signals.every((s) => !s.available && s.valueText === null && s.reason !== null)).toBe(true);
-    expect(model.missingSignals).toHaveLength(10);
+    expect(model.missingSignals).toHaveLength(12);
   });
 
   it("gives the fixed text for a deeply nested opaque value", () => {

@@ -6,7 +6,18 @@ import { safe } from "./safe-text.js";
 
 /** 39 code points plus the ellipsis, so a cut cell is at most 40 code points. */
 export const CELL_MAX = 39;
-const HEADERS = ["Package", "Version", "State", "Reason", "Advisories", "Install script", "Provenance", "Last publish"] as const;
+const HEADERS = [
+  "Package",
+  "Version",
+  "State",
+  "Reason",
+  "Advisories",
+  "Install script",
+  "Provenance",
+  "Last publish",
+  "Publisher",
+  "New deps",
+] as const;
 
 function width(text: string): number {
   return Array.from(text).length;
@@ -37,6 +48,10 @@ export function renderTable(report: HealthReport): string[] {
       signalCell(p.signals.hasInstallScript, (v) => (v ? "yes" : "no")),
       signalCell(p.signals.provenance, (v) => (v.present ? "yes" : "no")),
       signalCell(p.signals.lastPublish, (v) => v ?? "unknown"),
+      signalCell(p.signals.publisherChange, (v) => (v.status === "no-earlier-version" ? "none" : v.status)),
+      signalCell(p.signals.newDependency, (v) =>
+        v.status === "no-earlier-version" ? "none" : v.capped ? `${String(v.added.length)}+` : String(v.addedCount),
+      ),
     ].map((cell) => safe(cell, CELL_MAX)));
   const all = [[...HEADERS] as string[], ...rows];
   const widths = HEADERS.map((_, i) => Math.max(...all.map((r) => width(r[i] ?? ""))));

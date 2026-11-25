@@ -13,6 +13,8 @@ export const SIGNAL_NAMES = [
   "maintainerChange",
   "provenanceRegression",
   "newInstallScript",
+  "publisherChange",
+  "newDependency",
 ] as const;
 export const RULE_TYPES = ["forbid_state", "forbid_install_scripts", "max_age_months", "require_provenance"] as const;
 export const REMEDIATION_KINDS = ["bump", "remove", "migrate"] as const;

@@ -10,7 +10,7 @@
   "main": "dist/run-cli.js",
   "types": "dist/run-cli.d.ts",
   "dependencies": {
-    "@sexton/engine": "0.1.0"
+    "@sexton/engine": "0.2.0"
   },
   "scripts": {
     "build": "tsc -b",

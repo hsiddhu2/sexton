@@ -77,11 +77,11 @@ describe("renderEvidenceMarkdown examples", () => {
     expect(rows.map((r) => r.slice(3, 4))).toEqual(["z", "d", "a", "b"]);
   });
 
-  it("shows ten signal rows per package with source and time", async () => {
+  it("shows twelve signal rows per package with source and time", async () => {
     const md = renderEvidenceMarkdown(await packOf(input({ report: reportFor(REPO, [pkg("a", "Alive")]) })));
     const section = md.slice(md.indexOf("## Signals"), md.indexOf("## SBOM"));
     for (const name of SIGNAL_NAMES) expect(section).toContain(`| ${name} | `);
-    expect(section.split("\n").filter((l) => l.startsWith("| ") && !l.startsWith("| Signal")).length).toBe(10);
+    expect(section.split("\n").filter((l) => l.startsWith("| ") && !l.startsWith("| Signal")).length).toBe(12);
     expect(Object.keys(SIGNAL_SUMMARIES).sort()).toEqual([...SIGNAL_NAMES].sort());
   });
 

@@ -226,6 +226,8 @@ export function cheapPackage(name: string, state: State): PackageHealth {
     maintainerChange: { status: "history-insufficient", events: [] },
     provenanceRegression: { status: "no-regression", snapshotCaptureTime: "2026-11-12T00:00:00.000Z" },
     newInstallScript: [],
+    publisherChange: { status: "no-earlier-version", installed: null },
+    newDependency: { status: "no-earlier-version", installedVersion: "1.0.0" },
   };
   const signals: Json = {};
   for (const n of SIGNAL_NAMES) signals[n] = envelope(values[n]);

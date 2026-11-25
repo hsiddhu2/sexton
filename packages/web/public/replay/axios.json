@@ -80,6 +80,20 @@
             "fetchedAt": "2026-03-31T03:29:00.000Z",
             "available": false,
             "reason": "not in public reports"
+          },
+          "publisherChange": {
+            "value": null,
+            "source": "https://www.trendmicro.com/en_us/research/26/c/axios-npm-package-compromised.html",
+            "fetchedAt": "2026-03-31T03:29:00.000Z",
+            "available": false,
+            "reason": "not in public reports"
+          },
+          "newDependency": {
+            "value": null,
+            "source": "https://www.trendmicro.com/en_us/research/26/c/axios-npm-package-compromised.html",
+            "fetchedAt": "2026-03-31T03:29:00.000Z",
+            "available": false,
+            "reason": "not in public reports"
           }
         },
         "missingSignals": [
@@ -89,7 +103,9 @@
           "maintainers",
           "transitiveReach",
           "maintainerChange",
-          "newInstallScript"
+          "newInstallScript",
+          "publisherChange",
+          "newDependency"
         ]
       }
     ]

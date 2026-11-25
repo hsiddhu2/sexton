@@ -141,6 +141,17 @@
     }
   ],
   "versions": {
-    "7.8.6": {}
+    "7.8.6": {
+      "_npmUser": {
+        "name": "GitHub Actions",
+        "trustedPublisher": {}
+      }
+    },
+    "7.8.5": {
+      "_npmUser": {
+        "name": "GitHub Actions",
+        "trustedPublisher": {}
+      }
+    }
   }
 }
