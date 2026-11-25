@@ -161,14 +161,18 @@ Every top-level task ends with a review sub-task. It runs the gravedigger agent 
       - gravedigger (wf_7b9813cc8c46af7a) at 9cb4514: "**safe**: D4 is fixed, D1 to D3 still hold, and no new defect or note was found."
       - security-reviewer (wf_d081b7d3ed41ba64) on d459983..9cb4514: ready with notes, no defects. Its note was that design.md names `isResolvableRange` while the code uses `isUsableRange`. That helper is the same predicate plus a string check, so an undefined range also gives `unknown`, which is the safer side. 5b.2's notes record it.
 
-- [-] 6. Change log and final checkpoint
+- [x] 6. Change log and final checkpoint
   - [x] 6.1 Add the 0.9 change-log line to docs/requirements.md, worded as design.md "Changes required" gives it, with the date of the change. Edit no requirement text.
     - _Requirements: 2.6_
     - Notes: main took 0.9 in submission-readiness, merged at 6da99d9, so this spec's line is 1.0, the next free number. Its wording adds the D4 clause. No requirement text was edited.
-  - [ ] 6.2 Final gates
+  - [x] 6.2 Final gates
     - `npx tsc -b`, `npx eslint . --max-warnings=0`, and `npm test` for engine, cli, api, web and sexton-infra. The golden diff from 2.3 must be empty. `git diff --stat` must touch only the allowed paths at the top of this file.
     - _Requirements: 3.1 to 3.11_
-  - [ ] 6.3 Review: gravedigger and security-reviewer
+    - Notes: These ran after main (8b15923) was merged at 6da99d9. README.md and `packages/web/test/readme.test.ts` conflicted, and both were resolved by keeping every side's lines: "## Kiro project files" then "## Limits". pr-body.ts auto-merged: main's change was the one word "unknown" in the signal rows. Main does not untrack `.githooks` at 8b15923, even after `git fetch`, so there was no deletion to accept. Results: tsc -b exit 0 and eslint exit 0. engine: 87 files, 1178 of 1178. cli: 61 of 61. api: 33 files, 300 of 300. web: 57 files, 525 of 525. sexton-infra: 6 files, 51 of 51. Golden diff exit 0. Paths this spec changed: packages/engine/src/remediation (precheck.ts, pr-body.ts, choose-kind.ts, migration-candidates.ts), packages/engine/test/remediation/remediation-safety.test.ts, one line in packages/web/test/readme.test.ts, the 1.0 line in docs/requirements.md, and this spec folder.
+  - [x] 6.3 Review: gravedigger and security-reviewer
     - Run gravedigger over `packages/engine/src/remediation` and security-reviewer over the whole spec's diff. Record both verdict lines here.
     - **The spec is done only when gravedigger's last line is "safe" or "safe with notes".** If it is "unsafe", list its defects here and stop; do not mark this task done.
     - _Requirements: 2.1 to 2.6, 3.1 to 3.11_
+    - Notes:
+      - gravedigger (wf_fb48dbe3181b24b9) at b441f73: "Verdict: safe with notes. No input gives a worse repository, D1 to D4 are fixed, the merge from main added nothing risky, and the remaining items are defence-in-depth gaps." Its notes are left for a later change. `buildPrIntent` could re-check `isValidBranchName` (pr-intent.ts:35). The closed-enum values severity, publish method and review-site rule could also go through `escapeField` (pr-body.ts:51, 61, 97, 150).
+      - security-reviewer (wf_784484846f5c527f) over the spec's diff against main: "Ready with notes: no listed defect in code or tests, and the merge kept both sides' lines." Its notes, the `isUsableRange` wording and the uncommitted working-tree files, are resolved by this commit.
