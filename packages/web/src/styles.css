@@ -1083,8 +1083,10 @@ pre.signal-value {
   .header-summary {
     min-height: 0;
   }
+  /* 18rem, not 20: the Guide button joined the row, and with 20rem the summary column was narrow enough on Linux for
+     the policy line to wrap, which pushed the front row under the Footer bar (spec judge-path, decision 11). */
   .repo-form {
-    flex: 0 1 20rem;
+    flex: 0 1 18rem;
     flex-wrap: nowrap;
   }
   /* Two summary lines: the repository and its label, then the scan time and the policy. */
