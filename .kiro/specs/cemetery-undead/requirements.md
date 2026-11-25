@@ -2,7 +2,7 @@
 
 ## Introduction
 
-cemetery-undead is Phase 1 of the "Night of the Living Deps" art pass, approved by the owner on 24 Nov 2026 at 03:41 from the mockups `private/design/mockup-night.html` (the cemetery) and `private/design/mockup-nightreplay.html` (the axios replay moment). It changes how the cemetery looks. It does not change what any grave means.
+cemetery-undead is Phase 1 of the "Night of the Living Deps" art pass, approved by the owner on 24 Nov 2026 at 03:41 from the mockups mockup-night.html (the cemetery) and mockup-nightreplay.html (the axios replay moment), kept with the owner's notes outside the repository. It changes how the cemetery looks. It does not change what any grave means.
 
 - **U1.** A Halloween night palette, with state colours chosen to stay apart for viewers with colour vision deficiency.
 - **U2.** Self-hosted display and interface fonts.
@@ -251,7 +251,7 @@ Paths: this spec changes `packages/web`, the root `package-lock.json` (dev-only 
 
 #### Acceptance Criteria
 
-1. AFTER every visual change, THE Orchestrator SHALL take screenshots of the demo and of the axios replay at 1440 by 900 and at 390 by 844, and compare them with the mockup screenshots in `private/design/shots`.
+1. AFTER every visual change, THE Orchestrator SHALL take screenshots of the demo and of the axios replay at 1440 by 900 and at 390 by 844, and compare them with the mockup screenshots kept with the owner's notes.
 2. THE Visual critic SHALL answer READY or list what is off. THE Orchestrator SHALL fix and repeat until the Visual critic answers READY at both sizes.
 3. THE Orchestrator SHALL record the findings of each round in tasks.md notes in plain words.
 

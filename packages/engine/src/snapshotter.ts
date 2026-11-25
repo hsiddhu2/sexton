@@ -6,7 +6,7 @@ import { fetchProvenanceSignal } from "./clients/attestations.js";
 import { extractMaintainers, fetchFullPackumentDocument } from "./clients/maintainers.js";
 import { readAbbreviatedPackument } from "./clients/npm.js";
 import { publishedVersions } from "./history.js";
-import { mapWithConcurrency, PACKAGE_CONCURRENCY } from "./score.js";
+import { mapWithConcurrency, PACKAGE_CONCURRENCY } from "./util/concurrency.js";
 import { cleanReason, toIso } from "./signal.js";
 import { MAX_SNAPSHOT_VERSIONS, RECENT_WINDOW_MS, type Snapshot, type SnapshotStore, type SnapshotVersion } from "./snapshot.js";
 

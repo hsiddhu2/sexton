@@ -36,8 +36,7 @@ import {
   type SignalName,
   type TransitiveReachValue,
 } from "./types.js";
-
-export const PACKAGE_CONCURRENCY = 8;
+import { mapWithConcurrency, PACKAGE_CONCURRENCY } from "./util/concurrency.js";
 
 export interface ScoringDependencies {
   readonly transport?: Transport;
@@ -247,20 +246,6 @@ export function buildHealth(pkg: PackageRef, signals: OriginalSignals & Partial<
   const missingSignals: SignalName[] = SIGNAL_NAMES.filter((name) => !full[name].available);
   const { state, stateReason } = stateFromSignals(full, now);
   return { name: pkg.name, installedVersion: pkg.installedVersion, state, stateReason, signals: full, missingSignals };
-}
-
-/** Runs fn over items with at most limit in flight. Preserves order. */
-export async function mapWithConcurrency<T, R>(items: readonly T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
-  const results: R[] = new Array<R>(items.length);
-  let next = 0;
-  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (next < items.length) {
-      const index = next++;
-      results[index] = await fn(items[index] as T);
-    }
-  });
-  await Promise.all(workers);
-  return results;
 }
 
 /** Result of phase one: the Union graph and where each package's own graph came from. Requirement 3.2. */

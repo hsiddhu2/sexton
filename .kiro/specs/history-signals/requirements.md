@@ -35,7 +35,7 @@ Health-scoring Requirement 11.7 (never Possessed from last-publish, deprecated a
 - **Maintainer change event**: a record derived either from two consecutive Snapshots in a History, or from the most recent Snapshot and the current maintainers signal, whose Maintainers lists differ as sets. It carries the earlier list and the later list. Its event time is the later Snapshot's Capture time for a pair of Snapshots, or the maintainers signal's fetchedAt for the live comparison.
 - **Recent (90 days)**: an instant T is Recent relative to a Reference time R when T is not later than R and R minus T is at most 90 times 24 hours.
 - **History-insufficient**: the explicit state of a history-derived signal when the History does not contain the Snapshots the signal needs. It is not the same as "no change".
-- **Provenance regression**: the condition in which the installed version has no Provenance attestation while at least one Published version with a strictly earlier publish time has provenance presence true in the most recent Snapshot.
+- **Provenance regression**: the condition in which the installed version has no Provenance attestation while at least one Published version earlier in the Version order has provenance presence true in the most recent Snapshot.
 - **Possessed**: the State assigned when the first state rule of R-ST-2 matches.
 - **Possession signals**: the three signals maintainerChange, provenanceRegression and newInstallScript.
 - **New signals**: the six signals maintainers, provenance, transitiveReach, maintainerChange, provenanceRegression and newInstallScript.

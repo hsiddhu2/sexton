@@ -4,10 +4,10 @@
 
 cemetery-undead is Phase 1 of the art pass "Night of the Living Deps". The owner approved art direction C on 24 Nov 2026 at 03:41 from two mockups:
 
-- `private/design/mockup-night.html`, the cemetery;
-- `private/design/mockup-nightreplay.html`, the axios replay moment.
+- the cemetery mockup, mockup-night.html;
+- the replay mockup, mockup-nightreplay.html, the axios replay moment. Both are kept with the owner's notes outside the repository.
 
-Their screenshots at 1440 by 900 are in `private/design/shots/mockup-night-1440.png` and `mockup-nightreplay-1440.png`. Those are the visual target. The mockups are fixed-width: at 390 px they render at 1440 and scroll, so the 390 by 844 target is the same art reflowed by the rules of "Layout at 390 px".
+Their screenshots at 1440 by 900, mockup-night-1440.png and mockup-nightreplay-1440.png, are kept with them. Those are the visual target. The mockups are fixed-width: at 390 px they render at 1440 and scroll, so the 390 by 844 target is the same art reflowed by the rules of "Layout at 390 px".
 
 The spec changes how the cemetery looks and leaves what a grave means alone. A grave's State still comes from the Engine. Its Form, Character and Costume depend only on that State. A Ghost still means one or more advisories. Triage order still sets the keyboard order. Implements requirements 1 to 15.
 
@@ -191,7 +191,7 @@ The Clips:
 - **Licence check.** The bake writes the pack name and licence into each JSON, and a test checks it says CC0.
 - **Fallback.** If the bake does not produce all four Atlases within one working day of task 4, the Vector fallback is used and the call is recorded under "Notes and open items".
 
-**Vector fallback.** `scene/characters/vector.ts` draws each Pose from rectangles and simple paths in the mockup's blocky style (`private/design/mockup-night.html`, the `#possessed`, `#skeleton` and hand groups). Its Poses are 12 per Clip by joint angles from a fixed table. It uses the same `CharacterSource` interface.
+**Vector fallback.** `scene/characters/vector.ts` draws each Pose from rectangles and simple paths in the mockup's blocky style (mockup-night.html, the `#possessed`, `#skeleton` and hand groups). Its Poses are 12 per Clip by joint angles from a fixed table. It uses the same `CharacterSource` interface.
 
 ```ts
 export type CharacterId = "zombie" | "skeleton" | "hand";
@@ -569,7 +569,7 @@ After every visual sub-task, the Orchestrator does three things:
 1. It builds e2e (`VITE_SEXTON_API=/api vite build --mode e2e`), serves `dist-e2e` locally, and captures `/` and `/?replay=axios` at 1440 by 900 and 390 by 844, with Reduced motion off at a fixed `page.clock` time.
 2. It spawns a fresh subagent with only:
    - those four images;
-   - `private/design/shots/mockup-night-1440.png` and `mockup-nightreplay-1440.png`;
+   - the mockup screenshots mockup-night-1440.png and mockup-nightreplay-1440.png;
    - the text of the design guidance;
    - this section's checklist.
 3. The critic answers READY, or gives numbered findings. Findings are fixed, the round repeats, and each round's findings go under the sub-task as "Critic round N".

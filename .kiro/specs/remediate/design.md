@@ -212,7 +212,7 @@ For any review comments and tree, every link in the posted comment is to a Safe 
 | 7 | scan.ts, evidence.ts | evidence and scan examples |
 | 8 | infra/lib | iam, edge-stack, data-stack, nag tests, cdk diff |
 | 9 | web | validator, drawer, axe, e2e |
-| 10 | private/demo-repo, steering, docs | review |
+| 10 | the demo repository files, steering, docs | review |
 
 ## Decisions made during implementation
 

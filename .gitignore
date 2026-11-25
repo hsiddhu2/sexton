@@ -28,6 +28,8 @@ cdk.out/
 
 # build artefacts
 *.tsbuildinfo
+# output of a hand-run npm run scan:self > self-scan.out
+self-scan.out
 *.timestamp-*.mjs
 # cemetery-ui generated and test outputs
 packages/web/public/demo/scan.json

@@ -18,7 +18,7 @@ Run-time notes:
 - Each top-level task ends with an independent code review on its changed files. Every defect is fixed in the task, and the findings are recorded under "Review notes".
 - Run Vitest one package at a time. A first run under load can time out: run the failing file alone before reading it as a regression.
 - Check `git branch --show-current` before every commit.
-- Commits carry no trailer. Notes say what was done and found, in plain words, and name no tool. No file outside private/ states who or what produced the work.
+- Commits carry no trailer. Notes say what was done and found, in plain words, and name no tool. No tracked file states who or what produced the work.
 
 ## Tasks
 
@@ -179,7 +179,7 @@ Run-time notes:
   - [x] 9.6 Independent code review of the whole branch
     - _Requirements: 16.5_
   - [x] 9.7 Report and stop
-    - Write private/reports/K2e-cemetery-undead-2.md in the K2d report format, update private/PROGRESS.md and private/TRACKER.md, print the report and stop. Nothing is pushed. On the owner's `push`, follow the handoff's merge steps.
+    - Write the K2e report in the K2d report format, update the owner's progress notes and tracker (kept outside the repository), print the report and stop. Nothing is pushed. On the owner's `push`, follow the handoff's merge steps.
     - _Requirements: 16.1_
 
 ## Notes

@@ -4,7 +4,7 @@
 import semver from "semver";
 import { isValidPackageName } from "../intake/names.js";
 import type { ClientContext } from "../clients/context.js";
-import { mapWithConcurrency } from "../score.js";
+import { mapWithConcurrency } from "../util/concurrency.js";
 import type { BumpDataResult } from "../types.js";
 import { orderCandidates } from "./candidates.js";
 import { BUMP_CONCURRENCY, fail, gatherVersionData } from "./version-data.js";
