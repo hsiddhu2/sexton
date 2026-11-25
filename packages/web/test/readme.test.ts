@@ -20,6 +20,7 @@ const ORIGINAL_HEADINGS: readonly string[] = [
   "## How Sexton is different",
   "## Replay",
   "## Roadmap",
+  "## Kiro project files",
   "## Documentation",
   "## Licence",
 ];
