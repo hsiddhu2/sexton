@@ -76,7 +76,7 @@ The spec does not change the text of any existing state reason, the rule order a
 
 #### Acceptance Criteria
 
-1. WHEN the publisherChange status is `changed` AND the Earlier version's Publish method is `trusted-publisher` AND the Installed version's Publish method is `token`, THE Engine SHALL assign Possessed with the reason `publisher changed in <installed version>: <earlier publisher> to <installed publisher>`.
+1. WHEN the publisherChange status is `changed` AND the Earlier version's Publish method is `trusted-publisher` AND the Installed version's Publish method is `token`, THE Engine SHALL assign Possessed with the reason `publisher changed in <installed version>: <earlier publisher> to <installed publisher>`, where a missing publisher name reads `unknown`.
 2. WHEN a detailed newDependency entry has the Install script flag true, or has a Resolved dependency version that is Fresh, THE Engine SHALL assign Possessed with the reason `new dependency in <installed version>: <name>`, where name is the first such entry in ascending name order.
 3. WHILE neither the Publisher rule nor the New dependency rule matches, THE publisherChange and newDependency signals SHALL NOT change the state or the state reason.
 4. THE Engine SHALL evaluate the Possessed rules in this order, first match wins: the Existing rules in their existing order, then the New dependency rule, then the Publisher rule.
