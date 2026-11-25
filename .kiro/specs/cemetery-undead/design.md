@@ -633,6 +633,11 @@ Checklist:
 
 15. **The ground runs under the Footer bar (task 7).** Design said the free height leaves room for the footer. The existing e2e test "at 1440 by 900 the canvas reaches the bottom of the viewport" (K2c) requires the canvas to reach the viewport bottom, so the ground runs to the bottom and the footer sits over it. The new e2e test checks that every demo grave ends above the footer's top edge.
 
+16. **Critic round 5 (task 8).**
+    - Two blocking points, both fixed. Grave names stay at least 12 px on screen whatever the Tier scale: the font is MIN_NAME_PX / scale in the cell frame, never below 15. The open drawer now has a scrim, a `.backdrop::before` in the bg token at opacity 0.55. A pseudo-element is never an event target, so a press on it is still a press on the backdrop, and the Repository URL box rule holds.
+    - The final round answered READY at 1440 and 390.
+    - The README screenshot step now blurs focus and moves the mouse away first, so no hover or focus ring from the download clicks shows. It changes no assertion (Deliberate test change 19).
+
 ## Notes and open items
 
 - **R-UI-1.** Approved by the owner on 24 Nov 2026 as written (see "Open question for the owner").

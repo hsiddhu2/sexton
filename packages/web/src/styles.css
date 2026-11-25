@@ -133,7 +133,7 @@ main {
   line-height: 1.35;
   overflow: hidden;
   overflow-wrap: anywhere;
-  /* The tooltip lies inside its own Cell (top 4 of 224), so the pointer over it is still over its grave button:
+  /* The tooltip is anchored at its own Cell (top 4) and may extend past a scaled Cell; near its grave the pointer is still over the grave button:
      it stays hoverable, and a click on it reaches the button underneath. */
   max-height: 216px;
   pointer-events: none;
@@ -525,6 +525,21 @@ main {
   display: flex;
   justify-content: flex-end;
   background: none;
+}
+
+/* A scrim behind the drawer, so the open drawer reads as a layer over the page (critic round 5). It is a
+   pseudo-element: a press on it is still a press on the backdrop, so the Repository URL box rule keeps working. */
+.backdrop::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  opacity: 0.55;
+}
+
+.backdrop > .drawer {
+  position: relative;
+  z-index: 1;
 }
 
 .drawer {
@@ -1068,7 +1083,9 @@ pre.signal-value {
   /* Two summary lines: the repository and its label, then the scan time and the policy. */
   .header-repo {
     flex: 1 1 100%;
-    flex-wrap: nowrap;
+  }
+  .repo-text {
+    white-space: nowrap;
   }
   .replay-banner {
     flex: 0 1 56rem;

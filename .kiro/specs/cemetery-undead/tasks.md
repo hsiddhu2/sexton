@@ -199,20 +199,24 @@ Run-time notes:
     - _Requirements: 15.5_
     - Review notes: READY, no defect. Acted on: design.md decisions 11, 12 and 15 record the shorter sky, the in-view rule at 960 px and wider, and the ground under the footer; the layout test comment cites them; the Legend words have a test. Notes kept: change 26 dropped the replay-row sub-check, because the Replay group moved to the footer.
 
-- [ ] 8. Screenshots, README, credits and steering
+- [x] 8. Screenshots, README, credits and steering
   - Retakes the README pictures and writes the documentation.
   - _Requirements: 11.1, 12.1, 12.2, 12.3, 14.2_
-  - [ ] 8.1 Retake `docs/cemetery.png` and `docs/replay-axios.png`
+  - [x] 8.1 Retake `docs/cemetery.png` and `docs/replay-axios.png`
     - Run the e2e smoke test. Open both images and record what they show. The final Visual critic round is READY at 1440 by 900 and 390 by 844.
     - _Requirements: 12.1, 14.2_
-  - [ ] 8.2 Write `CREDITS.md` and the README line
+    - Notes: the e2e smoke test rewrote both images at 1440 by 900 with Reduced motion on. docs/cemetery.png shows the header in one row, the cemetery in three Tiers (two Alive at the back, four Haunted and Restless in the middle, six Possessed and Dead in front), the moon, church, fence and bats, and the footer bar, with no hover ring. docs/replay-axios.png shows the replay card, the Possessed axios 1.14.1 grave (in the back Tier, since its scan-date State is Alive) and the footer at Stop 1. Critic round 5: two blocking points (small back-row names, no drawer scrim), both fixed. Final round: READY at 1440 and 390 (round-8-3).
+  - [x] 8.2 Write `CREDITS.md` and the README line
     - Each model pack with its link and CC0, and each font with its link and OFL 1.1. The README line under the screenshot is set by requirement 12.2 for the source that was used.
     - _Requirements: 11.1, 12.2_
-  - [ ] 8.3 Update `.kiro/steering/web.md`
+    - Notes: CREDITS.md at the root lists the four font families with their links and OFL 1.1, and says the characters and ghost are original vector art. The README line follows requirement 12.2 for the Vector fallback: "Characters are original vector art. The ghost is original art."
+  - [x] 8.3 Update `.kiro/steering/web.md`
     - The new Forms, the Tiers, the palette, the fonts, the motion rules, the Epitaphs and Serious mode, the header and Footer bar, and the canvas top rule. Keep every other rule and the front matter.
     - _Requirements: 12.3_
-  - [ ] 8.4 Independent code review of task 8
+    - Notes: web.md rewrites the grave forms (R-UI-1 0.5), the Tier rule, the tooltip rule, the replay buttons and Play in the footer, and the header and footer rule. It adds the palette, fonts, motion, backdrop, Epitaph and Serious mode rules. The front matter and every other rule are unchanged.
+  - [x] 8.4 Independent code review of task 8
     - _Requirements: 15.5_
+    - Review notes: READY, no defect. Acted on: the Dancer rule now says "at least one"; a stale tooltip comment in styles.css was reworded; the name font family has one source in draw.ts. Note kept: the .repo-text no-wrap rule was part of the critic fixes and is listed in design.md decision 13.
 
 - [ ] 9. Gates and the fresh-clone run
   - Runs every gate on the final tree.

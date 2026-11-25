@@ -4,6 +4,8 @@ Sexton finds the dependencies that will hurt you, proves it, and opens the pull 
 
 ![The Sexton cemetery for the demo scan. Each grave is one dependency. Its shape and colour show its state.](docs/cemetery.png)
 
+Characters are original vector art. The ghost is original art.
+
 Status: pre-release. Release 0.1 is due on 4 Dec 2026. Each feature below says whether it is on `main` today, in progress, or planned.
 
 ## The problem

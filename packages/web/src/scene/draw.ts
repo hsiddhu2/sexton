@@ -63,6 +63,10 @@ const GRAIN_DOTS = 900;
 const GRAIN_SEED = 0x5e7701c3;
 const LANTERN_RADIUS = 0.6;
 const GHOST_DRAW_SCALE = 1.6;
+const MIN_NAME_PX = 12;
+const INSCRIPTION_UNITS_PX = 15;
+/** The family part of the inscription font, so the name has one source. */
+const NAME_FAMILY = GRAVE_GEOMETRY.inscription.font.replace(/^\d+px /, "");
 const GHOST_SHIFT_X = 10;
 const GHOST_SHIFT_Y = 36;
 const BAT_SCALE = 1.7;
@@ -450,7 +454,8 @@ function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan, deco:
 
   if (grave.inscription !== null) {
     ctx.fillStyle = colours.ink;
-    ctx.font = g.inscription.font;
+    // The name stays at least MIN_NAME_PX on screen whatever the Tier scale (critic round 5).
+    ctx.font = scale >= 1 ? g.inscription.font : `${String(Math.max(INSCRIPTION_UNITS_PX, Math.round(MIN_NAME_PX / scale)))}px ${NAME_FAMILY}`;
     ctx.textAlign = "center";
     ctx.fillText(grave.inscription, g.inscription.x, g.inscription.baseline, g.inscription.maxWidth);
   }

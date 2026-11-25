@@ -72,6 +72,12 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
 
   // Task 10.2: the README screenshot is the closed cemetery at 1440 by 900 with Reduced motion on.
   await page.setViewportSize({ width: 1440, height: 900 });
+  // Spec cemetery-undead, Deliberate test change 19 (no assertion changes): drop the focus and the hover that the
+  // download clicks left on the JSON link.
+  await page.evaluate(() => {
+    (document.activeElement as HTMLElement | null)?.blur();
+  });
+  await page.mouse.move(1, 899);
   await waitForFirstPaint(page);
   await page.screenshot({ path: SCREENSHOT });
   // Back to the configured viewport, and let the Ghost drift timer run during the timing, which is the worst case.
