@@ -170,3 +170,40 @@ test("under Reduced motion the axios replay shows the Burst's final pose and cap
   }, box ?? { x: 0, y: 0, width: 0, height: 0 });
   expect(skin).toBeGreaterThan(500);
 });
+
+for (const [width, height] of [
+  [1440, 900],
+  [390, 844],
+] as const) {
+  test(`speech Bubbles never cover a name label at ${String(width)} by ${String(height)}, and Serious mode hides them`, async ({ page, baseURL }) => {
+    await sameOriginOnly(page, baseURL);
+    await page.clock.install({ time: new Date("2026-11-24T12:00:00Z") });
+    await page.setViewportSize({ width, height });
+    await page.goto("/");
+    await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
+    await page.waitForFunction(() => (window as unknown as HookWindow).__sextonTiming !== undefined);
+    let seen = 0;
+    for (let slot = 0; slot < 6; slot += 1) {
+      await page.clock.runFor(slot === 0 ? 1_000 : 6_000);
+      const overlaps = await page.evaluate(() => {
+        const hook = (window as unknown as HookWindow).__sextonTiming;
+        const canvas = document.querySelector("canvas");
+        if (hook === undefined || canvas === null) return { bubbles: -1, overlaps: -1 };
+        const c = canvas.getBoundingClientRect();
+        const labels = hook.labels().map((r) => ({ x: r.x + c.left, y: r.y + c.top, w: r.w, h: r.h }));
+        const bubbles = Array.from(document.querySelectorAll(".bubble")).map((b) => b.getBoundingClientRect());
+        let hits = 0;
+        for (const b of bubbles) for (const l of labels) if (b.left < l.x + l.w && l.x < b.right && b.top < l.y + l.h && l.y < b.bottom) hits += 1;
+        return { bubbles: bubbles.length, overlaps: hits };
+      });
+      expect(overlaps.overlaps).toBe(0);
+      expect(overlaps.bubbles).toBeLessThanOrEqual(2);
+      seen += overlaps.bubbles;
+    }
+    expect(seen).toBeGreaterThan(0);
+    await page.getByRole("button", { name: "Serious mode" }).click();
+    await page.clock.runFor(6_000);
+    await expect(page.locator(".bubble")).toHaveCount(0);
+    expect(await page.locator(".bubble-layer").count()).toBe(0);
+  });
+}

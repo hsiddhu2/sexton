@@ -15,6 +15,10 @@ The files are the Latin subsets that Google Fonts serves, unchanged. Pirata One'
 
 ## Characters and art
 
-The characters (the zombie, the skeleton, the hand), the costumes, the ghost, the church, the tree and the bats are original vector art, drawn in code in `packages/web/src/scene`. No third-party model, image or sprite is used.
+The characters (the zombie, the skeleton, the hand, the priest), the costumes, the ghost, the church, the tree and the bats are original vector art, drawn in code in `packages/web/src/scene`. No third-party model, image or sprite is used.
+
+## Sound
+
+Every sound is generated in code with the Web Audio API, from oscillators and from noise made from a fixed seed, in `packages/web/src/sound`. No audio file and no third-party sound is used. Sound is off by default.
 
 The SIL Open Font License, Version 1.1: https://openfontlicense.org/

@@ -138,12 +138,12 @@ Run-time notes:
   - [x] 7.4 Independent code review of task 7
     - _Requirements: 16.5_
 
-- [ ] 8. Speech bubbles (B2)
+- [x] 8. Speech bubbles (B2)
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 1.3_
-  - [ ] 8.1 Add `speech/bubble-table.ts`, `speech/bubble-schedule.ts`, `speech/bubble-place.ts` and `speech/Bubbles.tsx`
+  - [x] 8.1 Add `speech/bubble-table.ts`, `speech/bubble-schedule.ts`, `speech/bubble-place.ts` and `speech/Bubbles.tsx`
     - The approved table, the slot schedule, the placement, the aria-hidden layer, Serious mode, the drawer rule, the Reduced motion rule, the timer that stops when hidden.
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 1.3_
-  - [ ] 8.2 Write `packages/web/test/bubbles.test.ts`
+  - [x] 8.2 Write `packages/web/test/bubbles.test.tsx`
     - **Property 4: Bubble lines come only from the table**
     - **Validates: Requirements 7.1, 7.2**
     - **Property 5: At most two Bubbles, chosen by the clock alone**
@@ -151,20 +151,20 @@ Run-time notes:
     - **Property 6: A placed Bubble is inside the Scene and clear of every name**
     - **Validates: Requirement 7.4**
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8_
-  - [ ] 8.3 e2e: Bubbles clear every name, and Serious mode hides them
+  - [x] 8.3 e2e: Bubbles clear every name, and Serious mode hides them
     - At 1440 by 900 and 390 by 844, over several slots of the page clock, each shown Bubble's box intersects no label rectangle. Serious mode on: no Bubble.
     - _Requirements: 1.3, 7.4, 7.5_
-  - [ ] 8.4 Screenshot loop
+  - [x] 8.4 Screenshot loop
     - _Requirements: 15.1, 15.2, 15.3_
-  - [ ] 8.5 Independent code review of task 8
+  - [x] 8.5 Independent code review of task 8
     - _Requirements: 16.5_
 
 - [ ] 9. README, credits, steering, screenshots, gates and the fresh-clone run
   - _Requirements: 12.1, 12.2, 12.3, 12.4, 14.1, 14.2, 14.3, 14.4, 16.1, 16.2, 16.3, 16.4, 16.5_
-  - [ ] 9.1 README line, CREDITS.md and web.md
+  - [x] 9.1 README line, CREDITS.md and web.md
     - One README line: "Sound is off by default." CREDITS.md: every sound is generated in code. web.md per requirement 14.3.
     - _Requirements: 14.2, 14.3, 14.4_
-  - [ ] 9.2 Retake the README screenshots
+  - [x] 9.2 Retake the README screenshots
     - docs/cemetery.png with two Bubbles; docs/replay-axios.png at the Burst's final pose with the caption (Deliberate test change 7).
     - _Requirements: 14.1_
   - [ ] 9.3 Gates
@@ -212,6 +212,9 @@ Run-time notes:
 - Repaint medians at 300 graves after tasks 6 and 7: 2.85 to 3.00 ms idle, 2.40 to 2.80 ms after a scrubber move, 3.30 ms during a Burst (budget 16 ms).
 - Note for the owner, not in this spec: a 300-grave scan whose graves are all in the front row (all Possessed or Dead) repaints in 180 to 330 ms in headless Chromium, most of it the Possessed glow pass and the full-height fills that Phase 1 added. The smoke test's 300 graves are in the middle row and repaint in about 3 ms.
 - Review notes, tasks 6 and 7 (one review for both): READY, no defects. Acted on: the Burst's end timer has its own effect keyed on its start, so a second effect run cannot cancel it; an import order in draw.ts; the timing hook fails rather than timing a frame with no Burst. Left as notes: the Load moment flag is claimed in a state initialiser; a Vigil queued before Reduced motion is turned off still plays as a Vigil; the Load moment test does not mount a second scan.
+- Critic round 8 (task 8.4, build round-9, the final pass over every capture): 390 READY; 1440 NOT READY on the two README pictures. A Bubble sat under the replay's tooltip: the hovered or focused grave now gets no Bubble, and no Bubble sits where its tooltip opens. The Halo is absent from both README pictures because each hovers a grave to show its tooltip, so by the one-glow rule that grave shows the Lantern glow alone: reported to the owner, not changed.
+- Critic round 9 (round-10, the README pictures): READY at 1440. Minor, left for the owner: the Bubbles stand a little away from their speakers (they take the first place clear of every name, right of the speaker's Art box).
+- Review notes, task 8 (with the README, CREDITS.md, web.md and Deliberate test change 7): NOT READY with 1 defect, fixed. Shown again after Serious mode or the drawer, the layer used the clock from before the pause and could show a stale slot's pair. A layout effect now reads the clock afresh before the paint, with a test. Left as notes: the fade itself is not exercised in jsdom; a fade can replay if Reduced motion is turned off during a show; the smoke test's 30 s wait equals the default test timeout (a show window comes within 6 s).
 - Test sub-tasks are not optional in this plan.
 - Top-level tasks run in order. Each finishes, including its review, before the next starts.
 - Task 5 lands before tasks 6 and 7, so their sounds have an engine to call.

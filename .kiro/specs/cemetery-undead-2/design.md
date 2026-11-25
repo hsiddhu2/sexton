@@ -394,19 +394,19 @@ These criteria turned out testable as properties: 1.1, 1.2, 3.2, 3.3, 3.4, 7.1, 
 
 *For any* State and any reason string, including generated instances of the ten fixed reason templates: `bubbleLine` is null or the table cell of that State and Reason family, null exactly when the family is null, and null for a template under the wrong State. Its signature takes no package name. Every line is at most 46 characters and contains none of the forbidden words of the epitaph test.
 
-**Validates: Requirements 7.1, 7.2.** Test: `test/bubbles.test.ts`.
+**Validates: Requirements 7.1, 7.2.** Test: `test/bubbles.test.tsx`.
 
 ### Property 5: At most two Bubbles, chosen by the clock alone
 
 *For any* list of distinct eligible indices and any `nowMs` from 0 to 10^13: `bubblesAt` returns at most two indices, all from the list and distinct; it returns none in the last 1,500 ms of a slot; it returns the same result for every `nowMs` in the same show window; it returns two when the list has two or more and the instant is in the show window.
 
-**Validates: Requirement 7.3.** Test: `test/bubbles.test.ts`.
+**Validates: Requirement 7.3.** Test: `test/bubbles.test.tsx`.
 
 ### Property 6: A placed Bubble is inside the Scene and clear of every name
 
 *For all* plans of up to 60 packages at any width and any grave index: `placeBubble` gives null or a rectangle of BUBBLE_W by BUBBLE_H inside the Scene that intersects no `labelRect` and nothing in `taken`.
 
-**Validates: Requirement 7.4.** Test: `test/bubbles.test.ts`.
+**Validates: Requirement 7.4.** Test: `test/bubbles.test.tsx`.
 
 ### Property 7: No sound before it is asked for, and never past the cap
 
@@ -433,7 +433,7 @@ All tests are network-free. Web Audio is never touched by a Vitest test: the eng
 |---|---|
 | `test/art-box.test.ts` (new) | Properties 1 and 2. The demo's 12 graves at 1440 and 390 by example: no ghost over lodash, express or moment. |
 | `test/halo.test.ts` (new) | Property 3. HALO_ALPHA_BYTE is used only for the Halo. |
-| `test/bubbles.test.ts` (new) | Properties 4, 5 and 6. Every table row by example. The layer is aria-hidden with pointer-events none, shows nothing in Serious mode, nothing while the drawer is open, and has no transition under Reduced motion. Fake timers step the slots. |
+| `test/bubbles.test.tsx` (new) | Properties 4, 5 and 6. Every table row by example. The layer is aria-hidden with pointer-events none, shows nothing in Serious mode, nothing while the drawer is open, and has no transition under Reduced motion. Fake timers step the slots. |
 | `test/sound.test.tsx` (new) | Property 7. The toggle has aria-pressed, reads "Sound off" or "Sound on", persists under `sexton:sound`, and creates nothing at mount even with "on" stored, until a key or pointer press. Each Voice spec by example. Suspend on hide, resume on show. |
 | `test/burst-rise.test.tsx` (new) | Property 8. The Burst Stop of axios is 31 Mar 2026, 00:21 UTC and of keyv its Possessed Stop, found from the fixtures. Leaving and returning starts a new Burst. Reduced motion gives no start. The caption shows at the Burst Stop only. The Load moment plays once per page load and never under Reduced motion. |
 | `test/priest.test.tsx` (new) | The Priest is drawn only during a burial or a Vigil, walks then reads, and the bell is asked for once. The Vigil lasts BURIAL_MS and waits for the drawer to close. |
@@ -512,6 +512,11 @@ As cemetery-undead "Visual critic protocol", with these captures: `/` and `/?rep
 8. **The e2e timing hook gains `labels()` and `paintVariant({ ghosts })`** for the label pixel check of task 2.4.
 9. **The noise reuses `mulberry32` from scene/scenery-seed.ts** with the same seed, rather than a second copy.
 10. **The sound test is `test/sound.test.tsx`**, not `.ts`: it also renders the page to check the toggle and run axe with Sound on (requirement 12.3).
+11. **The Sound toggle's glyph changes with its state** (a speaker with waves when on, crossed out when off). Its name is the text "Sound off" or "Sound on".
+19. **Bubble fades use the Web Animations API** from the component: the style sheet may hold no transition, and no animation but the loading spinner's (an existing style test). Under Reduced motion there is no fade.
+20. **The "above" Bubble place moves sideways to stay inside the Scene.** At 390 px the centred place ran off the edge, so no Bubble ever showed.
+21. **The hovered or focused grave gets no Bubble**, and no Bubble sits in the band where its tooltip opens (critic round 8: a Bubble sat under the replay's tooltip).
+22. **The test files of tasks 6 to 8 are `.tsx`**: they render the page or the layer.
 12. **The page clock is `Date.now()`.** The Burst and the Load moment take their starts from it, because `drawScene` already draws at `Date.now()`; design B3 said `performance.now()`.
 13. **The Burst leaves the plan after BURST_MS**, so the Halo returns over the still open grave; the caption stays while the Burst Stop is shown.
 14. **The Load moment flag lives in `scene/load-moment.ts`** (`claimLoadMoment`, `setLoadMomentPlayedForTests`), not in Cemetery.tsx. `test/setup.ts` marks it played before every test, so the existing tests see the scene at rest as before; the new tests clear it.
@@ -519,7 +524,6 @@ As cemetery-undead "Visual critic protocol", with these captures: `/` and `/?rep
 16. **The Halo layer covers only the box around its sources**: on a tall scene a full-height layer cost about 50 ms a frame.
 17. **Burst particles**: 8 dirt clods and 10 triangular shards in the Possessed colour and bone, from the pit rim, bounded to x −15 to 79 shape units (critic round 4).
 18. **The Priest** is a 24 by 76 figure drawn 1.45 times: a stepped violet-grey cassock (`grassLight`) outlined in `border`, buttons, a white collar notch on a dark neck band, a face in the `marker` cream with eyes, a skullcap, and a book with a white cross. He walks from x 191 to 183 and reads at 183 (critic rounds 5 to 7). The bell rule is the pure `bellKey`.
-11. **The Sound toggle's glyph changes with its state** (a speaker with waves when on, crossed out when off). Its name is the text "Sound off" or "Sound on".
 
 ## Notes and open items
 

@@ -85,6 +85,9 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
   const tip = page.getByRole("tooltip");
   await expect(tip).toContainText("Here lies left-padder");
   await expect(tip.locator(".epitaph-punchline")).toBeVisible();
+  // Spec cemetery-undead-2, Deliberate test change 7 (an addition): the picture shows two speech Bubbles, so wait for
+  // a show window in which both are placed (a slot is 6 s).
+  await expect(page.locator(".bubble")).toHaveCount(2, { timeout: 30_000 });
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   await page.screenshot({ path: SCREENSHOT });
   await page.mouse.move(1, 899);
@@ -182,6 +185,20 @@ test("the axios replay at its Possessed stop, for the README", async ({ page, ba
   // K2d fix 1, item 8: the picture is taken at the 00:21 UTC Stop with the axios epitaph tooltip open.
   await grave.hover();
   await expect(page.getByRole("tooltip").locator(".epitaph-punchline")).toBeVisible();
+  // Spec cemetery-undead-2, Deliberate test change 7 (an addition): the Burst's caption shows, and under Reduced
+  // motion its final pose, the still open grave with the zombie standing, is drawn at once.
+  await expect(page.locator(".burst-caption")).toHaveText("The wind stops. A grave opens.");
+  const graveBox = await grave.boundingBox();
+  const skin = await page.evaluate((b) => {
+    const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+    const r = canvas.getBoundingClientRect();
+    const k = canvas.width / r.width;
+    const data = (canvas.getContext("2d") as CanvasRenderingContext2D).getImageData(Math.round((b.x - r.left) * k), Math.round((b.y - r.top) * k), Math.round(b.width * k), Math.round(b.height * k)).data;
+    let hits = 0;
+    for (let i = 0; i < data.length; i += 4) if (Math.abs((data[i] ?? 0) - 0x7f) <= 6 && Math.abs((data[i + 1] ?? 0) - 0xae) <= 6 && Math.abs((data[i + 2] ?? 0) - 0x4e) <= 6) hits += 1;
+    return hits;
+  }, graveBox ?? { x: 0, y: 0, width: 0, height: 0 });
+  expect(skin).toBeGreaterThan(500);
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   await page.screenshot({ path: REPLAY_SCREENSHOT });
 });

@@ -23,6 +23,7 @@ import { loadMomentMs } from "./scene/rise.js";
 import { claimLoadMoment } from "./scene/load-moment.js";
 import { bellKey } from "./scene/characters/priest.js";
 import { artRect } from "./scene/art-box.js";
+import { Bubbles, bubbleLines } from "./speech/Bubbles.js";
 import type { VoiceId } from "./sound/voices.js";
 
 export interface CemeteryProps {
@@ -177,6 +178,8 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
     lastGhostCall.current = now;
     play("ghost");
   }, [lantern, lanternHasGhost, play]);
+  // Speech Bubbles speak from the Form shown at the chosen date; hidden in Serious mode and while the drawer is open.
+  const lines = useMemo(() => bubbleLines(order, views), [order, views]);
   const request = burial.request;
   const onRemediateWithBurial = useMemo(
     () =>
@@ -244,6 +247,7 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
             ) : (
               <>
                 <Scene plan={plan} />
+                <Bubbles plan={plan} lines={lines} hidden={serious || drawerOpen} reducedMotion={reducedMotion} />
                 {atBurst && plan.graves[0] !== undefined ? (
                   // Plain text over the scene, not a live region: the Play line already announces the Stop (9.2).
                   <p className="burst-caption" style={{ left: artRect(plan.graves[0]).x + artRect(plan.graves[0]).w / 2, top: plan.graves[0].rect.y }}>
