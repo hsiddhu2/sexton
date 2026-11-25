@@ -174,7 +174,7 @@ export class BoundsContext implements PaintContext2D {
   lineWidth = 1;
   font = "10px sans-serif";
   textAlign: CanvasTextAlign = "start";
-  readonly marks: { readonly kind: string; readonly style: string; readonly box: Box }[] = [];
+  readonly marks: { readonly kind: string; readonly style: string; readonly box: Box; readonly poly: readonly (readonly [number, number])[]; readonly grow: number }[] = [];
   private frame: Frame = { m: IDENTITY, clip: null };
   private readonly stack: Frame[] = [];
   private path: [number, number][] = [];
@@ -197,7 +197,7 @@ export class BoundsContext implements PaintContext2D {
       if (box.minX >= box.maxX || box.minY >= box.maxY) return;
     }
     const style = kind.startsWith("stroke") ? String(this.strokeStyle) : String(this.fillStyle);
-    this.marks.push({ kind, style, box });
+    this.marks.push({ kind, style, box, poly: points, grow });
   }
 
   private toScene(points: readonly [number, number][]): [number, number][] {

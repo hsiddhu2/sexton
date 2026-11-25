@@ -151,6 +151,16 @@ describe("the Burst Stop (requirement 9.4)", () => {
     expect(document.querySelector(".burst-caption")?.textContent).toBe(BURST_CAPTION);
   });
 
+  it("shows no Bubble while the Burst caption shows (spec cemetery-undead-fixes, decision 5)", async () => {
+    mount("?replay=axios");
+    await waitFor(() => {
+      expect(screen.queryByRole("status")).toBeNull();
+    });
+    fireEvent.change(slider(), { target: { value: String(Number(slider().min) + 1) } });
+    expect(document.querySelector(".burst-caption")?.textContent).toBe(BURST_CAPTION);
+    expect(document.querySelector(".bubble")).toBeNull();
+  });
+
   it("shows the caption with the final pose at once under Reduced motion", async () => {
     setMedia("(prefers-reduced-motion: reduce)", true);
     try {

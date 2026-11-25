@@ -1,7 +1,7 @@
 // Where a Bubble goes (spec cemetery-undead-2, requirement 7.4, and the owner's fix of 25 Nov): next to its speaking
 // grave, with a tail that ends on the speaker inside its cell, in the speaker's column where it fits, inside the Scene,
 // clear of every name label and of the other Bubble. Pure.
-import { FORM_BOX, formRects, GHOST_BOX, intersects, labelRect } from "../scene/art-box.js";
+import { FORM_BOX, formParts, GHOST_BOX, intersects, labelRect } from "../scene/art-box.js";
 import { CELL_WIDTH, MAX_BACKING, type GravePlan, type Rect, type ScenePlan } from "../scene/layout.js";
 
 /** The widest Bubble, and the narrowest. A Bubble is as wide as its speaker's column, between the two. */
@@ -73,19 +73,22 @@ export function bubbleCandidates(grave: GravePlan, line: string, sceneWidth: num
 }
 
 /**
- * The first candidate inside the Scene and clear of every name label and of what is taken, else null. A place that
- * also keeps off every other grave's art (its stone, Character, Ghost and pennant) wins over one that does not, so a
- * Bubble is not read as another grave's (visual critic round 10).
+ * The first candidate inside the Scene and clear of every name label, of what is taken, and of every other grave's
+ * drawn parts (its stone, Character, Ghost and pennant), the Bubble and its tail both. With no such place, null: the
+ * grave says nothing in that slot, so no Bubble is read as another grave's (spec cemetery-undead-fixes, bug 4).
  */
 export function placeBubble(plan: ScenePlan, index: number, line: string, taken: readonly Rect[]): BubbleGeometry | null {
   const grave = plan.graves[index];
   if (grave === undefined) return null;
   const width = Math.min(plan.width, MAX_BACKING);
-  const candidates = bubbleCandidates(grave, line, plan.width).filter(({ rect, tailRect }) => {
-    if (rect.x < 0 || rect.y < 0 || rect.x + rect.w > width || rect.y + rect.h > plan.groundHeight) return false;
-    if (plan.graves.some((g) => intersects(rect, labelRect(g)) || intersects(tailRect, labelRect(g)))) return false;
-    return !taken.some((t) => intersects(rect, t) || intersects(tailRect, t));
-  });
-  const others = plan.graves.filter((g) => g.index !== index).flatMap((g) => formRects(g));
-  return candidates.find(({ rect }) => !others.some((r) => intersects(rect, r))) ?? candidates[0] ?? null;
+  // Every name label, the speaker's own included, and every other grave's drawn parts.
+  const blocked = [...plan.graves.map((g) => labelRect(g)), ...plan.graves.filter((g) => g.index !== index).flatMap((g) => formParts(g))];
+  for (const c of bubbleCandidates(grave, line, plan.width)) {
+    const { rect, tailRect } = c;
+    if (rect.x < 0 || rect.y < 0 || rect.x + rect.w > width || rect.y + rect.h > plan.groundHeight) continue;
+    if (blocked.some((r) => intersects(rect, r) || intersects(tailRect, r))) continue;
+    if (taken.some((t) => intersects(rect, t) || intersects(tailRect, t))) continue;
+    return c;
+  }
+  return null;
 }

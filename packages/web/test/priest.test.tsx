@@ -3,7 +3,10 @@ import { act, renderHook } from "@testing-library/react";
 import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
 import { ART_BOX } from "../src/scene/art-box.js";
-import { bellKey, drawPriest, PRIEST_AT_X, PRIEST_FROM_X, PRIEST_H, PRIEST_W, priestPose, WALK_END } from "../src/scene/characters/priest.js";
+import { bellKey, drawPriest, PRIEST_AT_X, PRIEST_BOX, PRIEST_FROM_X, PRIEST_H, PRIEST_W, priestPose, WALK_END } from "../src/scene/characters/priest.js";
+import { buryingRegions } from "../src/scene/halo.js";
+import { drawGrave } from "../src/scene/draw.js";
+import { CELL_HEIGHT, CELL_WIDTH, type GravePlan } from "../src/scene/layout.js";
 import { GRAVE_GEOMETRY } from "../src/scene/layout.js";
 import { PALETTE } from "../src/scene/palette.js";
 import { SHAPES } from "../src/scene/shapes.js";
@@ -83,6 +86,44 @@ describe("the Priest's size (the owner's fix of 25 Nov)", () => {
     }
     // At 1440 by 900 every Tier is drawn at its own scale; the back row is the smallest.
     for (const scale of Object.values(TIER_SCALE)) expect(PRIEST_H * scale).toBeGreaterThanOrEqual(48);
+  });
+});
+
+describe("the burial's regions (spec cemetery-undead-fixes, bug 1)", () => {
+  it("keeps every mark of the Priest inside PRIEST_BOX at every phase and the Vigil", () => {
+    for (const phase of [null, 0, 0.1, 0.2, 0.3, 0.4, 0.6, 0.8, 1]) {
+      const ctx = new BoundsContext();
+      drawPriest(ctx, PALETTE.dark, phase);
+      for (const m of ctx.marks) {
+        expect(m.box.minX, String(phase)).toBeGreaterThanOrEqual(PRIEST_BOX.x - 1e-6);
+        expect(m.box.maxX).toBeLessThanOrEqual(PRIEST_BOX.x + PRIEST_BOX.w + 1e-6);
+        expect(m.box.minY).toBeGreaterThanOrEqual(PRIEST_BOX.y - 1e-6);
+        expect(m.box.maxY).toBeLessThanOrEqual(PRIEST_BOX.y + PRIEST_BOX.h + 1e-6);
+      }
+    }
+  });
+
+  it("keeps every point of every mark of a burial or a Vigil, the shadow aside, inside the burial regions", () => {
+    for (const shape of ["rounded", "tilted", "cross", "cracked", "open"] as const) {
+      for (const phase of [null, 0, 0.2, 0.35, 0.5, 0.65, 0.8, 1]) {
+        const pkg = scenePackage("b", "Dead", "none");
+        const base = planScene({ packages: [pkg], width: 1440, theme: "dark", selectedIndex: null, ghostPhase: 0 });
+        const grave = { ...(base.graves[0] as GravePlan), rect: { x: 0, y: 0, w: CELL_WIDTH, h: CELL_HEIGHT }, shape, marker: true, burial: phase, ghost: null, inscription: null };
+        const plan = { ...base, graves: [grave], priest: { index: 0, phase } };
+        const ctx = new BoundsContext();
+        drawGrave(ctx, grave, plan, { shadow: "#05030a80", stone: "#140f2240" }, 0);
+        const regions = buryingRegions(grave);
+        const inAny = (x: number, y: number): boolean => regions.some((r) => x >= r.x - 0.5 && x <= r.x + r.w + 0.5 && y >= r.y - 0.5 && y <= r.y + r.h + 0.5);
+        for (const m of ctx.marks) {
+          if (m.style === "#05030a80") continue;
+          for (const [px, py] of m.poly) {
+            // A sinking stone is clipped at the plinth top: points below it are not drawn.
+            if (py > 168 && m.kind !== "fillText" && m.box.maxY <= 168) continue;
+            expect(inAny(px, Math.min(py, m.box.maxY)), `${shape} ${String(phase)} ${String(px)},${String(py)}`).toBe(true);
+          }
+        }
+      }
+    }
   });
 });
 

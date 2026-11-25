@@ -30,6 +30,10 @@ export function bubbleLines(packages: readonly PackageHealth[], views: readonly 
 
 /** The tooltip's width and gap: a Bubble keeps clear of the band beside the hovered or focused grave where it opens. */
 const TOOLTIP_BAND = 248;
+/** The tallest tooltip: the area above the hovered cell where it may open is kept clear too. */
+const TOOLTIP_MAX_H = 260;
+/** The tooltip's CSS max-height (styles.css .grave-tooltip). */
+const TOOLTIP_CSS_MAX_H = 216;
 
 /**
  * Pure. The Bubbles to show at an instant: at most two, placed clear of every name label and of each other. The
@@ -37,7 +41,15 @@ const TOOLTIP_BAND = 248;
  */
 export function bubblesFor(plan: ScenePlan, lines: readonly (string | null)[], nowMs: number): readonly PlacedBubble[] {
   const lantern = plan.lantern === null ? undefined : plan.graves[plan.lantern];
-  const reserved: Rect[] = lantern === undefined ? [] : [{ x: lantern.rect.x - TOOLTIP_BAND, y: lantern.rect.y, w: lantern.rect.w + 2 * TOOLTIP_BAND, h: lantern.rect.h }];
+  // Every place the tooltip may open: beside the cell, above it and over it (spec cemetery-undead-fixes, bug 4).
+  const reserved: Rect[] =
+    lantern === undefined
+      ? []
+      : [
+          // Beside and over the cell, as tall as the tallest tooltip, which can hang into the row below (review).
+          { x: lantern.rect.x - TOOLTIP_BAND, y: lantern.rect.y, w: lantern.rect.w + 2 * TOOLTIP_BAND, h: Math.max(lantern.rect.h, 4 + TOOLTIP_CSS_MAX_H) },
+          { x: lantern.rect.x + lantern.rect.w / 2 - TOOLTIP_BAND, y: lantern.rect.y - TOOLTIP_MAX_H - 8, w: 2 * TOOLTIP_BAND, h: TOOLTIP_MAX_H + 8 },
+        ];
   const eligible: number[] = [];
   lines.forEach((line, i) => {
     if (line !== null && i !== plan.lantern && placeBubble(plan, i, line, reserved) !== null) eligible.push(i);

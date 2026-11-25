@@ -4,9 +4,9 @@ import { act, cleanup, render } from "@testing-library/react";
 import fc from "fast-check";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { STATES } from "../src/load/lists.js";
-import { formRects, intersects, labelRect } from "../src/scene/art-box.js";
+import { formParts, intersects, labelRect } from "../src/scene/art-box.js";
 import { planScene } from "../src/scene/layout.js";
-import { BUBBLE_MAX_W, BUBBLE_MIN_W, bubbleCandidates, bubbleHeight, placeBubble } from "../src/speech/bubble-place.js";
+import { BUBBLE_MAX_W, BUBBLE_MIN_W, bubbleHeight, placeBubble } from "../src/speech/bubble-place.js";
 import { BUBBLE_SHOW_MS, BUBBLE_SLOT_MS, bubblesAt } from "../src/speech/bubble-schedule.js";
 import { BUBBLE_LINES, bubbleLine, MAX_BUBBLE_CHARS } from "../src/speech/bubble-table.js";
 import { Bubbles, bubbleLines, bubblesFor } from "../src/speech/Bubbles.js";
@@ -121,8 +121,10 @@ describe("Feature: cemetery-undead-2, Property 6: A placed Bubble is inside the 
   });
 });
 
-describe("a Bubble keeps off other graves' art where it can", () => {
-  it("never takes a place over another grave's art when a place clear of it exists", () => {
+describe("a Bubble keeps off other graves' art", () => {
+  // Spec cemetery-undead-fixes, Deliberate test change 2. Old: a Bubble may cover other art when every allowed place
+  // does. New: placeBubble gives a place clear of every other grave's drawn parts, or null.
+  it("never gives a place over another grave's art", () => {
     fc.assert(
       fc.property(
         fc.array(fc.tuple(fc.constantFrom(...STATES), arbAdvisoryMode), { minLength: 1, maxLength: 40 }),
@@ -132,19 +134,53 @@ describe("a Bubble keeps off other graves' art where it can", () => {
           const packages = rows.map(([s, m], i) => scenePackage(`p${String(i)}`, s, m));
           const plan = planScene({ packages, width, theme: "dark", selectedIndex: null, ghostPhase: 0, fitHeight: 900 });
           const index = pick % packages.length;
-          const line = "Two years without a release. Getting restless.";
-          const placed = placeBubble(plan, index, line, []);
+          const placed = placeBubble(plan, index, "Two years without a release. Getting restless.", []);
           if (placed === null) return;
-          const others = plan.graves.filter((g) => g.index !== index).flatMap((g) => formRects(g));
-          const covers = others.some((r) => intersects(placed.rect, r));
-          if (!covers) return;
-          // It covers other art only when every allowed place does.
-          const grave = plan.graves[index];
-          if (grave === undefined) return;
-          for (const c of bubbleCandidates(grave, line, plan.width)) {
-            const inScene = c.rect.x >= 0 && c.rect.y >= 0 && c.rect.x + c.rect.w <= plan.width && c.rect.y + c.rect.h <= plan.groundHeight;
-            const clearOfNames = plan.graves.every((g) => !intersects(c.rect, labelRect(g)) && !intersects(c.tailRect, labelRect(g)));
-            if (inScene && clearOfNames) expect(others.some((r) => intersects(c.rect, r))).toBe(true);
+          for (const g of plan.graves) {
+            if (g.index === index) continue;
+            for (const r of formParts(g)) {
+              expect(intersects(placed.rect, r)).toBe(false);
+              expect(intersects(placed.tailRect, r)).toBe(false);
+            }
+          }
+        },
+      ),
+      { numRuns: NUM_RUNS },
+    );
+  });
+});
+
+describe("Feature: cemetery-undead-fixes, Property 4: A shown Bubble keeps off every other grave's art and the tooltip's places", () => {
+  it("shows no Bubble, tail included, over another grave's art", () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.tuple(fc.constantFrom(...STATES), arbAdvisoryMode), { minLength: 1, maxLength: 60 }),
+        fc.constantFrom(390, 768, 1280, 1440, 1920),
+        fc.integer({ min: 0, max: 1e12 }),
+        (rows, width, nowMs) => {
+          const packages = rows.map(([s, m], i) => scenePackage(`p${String(i)}`, s, m));
+          const lantern = nowMs % (packages.length + 1);
+          const plan = planScene({ packages, width, theme: "dark", selectedIndex: null, ghostPhase: 0, fitHeight: 900, lantern: lantern < packages.length ? lantern : null });
+          const lines = packages.map((_, i) => Object.values(BUBBLE_LINES)[i % 10] ?? null);
+          const hovered = plan.lantern === null ? undefined : plan.graves[plan.lantern];
+          // Every place the hovered grave's tooltip may open: beside, above and over its cell.
+          const tipAreas = hovered === undefined ? [] : [
+            // As tall as the tallest tooltip (CSS max-height 216, top at cell.y + 4).
+            { x: hovered.rect.x - 248, y: hovered.rect.y, w: hovered.rect.w + 496, h: Math.max(hovered.rect.h, 220) },
+            { x: hovered.rect.x + hovered.rect.w / 2 - 128, y: hovered.rect.y - 268, w: 256, h: 268 },
+          ];
+          for (const b of bubblesFor(plan, lines, nowMs)) {
+            for (const a of tipAreas) {
+              expect(intersects(b.rect, a)).toBe(false);
+              expect(intersects(b.tailRect, a)).toBe(false);
+            }
+            for (const g of plan.graves) {
+              if (g.index === b.index) continue;
+              for (const r of formParts(g)) {
+                expect(intersects(b.rect, r)).toBe(false);
+                expect(intersects(b.tailRect, r)).toBe(false);
+              }
+            }
           }
         },
       ),

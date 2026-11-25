@@ -106,6 +106,8 @@ test("the pull request table of lodash is visible in the drawer", async ({ page,
   await page.locator('button[data-grave-index][aria-label^="lodash"]').first().click();
   const table = page.getByRole("dialog").locator(".pr-preview table");
   await expect(table).toBeVisible();
-  await expect(table.locator("tbody tr")).toHaveCount(10);
+  // Spec new-signals counts twelve signals, one row each (its design.md "Deliberate test changes"); this e2e still said
+  // ten after main aff9623. Spec cemetery-undead-fixes, Deliberate test change 4.
+  await expect(table.locator("tbody tr")).toHaveCount(12);
   await expect(table.locator("thead")).toBeVisible();
 });

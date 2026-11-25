@@ -3,7 +3,7 @@ import type { PackageHealth } from "@sexton/api";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { validateScanResponse } from "../src/load/validate-scan-response.js";
-import { ART_BOX, artRect, FORM_BOX, GHOST_BOX, intersects, LABEL_BOX, labelRect, MARKER_BOX } from "../src/scene/art-box.js";
+import { ART_BOX, artRect, FORM_BOX, FORM_PARTS, GHOST_BOX, intersects, LABEL_BOX, labelRect, MARKER_BOX } from "../src/scene/art-box.js";
 import { drawGrave } from "../src/scene/draw.js";
 import { CELL_HEIGHT, CELL_WIDTH, GHOST_STEPS, GRAVE_GEOMETRY, ghostOffset, planScene, REPLAY_SCALE, type GravePlan, type Rect, type ScenePlan } from "../src/scene/layout.js";
 import { PALETTE } from "../src/scene/palette.js";
@@ -52,6 +52,18 @@ export function probeGrave(g: ProbeGrave, nowMs: number, plan: ScenePlan = BASE_
   const ctx = new BoundsContext();
   drawGrave(ctx, grave, { ...plan, dancers: new Set(["probe"]) }, DECO, nowMs);
   return ctx.marks.filter((m) => !noShadow || m.style !== DECO.shadow).map((m) => ({ minX: m.box.minX / s, minY: m.box.minY / s, maxX: m.box.maxX / s, maxY: m.box.maxY / s }));
+}
+
+/** Every mark of one grave at the origin, in cell units, with its outline, for the Part boxes (cemetery-undead-fixes). */
+export function probeMarks(g: ProbeGrave, nowMs: number): { box: Box; poly: [number, number][]; grow: number }[] {
+  const s = g.scale;
+  const rect: Rect = { x: 0, y: 0, w: CELL_WIDTH * s, h: CELL_HEIGHT * s };
+  const grave: GravePlan = { index: 0, name: "probe", state: "Alive", rect, shape: g.shape, fill: PALETTE.dark.states.Alive, ghost: null, inscription: null, pending: g.shape === "unmarked", marker: false, burial: null };
+  const ctx = new BoundsContext();
+  drawGrave(ctx, grave, { ...BASE_PLAN, dancers: new Set(["probe"]) }, DECO, nowMs);
+  return ctx.marks
+    .filter((m) => m.style !== DECO.shadow && m.kind !== "fillText")
+    .map((m) => ({ box: { minX: m.box.minX / s, minY: m.box.minY / s, maxX: m.box.maxX / s, maxY: m.box.maxY / s }, poly: m.poly.map(([x, y]) => [x / s, y / s] as [number, number]), grow: m.grow / s }));
 }
 
 export function inside(box: Box, r: Rect): boolean {
@@ -192,5 +204,48 @@ describe("cemetery-undead-2, requirement 4: the pit edge colour", () => {
     expect(strokes).toContain(PALETTE.dark.costume.flower);
     expect(strokes).not.toContain(PALETTE.dark.lantern);
     expect(strokes).not.toContain(PALETTE.dark.ring);
+  });
+});
+
+/** Ray-casting point-in-polygon. */
+function inPolygon(x: number, y: number, poly: readonly (readonly [number, number])[]): boolean {
+  let c = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const pi = poly[i];
+    const pj = poly[j];
+    if (pi === undefined || pj === undefined) continue;
+    if (pi[1] > y !== pj[1] > y && x < ((pj[0] - pi[0]) * (y - pi[1])) / (pj[1] - pi[1]) + pi[0]) c = !c;
+  }
+  return c;
+}
+
+describe("Feature: cemetery-undead-fixes, Property 2: Part boxes hold every mark of a Form", () => {
+  const inParts = (shape: ShapeId, x: number, y: number): boolean =>
+    FORM_PARTS[shape].some((p) => x >= p.x - EPS && x <= p.x + p.w + EPS && y >= p.y - EPS && y <= p.y + p.h + EPS);
+
+  it("keeps every outline point, grown by its stroke, and every inner point of every mark in a Part box", () => {
+    fc.assert(
+      fc.property(
+        fc.constantFrom(...SHAPES),
+        fc.constantFrom(...PROBE_SCALES),
+        fc.integer({ min: 0, max: 24_000 }),
+        (shape, scale, nowMs) => {
+          for (const m of probeMarks({ shape, scale, ghostPhase: null, marker: false, burial: null }, nowMs)) {
+            const g = m.grow;
+            for (const [px, py] of m.poly) for (const dx of [-g, 0, g]) for (const dy of [-g, 0, g]) expect(inParts(shape, px + dx, py + dy), `${shape} ${String(px)},${String(py)}`).toBe(true);
+            for (let x = Math.ceil(m.box.minX); x <= m.box.maxX; x += 2) {
+              for (let y = Math.ceil(m.box.minY); y <= m.box.maxY; y += 2) if (inPolygon(x, y, m.poly)) expect(inParts(shape, x, y), `${shape} ${String(x)},${String(y)}`).toBe(true);
+            }
+          }
+        },
+      ),
+      { numRuns: NUM_RUNS },
+    );
+  });
+
+  it("keeps every Part box inside ART_BOX, and covers less of the cell than the core Form box for the cross and the open grave", () => {
+    for (const shape of SHAPES) for (const p of FORM_PARTS[shape]) expect(inside({ minX: p.x, minY: p.y, maxX: p.x + p.w, maxY: p.y + p.h }, ART_BOX), shape).toBe(true);
+    const area = (rs: readonly Rect[]): number => rs.reduce((a, q) => a + q.w * q.h, 0);
+    for (const shape of ["cross", "open"] as const) expect(area(FORM_PARTS[shape])).toBeLessThan(0.8 * area([FORM_BOX[shape]]));
   });
 });

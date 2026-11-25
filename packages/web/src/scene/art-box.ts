@@ -29,6 +29,31 @@ export const FORM_BOX: Readonly<Record<ShapeId, Rect>> = {
   unmarked: { x: 28, y: 126, w: 136, h: 73 },
 };
 
+const r = (x: number, y: number, w: number, h: number): Rect => ({ x, y, w, h });
+
+/**
+ * The Part boxes of each Form (spec cemetery-undead-fixes, bug 1): the 8-unit grid blocks, merged into runs, that
+ * any mark of the Form touches at rest (its stone, pit, lid, Character at every Pose, Costume), without shadow, Ghost
+ * and pennant, at the Tier scales and the replay scale. They follow the drawing, so the Halo is cut only where the
+ * grave is. Measured by the outline probe of test/art-box.test.ts, which fails when a mark leaves them.
+ */
+export const FORM_PARTS: Readonly<Record<ShapeId, readonly Rect[]>> = {
+  rounded: [r(88, 0, 16, 16), r(72, 16, 64, 8), r(56, 24, 88, 8), r(48, 32, 104, 24), r(40, 56, 112, 16), r(48, 72, 104, 88), r(40, 160, 120, 16), r(40, 176, 112, 24)],
+  tilted: [r(80, 16, 48, 8), r(64, 24, 80, 8), r(56, 32, 96, 8), r(48, 40, 104, 8), r(48, 48, 112, 8), r(40, 56, 120, 16), r(48, 72, 112, 8), r(48, 80, 120, 8), r(40, 88, 136, 16), r(40, 104, 120, 32), r(40, 136, 112, 16), r(40, 152, 136, 8), r(32, 160, 152, 16), r(40, 176, 112, 24)],
+  cross: [r(88, 0, 8, 8), r(112, 0, 8, 8), r(80, 8, 40, 40), r(32, 48, 128, 8), r(40, 56, 120, 16), r(32, 72, 128, 8), r(80, 80, 40, 88), r(40, 168, 112, 32)],
+  cracked: [r(72, 16, 48, 8), r(64, 24, 72, 8), r(56, 32, 88, 8), r(48, 40, 104, 8), r(40, 48, 112, 24), r(40, 72, 120, 32), r(48, 104, 112, 16), r(40, 120, 120, 8), r(40, 128, 128, 8), r(48, 136, 120, 24), r(56, 160, 104, 8), r(40, 168, 112, 32)],
+  open: [r(80, 0, 32, 16), r(64, 16, 64, 8), r(48, 24, 96, 8), r(32, 32, 128, 8), r(24, 40, 144, 8), r(16, 48, 160, 8), r(24, 56, 144, 8), r(40, 64, 112, 8), r(48, 72, 96, 8), r(56, 80, 88, 8), r(56, 88, 80, 8), r(-16, 96, 16, 8), r(72, 96, 48, 8), r(-24, 104, 40, 8), r(80, 104, 32, 8), r(-24, 112, 56, 8), r(72, 112, 56, 8), r(-32, 120, 72, 8), r(64, 120, 72, 8), r(-40, 128, 200, 8), r(-40, 136, 208, 8), r(-32, 144, 200, 8), r(-24, 152, 192, 8), r(-8, 160, 184, 8), r(0, 168, 184, 8), r(16, 176, 136, 8), r(32, 184, 120, 8), r(40, 192, 112, 8)],
+  unmarked: [r(24, 120, 8, 8), r(88, 120, 16, 8), r(160, 120, 8, 8), r(24, 128, 144, 48), r(40, 176, 112, 24)],
+};
+
+/** The Part boxes of a grave's shown Form in scene pixels, with its Ghost and pennant boxes when it has them. */
+export function formParts(grave: Pick<GravePlan, "rect" | "shape" | "ghost" | "marker">): Rect[] {
+  const out = FORM_PARTS[grave.shape].map((p) => scaledBox(grave, p));
+  if (grave.ghost !== null) out.push(scaledBox(grave, GHOST_BOX));
+  if (grave.marker) out.push(scaledBox(grave, MARKER_BOX));
+  return out;
+}
+
 /** The Ghost at either drift extreme, at every Tier scale (the drift in cell units grows as the scale shrinks). */
 export const GHOST_BOX: Rect = { x: 80, y: 0, w: 48, h: 76 };
 

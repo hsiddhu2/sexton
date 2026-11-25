@@ -14,7 +14,7 @@ interface Rect {
 interface HookWindow {
   __sextonTiming?: {
     labels(): Rect[];
-    paintVariant(variant: { ghosts?: boolean; sprites?: boolean; riseElapsedMs?: number }): void;
+    paintVariant(variant: { ghosts?: boolean; sprites?: boolean; riseElapsedMs?: number; nowMs?: number }): void;
     redrawBurst(n: number): number[];
   };
 }
@@ -220,14 +220,19 @@ for (const [width, height] of [
     await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
     await page.waitForFunction(() => (window as unknown as HookWindow).__sextonTiming !== undefined);
     await page.clock.runFor(1_500);
+    // Spec cemetery-undead-fixes, Deliberate test change 3: the clock paused, the fonts loaded, and both frames
+    // painted at one instant, so a Character Pose cannot change between them (bug 2).
+    await page.clock.pauseAt(new Date("2026-11-24T12:00:05Z"));
+    await page.evaluate(() => document.fonts.ready.then(() => undefined));
     const result = await page.evaluate(() => {
       const hook = (window as unknown as HookWindow).__sextonTiming;
       const canvas = document.querySelector("canvas");
       const ctx = canvas?.getContext("2d");
       if (hook === undefined || canvas === null || ctx === null || ctx === undefined) return { total: 0, far: -1 };
-      hook.paintVariant({ sprites: true });
+      const at = Date.now();
+      hook.paintVariant({ sprites: true, nowMs: at });
       const a = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-      hook.paintVariant({ sprites: false });
+      hook.paintVariant({ sprites: false, nowMs: at });
       const b = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
       // Pixels that differ by more than a smoothing step on any channel.
       let far = 0;

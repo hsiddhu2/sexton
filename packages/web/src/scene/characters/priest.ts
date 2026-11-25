@@ -17,6 +17,13 @@ export const WALK_END = 0.4;
 const FEET_Y = 198;
 const STEPS = 6;
 
+/**
+ * Everything the Priest draws, at every phase and the Vigil, in cell units: his walk from PRIEST_FROM_X to PRIEST_AT_X,
+ * his raised book to the left and his hat at the top (spec cemetery-undead-fixes, bug 1: the Halo is cut here, not
+ * over the whole Art box, during a burial or a Vigil).
+ */
+export const PRIEST_BOX = { x: PRIEST_AT_X - 10 * PRIEST_SCALE, y: FEET_Y - 80 * PRIEST_SCALE, w: PRIEST_FROM_X + PRIEST_W - (PRIEST_AT_X - 10 * PRIEST_SCALE), h: 80 * PRIEST_SCALE } as const;
+
 export interface PriestPose {
   readonly x: number;
   readonly step: 0 | 1;
