@@ -119,7 +119,7 @@ Every top-level task ends with a review sub-task. It runs the gravedigger agent 
       - gravedigger (wf_fefea10ee182f04c) at def3208: "Verdict: unsafe. D3 (`choose-kind.ts:15`) and D4 (`migration-candidates.ts:49,63-68`, `node-sass-recipe.ts:72-82`) are still open defects, even though D2 is fixed cleanly." Its note was that a skipped unsafe path that is not a style or script file also makes the body say "incomplete". Accepted, as design Decision 7 says.
       - security-reviewer (wf_c70c064666d14385) on d1a4f91..def3208: "Verdict: ready with notes. The D2 fix matches design.md and bugfix 2.4 and 3.5 to 3.7, and the only notes concern the test's coverage of `skipped`." Applied in task 5's commit: a unit case for `skipped: 1` with no sites.
 
-- [-] 5. Fix D3: no remove for an Implicit-use name
+- [x] 5. Fix D3: no remove for an Implicit-use name
   - [x] 5.1 Change src/remediation/choose-kind.ts
     - Add `IMPLICIT_USE_NAMES`, `IMPLICIT_USE_PREFIX` and `isImplicitUse`, and guard the remove branch, as design.md says. No change in packages/cli.
     - _Bug_Condition: isBugConditionD3_
@@ -134,9 +134,12 @@ Every top-level task ends with a review sub-task. It runs the gravedigger agent 
   - [x] 5.4 Run the gates, as in 3.4
     - _Requirements: 3.1 to 3.10_
     - Notes: tsc -b exit 0 and eslint exit 0. engine: 85 files, 1165 of 1165 passed, the first fully green engine run of this spec. cli: 61 passed. api: 300 passed. web: 524 passed and 1 failed, the pre-existing `readme.test.ts` (see 2.3). Golden diff exit 0. `plan.test.ts` Property 9 "Remove needs import sites" passes unchanged.
-  - [ ] 5.5 Review: gravedigger and security-reviewer
+  - [x] 5.5 Review: gravedigger and security-reviewer
     - Record both verdict lines. Expected: gravedigger reports D3 fixed.
     - _Requirements: 2.5_
+    - Notes: At d459983 the D4 exploration test (5b.1) is red on purpose. It is fixed in 5b.2.
+      - gravedigger (wf_4337fedc6894c9fb) at d459983: "Verdict: unsafe. D3 is fixed, but D4 remains a concrete defect at `migration-candidates.ts:49,68`." It found that the remove kind has one source, `chooseKind`, so no other path can reach a remove.
+      - security-reviewer (wf_5010ba4ab7e4d7a6) on def3208..d459983: "Verdict: ready with notes. The D3 fix and its tests are correct, and the D4 exploration test is intentionally red until the next task." Its notes were that choose-kind.ts now exports several names and has a long first comment. Kept as they are: they are one concept, the kind choice, and its own constants.
 
 - [-] 5b. Fix D4: no sass-loader raise over a Non-registry range (added after the task 1 review)
   - [x] 5b.1 Write Property 10 in test/remediation/remediation-safety.test.ts and run it on the code before this fix
@@ -144,11 +147,13 @@ Every top-level task ends with a review sub-task. It runs the gravedigger agent 
     - _Bug_Condition: isBugConditionD4_
     - _Requirements: 1.6_
     - Notes: Ran on the code before the D4 fix (working tree after the D3 fix), `vitest run test/remediation/remediation-safety.test.ts -t "D4"`. 4 failed and 1 passed. The three cases (`file:../loader`, `github:o/sass-loader`, `workspace:*` at 7.0.0) and Property 10 fail on `expected 'raise' to be 'unknown'`. Property 10 shrunk counterexample: `["7.0.0", "file:../foo"]`. The Registry-range control `~7.1.0` at 7.1.0 is still `raise` and passes.
-  - [ ] 5b.2 Change sassLoaderNeed in src/remediation/migration-candidates.ts as design.md "D4" says, then verify that Property 10 passes and P4 to P9 still pass
+  - [x] 5b.2 Change sassLoaderNeed in src/remediation/migration-candidates.ts as design.md "D4" says, then verify that Property 10 passes and P4 to P9 still pass
     - _Expected_Behavior: bugfix 2.7_
     - _Requirements: 2.7, 3.11, 3.12_
-  - [ ] 5b.3 Run the gates, as in 3.4
+    - Notes: One guard in `sassLoaderNeed`, after the `absent` check. It uses `isUsableRange`, which is `isResolvableRange` on a string and is already imported in that file, so no import was added. Property 10 and its three cases pass with no edit to the test. The Registry-range control still gives `raise`. P4 to P9 pass. `node-sass-recipe.test.ts`, `migration-plan.test.ts`, `gather-migration-data.test.ts` and `migration-fixtures.test.ts` pass unchanged, 77 of 77 with the safety file. `arbRangeFor`'s `latest` draws now give `unknown`, and Properties 21, 22, 28 and 29 still hold. No deliberate test change.
+  - [x] 5b.3 Run the gates, as in 3.4
     - _Requirements: 3.1 to 3.12_
+    - Notes: tsc -b exit 0 and eslint exit 0. engine: 85 files, 1170 of 1170 passed. cli: 61 passed. api: 300 passed. web: 57 files, 525 of 525 passed. That run included the owner's one-line fix to `packages/web/test/readme.test.ts`, which adds "## Kiro project files" to the pinned headings and is committed on its own. Golden diff exit 0.
   - [ ] 5b.4 Review: gravedigger and security-reviewer
     - Record both verdict lines. Expected: gravedigger reports D4 fixed.
     - _Requirements: 1.6, 2.7_
