@@ -42,7 +42,7 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
   const quietFocus = useRef(false);
   const width = useContainerWidth(containerRef);
   const minHeight = useFreeHeight(containerRef, width);
-  const footerHeight = usePinnedFooterHeight(width);
+  const footerHeight = usePinnedFooterHeight(width, response);
   const fit = fitHeight(minHeight, footerHeight, footerHeight > 0);
   const anyGhost = useMemo(() => order.some(hasGhost), [order]);
   const phase = useGhostPhase(anyGhost, reducedMotion);

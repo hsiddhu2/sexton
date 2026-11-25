@@ -107,6 +107,11 @@ export const LANTERN_ALPHA_BYTE = "18";
 export const GLOW_ALPHA_BYTE = "28";
 export const VIGNETTE_ALPHA_BYTE = "b0";
 export const GRAIN_ALPHA_BYTE = "14";
+/**
+ * Spec cemetery-undead-2, A3: the Halo, the strong part of the Possessed glow. Drawn only where no token a contrast
+ * check guards can sit (scene/halo.ts), so it is not a Glow stop.
+ */
+export const HALO_ALPHA_BYTE = "a0";
 
 const FOG_PEAK = 52;
 

@@ -22,9 +22,9 @@ It has two parts:
   - B4. The burial priest.
   - B5. The rise clip and the load moment.
 
-This spec traces to R-UI-1 to R-UI-7 of docs/requirements.md section 5.8, to N-7 and N-9 of section 6, and to the cemetery-time, cemetery-time-fixes and cemetery-undead specs. It changes no state rule, no policy rule, no API field and no evidence field. The demo evidence digest stays c8fb6cab465d46ca92cf83dbc10022b6a662c8fad68ec8f64d827ef16f43344d.
+This spec traces to R-UI-1 to R-UI-8 of docs/requirements.md section 5.8, to N-7 and N-9 of section 6, and to the cemetery-time, cemetery-time-fixes and cemetery-undead specs. It changes no state rule, no policy rule, no API field and no evidence field. The demo evidence digest stays c8fb6cab465d46ca92cf83dbc10022b6a662c8fad68ec8f64d827ef16f43344d.
 
-Sound and speech bubbles are not in docs/requirements.md today. Requirement 13 asks the owner to approve a new R-UI-8 before the build starts (design.md "Open question for the owner").
+Sound and speech bubbles were not in docs/requirements.md. The owner approved R-UI-8 on 25 Nov 2026 (design.md "The owner's decisions").
 
 Paths: this spec changes `packages/web`, `README.md`, `CREDITS.md`, `docs/cemetery.png`, `docs/replay-axios.png`, `.kiro/steering/web.md`, `docs/requirements.md` and `.kiro/specs/cemetery-undead-2`. It changes nothing under `packages/engine`, `packages/api`, `packages/cli`, `packages/action`, `infra` or `.github`, and no `package.json` or `package-lock.json`. It adds no runtime dependency, no audio file and no request to another origin at run time. Every date this spec writes is 25 Nov 2026 (UTC) unless it is a fact from a source.
 
@@ -130,7 +130,7 @@ Paths: this spec changes `packages/web`, `README.md`, `CREDITS.md`, `docs/cemete
 
 **User Story:** As a viewer, I want the undead to say something now and then, so that the cemetery has character, and as a security engineer, I want them gone in Serious mode.
 
-**Traces to:** B2; R-UI-5; proposed R-UI-8
+**Traces to:** B2; R-UI-5; R-UI-8
 
 #### Acceptance Criteria
 
@@ -147,7 +147,7 @@ Paths: this spec changes `packages/web`, `README.md`, `CREDITS.md`, `docs/cemete
 
 **User Story:** As a viewer, I want to hear the cemetery when I ask for it, and never before.
 
-**Traces to:** B1; proposed R-UI-8; N-7
+**Traces to:** B1; R-UI-8; N-7
 
 #### Acceptance Criteria
 
@@ -229,7 +229,7 @@ Paths: this spec changes `packages/web`, `README.md`, `CREDITS.md`, `docs/cemete
 
 #### Acceptance Criteria
 
-1. THE build SHALL not start until the owner has decided R-UI-8 in design.md "Open question for the owner", the Bubble table and the Sound list.
+1. THE build SHALL not start until the owner has decided R-UI-8 in design.md "The owner's decisions", the Bubble table and the Sound list.
 2. WHERE the owner approves R-UI-8, THE spec tasks SHALL add it to docs/requirements.md section 5.8.
 3. THE spec tasks SHALL bump the docs/requirements.md header to Version 0.7 and add the change log line "0.7, 25 Nov 2026" naming every requirement change of this spec, whatever the owner decides on R-UI-8.
 

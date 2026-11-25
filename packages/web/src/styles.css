@@ -920,7 +920,6 @@ pre.signal-value {
 }
 .replay-sources {
   margin: 0;
-  padding-left: 20px;
 }
 .replay-banner a {
   color: var(--text);
@@ -994,13 +993,7 @@ pre.signal-value {
   font-weight: 600;
 }
 /* The replay banner as a compact card, with its sources on one line. */
-.replay-banner .replay-sources {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 14px;
-  padding: 0;
-  list-style: none;
-}
+
 .epitaph-punchline,
 .drawer-epitaph {
   font-family: "IM Fell English", Georgia, serif;
@@ -1167,13 +1160,7 @@ pre.signal-value {
 .replay-card .replay-title {
   font-size: 1rem;
 }
-.replay-card .replay-sources {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  padding-left: 0;
-  list-style: none;
-}
+
 .replay-card a {
   color: var(--wordmark);
 }

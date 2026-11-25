@@ -25,15 +25,13 @@ As in Phase 1, nothing here changes what a grave means. A grave's State comes fr
 8. **Part A.** As listed in the requirements Introduction, A1 to A8.
 9. **Merge.** On the owner's `push`, a local `git merge --no-ff` under the repository identity, so that the merge commit carries the owner's full name.
 
-### Open question for the owner (requirement 13, blocks the build)
+### The owner's decisions (25 Nov 2026)
 
-docs/requirements.md has no requirement for sound or speech, and its own rule is "If something is not in this document, it is not in scope." The proposed addition to section 5.8, with the change log line "0.7, 25 Nov 2026. R-UI-8: sound off by default and speech bubbles. Cemetery-undead-2: label rule, replay header labels, burst, priest, load moment":
-
-> R-UI-8. THE SYSTEM MAY play sound generated in code and show short speech bubbles over the cemetery. Sound SHALL be off by default and SHALL not start before the user turns it on. Speech bubbles SHALL never cover a grave's name, SHALL be hidden in Serious mode, and SHALL carry no information the grave's tooltip and drawer do not.
-
-If the owner declines R-UI-8, Part B1 and B2 are not built, and the rest of the spec stands.
-
-The owner also approves two tables below before the build: the Bubble table and the Sound list.
+- **R-UI-8 approved as written**, added to docs/requirements.md section 5.8 with the change log line 0.7:
+  > R-UI-8. THE SYSTEM MAY play sound generated in code and show short speech bubbles over the cemetery. Sound SHALL be off by default and SHALL not start before the user turns it on. Speech bubbles SHALL never cover a grave's name, SHALL be hidden in Serious mode, and SHALL carry no information the grave's tooltip and drawer do not.
+- **Bubble table approved with two changes**: "Restless, no-signals" reads "Couldn't read my papers. Ask me again later." and "Restless, stale" reads "Two years without a release. Getting restless." The table below holds the approved lines.
+- **Sound list approved as written.**
+- **The Halo limit accepted**: the strong pink shows around the rows and above them, not between graves packed tight in a row. The owner judges it on the screenshot.
 
 ## Architecture
 
@@ -213,7 +211,7 @@ export function createSoundEngine(make: () => AudioContextLike): SoundEngine; //
 
 The noise for the wind bed and the thud is one 2-second mono buffer filled once from a mulberry32 generator seeded with 0x5e7701c3. No `Math.random`.
 
-#### Sound list (for the owner to approve)
+#### Sound list (approved by the owner, 25 Nov 2026)
 
 Every Voice is built per play from these nodes and joins the Master gain (value MASTER_CAP 0.7, never set higher), then a DynamicsCompressor as a limiter (threshold −10 dB, knee 0, ratio 20, attack 3 ms, release 250 ms), then the destination. Peaks are the Voice gain before the Master gain.
 
@@ -235,9 +233,9 @@ The loudest single Voice after the Master gain is the thud at about −14 dBFS. 
 export function bubbleLine(state: State, reason: string): string | null; // uses reasonFamily from epitaph.ts
 ```
 
-#### Bubble table (for the owner to approve)
+#### Bubble table (approved by the owner, 25 Nov 2026)
 
-Each line is at most 44 characters, so it fits two lines in a 220 px bubble. The first two are the mockup's approved lines.
+Each line is at most 46 characters, so it fits two lines in a 220 px bubble (the owner's "Getting restless." line is 46). The first two are the mockup's approved lines.
 
 | State | Reason family | Bubble line | Why it is true |
 |---|---|---|---|
@@ -248,8 +246,8 @@ Each line is at most 44 characters, so it fits two lines in a 220 px bubble. The
 | Possessed | install-script | I brought a script. It runs on install. | this version added an install script, which npm runs at install |
 | Dead | stale-with-advisory | Two years down here, and the hole is open. | no release in 24 months and an open advisory |
 | Haunted | severe-advisory | Boo. Severity High, or worse. | a High or Critical advisory is open; on a Haunted grave the Ghost speaks |
-| Restless | no-signals | Nobody wrote down where I am buried. | every state signal was unavailable |
-| Restless | stale | Two years without a release. Just resting. | no release in 24 months, and no other rule matched |
+| Restless | no-signals | Couldn't read my papers. Ask me again later. | every state signal was unavailable, so a later scan may read them |
+| Restless | stale | Two years without a release. Getting restless. | no release in 24 months, and no other rule matched |
 | Alive | no-rule | Still kicking. The party hat stays on. | no rule matched |
 
 No line names a person or a project. The Bubble uses the Form at the chosen date, so a replay before the attack speaks as Alive.
@@ -394,7 +392,7 @@ These criteria turned out testable as properties: 1.1, 1.2, 3.2, 3.3, 3.4, 7.1, 
 
 ### Property 4: Bubble lines come only from the table
 
-*For any* State and any reason string, including generated instances of the ten fixed reason templates: `bubbleLine` is null or the table cell of that State and Reason family, null exactly when the family is null, and null for a template under the wrong State. Its signature takes no package name. Every line is at most 44 characters and contains none of the forbidden words of the epitaph test.
+*For any* State and any reason string, including generated instances of the ten fixed reason templates: `bubbleLine` is null or the table cell of that State and Reason family, null exactly when the family is null, and null for a template under the wrong State. Its signature takes no package name. Every line is at most 46 characters and contains none of the forbidden words of the epitaph test.
 
 **Validates: Requirements 7.1, 7.2.** Test: `test/bubbles.test.ts`.
 
@@ -504,11 +502,19 @@ As cemetery-undead "Visual critic protocol", with these captures: `/` and `/?rep
 
 ## Decisions made during implementation
 
-None yet.
+1. **Bubble line length 46, not 44.** The owner's approved line "Two years without a release. Getting restless." is 46 characters. The cap follows the approved wording; two lines in a 220 px bubble still hold it.
+2. **ART_BOX is 220 high, not 224.** A Tier cell is rounded to whole pixels (154 by 179 at 0.8), so 224 units at the drawing scale (154 / 192) pass the cell's bottom by under a pixel. Nothing is drawn below 219 units.
+3. **Marks moved into the Art box, found by the probe.** The Ghost shift is (−4, −2). The lid, its crack, its solid box and its specks move 5 shape units right. The zombie is drawn at 1.15 (was 1.35), centred at x 32 and moved to −7, so its horns stay inside the top of the cell and its feet stand in the pit. The party hat is 9 rows from y 2 with its bobble at y −2 (was 13 rows, bobble at −9).
+4. **The Form box is split.** One core box per shape, without the shadow, plus GHOST_BOX {80, 0, 48, 76} when the grave has a Ghost and MARKER_BOX {160, 124, 16, 44} when it has a pennant (`formRects`). The shadow is not cut: no checked token sits on it. Critic round 2 saw dark boxes where whole Forms were cut.
+5. **The Halo's numbers.** HALO_ALPHA_BYTE "a0", radius 2.4 grave widths, feather 32 px, centre (96, −40) in cell units, above the zombie's head, so most of it rises into open sky and ground (critic round 1). The layer is painted at half a CSS pixel per pixel, and each cut is painted 2 px wider than the mask so that smoothing leaves no trace inside it.
+6. **ScenePlan gains `selected`**, beside `burst`, `priest` and `riseStartMs`, so the Halo cuts the selected cell without reading the ring.
+7. **The critic rounds of tasks 2.5 and 3.3 ran together.** Both are canvas changes of Part A, judged on the same captures.
+8. **The e2e timing hook gains `labels()` and `paintVariant({ ghosts })`** for the label pixel check of task 2.4.
+9. **The noise reuses `mulberry32` from scene/scenery-seed.ts** with the same seed, rather than a second copy.
 
 ## Notes and open items
 
-- **R-UI-8, the Bubble table and the Sound list** wait for the owner (requirement 13).
+- **R-UI-8, the Bubble table and the Sound list** were decided by the owner on 25 Nov 2026 (see "The owner's decisions").
 - **The Character e2e and the `bone` token.** The Burst shards and the Priest's face use `bone`. The Character e2e assumes `bone` appears only in Costumes. It holds because the Burst plays only on a replay and the Priest only during a burial, and neither is on screen in that test.
 - **Merging.** AGENTS.md says "No merges" for the spec tasks. The merge of decision 9 happens only on the owner's `push`, as the handoff asks.
 - **The Character art.** The Phase 1 vector source stays. If the owner downloads the CC0 models later, a bake can replace it behind the same call.

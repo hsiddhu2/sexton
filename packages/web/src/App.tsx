@@ -79,7 +79,7 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
     : undefined;
   return (
     <>
-      <Header model={model} theme={theme} apiConfigured={apiBase !== null} onSubmit={loader.submitRepo} fieldRef={repoFieldRef} serious={serious} onSerious={toggleSerious} {...(asOf !== undefined ? { asOf } : {})} />
+      <Header model={model} theme={theme} apiConfigured={apiBase !== null} onSubmit={loader.submitRepo} fieldRef={repoFieldRef} serious={serious} onSerious={toggleSerious} replay={isReplay} {...(asOf !== undefined ? { asOf } : {})} />
       {state.status === "loading" ? (
         <LoadingCard />
       ) : state.status === "error" ? (

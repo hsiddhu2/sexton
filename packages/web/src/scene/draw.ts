@@ -2,6 +2,7 @@ import {
   ALPHA_ZERO_BYTE,
   FOG_PEAK_ALPHA_BYTE,
   GLOW_ALPHA_BYTE,
+  HALO_ALPHA_BYTE,
   GRAIN_ALPHA_BYTE,
   LANTERN_ALPHA_BYTE,
   VIGNETTE_ALPHA_BYTE,
@@ -14,6 +15,7 @@ import { GRAVE_GEOMETRY, BOTTOM_LINE_MIN_GAP, BOTTOM_LINE_OFFSET, CELL_WIDTH, MA
 import { inDanceWindow, poseAt, seedOf } from "./motion.js";
 import { CHURCH_PATH, TREE_PATH, batWing, churchPath, treePath } from "./silhouettes.js";
 import { POSE_COUNT, type ClipId } from "./characters/vector.js";
+import { HALO_FEATHER, haloMask, type HaloMask } from "./halo.js";
 import { BURIAL_SINK_PX, burialFrame } from "../time/burial.js";
 import { CHARACTER_BY_STATE, COSTUME_BY_STATE, drawCharacter, drawPartyCostume, STATE_BY_SHAPE } from "./characters/vector.js";
 import { pitEdgePath, detailPath, GHOST_BLUSH, GHOST_EYES, ghostPath, pitRimPath, plinthPath, SHAPES, shapePath, SPECKS } from "./shapes.js";
@@ -49,6 +51,8 @@ export interface PaintContext2D {
   createRadialGradient(x0: number, y0: number, r0: number, x1: number, y1: number, r1: number): GradientLike;
   /** Optional: absent or returning nothing, the grain is skipped (spec cemetery-undead, 6.3). */
   createPattern?(image: CanvasImageSource, repetition: string | null): CanvasPattern | null | undefined;
+  /** Optional: absent, the Halo layer is skipped (spec cemetery-undead-2, A3). */
+  drawImage?(image: CanvasImageSource, dx: number, dy: number, dw: number, dh: number): void;
 }
 
 const SHAPE_HALF = 32;
@@ -70,7 +74,7 @@ const NAME_FAMILY = GRAVE_GEOMETRY.inscription.font.replace(/^\d+px /, "");
 /** The side face of a stone: its outline again, this far right and up in shape units, shaded with SHADOW_ALPHA_BYTE. */
 /** The ghost is drawn this far from its planned point, in cell units, so it floats over the top of its stone. */
 const GHOST_SHIFT_X = -4;
-const GHOST_SHIFT_Y = -40;
+const GHOST_SHIFT_Y = -2;
 const SIDE_DX = 3;
 const SIDE_DY = -1.5;
 
@@ -355,7 +359,7 @@ function drawOvals(ctx: PaintContext2D, ovals: readonly (readonly [number, numbe
 }
 
 /** Translucent decoration colours, built once per frame rather than once per grave. */
-interface DecorationColours {
+export interface DecorationColours {
   readonly shadow: string;
   readonly stone: string;
 }
@@ -390,8 +394,83 @@ function drawGlow(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan): void 
   ctx.restore();
 }
 
+/** The Halo layer is drawn at this fraction of a CSS pixel: it is soft everywhere, and its cuts are feathered. */
+const HALO_LAYER_SCALE = 0.5;
+const HALO_CUT_MARGIN = 2;
+let haloLayer: { readonly key: string; readonly canvas: HTMLCanvasElement } | null = null;
+
+/** Paints the Halo's sources, then cuts every region of the mask out of it with a feathered edge. */
+function paintHaloLayer(mask: HaloMask, plan: ScenePlan): HTMLCanvasElement | null {
+  const canvas = document.createElement("canvas");
+  const w = Math.min(plan.width, MAX_BACKING);
+  canvas.width = Math.max(1, Math.ceil(w * HALO_LAYER_SCALE));
+  canvas.height = Math.max(1, Math.ceil(Math.min(plan.groundHeight, MAX_BACKING) * HALO_LAYER_SCALE));
+  const t = canvas.getContext("2d");
+  if (t === null) return null;
+  const colours = PALETTE[plan.theme];
+  t.scale(HALO_LAYER_SCALE, HALO_LAYER_SCALE);
+  for (const src of mask.sources) {
+    const g = t.createRadialGradient(src.cx, src.cy, 0, src.cx, src.cy, src.r);
+    g.addColorStop(0, src.colour + HALO_ALPHA_BYTE);
+    g.addColorStop(1, src.colour + ALPHA_ZERO_BYTE);
+    t.fillStyle = g;
+    t.fillRect(src.cx - src.r, src.cy - src.r, src.r * 2, src.r * 2);
+  }
+  // destination-out keeps only the alpha of what is drawn: the ink token, opaque inside a cut, fading to none.
+  t.globalCompositeOperation = "destination-out";
+  const solid = colours.ink;
+  const none = colours.ink + ALPHA_ZERO_BYTE;
+  const f = HALO_FEATHER;
+  // Each cut is painted HALO_CUT_MARGIN wider than the mask says, so the half-scale layer's smoothing can never leave
+  // a trace of the Halo inside a cut (review note, task 3). The painted Halo is then at most the model's.
+  for (const exact of mask.cuts) {
+    const m = HALO_CUT_MARGIN;
+    const c = { x: exact.x - m, y: exact.y - m, w: exact.w + 2 * m, h: exact.h + 2 * m };
+    t.fillStyle = solid;
+    t.fillRect(c.x, c.y, c.w, c.h);
+    const strips: readonly (readonly [number, number, number, number, number, number, number, number])[] = [
+      [c.x - f, c.y, f, c.h, c.x, 0, c.x - f, 0],
+      [c.x + c.w, c.y, f, c.h, c.x + c.w, 0, c.x + c.w + f, 0],
+      [c.x, c.y - f, c.w, f, 0, c.y, 0, c.y - f],
+      [c.x, c.y + c.h, c.w, f, 0, c.y + c.h, 0, c.y + c.h + f],
+    ];
+    for (const [x, y, sw, sh, x0, y0, x1, y1] of strips) {
+      const g = t.createLinearGradient(x0, y0, x1, y1);
+      g.addColorStop(0, solid);
+      g.addColorStop(1, none);
+      t.fillStyle = g;
+      t.fillRect(x, y, sw, sh);
+    }
+    for (const [cx, cy, dx, dy] of [
+      [c.x, c.y, -1, -1],
+      [c.x + c.w, c.y, 1, -1],
+      [c.x, c.y + c.h, -1, 1],
+      [c.x + c.w, c.y + c.h, 1, 1],
+    ] as const) {
+      const g = t.createRadialGradient(cx, cy, 0, cx, cy, f);
+      g.addColorStop(0, solid);
+      g.addColorStop(1, none);
+      t.fillStyle = g;
+      t.fillRect(dx < 0 ? cx - f : cx, dy < 0 ? cy - f : cy, f, f);
+    }
+  }
+  return canvas;
+}
+
+/** The Halo, over the glow pass and under every grave (spec cemetery-undead-2, A3). Redrawn only when its mask changes. */
+function drawHalo(ctx: PaintContext2D, plan: ScenePlan): void {
+  const mask = haloMask(plan);
+  if (mask.sources.length === 0 || typeof ctx.drawImage !== "function" || typeof document === "undefined") return;
+  if (haloLayer?.key !== mask.key) {
+    const canvas = paintHaloLayer(mask, plan);
+    if (canvas === null) return;
+    haloLayer = { key: mask.key, canvas };
+  }
+  ctx.drawImage(haloLayer.canvas, 0, 0, haloLayer.canvas.width / HALO_LAYER_SCALE, haloLayer.canvas.height / HALO_LAYER_SCALE);
+}
+
 /** One grave, drawn in its cell frame at its Tier scale: every number below is cell-relative. */
-function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan, deco: DecorationColours, nowMs: number): void {
+export function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan, deco: DecorationColours, nowMs: number): void {
   const colours = PALETTE[plan.theme];
   const g = GRAVE_GEOMETRY;
   const def = SHAPES[grave.shape];
@@ -434,8 +513,9 @@ function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan, deco:
     }
     const { x, y, w, h } = def.pit;
     drawOvals(ctx, [[x + w / 2, y + h / 2, w / 2, h / 2]], colours.pit);
-    // The pit's edge catches the lantern light, as in the mockup. A line, not a glow: the one-glow rule holds.
-    ctx.strokeStyle = colours.lantern;
+    // The pit's edge catches the pink of the Possessed glow: a line, not a glow, so the one-glow rule holds. Pale pink,
+    // never gold, so the selection ring stays the only gold outline near a grave (spec cemetery-undead-2, A4).
+    ctx.strokeStyle = colours.costume.flower;
     ctx.lineWidth = PIT_EDGE_WIDTH;
     ctx.stroke(pitEdgePath());
   }
@@ -537,6 +617,7 @@ export function drawScene(ctx: PaintContext2D, plan: ScenePlan, scale: number, n
   drawScenery(ctx, plan, nowMs);
   const deco: DecorationColours = { shadow: colours.pit + SHADOW_ALPHA_BYTE, stone: colours.ink + STONE_ALPHA_BYTE };
   for (const grave of plan.graves) drawGlow(ctx, grave, plan);
+  drawHalo(ctx, plan);
   for (const index of plan.paintOrder) {
     const grave = plan.graves[index];
     if (grave !== undefined) drawGrave(ctx, grave, plan, deco, nowMs);

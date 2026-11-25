@@ -27,6 +27,8 @@ export interface HeaderProps {
   /** Serious mode toggle (spec cemetery-undead, 8.1). Shown when onSerious is given. */
   readonly serious?: boolean;
   readonly onSerious?: () => void;
+  /** A replay labels its two times: "Window ends" and "Showing" (spec cemetery-undead-2, A2). */
+  readonly replay?: boolean;
 }
 
 function DownloadGlyph() {
@@ -37,7 +39,7 @@ function DownloadGlyph() {
   );
 }
 
-export function Header({ model, theme, apiConfigured, onSubmit, fieldRef, asOf, onReplay, serious = false, onSerious }: HeaderProps) {
+export function Header({ model, theme, apiConfigured, onSubmit, fieldRef, asOf, onReplay, serious = false, onSerious, replay = false }: HeaderProps) {
   const [value, setValue] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const submit = (event: FormEvent<HTMLFormElement>): void => {
@@ -56,12 +58,14 @@ export function Header({ model, theme, apiConfigured, onSubmit, fieldRef, asOf, 
                 {model.demoLabel === null ? null : <span className="demo-label"> {model.demoLabel}</span>}
               </p>
               <p className="header-time">
+                {replay ? "Window ends " : null}
                 <ScanTime iso={model.scanTime} />
               </p>
               {asOf === undefined ? null : (
                 <p className="header-asof">
                   <span className="as-of">
-                    as of <ScanTime iso={asOf.iso} />
+                    {replay ? "Showing " : "as of "}
+                    <ScanTime iso={asOf.iso} />
                   </span>{" "}
                   <button type="button" className="asof-back" onClick={asOf.onBack}>
                     Back to now

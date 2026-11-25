@@ -22,69 +22,69 @@ Run-time notes:
 
 ## Tasks
 
-- [ ] 1. The owner's decisions and the baseline
+- [x] 1. The owner's decisions and the baseline
   - Applies R-UI-8 and records the baseline.
   - _Requirements: 13.1, 13.2, 13.3, 15.1_
-  - [ ] 1.1 Apply the owner's decision on R-UI-8
+  - [x] 1.1 Apply the owner's decision on R-UI-8
     - If approved, add R-UI-8 to docs/requirements.md section 5.8. If declined, mark Part B1 and B2 not built and record the call in design.md. Either way, bump the header to Version 0.7, 25 Nov 2026 (it reads 0.5 today, one behind its own 0.6 line), and add the change log line "0.7, 25 Nov 2026" naming every requirement change of this spec.
     - Record the approved Bubble table and Sound list, with any wording the owner changed, in design.md.
     - _Requirements: 13.1, 13.2, 13.3_
-  - [ ] 1.2 Record the baseline
+  - [x] 1.2 Record the baseline
     - Capture the demo and the axios replay at 1440 by 900 and 390 by 844 under build/undead-2/round-0. Record the Canvas top, the repaint medians and the e2e count in "Notes".
     - _Requirements: 15.1_
 
-- [ ] 2. Readable labels, wider rows and the pit edge (A1, A4, A5)
+- [x] 2. Readable labels, wider rows and the pit edge (A1, A4, A5)
   - _Requirements: 1.1, 1.2, 1.4, 4.1, 4.2, 5.1, 5.2_
-  - [ ] 2.1 Add `packages/web/src/scene/art-box.ts` and bring every mark inside ART_BOX
+  - [x] 2.1 Add `packages/web/src/scene/art-box.ts` and bring every mark inside ART_BOX
     - ART_BOX, LABEL_BOX, FORM_BOX, `artRect`, `labelRect`. Ghost draw shift (−4, −2), lid moved 5 shape units right, and any other mark the probe finds outside the box. Record each move in design.md "Decisions made during implementation".
     - _Requirements: 1.1, 1.2_
-  - [ ] 2.2 Write `packages/web/test/art-box.test.ts`
+  - [x] 2.2 Write `packages/web/test/art-box.test.ts`
     - **Property 1: No grave covers another grave's name**
     - **Validates: Requirements 1.1, 1.2**
     - **Property 2: Every mark of a grave lies in its Art box**
     - **Validates: Requirements 1.2, 9.6, 10.1**
     - The bounds-recording context follows translate, scale, rotate, save and restore, reads the points of every SVG path string, rect, arc and ellipse, and grows stroked bounds by half the line width times the miter factor. It runs at scales 0.64, 0.8, 1 and the replay scale. The Burst and Priest phases join it in tasks 6 and 7.
     - _Requirements: 1.1, 1.2_
-  - [ ] 2.3 Pitch caps and the pit edge
+  - [x] 2.3 Pitch caps and the pit edge
     - PITCH_CAP middle 1.334 and back 1.667 (Deliberate test change 5). The pit edge strokes in `costume.flower`, with a new test that its CIEDE2000 against the ring is at least 20.
     - _Requirements: 4.1, 4.2, 5.1, 5.2_
-  - [ ] 2.4 e2e: the Ghosts' drawn pixels clear every name label
+  - [x] 2.4 e2e: the Ghosts' drawn pixels clear every name label
     - At 1440 by 900 and 390 by 844 on the demo, read the canvas pixels inside each label rectangle with Ghosts drawn and with Ghosts off (a test-only plan flag under `__SEXTON_E2E__`), and require them equal.
     - _Requirements: 1.4_
-  - [ ] 2.5 Screenshot loop
+  - [x] 2.5 Screenshot loop
     - _Requirements: 15.1, 15.2, 15.3_
-  - [ ] 2.6 Independent code review of task 2
+  - [x] 2.6 Independent code review of task 2
     - _Requirements: 16.5_
 
-- [ ] 3. The Halo (A3)
+- [x] 3. The Halo (A3)
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
-  - [ ] 3.1 Add `packages/web/src/scene/halo.ts` and draw it
+  - [x] 3.1 Add `packages/web/src/scene/halo.ts` and draw it
     - `haloMask(plan)`, the cached offscreen layer of design.md A3, HALO_ALPHA_BYTE, HALO_RADIUS and HALO_FEATHER. Drawn after the glow pass and before the graves, and not for the grave that holds the Lantern glow (Deliberate test change 6).
     - _Requirements: 3.1, 3.2, 3.5_
-  - [ ] 3.2 Write `packages/web/test/halo.test.ts`
+  - [x] 3.2 Write `packages/web/test/halo.test.ts`
     - **Property 3: The Halo paints nothing under a grave or a name**
     - **Validates: Requirements 3.2, 3.3, 3.4**
     - The existing glow contrast test runs unedited.
     - _Requirements: 3.3, 3.4_
-  - [ ] 3.3 Measure the repaint medians with the Halo, and run the screenshot loop
+  - [x] 3.3 Measure the repaint medians with the Halo, and run the screenshot loop
     - _Requirements: 12.4, 15.1, 15.2, 15.3_
-  - [ ] 3.4 Independent code review of task 3
+  - [x] 3.4 Independent code review of task 3
     - _Requirements: 16.5_
 
-- [ ] 4. The replay header, the sources line and the footer hook (A2, A6, A8)
+- [x] 4. The replay header, the sources line and the footer hook (A2, A6, A8)
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 6.1, 6.2, 6.3, 16.6_
-  - [ ] 4.1 Label the replay header times
+  - [x] 4.1 Label the replay header times
     - `Header` takes `replay`. "Window ends" and "Showing" on a replay; "as of" elsewhere. Tests on both replays at every Stop, and the demo unchanged.
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
-  - [ ] 4.2 Sources on one line
+  - [x] 4.2 Sources on one line
     - `ReplayBanner` renders "Sources:" and the comma-separated links. A test pins the text and the links in the card and the drawer.
     - _Requirements: 6.1, 6.2, 6.3_
-  - [ ] 4.3 The footer height hook watches every footer node
+  - [x] 4.3 The footer height hook watches every footer node
     - A test with two footer nodes, one replaced, and a size change on the second.
     - _Requirements: 16.6_
-  - [ ] 4.4 Screenshot loop
+  - [x] 4.4 Screenshot loop
     - _Requirements: 15.1, 15.2, 15.3_
-  - [ ] 4.5 Independent code review of task 4
+  - [x] 4.5 Independent code review of task 4
     - _Requirements: 16.5_
 
 - [ ] 5. Sound (B1)
@@ -198,6 +198,12 @@ Run-time notes:
   - Round 2: NOT READY with 2 defects, both fixed: a stale cap value in change 5, and the selection ring and focus outline of a neighbour could sit on the Halo. The selected and Lantern cells are now cut.
   - Round 3: NOT READY with 1 defect, fixed: the Vigil's standing Priest was not cut.
   - Round 4: READY.
+- Baseline (task 1.2), build/undead-2/round-0: Canvas top at 1440 by 900 is 119.7 px on the demo and 72.6 px on the axios replay; at 390 by 844 it is 323.5 px on the demo. Repaint medians at 300 graves 2.90 ms idle and 2.70 ms after a scrubber move, e2e 26 passed (the K2d fix 1 numbers; packages/web is unchanged since).
+- Critic round 1 (tasks 2.5 and 3.3 together, build round-2): NOT READY at both sizes. Labels, pit edge and rows pass. The Halo read as a dim box with hard edges. The Halo centre moved above the zombie's head and its radius grew.
+- Critic round 2 (round-3): NOT READY at both sizes. The Halo reads pink, but the cuts around whole Forms left dark boxes round lodash and event-stream, and pink stripes in the 390 gutters. The replay header labels and the Sources line pass. The Form box was split into a core box, a Ghost box and a pennant box.
+- Critic round 3 (round-4): READY at both sizes. Minor, left as they are: a faint soft box round lodash; one pink beam in a 390 gutter; the 390 demo capture does not show the Possessed grave, so the 390 Halo was judged on the axios replay.
+- Task 4.4 screenshot loop: the header labels and the Sources line were in the round 2 and 3 captures and passed.
+- Review notes, tasks 2 to 4: READY, no defects. Acted on: each Halo cut is painted 2 px wider than the mask, so the half-scale layer's smoothing leaves no trace inside a cut. Left as notes: the footer hook finds the footer nodes again on a width or response change, not on every measure (there is one static footer today); the e2e's whole-canvas difference can also come from the Halo, which only weakens its sanity check; the Halo layer cache is module-level.
 - Test sub-tasks are not optional in this plan.
 - Top-level tasks run in order. Each finishes, including its review, before the next starts.
 - Task 5 lands before tasks 6 and 7, so their sounds have an engine to call.

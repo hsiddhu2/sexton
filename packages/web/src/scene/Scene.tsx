@@ -17,6 +17,13 @@ function SceneView({ plan }: SceneProps) {
 
   useEffect(() => {
     let ctx: CanvasRenderingContext2D | null = null;
+    const paint = (current: ScenePlan): void => {
+      const canvas = canvasRef.current;
+      if (canvas === null) return;
+      ctx ??= canvas.getContext("2d");
+      if (ctx === null) return;
+      drawScene(ctx, current, backingStore(current.width, current.groundHeight, window.devicePixelRatio).scale, Date.now());
+    };
     const scheduler = createRedrawScheduler(
       {
         request: (cb) => window.requestAnimationFrame(cb),
@@ -25,12 +32,7 @@ function SceneView({ plan }: SceneProps) {
         },
       },
       () => {
-        const canvas = canvasRef.current;
-        if (canvas === null) return;
-        ctx ??= canvas.getContext("2d");
-        if (ctx === null) return;
-        const current = planRef.current;
-        drawScene(ctx, current, backingStore(current.width, current.groundHeight, window.devicePixelRatio).scale, Date.now());
+        paint(planRef.current);
       },
     );
     schedulerRef.current = scheduler;
@@ -39,7 +41,7 @@ function SceneView({ plan }: SceneProps) {
     let cancelled = false;
     if (__SEXTON_E2E__) {
       void import("./timing-hook.js").then((m) => {
-        if (!cancelled) uninstall = m.installTimingHook(() => { scheduler.paintNow(); });
+        if (!cancelled) uninstall = m.installTimingHook(() => { scheduler.paintNow(); }, () => planRef.current, paint);
       });
     }
     return () => {
