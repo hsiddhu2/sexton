@@ -68,6 +68,24 @@ Bug condition: `isBugConditionD3(pkg, options) = unhealthy(pkg) AND isImplicitUs
 
 Observed (Possessed, `dependencies`, Import sites 0): `@types/node`, `@types/express`, `tslib` and `@babel/runtime` each give `kind remove, status proposed, edit remove-dependency`.
 
+### D4. Non-registry sass-loader raised with a registry range (added after task 1)
+
+The gravedigger review of task 1 (fff60f8) found this. It is D1 on the migrate path, and Decision 2 did not cover it, because that decision scoped out only a non-registry node-sass.
+
+Code path:
+- `remediation/migration-candidates.ts:63-69` (`sassLoaderNeed`) judges by `effectiveVersion` (`:46-52`). That function returns the installed version whenever it is valid, without reading the declared range, so the result is `raise` for any installed version below 7.2.0.
+- `remediation/node-sass-recipe.ts:61` and `:72-77` then emit `{ op: "set-range", name: "sass-loader", range: styledRange(...) }`. `remediation/gather-migration-data.ts:30-37` fetches the public sass-loader for it.
+
+Bug condition: `isBugConditionD4(view) = node-sass listed AND sass-loader listed AND semver.valid(loader.installedVersion) AND semver.lt(loader.installedVersion, "7.2.0") AND NOT isResolvableRange(loader.declaredRange)`.
+
+Expected: `sassLoaderNeed` returns `{ kind: "unknown", pkg }`. The recipe then emits no sass-loader Edit and adds `NOTE_SASS_LOADER_UNKNOWN`, and `gatherMigrationData` asks for no sass-loader data. The node-sass removal and the sass addition are unchanged.
+
+Fix: in `sassLoaderNeed`, after the `absent` check, add `if (!isResolvableRange(pkg.declaredRange)) return { kind: "unknown", pkg };`. Import `isResolvableRange` from `../intake/resolve.js`. This changes one function and is the only change to `migration-candidates.ts`.
+
+Property 10 (Bug condition D4, exploration) is in the same test file. For sass-loader installed at `7.0.0` or `7.1.0` with a declared range from the D1 table, and node-sass `7.0.3` `^7.0.3`, `runRecipe` gives no Edit named `sass-loader`, and its notes contain `NOTE_SASS_LOADER_UNKNOWN`. It fails on unfixed code.
+
+Preservation for D4: `node-sass-recipe.test.ts`, `migration-plan.test.ts`, `gather-migration-data.test.ts` and `migration-fixtures.test.ts` pass unchanged. The migration golden's sass-loader range is `^7.1.0`, a Registry range. `arbRangeFor` in `migration-arbitraries.ts:100` draws `latest` with a valid installed version. Under the fix that gives `unknown` instead of `raise`. Properties 21, 22, 28 and 29 check invariants that hold for either kind, so this should be no deliberate test change. If one fails, stop and report it as the testing strategy says.
+
 ## Expected Behavior
 
 ### Fix checking

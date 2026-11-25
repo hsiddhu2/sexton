@@ -4,7 +4,7 @@ Run the exploration tests on the UNFIXED code (kiro/depth at 58b157d) before any
 
 Every top-level task ends with a review sub-task. It runs the gravedigger agent over `packages/engine/src/remediation` and the security-reviewer agent over the task's diff, and records both verdict lines in that sub-task's notes. The spec is done only when gravedigger's last line is "safe" or "safe with notes".
 
-- [-] 1. Write the bug condition exploration tests
+- [x] 1. Write the bug condition exploration tests
   - **Property 1: Bug Condition D1** - A Non-registry range is never overwritten
   - **Property 2: Bug Condition D2** - An Incomplete scan is never reported as "none"
   - **Property 3: Bug Condition D3** - No remove for an Implicit-use name
@@ -37,16 +37,19 @@ Every top-level task ends with a review sub-task. It runs the gravedigger agent 
       - D1, 9 cases: each returns `{ kind: "bump", status: "proposed" }` with a set-range Edit where `{ status: "unavailable", reason: REASON_RANGE_NOT_REGISTRY }` is expected. Property 1 shrunk counterexample: `["file:../foo", { ok: true, published: [], deprecated: new Set([]), advisories: new Map([]) }]`. With no candidate at all the plan is `no-safe-version`, not `unavailable`, so even an empty registry answer is planned over a `file:` range.
       - D2, 3 cases: each section is `## Review before merging\n\nnone\n`. Property 2 shrunk counterexample: `[{}, "unsafe"]`, an empty clean set plus one unsafe listed path `../escape.scss`; the section is `none`.
       - D3, 3 cases: each gives `kind "remove"`. Property 3 shrunk counterexample: `["tslib", "dependencies", "Possessed"]`.
-  - [ ] 1.5 Review: gravedigger and security-reviewer
+  - [x] 1.5 Review: gravedigger and security-reviewer
     - Run gravedigger over `packages/engine/src/remediation` and security-reviewer over `git diff` of this task. Record both verdict lines here. Expected: gravedigger still "unsafe", because nothing is fixed yet; security-reviewer ready, because only a test file was added.
     - _Requirements: 1.1, 1.3, 1.5_
+    - Notes: 7c84f45 changes no file under `src/` relative to 58b157d (it adds only the spec), so it is the same unfixed code.
+      - gravedigger (wf_4e3af43f8e2aeb10) at fff60f8: "unsafe". D1, D2 and D3 stand at precheck.ts:17-26 and plan.ts:82, pr-body.ts:163, and choose-kind.ts:15. New defect D4: a non-registry sass-loader is raised with a caret range (migration-candidates.ts:63-69, node-sass-recipe.ts:72-77). D4 was added to bugfix.md and design.md, and task 5b was added. Its note about `capped` staying false at exactly 200 reads was checked and does not apply: `readRelevant` (node-sass-recipe.ts:45-51) attempts a read for every style and script file, so any unread file means a refused read, and that sets `capped`.
+      - security-reviewer (wf_7683f4d10cf7e2aa) on 7c84f45..fff60f8: "ready with notes: no listed defect, the tests assert the spec's expected behaviour, and the failures recorded in `tasks.md` match the unfixed code described in design.md."
 
-- [ ] 2. Write the preservation property tests and run them on the unfixed code
+- [-] 2. Write the preservation property tests and run them on the unfixed code
   - **Property 4 to 9: Preservation** - Everything outside the three bug conditions is unchanged
   - **IMPORTANT**: Write them observation-first and run them on the UNFIXED code. They MUST PASS there. If one fails, narrow its domain to exclude the bug conditions and run again. Never change source code to make one pass.
   - _Preservation: Properties 4 to 9 from design.md_
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.11_
-  - [ ] 2.1 Write Properties 4 to 9 in test/remediation/remediation-safety.test.ts
+  - [x] 2.1 Write Properties 4 to 9 in test/remediation/remediation-safety.test.ts
     - P4 never downgrade, over `arbReportAndOptions`.
     - P5 planner equals `selectBump` on Registry ranges, over `arbSelectInput`.
     - P6 range style on Registry ranges.
@@ -55,13 +58,16 @@ Every top-level task ends with a review sub-task. It runs the gravedigger agent 
     - P9 kind and status outside the bug conditions.
     - numRuns 1000 for each.
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.11_
-  - [ ] 2.2 Run Properties 4 to 9 on the unfixed code and record the results
+  - [x] 2.2 Run Properties 4 to 9 on the unfixed code and record the results
     - **EXPECTED OUTCOME**: P4 to P9 PASS, and P1 to P3 still FAIL.
     - Record every domain narrowing here, with its reason.
     - _Requirements: 3.1 to 3.9, 3.11_
-  - [ ] 2.3 Record the golden baseline
+    - Notes: Ran on the unfixed source (fff60f8 plus this task's test additions), `vitest run test/remediation/remediation-safety.test.ts -t "Property [4-9]"`, numRuns 1000 each. All 7 pass: P4, P5, P6, P7, P8a, P8b and P9. In the full file, the 18 exploration tests still fail and these 7 pass.
+      - Domain narrowings, each written into the generator and none added after a failure. P5 and P6 use `arbSelectInput` filtered to a valid installed version and a Registry range, which excludes D1. P9 maps every Non-registry intake range to `^1.0.0`, which excludes D1. It skips Implicit-use names, which `arbPlanName` never draws anyway, and that excludes D3. P8b uses only clean `src/*.scss` sets, so every scan is Complete, which excludes D2. P4, P7 and P8a cover the full `arbReportAndOptions` and `arbHostileHealth` domains.
+  - [x] 2.3 Record the golden baseline
     - Run `npm test -w @sexton/engine` and `npm test -w @sexton/web`, then `git diff --exit-code -- test/fixtures packages/web/public/replay`. Record that the goldens of bugfix 3.10 are unchanged.
     - _Requirements: 3.10_
+    - Notes: engine 85 files, 1136 tests: 1118 passed, 18 failed, all 18 the exploration tests. web 57 files, 525 tests: 524 passed, 1 failed. The failure is `test/readme.test.ts > keeps the other section headings unchanged`. It predates this spec: the README's "Kiro project files" section, added on kiro/depth in abcc396, is a new `##` heading. It is outside this spec's paths and is left for the owner. `git diff --exit-code` on the goldens: exit 0.
   - [ ] 2.4 Review: gravedigger and security-reviewer
     - Record both verdict lines here.
     - _Requirements: 3.1 to 3.11_
@@ -118,6 +124,20 @@ Every top-level task ends with a review sub-task. It runs the gravedigger agent 
   - [ ] 5.5 Review: gravedigger and security-reviewer
     - Record both verdict lines. Expected: gravedigger reports D3 fixed.
     - _Requirements: 2.5_
+
+- [ ] 5b. Fix D4: no sass-loader raise over a Non-registry range (added after the task 1 review)
+  - [ ] 5b.1 Write Property 10 in test/remediation/remediation-safety.test.ts and run it on the code before this fix
+    - **EXPECTED OUTCOME**: Property 10 FAILS. Record the counterexample here. If it passes, stop.
+    - _Bug_Condition: isBugConditionD4_
+    - _Requirements: 1.6_
+  - [ ] 5b.2 Change sassLoaderNeed in src/remediation/migration-candidates.ts as design.md "D4" says, then verify that Property 10 passes and P4 to P9 still pass
+    - _Expected_Behavior: bugfix 2.7_
+    - _Requirements: 2.7, 3.11, 3.12_
+  - [ ] 5b.3 Run the gates, as in 3.4
+    - _Requirements: 3.1 to 3.12_
+  - [ ] 5b.4 Review: gravedigger and security-reviewer
+    - Record both verdict lines. Expected: gravedigger reports D4 fixed.
+    - _Requirements: 1.6, 2.7_
 
 - [ ] 6. Change log and final checkpoint
   - [ ] 6.1 Add the 0.9 change-log line to docs/requirements.md, worded as design.md "Changes required" gives it, with the date of the change. Edit no requirement text.
