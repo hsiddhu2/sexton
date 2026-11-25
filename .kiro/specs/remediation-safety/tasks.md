@@ -98,7 +98,7 @@ Every top-level task ends with a review sub-task. It runs the gravedigger agent 
       - gravedigger (wf_c69ae45f6753ac50) at d1a4f91: "Verdict: unsafe. D1 is fixed with no regression. D2, D3 and D4 each have a concrete input that leaves a repository worse or hides unread files, and all three still stand at d1a4f91."
       - security-reviewer (wf_731d933fbb2e2202) on e278940..d1a4f91: "Verdict: ready with notes. I found no defects in `e278940..d1a4f91`, and the D1 fix matches bugfix 2.1 to 2.3, 3.11 and design.md "Changes required"." Both of its notes were applied in task 4's commit: the header comment of precheck.ts now names this spec, and the test file's imports are one sorted block.
 
-- [-] 4. Fix D2: an Incomplete scan says so
+- [x] 4. Fix D2: an Incomplete scan says so
   - [x] 4.1 Change migrationSections in src/remediation/pr-body.ts
     - Add `INCOMPLETE_SCAN_LINE` next to `NOT_SCANNED_LINE`, and replace line 163 with the three lines in design.md. Touch no other line of the file, so the other branch's signal-row change merges cleanly.
     - _Bug_Condition: isBugConditionD2_
@@ -112,32 +112,38 @@ Every top-level task ends with a review sub-task. It runs the gravedigger agent 
   - [x] 4.4 Run the gates, as in 3.4
     - _Requirements: 3.1 to 3.10_
     - Notes: Property 2 and its three cases pass with no edit to the test. P4 to P9 still pass. The new unit test pins the order: sites, a blank line, the incomplete line, then the notes. Gates: tsc -b exit 0 and eslint exit 0. engine: 1149 passed and 4 failed, all 4 the D3 exploration tests. cli: 61 passed. api: 300 passed. web: 524 passed and 1 failed, the pre-existing `readme.test.ts` (see 2.3). Golden diff exit 0. `migration-plan.test.ts` and `migration-fixtures.test.ts` pass unchanged. The only lines of pr-body.ts that changed are the new constant next to `NOT_SCANNED_LINE` and the old line 163.
-  - [ ] 4.5 Review: gravedigger and security-reviewer
+  - [x] 4.5 Review: gravedigger and security-reviewer
     - Record both verdict lines. Expected: gravedigger reports D2 fixed.
     - _Requirements: 2.4_
+    - Notes:
+      - gravedigger (wf_fefea10ee182f04c) at def3208: "Verdict: unsafe. D3 (`choose-kind.ts:15`) and D4 (`migration-candidates.ts:49,63-68`, `node-sass-recipe.ts:72-82`) are still open defects, even though D2 is fixed cleanly." Its note was that a skipped unsafe path that is not a style or script file also makes the body say "incomplete". Accepted, as design Decision 7 says.
+      - security-reviewer (wf_c70c064666d14385) on d1a4f91..def3208: "Verdict: ready with notes. The D2 fix matches design.md and bugfix 2.4 and 3.5 to 3.7, and the only notes concern the test's coverage of `skipped`." Applied in task 5's commit: a unit case for `skipped: 1` with no sites.
 
-- [ ] 5. Fix D3: no remove for an Implicit-use name
-  - [ ] 5.1 Change src/remediation/choose-kind.ts
+- [-] 5. Fix D3: no remove for an Implicit-use name
+  - [x] 5.1 Change src/remediation/choose-kind.ts
     - Add `IMPLICIT_USE_NAMES`, `IMPLICIT_USE_PREFIX` and `isImplicitUse`, and guard the remove branch, as design.md says. No change in packages/cli.
     - _Bug_Condition: isBugConditionD3_
     - _Expected_Behavior: bugfix 2.5_
     - _Requirements: 2.5, 3.8_
-  - [ ] 5.2 Add the chooseKind unit tests from design.md "Unit tests", including the near-miss names
+  - [x] 5.2 Add the chooseKind unit tests from design.md "Unit tests", including the near-miss names
     - _Requirements: 2.5, 3.8_
-  - [ ] 5.3 Verify that Property 3 now passes
+  - [x] 5.3 Verify that Property 3 now passes
     - **EXPECTED OUTCOME**: Property 3 PASSES, and P4 to P9 still PASS. Property 9 "Remove needs import sites" in `plan.test.ts` passes unchanged.
     - _Requirements: 2.5, 3.8_
-  - [ ] 5.4 Run the gates, as in 3.4
+    - Notes: Before the fix, Property 3 and its three cases failed at fff60f8 (task 1.4, counterexample `["tslib", "dependencies", "Possessed"]`) and again in the def3208 gates (4 failed). After the fix in choose-kind.ts, the file passes 53 of 53 with no edit to Property 3. The chooseKind units cover six Implicit-use names that become bumps, four near-miss names that stay removes (`types-node`, `@typesx/a`, `tslib-extra`, `left-pad`), and the recipe case, which is a migrate.
+  - [x] 5.4 Run the gates, as in 3.4
     - _Requirements: 3.1 to 3.10_
+    - Notes: tsc -b exit 0 and eslint exit 0. engine: 85 files, 1165 of 1165 passed, the first fully green engine run of this spec. cli: 61 passed. api: 300 passed. web: 524 passed and 1 failed, the pre-existing `readme.test.ts` (see 2.3). Golden diff exit 0. `plan.test.ts` Property 9 "Remove needs import sites" passes unchanged.
   - [ ] 5.5 Review: gravedigger and security-reviewer
     - Record both verdict lines. Expected: gravedigger reports D3 fixed.
     - _Requirements: 2.5_
 
-- [ ] 5b. Fix D4: no sass-loader raise over a Non-registry range (added after the task 1 review)
-  - [ ] 5b.1 Write Property 10 in test/remediation/remediation-safety.test.ts and run it on the code before this fix
+- [-] 5b. Fix D4: no sass-loader raise over a Non-registry range (added after the task 1 review)
+  - [x] 5b.1 Write Property 10 in test/remediation/remediation-safety.test.ts and run it on the code before this fix
     - **EXPECTED OUTCOME**: Property 10 FAILS. Record the counterexample here. If it passes, stop.
     - _Bug_Condition: isBugConditionD4_
     - _Requirements: 1.6_
+    - Notes: Ran on the code before the D4 fix (working tree after the D3 fix), `vitest run test/remediation/remediation-safety.test.ts -t "D4"`. 4 failed and 1 passed. The three cases (`file:../loader`, `github:o/sass-loader`, `workspace:*` at 7.0.0) and Property 10 fail on `expected 'raise' to be 'unknown'`. Property 10 shrunk counterexample: `["7.0.0", "file:../foo"]`. The Registry-range control `~7.1.0` at 7.1.0 is still `raise` and passes.
   - [ ] 5b.2 Change sassLoaderNeed in src/remediation/migration-candidates.ts as design.md "D4" says, then verify that Property 10 passes and P4 to P9 still pass
     - _Expected_Behavior: bugfix 2.7_
     - _Requirements: 2.7, 3.11, 3.12_

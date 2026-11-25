@@ -10,6 +10,9 @@ import { InMemoryFileSource } from "../../src/remediation/file-source.js";
 import type { BumpDataResult } from "../../src/remediation/gather-bump-data.js";
 import { isValidBranchName } from "../../src/remediation/is-valid-branch-name.js";
 import { planRemediation, type PlanOptions } from "../../src/remediation/plan.js";
+import { chooseKind } from "../../src/remediation/choose-kind.js";
+import { sassLoaderNeed } from "../../src/remediation/migration-candidates.js";
+import { NODE_SASS_RECIPE } from "../../src/remediation/node-sass-recipe.js";
 import { buildPrBody, INCOMPLETE_SCAN_LINE, NONE_LINE, NOT_SCANNED_LINE } from "../../src/remediation/pr-body.js";
 import { buildPrContext } from "../../src/remediation/pr-context.js";
 import { BASE_REF_DEFAULT, buildPrIntent } from "../../src/remediation/pr-intent.js";
@@ -385,5 +388,66 @@ describe("migration body, D2 incomplete line", () => {
     expect(section.split("\n")).not.toContain(NONE_LINE);
     expect(section.indexOf(INCOMPLETE_SCAN_LINE)).toBeLessThan(section.indexOf(NOTE_SASS_LOADER_UNKNOWN));
     expect(body.split(INCOMPLETE_SCAN_LINE)).toHaveLength(2);
+  });
+  it("prints only the incomplete line for a skipped file and no sites", () => {
+    const r = sassReport();
+    const outcome: RecipeOutcome = {
+      ok: true,
+      result: {
+        edits: [{ path: "package.json", op: "remove-dependency", section: "devDependencies", name: "node-sass" }],
+        reviewSites: [],
+        filesChanged: ["package.json"],
+        scan: { performed: true, listed: 2, read: 2, skipped: 1, capped: false },
+        notes: [],
+      },
+    };
+    const [plan] = planRemediation(r, { migrations: new Map([["node-sass", outcome]]) });
+    const ctx = buildPrContext(r, POLICY, "node-sass");
+    if (plan === undefined || ctx === null) throw new Error("no node-sass plan");
+    expect(reviewSection(buildPrBody(plan, ctx))).toBe(`## Review before merging\n\n${INCOMPLETE_SCAN_LINE}\n`);
+  });
+});
+
+describe("chooseKind, D3 Implicit-use names", () => {
+  const zero = (name: string) => ({ importSites: new Map([[name, 0]]) });
+  for (const name of ["@types/node", "tslib", "@babel/runtime", "@swc/helpers", "core-js", "regenerator-runtime"]) {
+    it(`${name} with 0 import sites is a bump`, () => expect(chooseKind(name, zero(name))).toBe("bump"));
+  }
+  for (const name of ["types-node", "@typesx/a", "tslib-extra", "left-pad"]) {
+    it(`${name} with 0 import sites is still a remove`, () => expect(chooseKind(name, zero(name))).toBe("remove"));
+  }
+  it("an Implicit-use name with a recipe is a migrate", () => {
+    expect(chooseKind("tslib", { ...zero("tslib"), recipes: new Map([["tslib", { id: "r", from: "tslib", to: "x", run: () => Promise.resolve({ ok: false, reason: "stub" }) }]]) })).toBe("migrate");
+  });
+});
+
+// D4 ------------------------------------------------------------------------------------------------------------------
+
+const cleanVersions = (versions: readonly string[]): BumpDataResult => ({ ok: true, published: versions, deprecated: new Set(), advisories: new Map(versions.map((v) => [v, []])) });
+const loaderDep = (installedVersion: string, declaredRange: string): IntakePackage => ({ name: "sass-loader", installedVersion, declaredRange, origin: "devDependencies", resolution: "locked" });
+
+async function expectNoLoaderRaise(installed: string, range: string): Promise<void> {
+  const packageJson = { packages: [dep("node-sass"), loaderDep(installed, range)], scripts: new Map<string, string>() };
+  const data = new Map([["sass", cleanVersions(["1.2.0"])], ["sass-loader", cleanVersions(["7.2.0", "8.0.0"])]]);
+  expect(sassLoaderNeed(packageJson.packages).kind).toBe("unknown");
+  const outcome = await NODE_SASS_RECIPE.run({ packageJson, files: undefined, data });
+  expect(outcome.ok).toBe(true);
+  if (!outcome.ok) return;
+  expect(outcome.result.edits.filter((e) => e.name === "sass-loader")).toEqual([]);
+  expect(outcome.result.notes).toContain(NOTE_SASS_LOADER_UNKNOWN);
+}
+
+describe("remediation-safety exploration, D4: no sass-loader raise over a Non-registry range", () => {
+  for (const range of ["file:../loader", "github:o/sass-loader", "workspace:*"]) {
+    it(`sass-loader 7.0.0 declared ${range} is not raised`, () => expectNoLoaderRaise("7.0.0", range));
+  }
+  it("Feature: remediation-safety, Property 10: Bug Condition D4", async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.constantFrom("7.0.0", "7.1.0", "6.0.6"), fc.constantFrom(...NON_REGISTRY_RANGES), (installed, range) => expectNoLoaderRaise(installed, range)),
+      { numRuns: 1000 },
+    );
+  });
+  it("a Registry range below the minimum is still raised", () => {
+    expect(sassLoaderNeed([dep("node-sass"), loaderDep("7.1.0", "~7.1.0")]).kind).toBe("raise");
   });
 });
