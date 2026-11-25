@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type RefObject } from "react";
+import { useState, type FormEvent, type ReactNode, type RefObject } from "react";
 import type { Theme } from "../scene/palette.js";
 import { HOSTED_UNAVAILABLE_TEXT } from "../load/use-scan-loader.js";
 import type { HeaderModel } from "./header-model.js";
@@ -8,6 +8,7 @@ import { ScanTime } from "./ScanTime.js";
 import { Wordmark } from "./Wordmark.js";
 import { ReplayButtons } from "../replay/ReplayButtons.js";
 import type { ReplayId } from "../replay/replay-ids.js";
+import { fixFirstText, type FixFirst } from "./fix-first.js";
 
 export interface HeaderProps {
   /** Null while loading or after a load error: only the shell is shown. */
@@ -29,6 +30,10 @@ export interface HeaderProps {
   readonly replay?: boolean;
   /** The Sound toggle (spec cemetery-undead-2, requirement 8.1). Off by default. */
   readonly sound?: { readonly on: boolean; readonly onToggle: () => void };
+  /** The Fix-first line (spec judge-path, requirement 2), computed in App. Absent, no line. */
+  readonly fixFirst?: { readonly value: Exclude<FixFirst, null>; readonly onPress: () => void };
+  /** The Guide button and the Guide after it (spec judge-path, requirement 1). Absent, neither shows. */
+  readonly guide?: { readonly onOpen: () => void; readonly buttonRef: RefObject<HTMLButtonElement | null>; readonly panel: ReactNode };
 }
 
 function DownloadGlyph() {
@@ -39,7 +44,7 @@ function DownloadGlyph() {
   );
 }
 
-export function Header({ model, theme, apiConfigured, onSubmit, fieldRef, asOf, onReplay, serious = false, onSerious, replay = false, sound }: HeaderProps) {
+export function Header({ model, theme, apiConfigured, onSubmit, fieldRef, asOf, onReplay, serious = false, onSerious, replay = false, sound, fixFirst, guide }: HeaderProps) {
   const [value, setValue] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const submit = (event: FormEvent<HTMLFormElement>): void => {
@@ -128,6 +133,25 @@ export function Header({ model, theme, apiConfigured, onSubmit, fieldRef, asOf, 
         </button>
       )}
       <Legend theme={theme} />
+      {guide === undefined ? null : (
+        <>
+          <button type="button" className="guide-button" ref={guide.buttonRef} onClick={guide.onOpen}>
+            Guide
+          </button>
+          {guide.panel}
+        </>
+      )}
+      {/* The Fix-first line, a full row at the header's foot (spec judge-path, requirement 2). */}
+      {fixFirst === undefined ? null : fixFirst.value.kind === "all-alive" ? (
+        <p className="fix-first-line">{fixFirstText(fixFirst.value)}</p>
+      ) : (
+        <p className="fix-first-line">
+          <button type="button" className="fix-first" onClick={fixFirst.onPress}>
+            <span className="fix-first-chip" aria-hidden="true" style={{ background: `var(--state-${fixFirst.value.state.toLowerCase()})` }} />
+            {fixFirstText(fixFirst.value)}
+          </button>
+        </p>
+      )}
       {onReplay === undefined ? null : <ReplayButtons onReplay={onReplay} />}
       {message === null ? null : (
         <p role="alert" className="header-message">

@@ -101,6 +101,8 @@ const CRATERS: readonly (readonly [number, number, number])[] = [
 const HALO_OUTER = 2.5;
 const CRACK_LINE_WIDTH = 2;
 const RING_LINE_WIDTH = 3;
+/** The Ring casing's width on each side of the ring's line, in CSS pixels. */
+export const RING_CASING = 2;
 
 const SHADOW_RX = 72;
 const SHADOW_RY = 8;
@@ -415,8 +417,8 @@ function drawGlow(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan): void 
  * than the mask says, two layer pixels, so the layer's smoothing never leaves a trace of the Halo inside a cut.
  */
 const HALO_LAYER_SCALE = 0.25;
-/** The Halo's sources are drawn at an eighth of a CSS pixel and scaled up: they are smooth gradients. */
-const HALO_SOURCE_SCALE = 0.125;
+/** The Halo's sources are drawn at a sixteenth of a CSS pixel and scaled up: they are smooth gradients (spec judge-path, 5.1). */
+const HALO_SOURCE_SCALE = 0.0625;
 const HALO_CUT_MARGIN = 8;
 interface HaloLayer {
   readonly key: string;
@@ -427,9 +429,10 @@ interface HaloLayer {
 }
 let haloLayer: HaloLayer | null = null;
 
-/** E2E only: forget the Halo layer, so the next paint repaints it. */
-export function resetHaloLayer(): void {
+/** E2E only: forget the Halo layer, so the next paint repaints it; `cold` forgets its sources canvas too. */
+export function resetHaloLayer(cold = false): void {
   haloLayer = null;
+  if (cold) haloSourcesKey = "";
 }
 
 /** E2E only: the Halo layer's alpha, 0 to 255, at a scene point, or null outside the layer or with no layer. */
@@ -960,6 +963,16 @@ export function drawScene(ctx: PaintContext2D, plan: ScenePlan, scale: number, n
     ctx.restore();
   }
   if (plan.ring !== null) {
+    // The Ring casing: ink on each side of the gold line, so the gold sits on ink and never on the Halo (spec
+    // judge-path, requirement 4.1). Filled, so the ring stays one stroke and the last call.
+    const r = plan.ring;
+    const o = RING_LINE_WIDTH / 2 + RING_CASING;
+    const t = 2 * o;
+    ctx.fillStyle = colours.ink;
+    ctx.fillRect(r.x - o, r.y - o, r.w + t, t);
+    ctx.fillRect(r.x - o, r.y + r.h - o, r.w + t, t);
+    ctx.fillRect(r.x - o, r.y + o, t, r.h - t);
+    ctx.fillRect(r.x + r.w - o, r.y + o, t, r.h - t);
     ctx.strokeStyle = colours.ring;
     ctx.lineWidth = RING_LINE_WIDTH;
     ctx.strokeRect(plan.ring.x, plan.ring.y, plan.ring.w, plan.ring.h);

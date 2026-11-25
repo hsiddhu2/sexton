@@ -55,9 +55,9 @@ Paths: this spec changes `packages/web`, the README section "Try it in two minut
 11. WHEN the Guide closes while focus is inside it THE Web app SHALL return focus to the Guide button.
 12. THE Guide's controls SHALL be reachable by Tab at every step, in the order Back, Next or Done, Close.
 13. WHEN a step is shown THE Web app SHALL scroll its Anchor into view.
-14. THE Guide card SHALL, for any plan of up to 60 packages at any width from 360 to 1920, any Anchor and any card height from 120 to 260, take the first place beside, above or below the Anchor, in that order, that lies inside the viewport and clear of every Name label.
-15. IF no place of 1.14 qualifies THEN THE Guide card SHALL dock to the first of the viewport's bottom band (above the Footer bar when it is pinned) and its top band (below the header when it is pinned) that is clear of every Name label.
-16. IF neither band of 1.15 is clear THEN THE Guide card SHALL dock to the bottom band, and THE design document SHALL record this as the one case in which the card may cover a name.
+14. THE Guide card SHALL, for any plan of up to 60 packages at any width from 360 to 1920, any Anchor and any card height from 120 to 260, take a place beside, above or below the Anchor, on the first of those sides that has one inside the viewport and clear of every Name label.
+15. IF no place of 1.14 qualifies THEN THE Guide card SHALL dock to the lowest band of the viewport, from just above a pinned Footer bar up to just below a pinned header, that is clear of every Name label and of its Anchor.
+16. IF no band of 1.15 is clear THEN THE Guide card SHALL dock to the bottom band, and THE design document SHALL record this as the one case in which the card may cover a name.
 17. WHILE Reduced motion applies, THE Guide SHALL show and change steps with no transition or animation.
 18. WHILE the drawer is open, THE Web app SHALL hide the Guide.
 19. WHEN the drawer opens while the Guide is at step 1 or 2 THE Web app SHALL move the Guide to step 3.
@@ -141,7 +141,7 @@ Paths: this spec changes `packages/web`, the README section "Try it in two minut
 #### Acceptance Criteria
 
 1. THE Web app SHALL keep every existing accessible name, except the changes that design.md "Deliberate test changes" lists.
-2. THE keyboard order SHALL follow the DOM: Back to now when shown, the Fix-first button when shown, the evidence links, Repository URL, Scan, Sound, Serious mode, Legend, Guide, the Guide's controls when it is open, the banner links of a replay, the roving grave, Play, History date, then the two Replay buttons.
+2. THE keyboard order SHALL follow the DOM: Back to now when shown, the evidence links, Repository URL, Scan, Sound, Serious mode, Legend, Guide, the Guide's controls when it is open, the Fix-first button when shown, the banner links of a replay, the roving grave, Play, History date, then the two Replay buttons.
 3. THE contrast tests and the colour-vision test SHALL pass unedited.
 4. EVERY 300-grave speed case SHALL keep its median at or below 16 ms.
 5. THE Web app SHALL keep Sound off by default and make no AudioContext before Sound is on and a gesture has happened.

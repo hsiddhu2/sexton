@@ -62,8 +62,9 @@ describe("scrubber on the demo scan (requirements 11, 12)", () => {
     mount();
     await ready();
     // Apiless mount: the evidence links, the Legend, the two Replay buttons, the Play control and then the slider (the field and Scan are disabled).
-    // Spec cemetery-undead-2, Deliberate test change 4: one more press, for the Sound stop.
-    for (let i = 0; i < 8; i += 1) await user.tab();
+    // Spec cemetery-undead-2, Deliberate test change 4: one more press, for the Sound stop. Spec judge-path, Deliberate
+    // test change 2: two more, for the Fix-first button and Guide.
+    for (let i = 0; i < 10; i += 1) await user.tab();
     expect(document.activeElement).toBe(slider());
   });
   it("shows as of, the two caption lines and Back to now only before the scan date, and Back to now returns focus to the slider", async () => {

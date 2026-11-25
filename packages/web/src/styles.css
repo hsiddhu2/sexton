@@ -119,6 +119,17 @@ main {
   outline-offset: -9px;
 }
 
+/* The Ring casing of the focus outline: ink from 4 to 6 px and from 9 to 11 px inside the cell, with the focus colour
+   between, so the outline sits on ink and never on the Halo (spec judge-path, requirement 4.2). The outline above stays
+   for forced-colours mode. */
+.grave-button:focus-visible::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  box-shadow: inset 0 0 0 2px var(--ink), inset 0 0 0 5px var(--focus), inset 0 0 0 7px var(--ink);
+  pointer-events: none;
+}
+
 .grave-tooltip {
   position: absolute;
   z-index: 2;
@@ -302,6 +313,8 @@ main {
 .legend-toggle,
 .sound-toggle,
 .serious-toggle,
+.guide-button,
+.guide-controls button,
 .drawer-close {
   padding: 6px 14px;
   border-radius: 999px;
@@ -457,6 +470,10 @@ main {
 .legend-toggle:focus-visible,
 .serious-toggle:focus-visible,
 .sound-toggle:focus-visible,
+.guide-button:focus-visible,
+.guide-controls button:focus-visible,
+.guide-title:focus-visible,
+.fix-first:focus-visible,
 .repo-form button:focus-visible,
 .repo-form input:focus-visible {
   outline: 3px solid var(--focus);
@@ -1353,4 +1370,137 @@ pre.signal-value {
   font-weight: 600;
   line-height: 1.25;
   pointer-events: none;
+}
+
+/* The Fix-first line (spec judge-path, requirement 2): a full row at the header's foot, so it reads in one line. */
+.fix-first-line {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.fix-first {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 2px 12px;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: var(--field);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.fix-first-chip {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* The Guide (spec judge-path, requirement 1): a card beside its Anchor. The style sheet moves nothing; a fade, when
+   motion is allowed, comes from the Web Animations API. */
+.guide {
+  position: fixed;
+  z-index: 20;
+  box-sizing: border-box;
+  width: min(300px, calc(100vw - 16px));
+  padding: 12px 14px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.875rem;
+  box-shadow: 0 6px 20px var(--bg);
+}
+
+.guide-count,
+.guide-body {
+  margin: 0 0 8px;
+}
+
+.guide-count {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.guide-title {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+.guide-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* The notch on the edge that faces the Anchor: a small square turned 45 degrees, half outside the card. */
+.guide-arrow {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin: -7px 0 0 -7px;
+  background: var(--surface);
+  transform: rotate(45deg);
+}
+
+/* Turned 45 degrees, the square's bottom-left corner points left, top-right right, top-left up, bottom-right down. */
+.guide-arrow-left {
+  left: 0;
+  border-left: 2px solid var(--border);
+  border-bottom: 2px solid var(--border);
+}
+
+.guide-arrow-right {
+  left: 100%;
+  border-top: 2px solid var(--border);
+  border-right: 2px solid var(--border);
+}
+
+.guide-arrow-top {
+  top: 0;
+  border-top: 2px solid var(--border);
+  border-left: 2px solid var(--border);
+}
+
+.guide-arrow-bottom {
+  top: 100%;
+  border-right: 2px solid var(--border);
+  border-bottom: 2px solid var(--border);
+}
+
+/* A compact card on a narrow screen, so it fits between two rows of names. */
+@media (max-width: 599px) {
+  .guide {
+    padding: 8px 12px;
+    font-size: 0.8125rem;
+  }
+  .guide-count {
+    float: right;
+    margin: 2px 0 0 8px;
+  }
+  .guide-title {
+    margin-bottom: 4px;
+  }
+  .guide-body {
+    margin-bottom: 6px;
+  }
+  .guide-controls button {
+    padding: 3px 12px;
+  }
+}
+
+/* The control the Guide's step points at (spec judge-path, requirement 1.4). A grave keeps its own ring and focus
+   outline; the Replay button gains this outline. */
+.replay-button.guide-target {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
 }

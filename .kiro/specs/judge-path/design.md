@@ -43,8 +43,10 @@ export type AnchorId = "fix-first-grave" | "replay-axios";
 export interface GuideStep { readonly title: string; readonly body: string; readonly anchor: AnchorId }
 export const GUIDE_STEPS: readonly GuideStep[]; // four
 export const GUIDE_W = 300;
-/** Beside, above or below the anchor, inside the viewport, clear of every name label; else docked at the viewport's bottom. */
-export function placeGuide(anchor: Rect, viewport: { width: number; height: number; headerBottom: number | null; footerTop: number | null }, height: number, labels: readonly Rect[]): { left: number; top: number; side: "right" | "left" | "above" | "below" | "dock-bottom" | "dock-top" | "dock-forced" };
+/** Beside, above or below the anchor (each side sliding along it), inside the viewport, clear of every obstacle; else the lowest clear band. */
+export function placeGuide(anchor: Rect, viewport: { width: number; height: number; headerBottom: number | null; footerTop: number | null }, height: number, labels: readonly Rect[]): { left: number; top: number; side: "right" | "left" | "above" | "below" | "dock" | "dock-forced" };
+export function guideCandidates(anchor, viewport, height, side): GuidePlace[]; // the side's places, in the order tried
+export function dockTops(lo: number, hi: number): number[];                    // the dock's tops, bottom band first
 ```
 
 The four steps, in plain words:
@@ -58,8 +60,8 @@ The four steps, in plain words:
 
 - **Shown by itself** only on the Demo (`state.isDemo`), only when `readGuideClosed` is false and the page's test flag allows it, without moving focus (1.1 to 1.3).
 - **Markup.** `<section className="guide" role="dialog" aria-modal="false" aria-labelledby="guide-title">` rendered in the header right after the Guide button, so its controls follow it in the Tab order (Back, Next or Done, Close). Position `fixed`, at `placeGuide` of its Anchor's client rectangle (the grave button, or the "axios, Mar 2026" button), re-placed on resize and scroll. A small pointer arrow on the side that faces the Anchor. Step counter "Step n of 4".
-- **Anchor in view.** Each step scrolls its Anchor into view (`scrollIntoView({ block: "nearest" })`, no smooth scroll under Reduced motion) before it is placed, so at 390 px the Replay button of step 4 is on screen (1.13).
-- **Placement.** `placeGuide` gets every grave's `labelRect` in client coordinates (the canvas rectangle plus the plan's label) and tries right, left, above, below the Anchor. With none clear and inside the viewport, the card docks to the first of two bands clear of every Name label: the viewport's bottom band (above the Footer bar when it is pinned), then its top band (below the header when it is pinned). With neither clear it docks to the bottom band, the one case in which it may cover a name; the e2e checks every step at 1440 by 900 and 390 by 844 on the Demo never reaches that case (1.14 to 1.16). Property 1.
+- **Anchor in view.** Once a step's Anchor has stood still for two frames, the page scrolls just enough to bring it between a pinned header and a pinned Footer bar (no smooth scroll), so at 390 px the Replay button of step 4 is on screen (1.13).
+- **Placement.** `placeGuide` gets every grave's `labelRect` in client coordinates (the canvas rectangle plus the plan's label) and every speech Bubble, and tries right, left, above, below the Anchor; on each side the card slides along the Anchor in 8 px steps while it still faces part of it. With none clear and inside the viewport, the card docks to the lowest band of the viewport, from just above a pinned Footer bar up to just below a pinned header in 8 px steps, that is clear of every obstacle and of the Anchor. With none clear it docks to the bottom band (`dock-forced`), the one case in which it may cover a name; the e2e checks every step at 1440 by 900 and 390 by 844 on the Demo never reaches that case (1.14 to 1.16). Property 1. The card follows its Anchor each animation frame (the scene lays out after the page loads, and Bubbles come and go), and sets a new place only when it changes.
 - **Controls.** Back, Next or Done, and Close (named "Close guide"), all native buttons.
 - **Escape.** Listened for on the Guide's own `section` (`onKeyDown`), never on the document, so Escape on a grave's tooltip does not close the Guide (1.6).
 - **Close.** Close, Done and Escape write "closed" (1.7). Focus returns to the Guide button only when focus was inside the Guide (1.11); otherwise it stays where it is.
@@ -81,7 +83,7 @@ export function fixFirstText(f: Exclude<FixFirst, null>): string; // "Fix first:
 ```
 
 - `Header` takes `fixFirst` and `onFixFirst` as props (not HeaderModel fields), so a Header rendered without them is unchanged.
-- Rendered in the header summary under the policy line: a native button `.fix-first` with that text, or the "Nothing to fix first" sentence. A small state-colour chip before it (decoration, aria-hidden).
+- Rendered as a full-width row at the header's foot, after the Guide: a native button `.fix-first` with that text, or the "Nothing to fix first" sentence. A small state-colour chip before it (decoration, aria-hidden). See decision 1 below.
 - **Select.** App holds `selectRequest: { index, n } | null`; pressing the button bumps `n`. Cemetery, on a new request, sets the selected grave and focuses its button, so the tooltip shows the why.
 - Triage index 0 is the first of `triageOrder(response.report.packages)`, the order Cemetery already uses, at the scan date.
 
@@ -94,7 +96,7 @@ A new section "## Try it in two minutes" after the opening paragraphs and before
 - **Ring.** Before the gold ring's `strokeRect`, `drawScene` fills its casing with the `ink` token as four rectangles: 2 px just outside the gold line and 2 px just inside it. The ring is still one `strokeRect` and still the last call, so the painter's call-count tests are unchanged.
 - **Focus outline.** `.grave-button:focus-visible` keeps `outline: 3px solid var(--focus)` with `outline-offset: -9px` (it stays for forced-colours mode) and gains a `::after` at `inset: 4px` with `border: 2px solid var(--ink)` and `box-shadow: inset 0 0 0 3px var(--focus), inset 0 0 0 5px var(--ink)`, so the outline's band (6 to 9 px inside the cell) has ink on both sides (from 4 to 6 px and from 9 to 11 px inside the cell). The `::after` has `pointer-events: none`.
 - **Halo.** `haloMask` no longer cuts the Ring band and the Outline band. The gold sits on its casing, and only the ink casing, which no contrast check guards, sits on the Halo. The Part, Ghost, pennant, Name label, Burst and burial cuts stay.
-- **Inside the ring.** The smudges in docs/replay-axios.png sit inside the ring too, where the soft edges of the zombie's Part cuts (horns, arms, lid) reach it. If the e2e of 4.7 still finds a sample under half the uncut Halo after the ring cut goes, the soft edge is narrowed for every cut: HALO_GROW 14 and HALO_BLUR 4 with the 8 px margin, so the grown copy still passes the solid cut by one and a half blurs. These are the global constants that the painter, `haloAlphaAt` and Property 4's far distance all read, so model and painter stay one; the measurement is recorded.
+- **Inside the ring.** The smudges in docs/replay-axios.png sit inside the ring too, where the soft edges of the zombie's Part cuts (horns, arms, lid) reach it. If the e2e of 4.7 still finds a sample under half the uncut Halo after the ring cut goes, or the critic finds a dark patch, the soft edge is narrowed for every cut: HALO_GROW 14 and HALO_BLUR 4 (in the end 12 and 3, with finer Part boxes: decision 6) with the 8 px margin, so the grown copy still passes the solid cut by one and a half blurs. These are the global constants that the painter, `haloAlphaAt` and Property 4's far distance all read, so model and painter stay one; the measurement is recorded.
 - **Contrast.** A new test: the ring token against `ink` and the focus token against `ink`, each at least 3:1. The existing tests run unedited.
 
 ### B5. A cold Halo repaint inside the budget (requirement 5)
@@ -132,7 +134,7 @@ No change to the API contract, the Engine, the evidence pack, the demo files or 
 
 ### Property 1: The Guide card stays on screen and off every name
 
-*For all* plans of up to 60 packages at widths 360 to 1920, any Anchor rectangle and any card height from 120 to 260: when a place beside, above or below the Anchor lies inside the viewport and clear of every Name label, `placeGuide` returns the first such place in that order; otherwise it returns the first dock band clear of every Name label; and it returns `dock-forced`, which may cover a name, only when no place and no band is clear.
+*For all* plans of up to 60 packages at widths 360 to 1920, any Anchor rectangle and any card height from 120 to 260: when a side has a place beside the Anchor (in `guideCandidates`) inside the viewport and clear of every Name label, `placeGuide` returns such a place on the first such side of right, left, above, below, touching the Anchor's edge across the gap; otherwise it returns the lowest dock band clear of every Name label and of the Anchor; and it returns `dock-forced`, which may cover a name, only when no place and no band is clear.
 
 **Validates: Requirements 1.14, 1.15, 1.16.** Test: `test/guide.test.tsx`.
 
@@ -178,7 +180,7 @@ Examples for fixed values and DOM; Properties 1 to 5 with fast-check, numRuns 10
 Every existing test not listed here must pass unmodified.
 
 `test/a11y.test.tsx`
-1. "reaches the two evidence links, the Legend control, field, submit and one grave stop by Tab, and wraps out of the page". Old: 12 presses. New: 14, with the Fix-first button before the evidence links and Guide after Legend; the grave stop moves from position 7 to 9.
+1. "reaches the two evidence links, the Legend control, field, submit and one grave stop by Tab, and wraps out of the page". Old: 12 presses. New: 14, with Guide after Legend and then the Fix-first button; the grave stop moves from position 7 to 9.
 
 `test/scrubber.test.tsx`
 2. "is reachable by Tab". Old: 8 presses. New: 10 (the Fix-first button and Guide).
@@ -200,7 +202,7 @@ As cemetery-undead-2, with captures of the Demo at 1440 by 900 and 390 by 844 wi
 
 ## Calls made without a user decision
 
-1. **The Fix-first line sits in the header summary** under the policy line, so the first screen shows it without scrolling at both sizes, and its button is in the Tab order right after Back to now.
+1. **The Fix-first line sits in the header**, so the first screen shows it without scrolling at both sizes. (Changed during implementation: see "Decisions made during implementation", 1.)
 2. **The Fix-first line is hidden on a replay.** The story card names the replay's grave, and a replay's scan-date grave is its last Stop, not the attack.
 3. **Pressing Fix first focuses the grave** as well as selecting it, so the tooltip with the reason shows at once, for keyboard and pointer users alike.
 4. **The Guide is a non-modal dialog** in the header's DOM after the Guide button: it does not trap focus, so a judge can try each control while it is open.
@@ -210,10 +212,12 @@ As cemetery-undead-2, with captures of the Demo at 1440 by 900 and 390 by 844 wi
 
 ## Decisions made during implementation
 
-None yet.
-
-## Notes and open items
-
-- **For the owner at go.** The handoff says to bring the cold Halo repaint inside 16 ms. Requirement 5.3 is a fallback: if the two steps of B5 are not enough, each is recorded with its median and the case is reported above 16 ms. The owner accepts or refuses that fallback at go.
-
-- The hosted site must serve this build before the README links show the Guide. Deploying is outside this spec.
+1. **The Fix-first line is a full row at the header's foot, not in the summary.** In the summary column (about 240 px wide at 1440) the line wrapped to three lines, pushed the canvas top past 190 px (7.8) and read slowly. As one row at the header's foot it reads in one line at 1440 and the canvas top is 155 px. Its button now follows the Guide in the Tab order instead of preceding the evidence links, so visual and focus order agree; requirement 7.2 and Deliberate test change 1 say so.
+2. **Requirement 4.7 samples only points more than 24 px from every guarded box.** The cut of a Part box is solid for 8 px and soft for the next 16 px by design (cemetery-undead-fixes), so a point just outside the zombie is dark on purpose. The e2e checks the ring, not the figure: 267 points, worst share of the uncut Halo 0.86 before and 0.94 after the soft-edge change below.
+3. **The Guide's card slides along each side and the dock slides up the viewport** (requirements 1.14 and 1.15 as worded here). With fixed places the card docked at the top at 1440 and could find no clear band at 390, because names sit in every row. Sliding finds a place beside left-padder at 1440 and a clear band between two rows at 390. Speech Bubbles are obstacles too.
+4. **A grave whose burial plays is not cut by its Part boxes at rest.** With only `buryingRegions` following the stone, the resting Part boxes of the same grave were still cut, which left the column. They are now skipped while its burial plays (its Ghost is not drawn then); Deliberate test change 3 covers the halo test's regions.
+5. **Measurements**, median of 30 on the 300 front-row scene. Cold Halo repaint: 19.80 ms before; 13.80 ms with the sources at a sixteenth of a CSS pixel (B5 step 1; step 2 was not needed); 11.40 ms after decision 6. Warm Halo repaint: 11.90 ms before, 9.40 ms after decision 6. Burial repaint: 9.45 ms.
+6. **The Part boxes are 4-unit grid blocks, and the soft edge is HALO_GROW 12 with HALO_BLUR 3.** With the ring cut gone, the visual critic still found a wide, lumpy dark cloud round the replay zombie and behind the graves near a Halo (rounds 1 and 2). It came from the 8-unit blocks (14 px at the replay size, filling the gaps between arms and head) plus the soft edge. Narrowing the soft edge alone showed the blocks as stairs. The Part boxes are now measured again on a 4-unit grid by the same outline probe (Property 2 of cemetery-undead-fixes passes unedited), and the soft edge is the narrowest that still passes the solid 8 px margin by more than a blur and a quarter ((12 - 8) / 3). The B4 fallback of 14 and 4 was tried first and replaced by this. Requirement 4.7's worst share rose to 0.98.
+7. **The Priest is cut by his own outline**, PRIEST_PARTS (4-unit blocks over every phase and the Vigil, measured the same way), not by PRIEST_BOX, which left a dark box round him (critic round 2). PRIEST_BOX stays as the bound his own test checks.
+8. **A docked card has no notch, and the step's control is outlined.** At 1440 by 900 step 4 cannot sit beside the Replay button without covering the front row's names, so it docks above them; a notch there pointed at node-sass (critic round 2). A dock now has no notch, and while a step shows, its Replay button Anchor has a 3 px outline in the focus colour. A grave Anchor keeps its own ring and focus outline. On a narrow screen the card is compact, so it fits between two rows of names, and at 390 by 844 it now sits just above left-padder.
+9. **`haloAlphaAt` reads only the cuts near a point**, from grid buckets kept per mask: a cut farther than its soft edge reaches changes nothing, and the cuts keep their order, so the value is the same. With the finer Part boxes the Halo property test ran past its 60 s limit under the full suite; it now takes about 21 s alone.
