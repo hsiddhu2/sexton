@@ -456,6 +456,7 @@ main {
 
 .legend-toggle:focus-visible,
 .serious-toggle:focus-visible,
+.sound-toggle:focus-visible,
 .repo-form button:focus-visible,
 .repo-form input:focus-visible {
   outline: 3px solid var(--focus);
@@ -933,19 +934,20 @@ pre.signal-value {
   width: auto;
 }
 
-/* Sound (Phase 2) and Serious mode (spec cemetery-undead, 8.1, 9.2). */
+/* Sound and Serious mode (spec cemetery-undead, 8.1; spec cemetery-undead-2, 8.1). */
 .sound-toggle {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  cursor: not-allowed;
+  cursor: pointer;
 }
 .sound-glyph {
   fill: none;
   stroke: currentColor;
   stroke-width: 1.5;
 }
-.serious-toggle[aria-pressed="true"] {
+.serious-toggle[aria-pressed="true"],
+.sound-toggle[aria-pressed="true"] {
   border-color: var(--focus);
   background: var(--surface);
 }

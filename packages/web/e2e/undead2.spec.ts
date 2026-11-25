@@ -68,3 +68,48 @@ for (const [width, height] of [
     expect(result.differing).toBe(0);
   });
 }
+
+/** Wraps the page's AudioContext so the test can count every one made. */
+async function countAudioContexts(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const w = window as unknown as { AudioContext: typeof AudioContext; __audioContexts: number };
+    w.__audioContexts = 0;
+    const Real = w.AudioContext;
+    w.AudioContext = class extends Real {
+      constructor(options?: AudioContextOptions) {
+        super(options);
+        w.__audioContexts += 1;
+      }
+    };
+  });
+}
+const audioContexts = (page: Page): Promise<number> => page.evaluate(() => (window as unknown as { __audioContexts: number }).__audioContexts);
+
+test("no AudioContext exists before Sound is turned on, and a remembered on waits for a key press", async ({ page, baseURL }) => {
+  await sameOriginOnly(page, baseURL);
+  await countAudioContexts(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+  await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
+  // Scroll, hover and focus graves: still none.
+  await page.mouse.wheel(0, 300);
+  const graves = page.locator("button[data-grave-index]");
+  await graves.nth(1).hover();
+  await graves.nth(2).hover();
+  await graves.first().focus();
+  expect(await audioContexts(page)).toBe(0);
+  const toggle = page.getByRole("button", { name: "Sound off" });
+  await expect(toggle).toHaveAttribute("aria-pressed", "false");
+  await toggle.click();
+  const on = page.getByRole("button", { name: "Sound on" });
+  await expect(on).toHaveAttribute("aria-pressed", "true");
+  await expect.poll(() => audioContexts(page)).toBe(1);
+  // Reload with on remembered: none until the first key press, then one.
+  await page.reload();
+  await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
+  await expect(page.getByRole("button", { name: "Sound on" })).toHaveAttribute("aria-pressed", "true");
+  await graves.nth(1).hover();
+  expect(await audioContexts(page)).toBe(0);
+  await page.keyboard.press("Shift");
+  await expect.poll(() => audioContexts(page)).toBe(1);
+});

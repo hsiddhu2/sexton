@@ -1,5 +1,5 @@
 import type { ScanResponse } from "@sexton/api";
-import { useCallback, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Drawer } from "./drawer/Drawer.js";
 import type { RemediateView } from "./load/remediate-client.js";
 import { drawerModel } from "./drawer/drawer-model.js";
@@ -16,6 +16,8 @@ import { DRAWER_SCAN_DATE_TEXT, SCRUB_NOTE_TEXT } from "./time/Scrubber.js";
 import { formAt, timelineOf, type FormView } from "./time/form-at.js";
 import { useBurial } from "./time/use-burial.js";
 import { triageOrder } from "./triage/triage.js";
+import { ghostCallDue } from "./sound/use-sound.js";
+import type { VoiceId } from "./sound/voices.js";
 
 export interface CemeteryProps {
   readonly response: ScanResponse;
@@ -29,9 +31,11 @@ export interface CemeteryProps {
   readonly onRemediate?: (packageName: string) => Promise<RemediateView>;
   /** Serious mode hides the Punchlines (spec cemetery-undead, 8). */
   readonly serious?: boolean;
+  /** Plays a Voice when Sound is on (spec cemetery-undead-2, requirement 8). Absent, the cemetery is silent. */
+  readonly play?: (voice: VoiceId) => void;
 }
 
-export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFieldRef, onRemediate, serious = false }: CemeteryProps) {
+export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFieldRef, onRemediate, serious = false, play }: CemeteryProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const order = useMemo(() => triageOrder(response.report.packages), [response]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(() => (order.length > 0 ? 0 : null));
@@ -90,6 +94,16 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
       }),
     [order, width, theme, selectedIndex, phase, minHeight, fit, views, marks, burial.burial, burialIndex, fontsReady, reducedMotion, lantern],
   );
+  // The ghost call: a grave with a Ghost gains the Lantern glow by hover or focus, at most once every 1,500 ms.
+  const lastGhostCall = useRef<number | null>(null);
+  const lanternHasGhost = lantern !== null && plan.graves[lantern]?.ghost != null;
+  useEffect(() => {
+    if (!lanternHasGhost || play === undefined) return;
+    const now = performance.now();
+    if (!ghostCallDue(lastGhostCall.current, now)) return;
+    lastGhostCall.current = now;
+    play("ghost");
+  }, [lantern, lanternHasGhost, play]);
   const request = burial.request;
   const onRemediateWithBurial = useMemo(
     () =>

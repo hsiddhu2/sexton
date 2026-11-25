@@ -87,22 +87,22 @@ Run-time notes:
   - [x] 4.5 Independent code review of task 4
     - _Requirements: 16.5_
 
-- [ ] 5. Sound (B1)
+- [x] 5. Sound (B1)
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 8.10, 8.11, 12.2, 12.3_
-  - [ ] 5.1 Add `sound/sound-pref.ts`, `sound/voices.ts` and `sound/engine.ts`
+  - [x] 5.1 Add `sound/sound-pref.ts`, `sound/voices.ts` and `sound/engine.ts`
     - The Voice specs of the approved Sound list, MASTER_CAP, the limiter, the seeded noise buffer, the lazy factory and the dead state.
     - _Requirements: 8.5, 8.6, 8.7, 8.11_
-  - [ ] 5.2 Add `sound/use-sound.ts` and the toggle
+  - [x] 5.2 Add `sound/use-sound.ts` and the toggle
     - `aria-pressed`, "Sound off" and "Sound on", the gesture gate, visibility, Serious mode. Remove SOUND_NOTE_TEXT and the hidden note (Deliberate test changes 1 to 4). Wire the triggers of design.md B1 that exist now (the ghost call on the Lantern glow); the sting, thud and bell are wired in tasks 6 and 7.
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.8, 8.9, 8.10, 12.2_
-  - [ ] 5.3 Write `packages/web/test/sound.test.ts`
+  - [x] 5.3 Write `packages/web/test/sound.test.tsx`
     - **Property 7: No sound before it is asked for, and never past the cap**
     - **Validates: Requirements 8.2, 8.3, 8.7, 8.8**
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 8.10, 8.11_
-  - [ ] 5.4 e2e: no AudioContext before Sound is on
+  - [x] 5.4 e2e: no AudioContext before Sound is on
     - An init script wraps `window.AudioContext` and counts constructions. Load, scroll, hover and focus graves: 0. Press Sound: aria-pressed true and 1. Reload with "on" stored: 0 until a key press, then 1. The axe check with Sound on runs in Vitest, as the existing axe checks do (axe-core is already a devDependency; no new dependency).
     - _Requirements: 8.2, 8.4, 12.3_
-  - [ ] 5.5 Independent code review of task 5
+  - [x] 5.5 Independent code review of task 5
     - _Requirements: 16.5_
 
 - [ ] 6. The Rise clip, the Load moment and the replay Burst (B5, B3)
@@ -204,6 +204,7 @@ Run-time notes:
 - Critic round 3 (round-4): READY at both sizes. Minor, left as they are: a faint soft box round lodash; one pink beam in a 390 gutter; the 390 demo capture does not show the Possessed grave, so the 390 Halo was judged on the axios replay.
 - Task 4.4 screenshot loop: the header labels and the Sources line were in the round 2 and 3 captures and passed.
 - Review notes, tasks 2 to 4: READY, no defects. Acted on: each Halo cut is painted 2 px wider than the mask, so the half-scale layer's smoothing leaves no trace inside a cut. Left as notes: the footer hook finds the footer nodes again on a width or response change, not on every measure (there is one static footer today); the e2e's whole-canvas difference can also come from the Halo, which only weakens its sanity check; the Halo layer cache is module-level.
+- Review notes, task 5: NOT READY with 1 defect, fixed. A suspend's delayed context suspend was not cancelled by a resume, so turning Sound off and on, or hiding and showing the page, within about 60 ms left the toggle on and the page silent. The engine now keeps the timer and cancels it on resume and dispose; a test runs suspend, resume and the timers and expects no suspend. Acted on: the e2e waits for the AudioContext count with a poll; the thud's noise burst is kept apart from the sources started together. Left as notes: Property 7 does not advance timers (the new example covers the race); a ghost call can play when Sound turns on while the Lantern already sits on a grave with a Ghost.
 - Test sub-tasks are not optional in this plan.
 - Top-level tasks run in order. Each finishes, including its review, before the next starts.
 - Task 5 lands before tasks 6 and 7, so their sounds have an engine to call.

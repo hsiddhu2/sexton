@@ -412,7 +412,7 @@ These criteria turned out testable as properties: 1.1, 1.2, 3.2, 3.3, 3.4, 7.1, 
 
 *For any* sequence of events from {toggle, gesture, play(voice), serious on, serious off, hide, show} and any starting stored value: the AudioContext factory is called only after an event sequence in which Sound is on and a gesture or a toggle-on has happened, and at most once; no Voice but the bell starts while Serious mode is on; the Master gain is never set above MASTER_CAP; every non-wind Voice has a length of at most 2,500 ms. For any stored value, `readSound` is true exactly when it is "on", and `writeSound` then `readSound` returns the value written on a working storage.
 
-**Validates: Requirements 8.2, 8.3, 8.7, 8.8.** Test: `test/sound.test.ts`, with a fake AudioContextLike.
+**Validates: Requirements 8.2, 8.3, 8.7, 8.8.** Test: `test/sound.test.tsx`, with a fake AudioContextLike.
 
 ### Property 8: The Burst and the rise are pure, bounded and end in the still pose
 
@@ -434,7 +434,7 @@ All tests are network-free. Web Audio is never touched by a Vitest test: the eng
 | `test/art-box.test.ts` (new) | Properties 1 and 2. The demo's 12 graves at 1440 and 390 by example: no ghost over lodash, express or moment. |
 | `test/halo.test.ts` (new) | Property 3. HALO_ALPHA_BYTE is used only for the Halo. |
 | `test/bubbles.test.ts` (new) | Properties 4, 5 and 6. Every table row by example. The layer is aria-hidden with pointer-events none, shows nothing in Serious mode, nothing while the drawer is open, and has no transition under Reduced motion. Fake timers step the slots. |
-| `test/sound.test.ts` (new) | Property 7. The toggle has aria-pressed, reads "Sound off" or "Sound on", persists under `sexton:sound`, and creates nothing at mount even with "on" stored, until a key or pointer press. Each Voice spec by example. Suspend on hide, resume on show. |
+| `test/sound.test.tsx` (new) | Property 7. The toggle has aria-pressed, reads "Sound off" or "Sound on", persists under `sexton:sound`, and creates nothing at mount even with "on" stored, until a key or pointer press. Each Voice spec by example. Suspend on hide, resume on show. |
 | `test/burst-rise.test.ts` (new) | Property 8. The Burst Stop of axios is 31 Mar 2026, 00:21 UTC and of keyv its Possessed Stop, found from the fixtures. Leaving and returning starts a new Burst. Reduced motion gives no start. The caption shows at the Burst Stop only. The Load moment plays once per page load and never under Reduced motion. |
 | `test/priest.test.ts` (new) | The Priest is drawn only during a burial or a Vigil, walks then reads, and the bell is asked for once. The Vigil lasts BURIAL_MS and waits for the drawer to close. |
 | `test/header.test.tsx`, `a11y.test.tsx`, `scrubber.test.tsx` | Deliberate changes 1 to 4, and the replay header labels (new tests). |
@@ -511,6 +511,8 @@ As cemetery-undead "Visual critic protocol", with these captures: `/` and `/?rep
 7. **The critic rounds of tasks 2.5 and 3.3 ran together.** Both are canvas changes of Part A, judged on the same captures.
 8. **The e2e timing hook gains `labels()` and `paintVariant({ ghosts })`** for the label pixel check of task 2.4.
 9. **The noise reuses `mulberry32` from scene/scenery-seed.ts** with the same seed, rather than a second copy.
+10. **The sound test is `test/sound.test.tsx`**, not `.ts`: it also renders the page to check the toggle and run axe with Sound on (requirement 12.3).
+11. **The Sound toggle's glyph changes with its state** (a speaker with waves when on, crossed out when off). Its name is the text "Sound off" or "Sound on".
 
 ## Notes and open items
 

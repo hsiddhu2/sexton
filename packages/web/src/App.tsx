@@ -14,6 +14,7 @@ import { stopCards } from "./replay/stop-cards.js";
 import { stopsFor } from "./time/stops.js";
 import { usePlay } from "./time/use-play.js";
 import { browserStorage, readSerious, writeSerious } from "./epitaph/serious.js";
+import { useSound } from "./sound/use-sound.js";
 
 const NO_STOPS: readonly number[] = [];
 
@@ -34,6 +35,9 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
     writeSerious(browserStorage(), next);
     setSerious(next);
   }, [serious]);
+  // Sound, off by default; no AudioContext before it is on and a gesture has happened (spec cemetery-undead-2, 8).
+  const sound = useSound({ serious });
+  const soundToggle = useMemo(() => ({ on: sound.on, onToggle: sound.toggle }), [sound.on, sound.toggle]);
   const theme: Theme = "dark";
   const repoFieldRef = useRef<HTMLInputElement | null>(null);
   useLayoutEffect(() => {
@@ -79,7 +83,7 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
     : undefined;
   return (
     <>
-      <Header model={model} theme={theme} apiConfigured={apiBase !== null} onSubmit={loader.submitRepo} fieldRef={repoFieldRef} serious={serious} onSerious={toggleSerious} replay={isReplay} {...(asOf !== undefined ? { asOf } : {})} />
+      <Header model={model} theme={theme} apiConfigured={apiBase !== null} onSubmit={loader.submitRepo} fieldRef={repoFieldRef} serious={serious} onSerious={toggleSerious} replay={isReplay} sound={soundToggle} {...(asOf !== undefined ? { asOf } : {})} />
       {state.status === "loading" ? (
         <LoadingCard />
       ) : state.status === "error" ? (
@@ -109,6 +113,7 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
           asOfMs={asOfMs}
           repoFieldRef={repoFieldRef}
           serious={serious}
+          play={sound.play}
           {...(onRemediate !== undefined ? { onRemediate } : {})}
         />
       )}
