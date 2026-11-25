@@ -1,6 +1,7 @@
 // Spec cemetery-undead-fixes: browser checks of bugs 1 and 2.
 import { existsSync } from "node:fs";
 import { chromium, expect, test, type Page } from "@playwright/test";
+import { BUDGET_MS } from "./budget.js";
 
 test.skip(!existsSync(chromium.executablePath()), "chromium is not installed");
 
@@ -9,6 +10,7 @@ interface HookWindow {
     paintVariant(variant: { sprites?: boolean; nowMs?: number }): void;
     haloAlpha(x: number, y: number): number | null;
     redrawHalo(n: number): number[];
+    redrawHaloCold(n: number): number[];
   };
 }
 
@@ -112,9 +114,31 @@ for (const [label, mix] of [
     const sorted = [...times].sort((a, b) => a - b);
     const median = ((sorted[14] ?? 0) + (sorted[15] ?? 0)) / 2;
     console.log(`median repaint with a fresh Halo layer, ${label}: ${median.toFixed(2)} ms`);
-    expect(median).toBeLessThanOrEqual(16);
+    expect(median).toBeLessThanOrEqual(BUDGET_MS);
   });
 }
+
+// Spec judge-path, requirement 5.1 (a new test): a Cold Halo repaint, the layer and its sources both fresh, as after a
+// scrubber move that changes which graves are Possessed, on 300 front-row graves.
+test("judge-path 5.1: a cold Halo repaint with 300 front-row graves stays inside 16 ms", async ({ page, baseURL }) => {
+  await sameOriginOnly(page, baseURL);
+  const demo = (await (await page.request.get("/demo/scan.json")).json()) as { report: { packages: { name: string }[] }; timelines?: unknown };
+  const possessed = demo.report.packages.find((p) => p.name === "left-padder");
+  const dead = demo.report.packages.find((p) => p.name === "event-stream");
+  const big = structuredClone(demo);
+  big.report.packages = Array.from({ length: 300 }, (_, i) => ({ ...(structuredClone(i % 2 === 0 ? possessed : dead) as object), name: `pkg-${String(i)}` })) as typeof demo.report.packages;
+  delete big.timelines;
+  await page.route((url) => url.pathname === "/test/scan-cold.json", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(big) }));
+  await page.goto("/?scan=/test/scan-cold.json");
+  await expect(page.locator("button[data-grave-index]")).toHaveCount(300);
+  await page.waitForFunction(() => (window as unknown as HookWindow).__sextonTiming !== undefined);
+  const cold = await page.evaluate(() => (window as unknown as HookWindow).__sextonTiming?.redrawHaloCold(30) ?? []);
+  expect(cold).toHaveLength(30);
+  const sorted = [...cold].sort((a, b) => a - b);
+  const median = ((sorted[14] ?? 0) + (sorted[15] ?? 0)) / 2;
+  console.log(`median repaint with a cold Halo layer and sources, 300 front-row graves: ${median.toFixed(2)} ms`);
+  expect(median).toBeLessThanOrEqual(BUDGET_MS);
+});
 
 test("bug 3: a tooltip that opens above its grave stays while the pointer is over it, and keeps its grave", async ({ page, baseURL }) => {
   await sameOriginOnly(page, baseURL);
@@ -146,7 +170,19 @@ test("review: a tooltip over its own grave stays when the pointer goes back from
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   const grave = page.locator('button[data-grave-index][aria-label^="event-stream"]');
-  const g = await grave.boundingBox();
+  // Spec judge-path, Deliberate test change 11: the scene sizes itself after the fonts and the header settle, so the
+  // web fonts are awaited and the grave's box is read once it has stopped moving; an early box put the pointer off the
+  // grave, or under the Footer bar while the fallback text made the header taller (2 runs in 10 locally, every CI run).
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  let g = await grave.boundingBox();
+  await expect
+    .poll(async () => {
+      const now = await grave.boundingBox();
+      const same = now !== null && g !== null && now.x === g.x && now.y === g.y && now.width === g.width && now.height === g.height;
+      g = now;
+      return same;
+    })
+    .toBe(true);
   expect(g).not.toBeNull();
   if (g === null) return;
   // Enter the grave low down, below where its tooltip opens over it.

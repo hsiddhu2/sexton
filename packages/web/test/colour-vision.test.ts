@@ -153,3 +153,15 @@ describe("cemetery-undead-2, requirement 4: the pit edge stands apart from the s
     }
   });
 });
+
+// Spec judge-path, requirement 4.6: the selection ring and the focus outline sit on their Ring casing, so each must
+// read against the ink token it sits on.
+describe("Ring casing contrast", () => {
+  for (const theme of ["light", "dark"] as const) {
+    it(`${theme}: the ring and the focus colours are each at least 3:1 against ink`, () => {
+      const p = PALETTE[theme];
+      expect(contrast(p.ring, p.ink)).toBeGreaterThanOrEqual(3);
+      expect(contrast(p.focus, p.ink)).toBeGreaterThanOrEqual(3);
+    });
+  }
+});

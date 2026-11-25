@@ -12,6 +12,15 @@ Status: pre-release. Release 0.1 is due on 4 December 2026. Each feature below s
 
 The hosted site, https://de1giv8lj8sfh.cloudfront.net, is deployed by hand, so it can lag `main`. It was last deployed on 22 November 2026.
 
+## Try it in two minutes
+
+Open the hosted demo at [https://de1giv8lj8sfh.cloudfront.net](https://de1giv8lj8sfh.cloudfront.net). On your first visit a short guide walks through these four steps. The Guide button in the header shows it again.
+
+1. Hover a grave. Each grave is one dependency. Its shape and colour show its state. The line under the header names the grave to fix first and why. Press it to go to that grave.
+2. Open its drawer. Press the grave, or press Enter on it.
+3. Read the evidence and the pull request preview. The drawer shows every signal with its source and date, and the pull request Sexton would open, with its body.
+4. Replay an attack. Press "axios, Mar 2026" at the foot of the page, or open [the axios replay](https://de1giv8lj8sfh.cloudfront.net/?replay=axios) directly. [The keyv replay](https://de1giv8lj8sfh.cloudfront.net/?replay=keyv) shows a second attack.
+
 ## The problem
 
 Supply-chain attacks arrive through packages that looked fine in the lockfile. Think of event-stream in 2018, ua-parser-js in 2021, colors in 2022 and xz in 2024. In each case the warning signs were visible in public registry data before the damage. Sexton reads those signals for every direct dependency of a repository, keeps their history, enforces a policy on them and opens the fix.

@@ -36,10 +36,13 @@ test("at 1440 by 900 the canvas reaches the bottom of the viewport", async ({ pa
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
-  const canvas = await page.locator("canvas").first().boundingBox();
-  expect(canvas).not.toBeNull();
-  if (canvas === null) return;
-  expect(canvas.y + canvas.height).toBeGreaterThanOrEqual(900);
+  // Spec judge-path, Deliberate test change 10: the scene sizes itself after the fonts and the header settle, so the
+  // canvas bottom is read until it has (it read 861.6 once in ten runs). The assertion is unchanged.
+  const bottom = async (): Promise<number> => {
+    const canvas = await page.locator("canvas").first().boundingBox();
+    return canvas === null ? -1 : canvas.y + canvas.height;
+  };
+  await expect.poll(bottom, { timeout: 2000 }).toBeGreaterThanOrEqual(900);
 });
 // Task 5.8: the scrubber works by keyboard in a real browser and the graves repaint.
 test("the scrubber moves by keyboard, shows as of, and Back to now returns to the scan date", async ({ page, baseURL }) => {
@@ -187,6 +190,12 @@ test("at 1440 by 900 on the demo the canvas top is at most 190, with the header 
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
+  // Spec judge-path, Deliberate test change 12: the page is measured once its web fonts have loaded and the scene has
+  // fitted itself again. Before that the header's fallback text wraps wider (194 px against 155 px), which pushed the
+  // front row under the Footer bar on the CI runner. The assertions are unchanged.
+  await page.evaluate(() => document.fonts.ready.then(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))));
+  await expect.poll(() => page.evaluate(() => document.querySelector("header")?.getBoundingClientRect().height ?? 0)).toBeLessThanOrEqual(190);
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   const box = async (selector: string) => {
     const b = await page.locator(selector).first().boundingBox();
     expect(b, selector).not.toBeNull();

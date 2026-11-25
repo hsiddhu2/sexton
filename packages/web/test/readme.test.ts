@@ -9,7 +9,9 @@ const lines = readme.split("\n");
 
 const HEADING = "## Sexton and Dependabot";
 
+// Spec judge-path, Deliberate test change 4: "Try it in two minutes" comes first.
 const ORIGINAL_HEADINGS: readonly string[] = [
+  "## Try it in two minutes",
   "## The problem",
   "## What Sexton does",
   "## The five states",
@@ -102,5 +104,40 @@ describe("README", () => {
   it("keeps the other section headings unchanged", () => {
     const h2 = lines.filter((l) => l.startsWith("## "));
     expect(h2.filter((h) => h !== HEADING)).toEqual(ORIGINAL_HEADINGS);
+  });
+});
+
+// Spec judge-path, requirement 3: the section "Try it in two minutes", with the Guide's four steps and absolute links.
+describe("README: Try it in two minutes", () => {
+  const TRY = "## Try it in two minutes";
+  const HOSTED = "https://de1giv8lj8sfh.cloudfront.net";
+  const body = (): string => {
+    const start = lines.indexOf(TRY);
+    const rest = lines.slice(start + 1);
+    const end = rest.findIndex((l) => l.startsWith("## "));
+    return (end === -1 ? rest : rest.slice(0, end)).join("\n");
+  };
+
+  it("sits once, right before The problem", () => {
+    const h2 = lines.filter((l) => l.startsWith("## "));
+    expect(h2.filter((h) => h === TRY)).toHaveLength(1);
+    expect(h2[h2.indexOf(TRY) + 1]).toBe("## The problem");
+  });
+
+  it("lists the Guide's four steps in order", () => {
+    const steps = body()
+      .split("\n")
+      .filter((l) => /^\d\. /.test(l));
+    expect(steps.map((l) => l.slice(0, l.indexOf(".", 3) + 1))).toEqual([
+      "1. Hover a grave.",
+      "2. Open its drawer.",
+      "3. Read the evidence and the pull request preview.",
+      "4. Replay an attack.",
+    ]);
+  });
+
+  it("links the hosted site and both replays as absolute https URLs", () => {
+    const found = [...body().matchAll(/\]\((https:\/\/[^)\s]+)\)/g)].map((m) => m[1]);
+    expect(found).toEqual([HOSTED, `${HOSTED}/?replay=axios`, `${HOSTED}/?replay=keyv`]);
   });
 });

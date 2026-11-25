@@ -22,7 +22,8 @@ import { BURST_MS } from "./scene/burst.js";
 import { loadMomentMs } from "./scene/rise.js";
 import { claimLoadMoment } from "./scene/load-moment.js";
 import { bellKey } from "./scene/characters/priest.js";
-import { artRect } from "./scene/art-box.js";
+import { artRect, labelRect } from "./scene/art-box.js";
+import type { Rect } from "./scene/layout.js";
 import { Bubbles, bubbleLines } from "./speech/Bubbles.js";
 import type { VoiceId } from "./sound/voices.js";
 
@@ -40,9 +41,15 @@ export interface CemeteryProps {
   readonly serious?: boolean;
   /** Plays a Voice when Sound is on (spec cemetery-undead-2, requirement 8). Absent, the cemetery is silent. */
   readonly play?: (voice: VoiceId) => void;
+  /** A new value selects the Fix-first grave and focuses its button (spec judge-path, requirements 2.2 and 2.3). */
+  readonly selectRequest?: number;
+  /** Told when the drawer opens and closes, for the Guide (spec judge-path, requirements 1.18 to 1.20). */
+  readonly onDrawer?: (open: boolean) => void;
+  /** Filled with a reader of every grave's Name label in client coordinates, for the Guide (1.14). */
+  readonly labelsRef?: RefObject<(() => readonly Rect[]) | null>;
 }
 
-export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFieldRef, onRemediate, serious = false, play }: CemeteryProps) {
+export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFieldRef, onRemediate, serious = false, play, selectRequest = 0, onDrawer, labelsRef }: CemeteryProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const order = useMemo(() => triageOrder(response.report.packages), [response]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(() => (order.length > 0 ? 0 : null));
@@ -209,6 +216,48 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
     containerRef.current?.querySelector<HTMLElement>(`[data-grave-index="${String(index)}"]`)?.focus();
     quietFocus.current = false; // focus events are synchronous; never leave the flag set for a later, real focus
   }, [openIndex]);
+  // Fix first: a new request selects triage index 0 and focuses its grave button, so its tooltip shows. A request
+  // made before this load is not replayed (the value at mount is the baseline).
+  const seenRequest = useRef(selectRequest);
+  const focusFixFirst = useRef(false);
+  useEffect(() => {
+    if (selectRequest === seenRequest.current) return;
+    seenRequest.current = selectRequest;
+    if (order.length === 0) return;
+    focusFixFirst.current = true;
+    setSelectedIndex(0);
+    setOpenIndex(null);
+  }, [selectRequest, order.length]);
+  useLayoutEffect(() => {
+    if (!focusFixFirst.current || openIndex !== null) return;
+    focusFixFirst.current = false;
+    containerRef.current?.querySelector<HTMLElement>('[data-grave-index="0"]')?.focus();
+  });
+  const onDrawerRef = useRef(onDrawer);
+  onDrawerRef.current = onDrawer;
+  useEffect(() => {
+    onDrawerRef.current?.(drawerOpen);
+  }, [drawerOpen]);
+  useEffect(
+    () => () => {
+      onDrawerRef.current?.(false);
+    },
+    [],
+  );
+  useEffect(() => {
+    if (labelsRef === undefined) return undefined;
+    labelsRef.current = () => {
+      const box = containerRef.current?.getBoundingClientRect();
+      if (box === undefined) return [];
+      return plan.graves.map((g) => {
+        const l = labelRect(g);
+        return { x: box.left + l.x, y: box.top + l.y, w: l.w, h: l.h };
+      });
+    };
+    return () => {
+      labelsRef.current = null;
+    };
+  }, [labelsRef, plan]);
   const openPackage = openIndex === null ? undefined : order[openIndex];
   const onDismissToField = useCallback(
     (x: number, y: number): boolean => {
