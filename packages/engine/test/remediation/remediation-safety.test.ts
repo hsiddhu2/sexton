@@ -1,31 +1,26 @@
-// Spec: .kiro/specs/remediation-safety, bugfix 1.1 to 1.5 and 2.1 to 2.5, design Properties 1 to 3.
-// Exploration tests: written and run on the unfixed code first, where they must fail.
+// Spec: .kiro/specs/remediation-safety, bugfix 1.1 to 1.6, 2.1 to 2.7 and 3.1 to 3.12, design Properties 1 to 10.
+// Exploration tests were written and run on the unfixed code first, where they failed. Preservation tests pass before and after.
 import fc from "fast-check";
+import semver from "semver";
 import { describe, expect, it } from "vitest";
 import { isResolvableRange } from "../../src/intake/resolve.js";
+import { branchName } from "../../src/remediation/branch-name.js";
 import { bumpTargets } from "../../src/remediation/bump-targets.js";
 import { InMemoryFileSource } from "../../src/remediation/file-source.js";
 import type { BumpDataResult } from "../../src/remediation/gather-bump-data.js";
-import { planRemediation, type PlanOptions } from "../../src/remediation/plan.js";
-import { buildPrBody, NONE_LINE } from "../../src/remediation/pr-body.js";
-import { buildPrContext } from "../../src/remediation/pr-context.js";
-import { buildPrIntent } from "../../src/remediation/pr-intent.js";
-import { runMigrations } from "../../src/remediation/run-migrations.js";
-import type { HealthReport, IntakePackage, PackageHealth, PolicyResult, State } from "../../src/types.js";
-import semver from "semver";
-import { branchName } from "../../src/remediation/branch-name.js";
 import { isValidBranchName } from "../../src/remediation/is-valid-branch-name.js";
-import { NOT_SCANNED_LINE } from "../../src/remediation/pr-body.js";
-import { BASE_REF_DEFAULT } from "../../src/remediation/pr-intent.js";
+import { planRemediation, type PlanOptions } from "../../src/remediation/plan.js";
+import { buildPrBody, INCOMPLETE_SCAN_LINE, NONE_LINE, NOT_SCANNED_LINE } from "../../src/remediation/pr-body.js";
+import { buildPrContext } from "../../src/remediation/pr-context.js";
+import { BASE_REF_DEFAULT, buildPrIntent } from "../../src/remediation/pr-intent.js";
+import { indexIntake, precheck, REASON_RANGE_NOT_REGISTRY } from "../../src/remediation/precheck.js";
 import { rangeStyle, styledRange } from "../../src/remediation/range-style.js";
+import { NOTE_SASS_LOADER_UNKNOWN } from "../../src/remediation/recipe-notes.js";
+import { runMigrations } from "../../src/remediation/run-migrations.js";
 import { selectBump } from "../../src/remediation/select-bump.js";
-import { SIGNAL_NAMES } from "../../src/types.js";
+import { SIGNAL_NAMES, type HealthReport, type IntakePackage, type PackageHealth, type PolicyResult, type RecipeOutcome, type State } from "../../src/types.js";
 import { arbBumpData, arbHostileHealth, arbReportAndOptions, arbSelectInput, healthySignals, RANGE_MARKER } from "./arbitraries.js";
 
-import { indexIntake, precheck, REASON_RANGE_NOT_REGISTRY } from "../../src/remediation/precheck.js";
-
-/** The fixed text of design.md. Replaced by an import when the D2 fix lands (task 4.1). */
-const INCOMPLETE_SCAN_LINE = "Stylesheets and scripts: scan incomplete, some files were not read. Check them by hand.";
 
 const POLICY: PolicyResult = { source: "default", pass: true, rules: [] };
 const pkg = (name: string, state: State = "Haunted", installedVersion = "1.0.0"): PackageHealth => ({
@@ -362,5 +357,33 @@ describe("precheck, D1 range check", () => {
   }
   it("does not apply to a remove", () => {
     expect(check("file:../foo", 0)).toMatchObject({ ok: true, kind: "remove" });
+  });
+});
+
+describe("migration body, D2 incomplete line", () => {
+  it("lists the sites, then a blank line, then the incomplete line, before the notes", () => {
+    const r = sassReport();
+    const outcome: RecipeOutcome = {
+      ok: true,
+      result: {
+        edits: [{ path: "package.json", op: "remove-dependency", section: "devDependencies", name: "node-sass" }],
+        reviewSites: [
+          { path: "a.scss", line: 1, rule: "deep-combinator", excerpt: ".a /deep/ .b" },
+          { path: "b.scss", line: 2, rule: "deep-combinator", excerpt: ".c /deep/ .d" },
+        ],
+        filesChanged: ["package.json"],
+        scan: { performed: true, listed: 600, read: 200, skipped: 0, capped: true },
+        notes: [NOTE_SASS_LOADER_UNKNOWN],
+      },
+    };
+    const [plan] = planRemediation(r, { migrations: new Map([["node-sass", outcome]]) });
+    const ctx = buildPrContext(r, POLICY, "node-sass");
+    if (plan === undefined || ctx === null) throw new Error("no node-sass plan");
+    const body = buildPrBody(plan, ctx);
+    const section = reviewSection(body);
+    expect(section).toContain("- `a.scss:1` deep-combinator: `.a /deep/ .b`\n- `b.scss:2` deep-combinator: `.c /deep/ .d`\n\n" + INCOMPLETE_SCAN_LINE);
+    expect(section.split("\n")).not.toContain(NONE_LINE);
+    expect(section.indexOf(INCOMPLETE_SCAN_LINE)).toBeLessThan(section.indexOf(NOTE_SASS_LOADER_UNKNOWN));
+    expect(body.split(INCOMPLETE_SCAN_LINE)).toHaveLength(2);
   });
 });

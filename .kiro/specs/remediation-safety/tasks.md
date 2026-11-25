@@ -75,7 +75,7 @@ Every top-level task ends with a review sub-task. It runs the gravedigger agent 
       - gravedigger (wf_a3bcd144032c50a6) at e278940: "Unsafe: D1 to D4 each turn a concrete input into a worse repository or a false "none", and none is fixed in e278940." It found no new defect. It made two notes: the recipe removes a non-registry node-sass without saying so (design Decision 2), and the order of the incomplete line against the notes should be pinned by a test (taken up in 4.2).
       - security-reviewer (wf_4e33f67324b031c7) on fff60f8..e278940: "Verdict: ready with notes." It found no defects and called P4 to P9 non-vacuous. Its note that P9 checks only the kind rule and the absence of the D1 reason, not every status, is accepted; P5 covers the bump status on Registry ranges.
 
-- [-] 3. Fix D1: no bump over a Non-registry range
+- [x] 3. Fix D1: no bump over a Non-registry range
   - [x] 3.1 Add the range check to src/remediation/precheck.ts
     - Add `REASON_RANGE_NOT_REGISTRY` and the check after the intake-entry check, for kind `bump` only, as design.md "Changes required" says. Import `isResolvableRange` from `../intake/resolve.js`. Change no other file in src for this task.
     - In test/remediation/remediation-safety.test.ts, replace the literal string with the import from 1.1.
@@ -91,23 +91,27 @@ Every top-level task ends with a review sub-task. It runs the gravedigger agent 
     - `npx tsc -b` and `npx eslint . --max-warnings=0` from the root. `npm test -w @sexton/engine`, `-w @sexton/cli`, `-w @sexton/api` and `-w @sexton/web`. The golden diff from 2.3 must be empty.
     - _Requirements: 3.1 to 3.10_
     - Notes: tsc -b exit 0 and eslint exit 0. engine: 1144 passed and 8 failed, all 8 the D2 and D3 exploration tests. All 18 D1 tests pass: 10 exploration and 8 precheck units. cli: 61 passed. api: 300 passed. web: 524 passed and 1 failed, the pre-existing `readme.test.ts` heading test (see 2.3). Golden diff exit 0. No existing test changed or failed.
-  - [ ] 3.5 Review: gravedigger and security-reviewer
+  - [x] 3.5 Review: gravedigger and security-reviewer
     - Record both verdict lines. Expected: gravedigger reports D1 fixed.
     - _Requirements: 2.1, 2.2, 2.3_
+    - Notes:
+      - gravedigger (wf_c69ae45f6753ac50) at d1a4f91: "Verdict: unsafe. D1 is fixed with no regression. D2, D3 and D4 each have a concrete input that leaves a repository worse or hides unread files, and all three still stand at d1a4f91."
+      - security-reviewer (wf_731d933fbb2e2202) on e278940..d1a4f91: "Verdict: ready with notes. I found no defects in `e278940..d1a4f91`, and the D1 fix matches bugfix 2.1 to 2.3, 3.11 and design.md "Changes required"." Both of its notes were applied in task 4's commit: the header comment of precheck.ts now names this spec, and the test file's imports are one sorted block.
 
-- [ ] 4. Fix D2: an Incomplete scan says so
-  - [ ] 4.1 Change migrationSections in src/remediation/pr-body.ts
+- [-] 4. Fix D2: an Incomplete scan says so
+  - [x] 4.1 Change migrationSections in src/remediation/pr-body.ts
     - Add `INCOMPLETE_SCAN_LINE` next to `NOT_SCANNED_LINE`, and replace line 163 with the three lines in design.md. Touch no other line of the file, so the other branch's signal-row change merges cleanly.
     - _Bug_Condition: isBugConditionD2_
     - _Expected_Behavior: bugfix 2.4_
     - _Requirements: 2.4, 3.6, 3.7_
-  - [ ] 4.2 Add the body unit test from design.md "Unit tests": two sites, a capped scan, then the line
+  - [x] 4.2 Add the body unit test from design.md "Unit tests": two sites, a capped scan, then the line
     - _Requirements: 2.4_
-  - [ ] 4.3 Verify that Property 2 now passes
+  - [x] 4.3 Verify that Property 2 now passes
     - **EXPECTED OUTCOME**: Property 2 PASSES, and P4 to P9 still PASS. `migration-plan.test.ts` and `migration-fixtures.test.ts` pass unchanged.
     - _Requirements: 2.4, 3.6, 3.7, 3.10_
-  - [ ] 4.4 Run the gates, as in 3.4
+  - [x] 4.4 Run the gates, as in 3.4
     - _Requirements: 3.1 to 3.10_
+    - Notes: Property 2 and its three cases pass with no edit to the test. P4 to P9 still pass. The new unit test pins the order: sites, a blank line, the incomplete line, then the notes. Gates: tsc -b exit 0 and eslint exit 0. engine: 1149 passed and 4 failed, all 4 the D3 exploration tests. cli: 61 passed. api: 300 passed. web: 524 passed and 1 failed, the pre-existing `readme.test.ts` (see 2.3). Golden diff exit 0. `migration-plan.test.ts` and `migration-fixtures.test.ts` pass unchanged. The only lines of pr-body.ts that changed are the new constant next to `NOT_SCANNED_LINE` and the old line 163.
   - [ ] 4.5 Review: gravedigger and security-reviewer
     - Record both verdict lines. Expected: gravedigger reports D2 fixed.
     - _Requirements: 2.4_

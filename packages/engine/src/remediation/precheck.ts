@@ -1,4 +1,4 @@
-// Pre-check shared by the planner and the bump-target list. Spec: .kiro/specs/remediation, Requirements 1.9, 1.10, 8.2. Pure.
+// Pre-check shared by the planner and the bump-target list. Spec: .kiro/specs/remediation, Requirements 1.9, 1.10, 8.2, and .kiro/specs/remediation-safety, bugfix 2.1 and 2.2. Pure.
 
 import { isValidPackageName } from "../intake/names.js";
 import { isResolvableRange } from "../intake/resolve.js";
