@@ -11,7 +11,7 @@ Opens pull requests on the demo repository from the hosted plan: applyPackageJso
 - [x] 2. Demo repository
   - _Requirements: 10.1_
 
-  - [x] 2.1 private/demo-repo files, the lockfile from `npm install --package-lock-only --ignore-scripts`, and the push commands for the report
+  - [x] 2.1 The demo repository files in a folder git ignores, the lockfile from `npm install --package-lock-only --ignore-scripts`, and the push commands for the report
     - _Requirements: 10.1_
 
 - [x] 3. Engine

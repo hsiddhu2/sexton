@@ -21,6 +21,11 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { TextEncoder } from "node:util";
 import semver from "semver";
+// URL builders and constants from the built engine, so the recorder asks the same URLs as the clients (spec submission-readiness,
+// Requirement 5.5). Build first: npm run build -w @sexton/engine. The fixtures:record scripts do that.
+import { ABBREVIATED_ACCEPT, OSV_API, packumentUrl } from "../dist/index.js";
+import { attestationsUrl } from "../dist/clients/attestations.js";
+import { dependenciesUrl } from "../dist/clients/deps-dev.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixturesDir = join(here, "..", "test", "fixtures");
@@ -28,8 +33,6 @@ const manifestPath = join(fixturesDir, "packages.json");
 
 const pkg = JSON.parse(await readFile(join(here, "..", "package.json"), "utf8"));
 const userAgent = `sexton/${pkg.version} (+https://github.com/hsiddhu2/sexton)`;
-
-const ABBREVIATED_ACCEPT = "application/vnd.npm.install-v1+json";
 
 const MAX_RETRIES = 3;
 const BACKOFF_BASE_MS = 500;
@@ -51,16 +54,6 @@ async function getJson(url, init = {}) {
   return response.json();
 }
 
-// Same URL as attestationsUrl in src/clients/attestations.ts.
-function attestationsUrl(name, version) {
-  return `https://registry.npmjs.org/-/npm/v1/attestations/${encodeName(name)}@${encodeURIComponent(version)}`;
-}
-
-// Same URL as dependenciesUrl in src/clients/deps-dev.ts.
-function dependenciesUrl(name, version) {
-  return `https://api.deps.dev/v3/systems/npm/packages/${encodeURIComponent(name)}/versions/${encodeURIComponent(version)}:dependencies`;
-}
-
 // Records { status } and, on 200, { body } after trimming. Any other status is recorded as is so it can be replayed.
 async function getRecorded(url, trim) {
   const response = await fetchWithBackoff(url);
@@ -80,10 +73,6 @@ function trimGraph(doc) {
     nodes: nodes.map((n) => ({ versionKey: { name: n?.versionKey?.name, version: n?.versionKey?.version } })),
     edges: edges.map((e) => ({ fromNode: e?.fromNode, toNode: e?.toNode })),
   };
-}
-
-function encodeName(name) {
-  return name.startsWith("@") ? `@${encodeURIComponent(name.slice(1))}` : encodeURIComponent(name);
 }
 
 function trimPackument(doc, version) {
@@ -190,7 +179,7 @@ async function recordIntake() {
     if (needsPackuments(lock, names)) for (const name of names) packumentNames.add(name);
   }
   for (const name of [...packumentNames].sort()) {
-    const response = await fetchWithBackoff(`https://registry.npmjs.org/${encodeName(name)}`);
+    const response = await fetchWithBackoff(packumentUrl(name));
     let result = { status: response.status };
     if (response.status === 200) {
       const doc = await response.json();
@@ -231,7 +220,7 @@ async function osvIdsByVersion(name, versions) {
     let pending = versions.slice(start, start + OSV_BATCH_LIMIT).map((version) => ({ version }));
     for (let page = 0; pending.length > 0; page++) {
       if (page >= OSV_MAX_PAGES) throw new Error(`OSV pagination did not finish for ${name}`);
-      const batch = await getJson("https://api.osv.dev/v1/querybatch", {
+      const batch = await getJson(`${OSV_API}/querybatch`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -256,7 +245,7 @@ async function recordRemediation() {
     const ref = manifest.find((p) => p.name === name);
     if (ref === undefined) throw new Error(`${name} is not in packages.json`);
     const dir = join(fixturesDir, "remediation", "packages", name.replace("/", "__"));
-    const full = await getJson(`https://registry.npmjs.org/${encodeName(name)}`);
+    const full = await getJson(packumentUrl(name));
     const packument = trimPackumentAllVersions(full);
     await write(join(dir, "packument.json"), packument);
     const above = releasesAbove(Object.keys(packument.versions), ref.installedVersion);
@@ -265,7 +254,7 @@ async function recordRemediation() {
     const distinct = [...new Set(Object.values(ids).flat())].sort();
     for (const id of distinct) {
       if (!/^[A-Za-z0-9._:-]{1,128}$/.test(id)) throw new Error(`implausible advisory ID from OSV for ${name}`);
-      const detail = await getJson(`https://api.osv.dev/v1/vulns/${encodeURIComponent(id)}`);
+      const detail = await getJson(`${OSV_API}/vulns/${encodeURIComponent(id)}`);
       await write(join(dir, "vulns", `${id}.json`), trimVuln(detail));
     }
     console.log(`recorded remediation ${name}@${ref.installedVersion}: ${Object.keys(packument.versions).length} versions, ${above.length} releases above, ${distinct.length} advisories`);
@@ -278,7 +267,7 @@ const MIGRATION_PACKAGES = ["sass", "sass-loader"];
 async function recordMigration() {
   for (const name of MIGRATION_PACKAGES) {
     const dir = join(fixturesDir, "migration", "packages", name);
-    const full = await getJson(`https://registry.npmjs.org/${encodeName(name)}`);
+    const full = await getJson(packumentUrl(name));
     const packument = trimPackumentAllVersions(full);
     await write(join(dir, "packument.json"), packument);
     const releases = releasesAbove(Object.keys(packument.versions), "0.0.0");
@@ -287,7 +276,7 @@ async function recordMigration() {
     const distinct = [...new Set(Object.values(ids).flat())].sort();
     for (const id of distinct) {
       if (!/^[A-Za-z0-9._:-]{1,128}$/.test(id)) throw new Error(`implausible advisory ID from OSV for ${name}`);
-      const detail = await getJson(`https://api.osv.dev/v1/vulns/${encodeURIComponent(id)}`);
+      const detail = await getJson(`${OSV_API}/vulns/${encodeURIComponent(id)}`);
       await write(join(dir, "vulns", `${id}.json`), trimVuln(detail));
     }
     console.log(`recorded migration ${name}: ${Object.keys(packument.versions).length} versions, ${releases.length} releases, ${distinct.length} advisories`);
@@ -295,7 +284,7 @@ async function recordMigration() {
 }
 
 // Spec new-signals. Copies of earlierVersion (src/history.ts) and the detail rules (src/new-dependency.ts) in plain
-// JavaScript, as this script already copies attestationsUrl and isValidPackageName.
+// JavaScript, as this script already copies isValidPackageName.
 const NEW_DEPENDENCY_CAP = 5;
 const MAX_RANGE_LENGTH = 256;
 
@@ -353,7 +342,7 @@ function isResolvableRange(range) {
 
 async function recordNewDependency(name, range, parentMs) {
   const dir = join(fixturesDir, "new-dependencies", name.replace("/", "__"));
-  const url = `https://registry.npmjs.org/${encodeName(name)}`;
+  const url = packumentUrl(name);
   const full = await fetchWithBackoff(url);
   if (full.status !== 200) {
     console.log(`  new dependency ${name}: HTTP ${full.status}, not recorded (the engine reads it as unavailable)`);
@@ -379,7 +368,7 @@ async function recordSignals() {
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
   for (const { name, installedVersion } of manifest) {
     const dir = join(fixturesDir, "packages", name.replace("/", "__"));
-    const url = `https://registry.npmjs.org/${encodeName(name)}`;
+    const url = packumentUrl(name);
     const full = await getJson(url);
     const abbreviated = await getJson(url, { headers: { Accept: ABBREVIATED_ACCEPT } });
     const recorded = JSON.parse(await readFile(join(dir, "packument.json"), "utf8"));
@@ -434,20 +423,20 @@ if (process.argv.includes("--signals")) {
   const manifest = only === undefined ? all : all.filter((p) => p.name === only);
   for (const { name, installedVersion } of manifest) {
     const dir = join(fixturesDir, "packages", name.replace("/", "__"));
-    const url = `https://registry.npmjs.org/${encodeName(name)}`;
+    const url = packumentUrl(name);
     const full = await getJson(url);
     await write(join(dir, "packument.json"), trimPackument(full, installedVersion));
     const abbreviated = await getJson(url, { headers: { Accept: ABBREVIATED_ACCEPT } });
     await write(join(dir, "abbreviated.json"), trimAbbreviated(abbreviated, installedVersion));
 
-    const batch = await getJson("https://api.osv.dev/v1/querybatch", {
+    const batch = await getJson(`${OSV_API}/querybatch`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ queries: [{ package: { name, ecosystem: "npm" }, version: installedVersion }] }),
     });
     await write(join(dir, "osv-querybatch.json"), batch);
     for (const v of batch.results?.[0]?.vulns ?? []) {
-      const detail = await getJson(`https://api.osv.dev/v1/vulns/${encodeURIComponent(v.id)}`);
+      const detail = await getJson(`${OSV_API}/vulns/${encodeURIComponent(v.id)}`);
       await write(join(dir, "vulns", `${v.id}.json`), trimVuln(detail));
     }
     const attestations = await getRecorded(attestationsUrl(name, installedVersion), trimAttestations);

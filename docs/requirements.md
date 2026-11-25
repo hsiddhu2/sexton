@@ -1,6 +1,6 @@
 # Sexton: Product Requirements
 
-Version 0.7, 25 Nov 2026. Owner: Harpreet Singh Siddhu. This document is the single source of truth for what Sexton is and is not. Every spec, every design decision and every line of the write-up traces back to a numbered requirement here. If something is not in this document, it is not in scope. Changes to this document are versioned and dated.
+Version 0.9, 25 November 2026. Owner: Harpreet Singh Siddhu. This document is the single source of truth for what Sexton is and is not. Every spec, every design decision and every line of the write-up traces back to a numbered requirement here. If something is not in this document, it is not in scope. Changes to this document are versioned and dated.
 
 ## 1. Product statement
 
@@ -12,9 +12,11 @@ One sentence for the README: Sexton finds the dependencies that will hurt you, p
 
 ## 2. Problem
 
-Supply-chain compromises arrive through packages that looked fine in the lockfile. event-stream (maintainer handover, 2018), ua-parser-js (account takeover, 2021), colors (maintainer sabotage, 2022), xz (long-game maintainer infiltration, 2024). The signals that preceded each were visible in public registry data at the time. No open-source tool reads those signals, keeps their history, enforces a policy on them, and fixes the result.
+Supply-chain compromises arrive through packages that looked fine in the lockfile. event-stream (maintainer handover, 2018), ua-parser-js (account takeover, 2021), colors (maintainer sabotage, 2022), xz (long-game maintainer infiltration, 2024). The signals that preceded each were visible in public registry data at the time. Sexton reads those signals for every direct dependency of a repository, keeps their history, enforces a policy on them, and opens the fix.
 
-Renovate's replacement PRs are name swaps. OSV-Scanner's fix opens no PRs. Socket's open CLI phones home to a hosted service. No open-source tool combines local signals, a repo-committed policy, code-level migration PRs with evidence, and an evidence pack. And no API exposes maintainer or provenance history, so whoever snapshots it owns the only dataset that can detect a handover.
+Other tools cover parts of this. [Socket's CLI](https://github.com/SocketDev/socket-cli) scans dependencies and gates installs, and its scans go through the Socket API with an account token. [npq](https://github.com/lirantal/npq) audits one package before you install it, with checks that include the publisher (`_npmUser`), a new maintainer, install scripts and provenance regression. [Renovate](https://docs.renovatebot.com) opens pull requests that update versions, and its replacement rules swap one package name for another. OSV-Scanner's fix command edits the manifest and lockfile locally and opens no PRs. Sexton adds the parts around the signals: dated snapshots of each package's maintainers and attestations, a policy committed in the repository and enforced in CI, remediation PRs that carry their evidence, including a code-level migration, and an evidence pack with a digest.
+
+The npm packument lists, for each version, its maintainers, the account that published it (`_npmUser`) and its provenance attestations (`dist.attestations`). On every scan Sexton reads the current maintainer list and the publisher of the installed and the earlier version from the packument, each version's maintainer list for the timeline, and provenance from the registry's attestations endpoint. The packument shows the maintainer list as it stands today and as it stood at each publish, so a change between two releases leaves no trace in it. Sexton keeps its own dated snapshots to see those changes.
 
 ## 3. Users and personas
 
@@ -33,7 +35,7 @@ P4. The agent. Sexton's own scheduled re-scan. Needs the same engine the humans 
 In scope:
 - npm ecosystem only. package.json and package-lock.json. pnpm and yarn lockfiles are out.
 - Direct dependencies scored. Transitive reach computed but transitive packages not individually scored.
-- Five signals: abandonment, known advisories, install scripts, maintainer change, provenance presence and regression.
+- Seven signals: abandonment, known advisories, install scripts, maintainer change, provenance presence and regression, publisher change, new dependency (publisher change and new dependency added in 0.8).
 - Daily snapshotter for maintainers, install scripts and attestations per package.
 - Policy file sexton.policy.yml with four rule types.
 - Remediation PRs: version bump, removal, and one migration (node-sass to sass).
@@ -205,3 +207,4 @@ Every Kiro spec names the requirements it implements. Every PR names the spec. T
 0.6, 24 Nov 2026. R-UI-1: a replay draws its one grave full size. The cemetery footer stays in view at 960 px and wider only, because below that the wrapped controls would leave almost no cemetery on screen.
 0.7, 25 Nov 2026. R-UI-8: sound off by default and speech bubbles. R-UI-1: a grave's art never covers another grave's name; the replay header labels its window end and the time shown; a replay's grave bursts open at its Possessed stop; a burial has a priest; the graves rise on first load.
 0.8, 25 Nov 2026. R-SG-10 publisher change and R-SG-11 new dependency signals. R-ST-2: two Possessed conditions added after the existing three.
+0.9, 25 November 2026. Section 2: the packument fields Sexton reads are named, and Socket, npq and Renovate are named as partial overlaps in place of the claim that no tool combines these parts. Release 0.1 lists seven signals.

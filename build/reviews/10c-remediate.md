@@ -33,6 +33,6 @@ Notes kept, recorded as design decision 15: integer-like key order and CRLF in a
 
 ## Review 3: deploy 3 fix (fix/remediate-origin-policy), 22 Nov 2026
 
-The Edge deploy failed: "AWS::CloudFront::OriginRequestPolicy: The parameter Headers contains x-amz-content-sha256 that is not allowed." The stack rolled back with no change; Data had deployed. Fix: the remediate policy forwards `content-type` only; spec 8.3, design decision 2, architecture and runbook updated; filing in private/filing. Also a flaky spec-09 property test: its fixed template words (`npm run a`, `"preset"`) matched a generated name by chance; the fixed words can no longer be a generated name.
+The Edge deploy failed: "AWS::CloudFront::OriginRequestPolicy: The parameter Headers contains x-amz-content-sha256 that is not allowed." The stack rolled back with no change; Data had deployed. Fix: the remediate policy forwards `content-type` only; spec 8.3, design decision 2, architecture and runbook updated; filing written with the owner's notes, outside the repository. Also a flaky spec-09 property test: its fixed template words (`npm run a`, `"preset"`) matched a generated name by chance; the fixed words can no longer be a generated name.
 
 Verdict: READY, no defects. Notes acted on: the docs no longer claim the header never reaches the function (OAC signing may add it; the first `bodyHash` shows it); the test comment names both reasons a fixed word cannot collide.

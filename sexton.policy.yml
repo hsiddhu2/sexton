@@ -1,11 +1,13 @@
 # Sexton's own policy. Sexton scans itself in CI and must pass this (N-7).
 version: 1
 rules:
-  - name: No possessed or dead dependencies
+  - name: No possessed, dead or haunted dependencies
     type: forbid_state
+    # Haunted: a High or Critical advisory in one of Sexton's own dependencies fails its own CI.
     states:
       - Possessed
       - Dead
+      - Haunted
   - name: No install scripts
     type: forbid_install_scripts
     # The self-scan (npm run scan:self) covers the direct dependencies of the

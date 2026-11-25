@@ -27,7 +27,8 @@ export { createFetchTransport, requestWithRetry, backoffDelay, UpstreamError, RE
 export type { Transport, TransportRequest, TransportResponse, RetryOptions, Sleep, Random } from "./http.js";
 export { ENGINE_VERSION, USER_AGENT, REPO_URL } from "./version.js";
 
-export { scorePackages, scoreOne, buildHealth, mapWithConcurrency, PACKAGE_CONCURRENCY } from "./score.js";
+export { scorePackages, scoreOne, buildHealth } from "./score.js";
+export { mapWithConcurrency, PACKAGE_CONCURRENCY } from "./util/concurrency.js";
 export type { ScoringDependencies } from "./score.js";
 
 // cemetery-time

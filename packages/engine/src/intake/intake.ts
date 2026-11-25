@@ -5,7 +5,7 @@ import { fetchManifest, type ManifestFile, type ManifestOutcome } from "../clien
 import type { ClientContext } from "../clients/context.js";
 import { HEAD_REF } from "../clients/github-ref.js";
 import { readFullPackument } from "../clients/npm.js";
-import { PACKAGE_CONCURRENCY, mapWithConcurrency } from "../score.js";
+import { PACKAGE_CONCURRENCY, mapWithConcurrency } from "../util/concurrency.js";
 import type { IntakeError, IntakePackage, IntakeResult, ParsedDependency, RepoRef, Resolution } from "../types.js";
 import { applyCap } from "./cap.js";
 import { applyLockfile, parsePackageJson } from "./manifest.js";

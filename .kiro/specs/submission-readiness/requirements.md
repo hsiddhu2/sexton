@@ -6,9 +6,9 @@ The submission-readiness spec gets the repository ready to be read by judges whe
 
 Every factual line this spec writes is checked first against the code on main or against a linked source, and the check is recorded in design.md. Every date in a line this spec writes is given in full, with day, month and year.
 
-This spec changes docs/requirements.md (section 2, the release 0.1 signal line and the change log), README.md (all but the sections "Try it in two minutes" and "Built with Kiro"), packages/web/test/readme.test.ts (the heading list and the replay links it pins), docs/threat-model.md, ROADMAP.md, CREDITS.md, a new docs/JUDGES.md, finished spec and review text, .gitignore, sexton.policy.yml, .github/workflows/ci.yml (one new job), and these code paths: packages/engine/src (the concurrency helper, the owner check, the publisher word), packages/engine/scripts/record-fixtures.mjs, the record scripts in packages/engine/package.json, and their tests.
+This spec changes docs/requirements.md (section 2, the release 0.1 signal line and the change log), README.md (all but the sections "Try it in two minutes" and "Kiro project files", formerly "Built with Kiro"), packages/web/test/readme.test.ts (the heading list and the replay links it pins), docs/threat-model.md, ROADMAP.md, CREDITS.md, a new docs/JUDGES.md, finished spec and review text, .gitignore, sexton.policy.yml, .github/workflows/ci.yml (one new job), and these code paths: packages/engine/src (the concurrency helper, the owner check, the publisher word), packages/engine/scripts/record-fixtures.mjs, the record scripts in packages/engine/package.json, and their tests.
 
-It does not change packages/web/src, packages/web/e2e, the pictures in docs, the README sections "Try it in two minutes" and "Built with Kiro", .kiro/steering, .kiro/hooks, .kiro/agents, .kiro/settings or infra. It adds no dependency and deploys nothing. It changes no state rule, no state reason text, no API field and no evidence field name.
+It does not change packages/web/src, packages/web/e2e, the pictures in docs, the README sections "Try it in two minutes" and "Kiro project files" (under either name), .kiro/steering, .kiro/hooks, .kiro/agents, .kiro/settings or infra. It adds no dependency and deploys nothing. It changes no state rule, no state reason text, no API field and no evidence field name.
 
 ## Glossary
 
@@ -16,7 +16,7 @@ It does not change packages/web/src, packages/web/e2e, the pictures in docs, the
 - **Claim B**: the statement that no open-source tool combines Sexton's parts, in any wording.
 - **Packument**: the npm registry document for one package at `https://registry.npmjs.org/<name>`, as defined in history-signals.
 - **Partial overlap**: a tool that does part of what Sexton does. This spec names three: Socket, npq and Renovate.
-- **Owned README**: README.md without the section "Try it in two minutes", which lane 1 owns, and without the section "Built with Kiro", which lane 3 owns.
+- **Owned README**: README.md without the section "Try it in two minutes", which lane 1 owns, and without the section "Kiro project files", formerly "Built with Kiro", which lane 3 owns, under either name.
 - **Judge guide**: docs/JUDGES.md.
 - **Hosted site**: https://de1giv8lj8sfh.cloudfront.net, the CloudFront distribution that serves the web app and the API.
 - **Tracked file**: a file listed by `git ls-files` on the spec branch.
@@ -57,12 +57,12 @@ It does not change packages/web/src, packages/web/e2e, the pictures in docs, the
 
 #### Acceptance Criteria
 
-1. THE spec SHALL change only the Owned README and SHALL leave the sections "Try it in two minutes" and "Built with Kiro", where present, byte for byte as they are on main when main is merged in.
+1. THE spec SHALL change only the Owned README and SHALL leave the sections "Try it in two minutes" and "Kiro project files" (or "Built with Kiro"), where present, byte for byte as they are on main when main is merged in.
 2. THE Owned README SHALL hold a section "Limits" that says, in short sentences: what Sexton cannot see; that the demo and the two replays are recorded data, not a live scan; that the demo leaves out per-version maintainer history and why; and that the new-dependency rule has no measurement on a real repository yet.
 3. THE state table in the Owned README SHALL match the state rules and their order in packages/engine/src/state.ts.
 4. THE signal list in the Owned README SHALL match the twelve signal names of packages/engine/src/types.ts and the seven product signals of docs/requirements.md.
 5. WHEN the Owned README says a feature is on main, in progress or planned, THE label SHALL match main at the time of writing, and each label changed SHALL be listed in design.md with the check that supports it.
-6. THE Owned README SHALL hold a section "Pre-existing code and tools" that gives the First commit date, 7 November 2026, says it is after the hackathon start of 30 October 2026, and lists every file in the repository not written for Sexton with its source and licence.
+6. THE Owned README SHALL hold a section "Pre-existing code" that gives the First commit date, 7 November 2026, says it is after the hackathon start of 30 October 2026, and lists every file in the repository not written for Sexton with its source and licence.
 7. THE spec SHALL check the First commit date with `git log --reverse` and SHALL record the command output in design.md.
 8. THE Owned README SHALL link the Judge guide from its Documentation section.
 
@@ -90,7 +90,7 @@ It does not change packages/web/src, packages/web/e2e, the pictures in docs, the
 4. THE function `mapWithConcurrency` and the constant `PACKAGE_CONCURRENCY` SHALL live in packages/engine/src/util/concurrency.ts, every import SHALL point there, and the public exports of `@sexton/engine` SHALL be unchanged.
 5. THE fixture recorder SHALL take the npm packument, attestations and deps.dev URLs from the engine's URL builders (`packumentUrl`, `attestationsUrl`, `dependenciesUrl`) and SHALL NOT define its own copies.
 6. THE policy file sexton.policy.yml SHALL forbid the state Haunted in its `forbid_state` rule, with the rule name updated to match, WHEN `npm run scan:self` passes with it. IF it does not pass and no fixed version is available without a new dependency, THEN THE spec SHALL leave Haunted out and SHALL record the advisory and the reason in design.md.
-7. EVERY tasks.md in .kiro/specs on main a01fcce, and this spec's tasks.md, SHALL treat the section "Task Dependency Graph" the same way, as the owner decides at go, and design.md SHALL record the decision and its reason.
+7. THE 22 tasks.md files in .kiro/specs on main a01fcce SHALL keep their "Task Dependency Graph" sections exactly as they are, with none removed, changed or added, as the owner decided at go on 25 November 2026, and design.md SHALL close the cleanup item with that reason.
 8. THE function `isValidOwner` SHALL reject the reserved name `orgs`, as `parseRepoUrl` does, so that FOR ANY owner string that holds no `/` and ANY repository string that `isValidRepo` accepts, `isValidOwner(owner)` is true if and only if `parseRepoUrl("https://github.com/" + owner + "/" + repo).ok` is true (agreement).
 9. THE third line of build/reviews/05-remediation.md SHALL say "the project review rules" in place of the private file name.
 10. WHERE a publish record has no publisher name, THE state reason, the evidence summary and the pull request body row SHALL all show the word "unknown".
@@ -137,7 +137,7 @@ It does not change packages/web/src, packages/web/e2e, the pictures in docs, the
 
 #### Acceptance Criteria
 
-1. THE spec SHALL change only the paths listed in the Introduction, plus private/PROGRESS-K6b.md and private/reports/K6b-submission-readiness.md, which git ignores.
+1. THE spec SHALL change only the paths listed in the Introduction, plus the K6b progress notes and the K6b report, kept outside the repository, which git ignores.
 2. THE Gates SHALL pass before every commit, and SHALL pass in a fresh clone installed with `npx npm@11 ci` before the report.
 3. AN independent review that has not seen the work SHALL run before every commit, and its findings SHALL be recorded under "Review notes" in design.md.
 4. THE change-log line of docs/requirements.md SHALL take the next free number when main is merged in.

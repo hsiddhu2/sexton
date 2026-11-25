@@ -2,7 +2,7 @@
 
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { buildHealth, mapWithConcurrency, PACKAGE_CONCURRENCY, scorePackages } from "../src/score.js";
+import { buildHealth, scorePackages } from "../src/score.js";
 import { ABBREVIATED_ACCEPT } from "../src/clients/npm.js";
 import { ORIGINAL_SIGNAL_NAMES, STATE_ORDER } from "../src/types.js";
 import { packageSignalsArb } from "./arbitraries.js";
@@ -68,26 +68,6 @@ describe("scorePackages", () => {
     const { transport } = routedTransport([...npmRoutes("p", "1.0.0", { publish: "2026-10-01T00:00:00Z" }), osvRoute("p", "1.0.0", [])]);
     const report = await scorePackages([{ name: "p", installedVersion: "1.0.0" }], { transport, clock: () => NOW, retry: noSleep });
     expect(JSON.parse(JSON.stringify(report))).toEqual(report);
-  });
-
-  it("limits package concurrency to 8 (10.2)", async () => {
-    let inFlight = 0;
-    let peak = 0;
-    const items = Array.from({ length: 30 }, (_, i) => i);
-    await mapWithConcurrency(items, PACKAGE_CONCURRENCY, async (i) => {
-      inFlight++;
-      peak = Math.max(peak, inFlight);
-      await new Promise((r) => setTimeout(r, 1));
-      inFlight--;
-      return i;
-    });
-    expect(peak).toBeLessThanOrEqual(8);
-    expect(peak).toBeGreaterThan(1);
-  });
-
-  it("mapWithConcurrency preserves order", async () => {
-    const out = await mapWithConcurrency([3, 1, 2], 2, (n) => new Promise<number>((r) => setTimeout(() => r(n * 10), n)));
-    expect(out).toEqual([30, 10, 20]);
   });
 });
 

@@ -122,7 +122,7 @@ Found with `grep -rnE "DEAD_AFTER_MONTHS|RESTLESS_AFTER_MONTHS"` over the reposi
 - `packages/engine/src/state.ts`: defines both, uses both.
 - `packages/engine/src/index.ts` line 19: re-exports both from `./state.js`. It is the only importer of `state.ts` constants.
 - `packages/engine/test/support/health-scoring-oracle.ts`: declares its own `DEAD_AFTER_MONTHS` and `RESTLESS_AFTER_MONTHS` (lines 8 and 9) and uses them on lines 50, 51, 60 and 70. It imports neither from `src`.
-- `private/handoffs/K1-state-age-rule-kiro.md` and `private/handoffs/13-state-age-rule.md`: prose only, ignored by git, not edited.
+- The owner's two handoff notes for this spec: prose only, ignored by git, not edited.
 No file in `packages/api`, `packages/cli`, `packages/web`, `packages/action`, `infra` or `scripts` uses either name. `test/index.test.ts` does not list them. The typecheck gate confirms no importer was missed.
 ### Policy
 The default policy stays `forbid_state` for Possessed and Dead. `sexton.policy.yml` keeps `max_age_months` 24. That rule still flags stale packages, so this repository's own scan can still fail on a package that is Restless by age. That is a policy choice a repository makes on purpose, not a state. No policy code changes.

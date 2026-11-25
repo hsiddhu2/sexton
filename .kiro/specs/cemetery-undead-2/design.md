@@ -5,9 +5,9 @@
 cemetery-undead-2 is Phase 2 of the art pass "Night of the Living Deps". Phase 1 (cemetery-undead) merged to main at b513514 on 25 Nov 2026.
 
 The visual target is unchanged:
-- `private/design/mockup-night.html`, the cemetery, with two speech bubbles;
-- `private/design/mockup-nightreplay.html`, the axios replay at its burst, with the caption "The wind stops. A grave opens.";
-- their screenshots in `private/design/shots/mockup-night-1440.png` and `mockup-nightreplay-1440.png`.
+- the cemetery mockup (mockup-night.html, kept with the owner's notes outside the repository), with two speech bubbles;
+- the replay mockup (mockup-nightreplay.html, kept in the same place), the axios replay at its burst, with the caption "The wind stops. A grave opens.";
+- their screenshots, mockup-night-1440.png and mockup-nightreplay-1440.png, kept with them.
 
 Part A finishes the owner's review of Phase 1 (25 Nov 2026). Part B adds sound, speech bubbles, the replay burst, the burial priest, the rise clip and the load moment.
 

@@ -8,19 +8,21 @@ Characters are original vector art. The ghost is original art.
 
 Sound is off by default. The Sound button turns it on, and every sound is made in code.
 
-Status: pre-release. Release 0.1 is due on 4 Dec 2026. Each feature below says whether it is on `main` today, in progress, or planned.
+Status: pre-release. Release 0.1 is due on 4 December 2026. Each feature below says whether it is on `main` today, in progress, or planned.
+
+The hosted site, https://de1giv8lj8sfh.cloudfront.net, is deployed by hand, so it can lag `main`. It was last deployed on 22 November 2026.
 
 ## The problem
 
-Supply-chain attacks arrive through packages that looked fine in the lockfile. Think of event-stream in 2018, ua-parser-js in 2021, colors in 2022 and xz in 2024. In each case the warning signs were visible in public registry data before the damage. No open-source tool reads those signals, keeps their history, enforces a policy on them and fixes the result.
+Supply-chain attacks arrive through packages that looked fine in the lockfile. Think of event-stream in 2018, ua-parser-js in 2021, colors in 2022 and xz in 2024. In each case the warning signs were visible in public registry data before the damage. Sexton reads those signals for every direct dependency of a repository, keeps their history, enforces a policy on them and opens the fix.
 
 ## What Sexton does
 
 - **Signals.** It scores up to 300 direct dependencies per scan on twelve signals. These twelve measure the seven product signals in the roadmap, from last publish date and known advisories to maintainer change, provenance, transitive reach, a change of publisher and a newly added dependency. Every signal carries its source URL and fetch time. On `main` today.
-- **History.** It keeps a dated snapshot of each package's maintainers, install scripts and attestations, because no registry API keeps that history. A maintainer change or lost provenance is computed from the history, not from one read. The snapshot engine is on `main`. The hosted daily job is in progress.
+- **History.** It keeps a dated snapshot of each package's maintainers, install scripts and attestations. The npm packument lists each version's maintainers, publisher (`_npmUser`) and attestations, but it shows the maintainer list only as it is today and as it was at each publish, so a change between two releases leaves no trace there. A maintainer change or lost provenance is computed from the history, not from one read. The snapshot engine is on `main`, and the hosted site runs it every day.
 - **Policy.** You commit a `sexton.policy.yml` with four rule types and package matchers. Sexton evaluates it and fails CI when a rule breaks. The policy engine, `sexton check` and the GitHub Action are on `main`.
-- **Remediation pull requests.** For each dangerous package it proposes one fix: a version bump, a removal, or a migration such as node-sass to sass. The pull request carries its evidence. The plans are on `main` in the engine and the CLI. Hosted scans on `main` carry the plans too, without removals, and name the commit they read; the hosted site shows them after its next deploy. Opening the pull request is on `main` for the demo repository `hsiddhu2/sexton-demo` only, and arrives on the hosted site at its next deploy. Every other repository shows the plan and the pull request body, with no button.
-- **Evidence pack.** It writes a CycloneDX 1.5 SBOM, every signal with its source, the policy results and the remediation plans and log as one JSON file, and a Markdown report rendered from it. A SHA-256 digest over the canonical JSON body lets a reviewer check it against a digest they got separately. The digest is not a signature. On `main` today: the engine, `GET /api/evidence?repo=<url>&format=json|md`, and the demo download links in the cemetery header. Each hosted download runs its own scan. The hosted site gains the evidence endpoint and the header links at its next deploy.
+- **Remediation pull requests.** For each dangerous package it proposes one fix: a version bump, a removal, or a migration such as node-sass to sass. The pull request carries its evidence. The plans are on `main` in the engine and the CLI. Hosted scans carry the plans too, without removals, and name the commit they read. Opening the pull request is on `main` and on the hosted site, for the demo repository `hsiddhu2/sexton-demo` only. Every other repository shows the plan and the pull request body, with no button.
+- **Evidence pack.** It writes a CycloneDX 1.5 SBOM, every signal with its source, the policy results and the remediation plans and log as one JSON file, and a Markdown report rendered from it. A SHA-256 digest over the canonical JSON body lets a reviewer check it against a digest they got separately. The digest is not a signature. On `main` today: the engine, `GET /api/evidence?repo=<url>&format=json|md`, and the demo download links in the cemetery header. Each hosted download runs its own scan. The hosted site serves the evidence endpoint and the header links.
 
 ## The five states
 
@@ -31,7 +33,7 @@ Each package gets exactly one state. The rules run in this order, and the first 
 | Possessed | A maintainer changed in the last 90 days, provenance regressed, a new install script appeared, a new dependency has an install script or was published within 7 days, or the publisher changed from a trusted publisher to a token |
 | Dead | The installed version is deprecated, or the last publish was more than 24 months ago and it has an advisory |
 | Haunted | It has a High or Critical advisory |
-| Restless | The last publish was more than 24 months ago, or it has a Low or Moderate advisory |
+| Restless | The last publish was more than 24 months ago, or it has a Low or Moderate advisory. Also when last publish, deprecation and advisories are all unavailable and no Possessed rule matched |
 | Alive | None of the above |
 
 ## Quick start
@@ -44,7 +46,7 @@ sexton check                                    # evaluate sexton.policy.yml, ex
 sexton evidence                                 # write the evidence pack
 ```
 
-Hosted demo: the link arrives with the first deploy.
+Hosted demo: https://de1giv8lj8sfh.cloudfront.net
 
 What runs today, from a clone of this repository, with Node.js 22:
 
@@ -98,16 +100,19 @@ Inputs: `path` (default `.`), `comment` (default `true`), `token` (default the w
 
 ## Sexton scans itself
 
-Sexton runs its own policy against its own dependencies with `npm run scan:self`. A CI job that runs it on every push is in progress. The first time we ran it, it failed.
+Sexton runs its own policy against its own dependencies with `npm run scan:self`. The `self-scan` job in `.github/workflows/ci.yml` runs it on every push and pull request. The first time we ran it, it failed.
 
-It rated eslint 9.17.0 Dead, as that version is deprecated on npm. It rated vitest 2.1.8 Haunted, with two Critical advisories (GHSA-9crc-q9x8-hgqq and GHSA-5xrq-8626-4rwp) and one Moderate (GHSA-82fw-gwwq-j7x9). We moved to eslint 10.15.0, @eslint/js 10.0.1, typescript-eslint 8.72.2 and vitest 4.1.12. On the second scan all seven packages were Alive and all three rules passed. The scan on 20 Nov 2026 showed all eight root packages Alive and all three rules passing.
+It rated eslint 9.17.0 Dead, as that version is deprecated on npm. It rated vitest 2.1.8 Haunted, with two Critical advisories (GHSA-9crc-q9x8-hgqq and GHSA-5xrq-8626-4rwp) and one Moderate (GHSA-82fw-gwwq-j7x9). We moved to eslint 10.15.0, @eslint/js 10.0.1, typescript-eslint 8.72.2 and vitest 4.1.12. On the second scan all seven packages were Alive and all three rules passed. The scan on 20 November 2026 showed all eight root packages Alive and all three rules passing. Since 25 November 2026 the policy also forbids Haunted. That day the scan covered 32 packages across the root and every workspace, all Alive, with all three rules passing.
 
 ## How Sexton is different
 
-- **Dependabot** opens pull requests when a dependency has a known advisory or a newer version. Sexton also flags packages before any advisory exists, from maintainer change, lost provenance and new install scripts.
-- **Renovate** keeps versions current, and its replacement pull requests swap one package name for another. Sexton's migration recipes are planned to change the code that uses the package too.
-- **OSV-Scanner** finds known vulnerabilities, and its fix command opens no pull requests. Sexton is planned to open one pull request per fix, carrying its evidence.
-- **Socket's** open CLI sends data to a hosted service. Sexton scores locally against public sources, and its engine needs no Sexton service.
+Other tools cover parts of what Sexton does. Each line below was checked on the tool's own README or documentation on 25 November 2026.
+
+- **[Dependabot](https://docs.github.com/en/code-security/dependabot)** opens pull requests when a dependency has a known advisory or a newer version. Sexton also flags packages before any advisory exists, from maintainer change, lost provenance, new install scripts, a change of publisher and a new dependency.
+- **[Renovate](https://docs.renovatebot.com)** opens pull requests that keep versions current, and its replacement rules swap one package name for another. Sexton's node-sass to sass recipe also changes the code that uses the package.
+- **[OSV-Scanner](https://google.github.io/osv-scanner/)** finds known vulnerabilities, and its fix command edits the manifest and lockfile locally. Sexton opens one pull request per fix, carrying its evidence.
+- **[Socket's CLI](https://github.com/SocketDev/socket-cli)** scans dependencies and gates installs, and its scans go through the Socket API with an account token. Sexton scores against public sources only, and its engine needs no Sexton service.
+- **[npq](https://github.com/lirantal/npq)** audits one package before you install it. Its checks include the publisher (`_npmUser`), a new maintainer, install scripts and provenance regression, so its signals overlap Sexton's most. Sexton scores every direct dependency of a repository, keeps dated snapshots, enforces a committed policy in CI, opens the fix and writes an evidence pack.
 
 ## Sexton and Dependabot
 
@@ -121,7 +126,7 @@ Keep Dependabot on and run Sexton beside it.
 
 ## Replay
 
-The cemetery has a history scrubber. It shows each package as it stood on an earlier date. Two replays play real incidents through it. Open the hosted page with [?replay=axios](?replay=axios) or [?replay=keyv](?replay=keyv). You can also press "axios, Mar 2026" or "keyv, Aug 2026" in the "Replay an attack" group in the header.
+The cemetery has a history scrubber. It shows each package as it stood on an earlier date. Two replays play real incidents through it. Open the hosted page with [?replay=axios](https://de1giv8lj8sfh.cloudfront.net/?replay=axios) or [?replay=keyv](https://de1giv8lj8sfh.cloudfront.net/?replay=keyv). Replays are on `main`. The hosted site shows them from its next deploy. You can also press "axios, Mar 2026" or "keyv, Aug 2026" in the "Replay an attack" group in the footer.
 
 A replay opens one hour before the attack, so the grave starts Alive. Press Play to step through the history one stop at a time, or move the slider yourself.
 
@@ -137,11 +142,11 @@ Releases are sequenced, not promised by date. Release 0.1 lists each item's stat
 
 - npm, direct dependencies, public GitHub repositories. Repository intake is on `main`.
 - Seven signals: abandonment, advisories, install scripts, maintainer change, provenance regression, publisher change, new dependency. On `main`.
-- Daily snapshotter for maintainers and attestations. The engine is on `main`, and the hosted schedule is in progress.
+- Daily snapshotter for maintainers and attestations. On `main`, and on the hosted site as a daily schedule at 03:17 UTC since 21 November 2026.
 - Policy file with four rule types and packageRules matchers. On `main`.
-- Remediation pull requests: bump, remove, and one migration (node-sass to sass), planned
-- Evidence pack: CycloneDX JSON SBOM, policy results, remediation log, hash. On `main`. The CLI command arrives with the CLI
-- Cemetery UI, in progress
+- Remediation pull requests: bump, remove, and one migration (node-sass to sass). On `main`
+- Evidence pack: CycloneDX JSON SBOM, policy results, remediation log, hash. On `main`, in the engine, the API and the CLI
+- Cemetery UI, with the history scrubber and two replays. On `main`
 - CLI with scan, check and evidence. On `main`, not published to npm yet
 - GitHub Action. On `main`
 - Scheduled re-scan agent that judges changes against the policy, planned
@@ -169,6 +174,15 @@ Releases are sequenced, not promised by date. Release 0.1 lists each item's stat
 - Signed evidence packs
 - Evidence pack export for SOC 2, DORA and CRA reporting
 
+## Limits
+
+- Sexton sees what the npm registry, OSV, deps.dev and GitHub publish. It does not run or read the code inside a package. A compromise that leaves no trace in that data is not seen.
+- It scores direct dependencies only. Transitive packages count toward reach but get no state of their own.
+- It reads npm packages only. It reads a GitHub repository only when it is public. The CLI can also scan a local directory.
+- The demo scan and the two replays are recorded data, not a live scan. The replays are reconstructed from public reports.
+- The demo leaves out per-version maintainer lists. The registry's lists for semver 7.8.5 and 7.8.6 differ by one name. Recording them would make the history scrubber show semver Possessed while the scan says Alive. Until that rule is settled, the recorded data leaves both sides out.
+- The new-dependency rule has no measurement on a real repository yet. In the Express scan of 25 November 2026 no package had added a dependency.
+
 ## Documentation
 
 - `docs/requirements.md`: the product requirements
@@ -176,6 +190,19 @@ Releases are sequenced, not promised by date. Release 0.1 lists each item's stat
 - `docs/threat-model.md`: what can go wrong and what stops it
 - `docs/well-architected.md`: the deployment against the six pillars
 - `docs/adr/`: architecture decision records
+- `docs/JUDGES.md`: a one-page guide for judges
+
+## Pre-existing code
+
+The first commit, 8bfc8cb, was made on 7 November 2026, after the hackathon started on 30 October 2026. Sexton's code was written for it from that date on.
+
+These files were not written for Sexton:
+
+- The CycloneDX 1.5, JSF 0.82 and SPDX JSON schemas in `packages/engine/test/fixtures/cyclonedx`, from the [CycloneDX specification](https://github.com/CycloneDX/specification), Apache-2.0. Tests validate the SBOM against them.
+- The four font families in `packages/web/public/fonts`, SIL Open Font License 1.1. See CREDITS.md.
+- The recorded registry responses under `packages/engine/test/fixtures`: public data from the npm registry, OSV, deps.dev and GitHub, trimmed to the fields the engine reads.
+
+Open-source packages are used as dependencies at the exact versions in `package-lock.json`, each under its own licence. Runtime dependencies are permissively licensed (docs/requirements.md N-7, docs/adr/0001).
 
 ## Licence
 
