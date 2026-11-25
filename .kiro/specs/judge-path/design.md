@@ -194,6 +194,23 @@ Every existing test not listed here must pass unmodified.
 `test/priest.test.tsx`
 5. "keeps every point of every mark of a burial or a Vigil ... inside the burial regions". Old: `buryingRegions(grave)`. New: `buryingRegions(grave, phase)`.
 
+`e2e/undead2.spec.ts`
+6. "the Ghosts' drawn pixels clear every name label at <width> by <height>". Old: the page clock is installed but keeps running, and each paint reads its own `Date.now()`. New: the clock is paused (`pauseAt`), the fonts are awaited, and both frames are painted at one `nowMs`. The assertion is unchanged.
+7. "a rising grave in the Load moment is drawn directly, not from a sprite". Old and new as change 6; the assertion (0 differing bytes) is unchanged. Cause, confirmed 25 Nov 2026: it failed once in CI with 19,448 differing bytes. A probe on the same page gave 0 differing bytes for the two frames at one instant and 19,423 for the same two frames either side of a Pose boundary (84 ms apart), the cause fixed in cemetery-undead-fixes bug 2.
+
+8. "under Reduced motion the axios replay shows the Burst's final pose and caption at once". Old: the skin pixels are counted once, as soon as the caption shows. New: the same count is polled for up to 2 s (`expect.poll`), because the caption is DOM text and shows before the canvas paints the Stop; it read 0 in 7 of 10 local runs. The assertion (more than 500 skin pixels) is unchanged.
+
+Every speed case (`e2e/smoke.spec.ts` three, `e2e/undead2.spec.ts` one, `e2e/fixes.spec.ts` three, `e2e/judge.spec.ts` one)
+9. Old: each asserts a median at or below 16 ms. New: at or below `BUDGET_MS` from `e2e/budget.ts`, which is 16 ms locally and 22.4 ms when the `CI` environment variable is set (decision 10). No speed case is removed.
+
+`e2e/time.spec.ts`
+10. "at 1440 by 900 the canvas reaches the bottom of the viewport". Old: the canvas box is read once. New: the same bottom is polled for up to 2 s, because the scene sizes itself after the fonts and the header settle (it read 861.6 once in ten runs). The assertion (at least 900) is unchanged.
+
+`e2e/fixes.spec.ts`
+11. "review: a tooltip over its own grave stays when the pointer goes back from the tooltip to the grave". Old: the grave's box is read once and the pointer moved there. New: the box is read until two reads agree, then the pointer moves. An early box put the pointer off the grave, so no tooltip opened (2 runs in 10). The assertions are unchanged.
+
+The other e2e that compare two frames (cemetery-undead-fixes bug 2, and the sprite comparison in `e2e/undead2.spec.ts`) already paint both at one paused instant; the remaining pixel reads in `e2e/smoke.spec.ts` and `e2e/undead2.spec.ts` read a single frame against a threshold.
+
 The header test's control order does not change: `Header` renders the Guide button and the Fix-first line only when App passes them. The painter's ring call counts do not change: the casing is filled, the ring is still one `strokeRect`. If the build finds another test that pins a value this spec changes on purpose, it is added here before the test is edited.
 
 ### Visual critic protocol
@@ -220,4 +237,5 @@ As cemetery-undead-2, with captures of the Demo at 1440 by 900 and 390 by 844 wi
 6. **The Part boxes are 4-unit grid blocks, and the soft edge is HALO_GROW 12 with HALO_BLUR 3.** With the ring cut gone, the visual critic still found a wide, lumpy dark cloud round the replay zombie and behind the graves near a Halo (rounds 1 and 2). It came from the 8-unit blocks (14 px at the replay size, filling the gaps between arms and head) plus the soft edge. Narrowing the soft edge alone showed the blocks as stairs. The Part boxes are now measured again on a 4-unit grid by the same outline probe (Property 2 of cemetery-undead-fixes passes unedited), and the soft edge is the narrowest that still passes the solid 8 px margin by more than a blur and a quarter ((12 - 8) / 3). The B4 fallback of 14 and 4 was tried first and replaced by this. Requirement 4.7's worst share rose to 0.98.
 7. **The Priest is cut by his own outline**, PRIEST_PARTS (4-unit blocks over every phase and the Vigil, measured the same way), not by PRIEST_BOX, which left a dark box round him (critic round 2). PRIEST_BOX stays as the bound his own test checks.
 8. **A docked card has no notch, and the step's control is outlined.** At 1440 by 900 step 4 cannot sit beside the Replay button without covering the front row's names, so it docks above them; a notch there pointed at node-sass (critic round 2). A dock now has no notch, and while a step shows, its Replay button Anchor has a 3 px outline in the focus colour. A grave Anchor keeps its own ring and focus outline. On a narrow screen the card is compact, so it fits between two rows of names, and at 390 by 844 it now sits just above left-padder.
+10. **The speed budget is 16 ms locally and 16 × 1.4 = 22.4 ms on CI.** On the shared Ubuntu runner the same commit (spec/submission-readiness, runs 45708669411 and 45708680577 of 25 Nov 2026) measured the 300 front-row Halo repaint at 14.00 ms and 16.45 ms, against 11.90 ms on the Mac for that code: 1.18 to 1.38 times slower. The smaller cases ran 1.5 to 3 times slower but stay far under the budget (2.30 to 5.90 ms). 1.4 covers the worst heavy-case ratio seen. A real regression still fails: the cold Halo repaint before this spec, 19.80 ms on the Mac, would measure 23.4 to 27.3 ms on CI at those ratios, over 22.4; the uncached Halo of cemetery-undead-fixes (229 ms) far more. This branch's heaviest case, 11.55 ms on the Mac, would be at most about 16 ms on CI. Locally every case keeps 16 ms.
 9. **`haloAlphaAt` reads only the cuts near a point**, from grid buckets kept per mask: a cut farther than its soft edge reaches changes nothing, and the cuts keep their order, so the value is the same. With the finer Part boxes the Halo property test ran past its 60 s limit under the full suite; it now takes about 21 s alone.

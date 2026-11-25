@@ -1,6 +1,7 @@
 // Spec cemetery-undead-2: browser checks of the name labels, the Bubbles, Sound, the Burst and its budget.
 import { existsSync } from "node:fs";
 import { chromium, expect, test, type Page } from "@playwright/test";
+import { BUDGET_MS } from "./budget.js";
 
 test.skip(!existsSync(chromium.executablePath()), "chromium is not installed");
 
@@ -40,6 +41,10 @@ for (const [width, height] of [
     await page.waitForFunction(() => (window as unknown as HookWindow).__sextonTiming !== undefined);
     // Past the Load moment, which lasts under a second.
     await page.clock.runFor(1_500);
+    // Spec judge-path, Deliberate test change 6: the page clock is paused and both frames are painted at one instant,
+    // so a Pose cannot change between them.
+    await page.clock.pauseAt(new Date("2026-11-24T12:00:05Z"));
+    await page.evaluate(() => document.fonts.ready.then(() => undefined));
     // With the clock still, paint once with every Ghost and once with none, and compare each label's pixels.
     const result = await page.evaluate(() => {
       const hook = (window as unknown as HookWindow).__sextonTiming;
@@ -50,10 +55,11 @@ for (const [width, height] of [
       const labels = hook.labels();
       const read = (): number[][] =>
         labels.map((r) => Array.from(ctx.getImageData(Math.floor(r.x * k), Math.floor(r.y * k), Math.ceil(r.w * k), Math.ceil(r.h * k)).data));
-      hook.paintVariant({ ghosts: true });
+      const at = Date.now();
+      hook.paintVariant({ ghosts: true, nowMs: at });
       const withGhosts = read();
       const whole = Array.from(ctx.getImageData(0, 0, canvas.width, canvas.height).data);
-      hook.paintVariant({ ghosts: false });
+      hook.paintVariant({ ghosts: false, nowMs: at });
       const without = read();
       const wholeWithout = Array.from(ctx.getImageData(0, 0, canvas.width, canvas.height).data);
       let differing = 0;
@@ -143,7 +149,7 @@ test("300 graves repaint within budget during a Burst", async ({ page, baseURL }
   const sorted = [...times].sort((a, b) => a - b);
   const median = ((sorted[14] ?? 0) + (sorted[15] ?? 0)) / 2;
   console.log(`median redraw of 300 graves during a Burst over 30 paints: ${median.toFixed(2)} ms`);
-  expect(median).toBeLessThanOrEqual(16);
+  expect(median).toBeLessThanOrEqual(BUDGET_MS);
 });
 
 test("under Reduced motion the axios replay shows the Burst's final pose and caption at once", async ({ page, baseURL }) => {
@@ -159,16 +165,19 @@ test("under Reduced motion the axios replay shows the Burst's final pose and cap
   // The final pose is the still open grave: the zombie stands, so its skin shows inside the grave's box.
   const box = await page.locator("button[data-grave-index]").boundingBox();
   expect(box).not.toBeNull();
-  const skin = await page.evaluate((b) => {
-    const canvas = document.querySelector("canvas") as HTMLCanvasElement;
-    const r = canvas.getBoundingClientRect();
-    const k = canvas.width / r.width;
-    const data = (canvas.getContext("2d") as CanvasRenderingContext2D).getImageData(Math.round((b.x - r.left) * k), Math.round((b.y - r.top) * k), Math.round(b.width * k), Math.round(b.height * k)).data;
-    let hits = 0;
-    for (let i = 0; i < data.length; i += 4) if (Math.abs((data[i] ?? 0) - 0x7f) <= 6 && Math.abs((data[i + 1] ?? 0) - 0xae) <= 6 && Math.abs((data[i + 2] ?? 0) - 0x4e) <= 6) hits += 1;
-    return hits;
-  }, box ?? { x: 0, y: 0, width: 0, height: 0 });
-  expect(skin).toBeGreaterThan(500);
+  // Spec judge-path, Deliberate test change 8: the caption is DOM text and shows before the canvas paints the Stop,
+  // so the skin count is read until the next frames have painted, not once at once. The assertion is unchanged.
+  const skin = (): Promise<number> =>
+    page.evaluate((b) => {
+      const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+      const r = canvas.getBoundingClientRect();
+      const k = canvas.width / r.width;
+      const data = (canvas.getContext("2d") as CanvasRenderingContext2D).getImageData(Math.round((b.x - r.left) * k), Math.round((b.y - r.top) * k), Math.round(b.width * k), Math.round(b.height * k)).data;
+      let hits = 0;
+      for (let i = 0; i < data.length; i += 4) if (Math.abs((data[i] ?? 0) - 0x7f) <= 6 && Math.abs((data[i + 1] ?? 0) - 0xae) <= 6 && Math.abs((data[i + 2] ?? 0) - 0x4e) <= 6) hits += 1;
+      return hits;
+    }, box ?? { x: 0, y: 0, width: 0, height: 0 });
+  await expect.poll(skin, { timeout: 2000 }).toBeGreaterThan(500);
 });
 
 for (const [width, height] of [
@@ -256,15 +265,20 @@ test("a rising grave in the Load moment is drawn directly, not from a sprite", a
   await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
   await page.waitForFunction(() => (window as unknown as HookWindow).__sextonTiming !== undefined);
   await page.clock.runFor(1_500);
+  // Spec judge-path, Deliberate test change 7: the page clock is paused and both frames are painted at one instant.
+  // With the clock running, a Pose could change between the two paints (19,448 bytes differed once in CI).
+  await page.clock.pauseAt(new Date("2026-11-24T12:00:05Z"));
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
   const result = await page.evaluate(() => {
     const hook = (window as unknown as HookWindow).__sextonTiming;
     const canvas = document.querySelector("canvas");
     const ctx = canvas?.getContext("2d");
     if (hook === undefined || canvas === null || ctx === null || ctx === undefined) return -1;
     // 300 ms in, most graves are part-way up; with and without sprites the frame must be the same, pixel for pixel.
-    hook.paintVariant({ riseElapsedMs: 300, sprites: true });
+    const at = Date.now();
+    hook.paintVariant({ riseElapsedMs: 300, sprites: true, nowMs: at });
     const a = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-    hook.paintVariant({ riseElapsedMs: 300, sprites: false });
+    hook.paintVariant({ riseElapsedMs: 300, sprites: false, nowMs: at });
     const b = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
     let differ = 0;
     for (let i = 0; i < a.length; i += 1) if (a[i] !== b[i]) differ += 1;

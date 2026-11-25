@@ -1,12 +1,12 @@
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { chromium, expect, test, type Page } from "@playwright/test";
+import { BUDGET_MS } from "./budget.js";
 
 test.skip(!existsSync(chromium.executablePath()), "chromium is not installed");
 
 const SCREENSHOT = fileURLToPath(new URL("../../../docs/cemetery.png", import.meta.url));
 const REPLAY_SCREENSHOT = fileURLToPath(new URL("../../../docs/replay-axios.png", import.meta.url));
-const BUDGET_MS = 16;
 
 interface TimingWindow {
   __sextonTiming?: { redraw(n: number): number[] };

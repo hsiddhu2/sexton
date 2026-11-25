@@ -2,6 +2,7 @@
 import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import { chromium, expect, test, type Page } from "@playwright/test";
+import { BUDGET_MS } from "./budget.js";
 
 test.skip(!existsSync(chromium.executablePath()), "chromium is not installed");
 
@@ -233,5 +234,5 @@ test("requirement 6.3: 300 front-row graves repaint inside 16 ms during a burial
   expect(times).toHaveLength(30);
   const m = median(times);
   console.log(`median repaint of 300 front-row graves during a burial: ${m.toFixed(2)} ms`);
-  expect(m).toBeLessThanOrEqual(16);
+  expect(m).toBeLessThanOrEqual(BUDGET_MS);
 });

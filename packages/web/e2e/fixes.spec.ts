@@ -1,6 +1,7 @@
 // Spec cemetery-undead-fixes: browser checks of bugs 1 and 2.
 import { existsSync } from "node:fs";
 import { chromium, expect, test, type Page } from "@playwright/test";
+import { BUDGET_MS } from "./budget.js";
 
 test.skip(!existsSync(chromium.executablePath()), "chromium is not installed");
 
@@ -113,7 +114,7 @@ for (const [label, mix] of [
     const sorted = [...times].sort((a, b) => a - b);
     const median = ((sorted[14] ?? 0) + (sorted[15] ?? 0)) / 2;
     console.log(`median repaint with a fresh Halo layer, ${label}: ${median.toFixed(2)} ms`);
-    expect(median).toBeLessThanOrEqual(16);
+    expect(median).toBeLessThanOrEqual(BUDGET_MS);
   });
 }
 
@@ -136,7 +137,7 @@ test("judge-path 5.1: a cold Halo repaint with 300 front-row graves stays inside
   const sorted = [...cold].sort((a, b) => a - b);
   const median = ((sorted[14] ?? 0) + (sorted[15] ?? 0)) / 2;
   console.log(`median repaint with a cold Halo layer and sources, 300 front-row graves: ${median.toFixed(2)} ms`);
-  expect(median).toBeLessThanOrEqual(16);
+  expect(median).toBeLessThanOrEqual(BUDGET_MS);
 });
 
 test("bug 3: a tooltip that opens above its grave stays while the pointer is over it, and keeps its grave", async ({ page, baseURL }) => {
@@ -169,7 +170,17 @@ test("review: a tooltip over its own grave stays when the pointer goes back from
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   const grave = page.locator('button[data-grave-index][aria-label^="event-stream"]');
-  const g = await grave.boundingBox();
+  // Spec judge-path, Deliberate test change 11: the scene sizes itself after the fonts and the header settle, so the
+  // grave's box is read once it has stopped moving; an early box put the pointer off the grave (2 runs in 10).
+  let g = await grave.boundingBox();
+  await expect
+    .poll(async () => {
+      const now = await grave.boundingBox();
+      const same = now !== null && g !== null && now.x === g.x && now.y === g.y && now.width === g.width && now.height === g.height;
+      g = now;
+      return same;
+    })
+    .toBe(true);
   expect(g).not.toBeNull();
   if (g === null) return;
   // Enter the grave low down, below where its tooltip opens over it.
