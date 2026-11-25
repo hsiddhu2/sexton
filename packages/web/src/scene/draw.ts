@@ -11,12 +11,14 @@ import {
   SHADOW_ALPHA_BYTE,
   STONE_ALPHA_BYTE,
 } from "./palette.js";
-import { GRAVE_GEOMETRY, BOTTOM_LINE_MIN_GAP, BOTTOM_LINE_OFFSET, CELL_WIDTH, MAX_BACKING, PADDING, type GravePlan, type ScenePlan, type Star, type Tuft } from "./layout.js";
+import { GRAVE_GEOMETRY, BOTTOM_LINE_MIN_GAP, BOTTOM_LINE_OFFSET, CELL_WIDTH, MAX_BACKING, PADDING, type GravePlan, type Rect, type ScenePlan, type Star, type Tuft } from "./layout.js";
 import { inDanceWindow, poseAt, seedOf } from "./motion.js";
 import { CHURCH_PATH, TREE_PATH, batWing, churchPath, treePath } from "./silhouettes.js";
 import { POSE_COUNT, type ClipId } from "./characters/vector.js";
 import { HALO_FEATHER, haloMask, type HaloMask } from "./halo.js";
 import { drawPriest } from "./characters/priest.js";
+import { canSprite, drawSprite, sprite } from "./sprites.js";
+import { FORM_BOX } from "./art-box.js";
 import { BURST_PARTICLES, burstFrame, FINAL_POSE, particleAt, SHARD_PATH, type BurstFrame } from "./burst.js";
 import { loadDelay, loadMomentMs, riseAt } from "./rise.js";
 import { BURIAL_SINK_PX, burialFrame } from "../time/burial.js";
@@ -389,11 +391,20 @@ function drawGlow(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan): void 
   ctx.scale(scale, scale);
   const cy = lantern ? MARKER_BASE_Y - 20 : GLOW_CY;
   const radius = lantern ? CELL_WIDTH * LANTERN_RADIUS : GLOW_RADIUS;
-  const glow = ctx.createRadialGradient(SHADOW_CX, cy, 0, SHADOW_CX, cy, radius);
-  glow.addColorStop(0, lantern ? colours.lantern + LANTERN_ALPHA_BYTE : grave.fill + GLOW_ALPHA_BYTE);
-  glow.addColorStop(1, (lantern ? colours.lantern : grave.fill) + ALPHA_ZERO_BYTE);
-  ctx.fillStyle = glow as CanvasGradient;
-  ctx.fillRect(SHADOW_CX - radius, cy - radius, radius * 2, radius * 2);
+  const inner = lantern ? colours.lantern + LANTERN_ALPHA_BYTE : grave.fill + GLOW_ALPHA_BYTE;
+  const outer = (lantern ? colours.lantern : grave.fill) + ALPHA_ZERO_BYTE;
+  const paintGlow = (c: PaintContext2D): void => {
+    const glow = c.createRadialGradient(SHADOW_CX, cy, 0, SHADOW_CX, cy, radius);
+    glow.addColorStop(0, inner);
+    glow.addColorStop(1, outer);
+    c.fillStyle = glow as CanvasGradient;
+    c.fillRect(SHADOW_CX - radius, cy - radius, radius * 2, radius * 2);
+  };
+  const box: Rect = { x: SHADOW_CX - radius, y: cy - radius, w: radius * 2, h: radius * 2 };
+  const k = paintBacking * scale;
+  const image = canSprite(ctx) ? sprite(`glow|${inner}|${String(radius)}|${String(cy)}`, box, k, paintGlow) : null;
+  if (image !== null && canSprite(ctx)) drawSprite(ctx, image, box, k);
+  else paintGlow(ctx);
   ctx.restore();
 }
 
@@ -523,18 +534,30 @@ function burstOf(grave: GravePlan, plan: ScenePlan, nowMs: number): BurstFrame |
   return b.startMs === null ? FINAL_POSE : burstFrame(nowMs - b.startMs);
 }
 
-/** One grave, drawn in its cell frame at its Tier scale: every number below is cell-relative. */
-export function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan, deco: DecorationColours, nowMs: number): void {
+/** The pose of a grave's Character now, or null for a Form without one. */
+function motionOf(grave: GravePlan, plan: ScenePlan, nowMs: number): { readonly clip: ClipId; readonly pose: number } | null {
+  const formState = STATE_BY_SHAPE[grave.shape];
+  const character = formState === null ? null : CHARACTER_BY_STATE[formState];
+  return character === null ? null : clipAndPose(grave, plan, character.clips, nowMs);
+}
+
+/**
+ * A grave's body in its cell frame: the shadow, the stone (with its pit, side face, texture and crack), the Character
+ * at one Pose and the Costume, and during a Burst its lid, particles and rise. Drawn directly, or once into a sprite.
+ */
+function drawBody(
+  ctx: PaintContext2D,
+  grave: GravePlan,
+  plan: ScenePlan,
+  deco: DecorationColours,
+  motion: { readonly clip: ClipId; readonly pose: number } | null,
+  burst: BurstFrame | null,
+  frame: ReturnType<typeof burialFrame> | null,
+): void {
   const colours = PALETTE[plan.theme];
   const g = GRAVE_GEOMETRY;
   const def = SHAPES[grave.shape];
-  const scale = grave.rect.w / CELL_WIDTH;
   const formState = STATE_BY_SHAPE[grave.shape];
-
-  ctx.save();
-  ctx.translate(grave.rect.x, grave.rect.y);
-  ctx.scale(scale, scale);
-
   ctx.save();
   ctx.translate(SHADOW_CX, SHADOW_CY);
   ctx.scale(SHADOW_RX, SHADOW_RY);
@@ -544,7 +567,6 @@ export function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan
   ctx.fill();
   ctx.restore();
 
-  const frame = grave.burial === null ? null : burialFrame(grave.burial);
   ctx.save();
   if (frame !== null) {
     // The stone sinks behind the ground line at the Plinth top: nothing below the Cell's stone area is drawn.
@@ -573,7 +595,6 @@ export function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan
     ctx.lineWidth = PIT_EDGE_WIDTH;
     ctx.stroke(pitEdgePath());
   }
-  const burst = burstOf(grave, plan, nowMs);
   if (burst !== null && burst.lid < 1) {
     // The lid flies from over the pit to its resting place, rising in an arc (spec cemetery-undead-2, B3).
     const p = burst.lid;
@@ -619,7 +640,7 @@ export function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan
       ctx.translate(g.shapeX, g.shapeY);
       ctx.scale(g.shapeScale, g.shapeScale);
       if (character !== null) {
-        const { clip, pose } = clipAndPose(grave, plan, character.clips, nowMs);
+        const { clip, pose } = motion ?? { clip: character.clips[0] ?? "dance", pose: 0 };
         if (burst !== null && burst.rise < 1) {
           // The zombie rises out of the pit: hidden below the pit's centre line, moved down by what is left to rise.
           ctx.save();
@@ -657,6 +678,50 @@ export function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan
   }
   ctx.restore();
 
+}
+
+/** The body sprite's box in cell units: the Form's core box and the shadow, with a margin. */
+function bodyBox(shape: GravePlan["shape"]): Rect {
+  const f = FORM_BOX[shape];
+  const x0 = Math.min(f.x, SHADOW_CX - SHADOW_RX) - 2;
+  const y0 = Math.min(f.y, SHADOW_CY - SHADOW_RY) - 2;
+  const x1 = Math.max(f.x + f.w, SHADOW_CX + SHADOW_RX) + 2;
+  const y1 = Math.max(f.y + f.h, SHADOW_CY + SHADOW_RY) + 2;
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+}
+const GHOST_SPRITE_BOX: Rect = { x: -1, y: -1, w: 26, h: 30 };
+
+/** The device pixels per CSS pixel of the paint in progress, for sprites. */
+let paintBacking = 1;
+/** True while a grave is drawn rising in the Load moment: it is drawn directly, never from a sprite (review note). */
+let paintDirect = false;
+
+/** One grave, drawn in its cell frame at its Tier scale: every number below is cell-relative. */
+export function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan, deco: DecorationColours, nowMs: number): void {
+  const colours = PALETTE[plan.theme];
+  const g = GRAVE_GEOMETRY;
+  const scale = grave.rect.w / CELL_WIDTH;
+
+  ctx.save();
+  ctx.translate(grave.rect.x, grave.rect.y);
+  ctx.scale(scale, scale);
+
+  const frame = grave.burial === null ? null : burialFrame(grave.burial);
+  const burst = burstOf(grave, plan, nowMs);
+  const motion = motionOf(grave, plan, nowMs);
+  const still = frame === null && (burst === null || (burst.lid >= 1 && burst.particles >= 1 && burst.rise >= 1));
+  const k = paintBacking * scale;
+  if (still && !paintDirect && canSprite(ctx)) {
+    // A still body is the same for every grave of its Form, fill and Pose: drawn once, then as an image.
+    const box = bodyBox(grave.shape);
+    const key = `body|${plan.theme}|${grave.shape}|${grave.fill}|${motion === null ? "-" : `${motion.clip}${String(motion.pose)}`}`;
+    const image = sprite(key, box, k, (c) => {
+      drawBody(c, grave, plan, deco, motion, null, null);
+    });
+    if (image !== null) drawSprite(ctx, image, box, k);
+    else drawBody(ctx, grave, plan, deco, motion, burst, frame);
+  } else drawBody(ctx, grave, plan, deco, motion, burst, frame);
+
   if (frame !== null && frame.mound > 0) {
     ctx.save();
     ctx.translate(SHADOW_CX, MARKER_BASE_Y);
@@ -678,10 +743,16 @@ export function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan
     // Drawn twice as large and higher, floating over the top of its stone, as in the mockup.
     ctx.translate(GHOST_SHIFT_X, GHOST_SHIFT_Y);
     ctx.scale(GHOST_DRAW_SCALE, GHOST_DRAW_SCALE);
-    ctx.fillStyle = colours.ghost;
-    ctx.fill(ghostPath());
-    drawOvals(ctx, GHOST_EYES, colours.ink);
-    drawOvals(ctx, GHOST_BLUSH, colours.costume.blush);
+    const paintGhost = (c: PaintContext2D): void => {
+      c.fillStyle = colours.ghost;
+      c.fill(ghostPath());
+      drawOvals(c, GHOST_EYES, colours.ink);
+      drawOvals(c, GHOST_BLUSH, colours.costume.blush);
+    };
+    const gk = k * GHOST_DRAW_SCALE;
+    const image = canSprite(ctx) ? sprite(`ghost|${colours.ghost}`, GHOST_SPRITE_BOX, gk, paintGhost) : null;
+    if (image !== null && canSprite(ctx)) drawSprite(ctx, image, GHOST_SPRITE_BOX, gk);
+    else paintGhost(ctx);
     ctx.restore();
   }
 
@@ -707,6 +778,7 @@ export function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan
 export function drawScene(ctx: PaintContext2D, plan: ScenePlan, scale: number, nowMs = 0): void {
   const colours = PALETTE[plan.theme];
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  paintBacking = scale > 0 && Number.isFinite(scale) ? scale : 1;
   ctx.clearRect(0, 0, plan.width, plan.groundHeight);
   drawScenery(ctx, plan, nowMs);
   const deco: DecorationColours = { shadow: colours.pit + SHADOW_ALPHA_BYTE, stone: colours.ink + STONE_ALPHA_BYTE };
@@ -735,7 +807,12 @@ export function drawScene(ctx: PaintContext2D, plan: ScenePlan, scale: number, n
     ctx.rect(grave.rect.x, grave.rect.y, grave.rect.w, grave.rect.h);
     ctx.clip();
     ctx.translate(0, (1 - up) * grave.rect.h);
-    drawGrave(ctx, grave.ghost === null ? grave : { ...grave, ghost: null }, plan, deco, nowMs);
+    paintDirect = true;
+    try {
+      drawGrave(ctx, grave.ghost === null ? grave : { ...grave, ghost: null }, plan, deco, nowMs);
+    } finally {
+      paintDirect = false;
+    }
     ctx.restore();
   }
   if (plan.ring !== null) {

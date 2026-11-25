@@ -1,5 +1,6 @@
 import { labelRect } from "./art-box.js";
 import { BURST_MS } from "./burst.js";
+import { setSpritesEnabled } from "./sprites.js";
 import type { Rect, ScenePlan } from "./layout.js";
 
 /** Test-only plan changes: the e2e paints the same frame with and without a mark to compare pixels. */
@@ -8,6 +9,10 @@ export interface PlanVariant {
   readonly ghosts?: boolean;
   /** Paints a Burst this far in, on the first open grave (task 6.4). */
   readonly burstElapsedMs?: number;
+  /** False paints without sprites: the direct drawing, to compare with the sprites (owner fix, 25 Nov). */
+  readonly sprites?: boolean;
+  /** Paints the Load moment this far in (review note: a rising grave is drawn directly). */
+  readonly riseElapsedMs?: number;
   /** Paints the Priest on a grave at a burial phase, or a null phase for the Vigil (task 7.3). */
   readonly priest?: { readonly index: number; readonly phase: number | null };
 }
@@ -68,7 +73,13 @@ export function installTimingHook(repaint: () => void, current: () => ScenePlan,
       return current().graves.map((g) => labelRect(g));
     },
     paintVariant(variant: PlanVariant): void {
-      paint(planVariant(current(), variant));
+      const plan = { ...planVariant(current(), variant), riseStartMs: variant.riseElapsedMs === undefined ? null : Date.now() - variant.riseElapsedMs };
+      if (variant.sprites === false) setSpritesEnabled(false);
+      try {
+        paint(plan);
+      } finally {
+        setSpritesEnabled(true);
+      }
     },
     redrawBurst(n: number): number[] {
       const times: number[] = [];

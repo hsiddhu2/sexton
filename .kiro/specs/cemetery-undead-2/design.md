@@ -414,6 +414,12 @@ These criteria turned out testable as properties: 1.1, 1.2, 3.2, 3.3, 3.4, 7.1, 
 
 **Validates: Requirements 8.2, 8.3, 8.7, 8.8.** Test: `test/sound.test.tsx`, with a fake AudioContextLike.
 
+### Property 9: Every Bubble's tail ends inside its speaker's cell
+
+*For all* plans of up to 60 packages at widths 390 to 1920 and any instant: every Bubble that `bubblesFor` shows has its tail's end inside the speaking grave's cell, and the tail's base on the Bubble's edge.
+
+**Validates: the owner's fix of 25 Nov (Bubbles next to their speaker).** Test: `test/bubbles.test.tsx`.
+
 ### Property 8: The Burst and the rise are pure, bounded and end in the still pose
 
 *For any* elapsed time (including negative, NaN and very large): every field of `burstFrame` is in [0, 1]; `burstFrame(t)` for t ≥ BURST_MS equals the final pose; `riseAt` is in [0, 1], non-decreasing in t, 0 at t ≤ 0 and 1 at t ≥ its duration. *For all* n from 1 to 300: the last `loadDelay` plus RISE_MS is at most 1,000 ms, and `loadDelay` is non-decreasing in the index (triage order).
@@ -467,6 +473,11 @@ Numbering starts at 1 for this spec. Every existing test not listed here must pa
 
 `e2e/smoke.spec.ts`
 7. "demo loads under the CSP, then 300 graves redraw within budget" and "the axios replay at its Possessed stop, for the README". Additions, no assertion removed: before docs/cemetery.png the step sets the page clock to a show window in which two Bubbles are placed and waits for both; before docs/replay-axios.png the step checks the Burst caption and the final pose.
+
+`e2e/smoke.spec.ts`, added by the owner's fixes of 25 Nov 2026
+8. "demo loads under the CSP, then 300 graves redraw within budget". Addition, no assertion removed: 300 graves all in the front row, Possessed and Dead in turn, repaint with a median at or below 16 ms over 30 paints.
+9. "demo loads under the CSP, then 300 graves redraw within budget", the step before docs/cemetery.png. Old: it hovers left-padder and expects "Here lies left-padder" in the tooltip. New: it hovers event-stream and expects "Here lies event-stream", so left-padder, not hovered, shows its Halo. The epitaph check is unchanged.
+10. "the axios replay at its Possessed stop, for the README", the step before docs/replay-axios.png. Old: it hovers the axios grave and expects its epitaph in the tooltip (K2d fix 1, item 8). New: it moves the pointer away and expects no tooltip, so the picture shows the Halo and the Burst caption.
 
 If the build finds another existing test that pins a value this spec changes on purpose, it is added here with the same Old and New form before the test is edited, and the report names it.
 
@@ -526,6 +537,11 @@ As cemetery-undead "Visual critic protocol", with these captures: `/` and `/?rep
 22. **The test files of tasks 6 to 8 are `.tsx`**: they render the page or the layer.
 23. **"The first scan after a page load" is the first scan with graves.** An empty first scan does not claim the Load moment, so the first scan that has graves rises.
 24. **The Burst starts in a layout effect**, so the first paint at the Burst Stop is the Burst's first frame, not its final pose (whole-branch review).
+
+25. **Sprites (the owner's fix of 25 Nov).** A front row of 300 Possessed and Dead graves repainted in 180 to 380 ms. The time went to the zombie's, skeleton's and ghost's many rotated limbs and curved paths at front-row size, not to the glows or the fills (a measured split: scenery 0.8 ms, glows 0.2 ms, graves 280 ms). `scene/sprites.ts` now paints each still body (shadow, stone, Character at one Pose, Costume) once per shape, fill, Clip and Pose, each ghost and each glow once per colour and size, at the paint's device pixels per unit, and draws them as images: the front row repaints in about 2 ms. Sprites are used only on a real canvas context; the painter's tests and the bounds probe record the direct drawing, which both paths share (`drawBody`). A burial, a Burst in play and a rising grave are drawn directly; an e2e paints a rising frame with and without sprites and requires them equal. An e2e paints one frame with sprites and one without and allows under 0.5% of pixels to differ by more than a smoothing step (measured 0.007% and 0.012%).
+26. **Bubbles with tails (the owner's fix).** A Bubble is as wide as its speaker's column (160 to 220 px) and as tall as its line needs. Its places, in order: above the speaker's head in its column with the tail down, then beside the stone, right then left, with the tail across. A place clear of every other grave's art wins over one that is not; with none clear, the first allowed place is used. The tail ends inside the speaker's cell (Property 9). It is a square in the bubble's token turned 45 degrees, under the bubble's text.
+27. **The README pictures (the owner's fix).** docs/cemetery.png hovers event-stream, so left-padder shows its Halo; docs/replay-axios.png hovers nothing, so the axios grave shows its Halo with the Burst caption (Deliberate test changes 9 and 10).
+28. **The Priest keeps his size (the owner's choice, 25 Nov).** He is PRIEST_H = 110 cell units tall: at least half of every stone and 70 px or more in every row at 1440 by 900. A test pins it.
 
 ## Notes and open items
 

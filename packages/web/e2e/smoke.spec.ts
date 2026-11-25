@@ -79,11 +79,12 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
   });
   await page.mouse.move(1, 899);
   await waitForFirstPaint(page);
-  // K2d fix 1, item 8: the picture shows the left-padder tooltip open with its epitaph, as in the mockup.
-  const padder = page.locator('button[data-grave-index][aria-label^="left-padder"]');
-  await padder.hover();
+  // K2d fix 1, item 8: the picture shows a tooltip open with its epitaph, as in the mockup. Spec cemetery-undead-2,
+  // Deliberate test change 9: the tooltip is event-stream's, so left-padder is not hovered and shows its Halo.
+  const hovered = page.locator('button[data-grave-index][aria-label^="event-stream"]');
+  await hovered.hover();
   const tip = page.getByRole("tooltip");
-  await expect(tip).toContainText("Here lies left-padder");
+  await expect(tip).toContainText("Here lies event-stream");
   await expect(tip.locator(".epitaph-punchline")).toBeVisible();
   // Spec cemetery-undead-2, Deliberate test change 7 (an addition): the picture shows two speech Bubbles, so wait for
   // a show window in which both are placed (a slot is 6 s).
@@ -144,6 +145,27 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
   const movedMedian = median(moved);
   console.log(`median redraw of 300 graves after a scrubber move over 30 paints: ${movedMedian.toFixed(2)} ms`);
   expect(movedMedian).toBeLessThanOrEqual(BUDGET_MS);
+
+  // Spec cemetery-undead-2, Deliberate test change 8 (an addition): 300 graves all in the front row, Possessed and
+  // Dead in turn (each Dead one with a ghost), repaint inside the budget too.
+  const possessed = demo.report.packages.find((p) => p.name === "left-padder");
+  const dead = demo.report.packages.find((p) => p.name === "event-stream");
+  expect(possessed).toBeDefined();
+  expect(dead).toBeDefined();
+  const front = structuredClone(demo);
+  front.report.packages = Array.from({ length: 300 }, (_, i) => ({ ...structuredClone((i % 2 === 0 ? possessed : dead) as DemoPackage), name: `front-${String(i)}` }));
+  delete front.timelines;
+  await page.route((url) => url.pathname === "/test/scan-300-front.json", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(front) }),
+  );
+  await page.goto("/?scan=/test/scan-300-front.json");
+  await expect(page.locator("button[data-grave-index]")).toHaveCount(300);
+  await page.waitForFunction(() => (window as unknown as TimingWindow).__sextonTiming !== undefined);
+  const frontTimes = await page.evaluate(() => (window as unknown as TimingWindow).__sextonTiming?.redraw(30) ?? []);
+  expect(frontTimes).toHaveLength(30);
+  const frontMedian = median(frontTimes);
+  console.log(`median redraw of 300 front-row graves over 30 paints: ${frontMedian.toFixed(2)} ms`);
+  expect(frontMedian).toBeLessThanOrEqual(BUDGET_MS);
   expect(cspViolations).toEqual([]);
 });
 
@@ -182,9 +204,10 @@ test("the axios replay at its Possessed stop, for the README", async ({ page, ba
   // Move focus off the slider so no focus ring is in the picture, then wait two frames for the repaint.
   await scrubber.blur();
   await waitForFirstPaint(page);
-  // K2d fix 1, item 8: the picture is taken at the 00:21 UTC Stop with the axios epitaph tooltip open.
-  await grave.hover();
-  await expect(page.getByRole("tooltip").locator(".epitaph-punchline")).toBeVisible();
+  // Spec cemetery-undead-2, Deliberate test change 10: the picture is taken at the 00:21 UTC Stop with nothing
+  // hovered (K2d fix 1, item 8 opened the axios tooltip here), so the grave shows its Halo with the Burst caption.
+  await page.mouse.move(1, 899);
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
   // Spec cemetery-undead-2, Deliberate test change 7 (an addition): the Burst's caption shows, and under Reduced
   // motion its final pose, the still open grave with the zombie standing, is drawn at once.
   await expect(page.locator(".burst-caption")).toHaveText("The wind stops. A grave opens.");

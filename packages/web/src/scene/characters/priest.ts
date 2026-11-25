@@ -8,6 +8,8 @@ const PRIEST_SCALE = 1.45;
 const FIGURE_W = 24;
 /** The Priest's drawn reach to the right (his book at his side, with its outline), and where his left edge starts and stops, in cell units. */
 export const PRIEST_W = 28 * PRIEST_SCALE;
+/** His drawn height, feet to skullcap, in cell units: about 70% of the tallest stone (the owner's choice, 25 Nov). */
+export const PRIEST_H = 76 * PRIEST_SCALE;
 export const PRIEST_FROM_X = 191;
 export const PRIEST_AT_X = 183;
 /** He walks over burial phases 0 to WALK_END, then reads. The bell sounds when he starts reading. */

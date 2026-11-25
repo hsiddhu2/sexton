@@ -6,7 +6,7 @@ import type { Rect, ScenePlan } from "../scene/layout.js";
 import type { FormView } from "../time/form-at.js";
 import { bubbleLine } from "./bubble-table.js";
 import { BUBBLE_SHOW_MS, BUBBLE_SLOT_MS, bubblesAt, slotOf } from "./bubble-schedule.js";
-import { placeBubble } from "./bubble-place.js";
+import { placeBubble, TAIL, type BubbleGeometry } from "./bubble-place.js";
 
 /** Each Bubble fades out over this long before its show window ends. */
 export const BUBBLE_FADE_MS = 200;
@@ -15,6 +15,8 @@ export interface PlacedBubble {
   readonly index: number;
   readonly line: string;
   readonly rect: Rect;
+  readonly tail: BubbleGeometry["tail"];
+  readonly tailRect: Rect;
 }
 
 /** Pure. The Bubble line of each grave at the chosen date, or null: from the Form shown, never a state rule. */
@@ -38,13 +40,14 @@ export function bubblesFor(plan: ScenePlan, lines: readonly (string | null)[], n
   const reserved: Rect[] = lantern === undefined ? [] : [{ x: lantern.rect.x - TOOLTIP_BAND, y: lantern.rect.y, w: lantern.rect.w + 2 * TOOLTIP_BAND, h: lantern.rect.h }];
   const eligible: number[] = [];
   lines.forEach((line, i) => {
-    if (line !== null && i !== plan.lantern && placeBubble(plan, i, reserved) !== null) eligible.push(i);
+    if (line !== null && i !== plan.lantern && placeBubble(plan, i, line, reserved) !== null) eligible.push(i);
   });
   const out: PlacedBubble[] = [];
   for (const index of bubblesAt(eligible, nowMs)) {
-    const rect = placeBubble(plan, index, [...reserved, ...out.map((b) => b.rect)]);
     const line = lines[index];
-    if (rect !== null && line != null) out.push({ index, line, rect });
+    if (line == null) continue;
+    const placed = placeBubble(plan, index, line, [...reserved, ...out.flatMap((b) => [b.rect, b.tailRect])]);
+    if (placed !== null) out.push({ index, line, ...placed });
   }
   return out;
 }
@@ -111,15 +114,22 @@ export function Bubbles({ plan, lines, hidden, reducedMotion }: BubblesProps) {
  * sheet holds no transition). Under Reduced motion it appears and goes with no fade.
  */
 function BubbleText({ bubble, className, fade, leaving }: { readonly bubble: PlacedBubble; readonly className: string; readonly fade: boolean; readonly leaving: boolean }) {
-  const ref = useRef<HTMLParagraphElement | null>(null);
+  const ref = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const el = ref.current;
     if (!fade || el === null || typeof el.animate !== "function") return;
     el.animate(leaving ? [{ opacity: 1 }, { opacity: 0 }] : [{ opacity: 0 }, { opacity: 1 }], { duration: BUBBLE_FADE_MS, fill: "forwards" });
   }, [fade, leaving]);
+  // The square's centre sits on the Bubble's edge, TAIL from the tip.
+  const { x, y, side } = bubble.tail;
+  const centre = side === "down" ? { left: x, top: y - TAIL } : side === "left" ? { left: x + TAIL, top: y } : { left: x - TAIL, top: y };
   return (
-    <p ref={ref} className={className} style={{ left: bubble.rect.x, top: bubble.rect.y, width: bubble.rect.w, height: bubble.rect.h }}>
-      {bubble.line}
-    </p>
+    <div ref={ref} className="bubble-group">
+      {/* The tail points at the speaker and ends inside its cell. Painted first, so the Bubble covers its inner half. */}
+      <span className={`bubble-tail bubble-tail-${side}`} style={centre} />
+      <p className={className} style={{ left: bubble.rect.x, top: bubble.rect.y, width: bubble.rect.w, height: bubble.rect.h }}>
+        {bubble.line}
+      </p>
+    </div>
   );
 }

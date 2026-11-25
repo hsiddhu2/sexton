@@ -3,7 +3,12 @@ import { act, renderHook } from "@testing-library/react";
 import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
 import { ART_BOX } from "../src/scene/art-box.js";
-import { bellKey, PRIEST_AT_X, PRIEST_FROM_X, PRIEST_W, priestPose, WALK_END } from "../src/scene/characters/priest.js";
+import { bellKey, drawPriest, PRIEST_AT_X, PRIEST_FROM_X, PRIEST_H, PRIEST_W, priestPose, WALK_END } from "../src/scene/characters/priest.js";
+import { GRAVE_GEOMETRY } from "../src/scene/layout.js";
+import { PALETTE } from "../src/scene/palette.js";
+import { SHAPES } from "../src/scene/shapes.js";
+import { TIER_SCALE } from "../src/scene/tiers.js";
+import { pathPoints, unionOf } from "./bounds-context.js";
 import { drawScene } from "../src/scene/draw.js";
 import { planScene } from "../src/scene/layout.js";
 import { BURIAL_MS } from "../src/time/burial.js";
@@ -58,6 +63,26 @@ describe("the Priest's path (requirement 10.1)", () => {
     };
     expect(count(still)).toBe(0);
     expect(count(withPriest)).toBe(1);
+  });
+});
+
+describe("the Priest's size (the owner's fix of 25 Nov)", () => {
+  it("draws him PRIEST_H tall: at least half of every stone's height, and at least 48 px in every row at 1440 by 900", () => {
+    for (const phase of [null, 0, 0.2, 0.5, 1]) {
+      const ctx = new BoundsContext();
+      drawPriest(ctx, PALETTE.dark, phase);
+      const u = unionOf(ctx.marks.map((m) => m.box));
+      expect(u).not.toBeNull();
+      if (u === null) continue;
+      expect(u.maxY - u.minY).toBeCloseTo(PRIEST_H, 0);
+    }
+    for (const shape of ["rounded", "tilted", "cross", "cracked"] as const) {
+      const ys = pathPoints(SHAPES[shape].d).map(([, y]) => y);
+      const stone = (Math.max(...ys) - Math.min(...ys)) * GRAVE_GEOMETRY.shapeScale;
+      expect(PRIEST_H, shape).toBeGreaterThanOrEqual(stone / 2);
+    }
+    // At 1440 by 900 every Tier is drawn at its own scale; the back row is the smallest.
+    for (const scale of Object.values(TIER_SCALE)) expect(PRIEST_H * scale).toBeGreaterThanOrEqual(48);
   });
 });
 

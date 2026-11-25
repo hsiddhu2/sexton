@@ -14,7 +14,7 @@ interface Rect {
 interface HookWindow {
   __sextonTiming?: {
     labels(): Rect[];
-    paintVariant(variant: { ghosts?: boolean }): void;
+    paintVariant(variant: { ghosts?: boolean; sprites?: boolean; riseElapsedMs?: number }): void;
     redrawBurst(n: number): number[];
   };
 }
@@ -191,10 +191,10 @@ for (const [width, height] of [
         if (hook === undefined || canvas === null) return { bubbles: -1, overlaps: -1 };
         const c = canvas.getBoundingClientRect();
         const labels = hook.labels().map((r) => ({ x: r.x + c.left, y: r.y + c.top, w: r.w, h: r.h }));
-        const bubbles = Array.from(document.querySelectorAll(".bubble")).map((b) => b.getBoundingClientRect());
+        const bubbles = Array.from(document.querySelectorAll(".bubble, .bubble-tail")).map((b) => b.getBoundingClientRect());
         let hits = 0;
         for (const b of bubbles) for (const l of labels) if (b.left < l.x + l.w && l.x < b.right && b.top < l.y + l.h && l.y < b.bottom) hits += 1;
-        return { bubbles: bubbles.length, overlaps: hits };
+        return { bubbles: document.querySelectorAll(".bubble").length, overlaps: hits };
       });
       expect(overlaps.overlaps).toBe(0);
       expect(overlaps.bubbles).toBeLessThanOrEqual(2);
@@ -207,3 +207,63 @@ for (const [width, height] of [
     expect(await page.locator(".bubble-layer").count()).toBe(0);
   });
 }
+
+for (const [width, height] of [
+  [1440, 900],
+  [390, 844],
+] as const) {
+  test(`the sprites draw the same scene as the direct drawing at ${String(width)} by ${String(height)}`, async ({ page, baseURL }) => {
+    await sameOriginOnly(page, baseURL);
+    await page.clock.install({ time: new Date("2026-11-24T12:00:00Z") });
+    await page.setViewportSize({ width, height });
+    await page.goto("/");
+    await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
+    await page.waitForFunction(() => (window as unknown as HookWindow).__sextonTiming !== undefined);
+    await page.clock.runFor(1_500);
+    const result = await page.evaluate(() => {
+      const hook = (window as unknown as HookWindow).__sextonTiming;
+      const canvas = document.querySelector("canvas");
+      const ctx = canvas?.getContext("2d");
+      if (hook === undefined || canvas === null || ctx === null || ctx === undefined) return { total: 0, far: -1 };
+      hook.paintVariant({ sprites: true });
+      const a = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      hook.paintVariant({ sprites: false });
+      const b = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      // Pixels that differ by more than a smoothing step on any channel.
+      let far = 0;
+      for (let i = 0; i < a.length; i += 4) {
+        if (Math.max(Math.abs((a[i] ?? 0) - (b[i] ?? 0)), Math.abs((a[i + 1] ?? 0) - (b[i + 1] ?? 0)), Math.abs((a[i + 2] ?? 0) - (b[i + 2] ?? 0))) > 48) far += 1;
+      }
+      return { total: a.length / 4, far };
+    });
+    expect(result.total).toBeGreaterThan(0);
+    console.log(`sprites against direct drawing: ${(100 * result.far / result.total).toFixed(3)}% of pixels differ`);
+    // Only antialiased edges may differ: under 0.5% of the pixels.
+    expect(result.far / result.total).toBeLessThan(0.005);
+  });
+}
+
+test("a rising grave in the Load moment is drawn directly, not from a sprite", async ({ page, baseURL }) => {
+  await sameOriginOnly(page, baseURL);
+  await page.clock.install({ time: new Date("2026-11-24T12:00:00Z") });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+  await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
+  await page.waitForFunction(() => (window as unknown as HookWindow).__sextonTiming !== undefined);
+  await page.clock.runFor(1_500);
+  const result = await page.evaluate(() => {
+    const hook = (window as unknown as HookWindow).__sextonTiming;
+    const canvas = document.querySelector("canvas");
+    const ctx = canvas?.getContext("2d");
+    if (hook === undefined || canvas === null || ctx === null || ctx === undefined) return -1;
+    // 300 ms in, most graves are part-way up; with and without sprites the frame must be the same, pixel for pixel.
+    hook.paintVariant({ riseElapsedMs: 300, sprites: true });
+    const a = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    hook.paintVariant({ riseElapsedMs: 300, sprites: false });
+    const b = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    let differ = 0;
+    for (let i = 0; i < a.length; i += 1) if (a[i] !== b[i]) differ += 1;
+    return differ;
+  });
+  expect(result).toBe(0);
+});

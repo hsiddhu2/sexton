@@ -4,9 +4,9 @@ import { act, cleanup, render } from "@testing-library/react";
 import fc from "fast-check";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { STATES } from "../src/load/lists.js";
-import { intersects, labelRect } from "../src/scene/art-box.js";
+import { formRects, intersects, labelRect } from "../src/scene/art-box.js";
 import { planScene } from "../src/scene/layout.js";
-import { BUBBLE_H, BUBBLE_W, placeBubble } from "../src/speech/bubble-place.js";
+import { BUBBLE_MAX_W, BUBBLE_MIN_W, bubbleCandidates, bubbleHeight, placeBubble } from "../src/speech/bubble-place.js";
 import { BUBBLE_SHOW_MS, BUBBLE_SLOT_MS, bubblesAt } from "../src/speech/bubble-schedule.js";
 import { BUBBLE_LINES, bubbleLine, MAX_BUBBLE_CHARS } from "../src/speech/bubble-table.js";
 import { Bubbles, bubbleLines, bubblesFor } from "../src/speech/Bubbles.js";
@@ -83,26 +83,100 @@ describe("Feature: cemetery-undead-2, Property 5: At most two Bubbles, chosen by
 });
 
 describe("Feature: cemetery-undead-2, Property 6: A placed Bubble is inside the Scene and clear of every name", () => {
-  it("is null or a 220 by 56 rectangle inside the Scene, off every name label and off what is taken", () => {
+  it("is null or a Bubble inside the Scene, sized to its line, off every name label and off what is taken, tail too", () => {
     fc.assert(
       fc.property(
         fc.array(fc.tuple(fc.constantFrom(...STATES), arbAdvisoryMode), { minLength: 1, maxLength: 60 }),
         arbSceneWidth,
         fc.nat(),
+        fc.constantFrom(...Object.values(BUBBLE_LINES)),
         fc.array(fc.record({ x: fc.integer({ min: -100, max: 2000 }), y: fc.integer({ min: -100, max: 3000 }), w: fc.integer({ min: 1, max: 400 }), h: fc.integer({ min: 1, max: 200 }) }), { maxLength: 3 }),
-        (rows, width, pick, taken) => {
+        (rows, width, pick, line, taken) => {
           const packages = rows.map(([s, m], i) => scenePackage(`p${String(i)}`, s, m));
           const plan = planScene({ packages, width, theme: "dark", selectedIndex: null, ghostPhase: 0, fitHeight: 900 });
-          const rect = placeBubble(plan, pick % packages.length, taken);
-          if (rect === null) return;
-          expect(rect.w).toBe(BUBBLE_W);
-          expect(rect.h).toBe(BUBBLE_H);
+          const placed = placeBubble(plan, pick % packages.length, line, taken);
+          if (placed === null) return;
+          const { rect, tailRect } = placed;
+          expect(rect.w).toBeGreaterThanOrEqual(BUBBLE_MIN_W);
+          expect(rect.w).toBeLessThanOrEqual(BUBBLE_MAX_W);
+          expect(rect.h).toBe(bubbleHeight(line, rect.w));
           expect(rect.x).toBeGreaterThanOrEqual(0);
           expect(rect.y).toBeGreaterThanOrEqual(0);
           expect(rect.x + rect.w).toBeLessThanOrEqual(plan.width);
           expect(rect.y + rect.h).toBeLessThanOrEqual(plan.groundHeight);
-          for (const g of plan.graves) expect(intersects(rect, labelRect(g))).toBe(false);
-          for (const t of taken) expect(intersects(rect, t)).toBe(false);
+          for (const g of plan.graves) {
+            expect(intersects(rect, labelRect(g))).toBe(false);
+            expect(intersects(tailRect, labelRect(g))).toBe(false);
+          }
+          for (const t of taken) {
+            expect(intersects(rect, t)).toBe(false);
+            expect(intersects(tailRect, t)).toBe(false);
+          }
+        },
+      ),
+      { numRuns: NUM_RUNS },
+    );
+  });
+});
+
+describe("a Bubble keeps off other graves' art where it can", () => {
+  it("never takes a place over another grave's art when a place clear of it exists", () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.tuple(fc.constantFrom(...STATES), arbAdvisoryMode), { minLength: 1, maxLength: 40 }),
+        fc.constantFrom(390, 1024, 1440),
+        fc.nat(),
+        (rows, width, pick) => {
+          const packages = rows.map(([s, m], i) => scenePackage(`p${String(i)}`, s, m));
+          const plan = planScene({ packages, width, theme: "dark", selectedIndex: null, ghostPhase: 0, fitHeight: 900 });
+          const index = pick % packages.length;
+          const line = "Two years without a release. Getting restless.";
+          const placed = placeBubble(plan, index, line, []);
+          if (placed === null) return;
+          const others = plan.graves.filter((g) => g.index !== index).flatMap((g) => formRects(g));
+          const covers = others.some((r) => intersects(placed.rect, r));
+          if (!covers) return;
+          // It covers other art only when every allowed place does.
+          const grave = plan.graves[index];
+          if (grave === undefined) return;
+          for (const c of bubbleCandidates(grave, line, plan.width)) {
+            const inScene = c.rect.x >= 0 && c.rect.y >= 0 && c.rect.x + c.rect.w <= plan.width && c.rect.y + c.rect.h <= plan.groundHeight;
+            const clearOfNames = plan.graves.every((g) => !intersects(c.rect, labelRect(g)) && !intersects(c.tailRect, labelRect(g)));
+            if (inScene && clearOfNames) expect(others.some((r) => intersects(c.rect, r))).toBe(true);
+          }
+        },
+      ),
+      { numRuns: NUM_RUNS },
+    );
+  });
+});
+
+describe("Feature: cemetery-undead-2, Property 9: Every Bubble's tail ends inside its speaker's cell", () => {
+  it("ends each tail inside the speaking grave's cell, touching its Bubble, at every instant", () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.tuple(fc.constantFrom(...STATES), arbAdvisoryMode), { minLength: 1, maxLength: 60 }),
+        fc.constantFrom(390, 768, 1280, 1440, 1920),
+        fc.integer({ min: 0, max: 1e12 }),
+        (rows, width, nowMs) => {
+          const packages = rows.map(([s, m], i) => scenePackage(`p${String(i)}`, s, m));
+          const plan = planScene({ packages, width, theme: "dark", selectedIndex: null, ghostPhase: 0, fitHeight: 900 });
+          const lines = packages.map((_, i) => Object.values(BUBBLE_LINES)[i % 10] ?? null);
+          for (const b of bubblesFor(plan, lines, nowMs)) {
+            const cell = plan.graves[b.index]?.rect;
+            expect(cell).toBeDefined();
+            if (cell === undefined) continue;
+            expect(b.tail.x).toBeGreaterThanOrEqual(cell.x);
+            expect(b.tail.x).toBeLessThanOrEqual(cell.x + cell.w);
+            expect(b.tail.y).toBeGreaterThanOrEqual(cell.y);
+            expect(b.tail.y).toBeLessThanOrEqual(cell.y + cell.h);
+            // The tail's base sits on its Bubble's edge.
+            const t = b.tailRect;
+            const r = b.rect;
+            if (b.tail.side === "down") expect(t.y).toBeCloseTo(r.y + r.h, 6);
+            if (b.tail.side === "left") expect(t.x + t.w).toBeCloseTo(r.x, 6);
+            if (b.tail.side === "right") expect(t.x).toBeCloseTo(r.x + r.w, 6);
+          }
         },
       ),
       { numRuns: NUM_RUNS },

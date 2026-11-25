@@ -1324,6 +1324,21 @@ pre.signal-value {
   z-index: 1;
   pointer-events: none;
 }
+.bubble-group {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+/* The tail: a square in the bubble's own token, turned 45 degrees on the bubble's edge, so its free half is a point
+   whose tip is on the speaker. */
+.bubble-tail {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: var(--text);
+  transform: translate(-50%, -50%) rotate(45deg);
+  pointer-events: none;
+}
 .bubble {
   position: absolute;
   box-sizing: border-box;
