@@ -190,6 +190,12 @@ test("at 1440 by 900 on the demo the canvas top is at most 190, with the header 
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
+  // Spec judge-path, Deliberate test change 12: the page is measured once its web fonts have loaded and the scene has
+  // fitted itself again. Before that the header's fallback text wraps wider (194 px against 155 px), which pushed the
+  // front row under the Footer bar on the CI runner. The assertions are unchanged.
+  await page.evaluate(() => document.fonts.ready.then(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))));
+  await expect.poll(() => page.evaluate(() => document.querySelector("header")?.getBoundingClientRect().height ?? 0)).toBeLessThanOrEqual(190);
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   const box = async (selector: string) => {
     const b = await page.locator(selector).first().boundingBox();
     expect(b, selector).not.toBeNull();

@@ -207,7 +207,10 @@ Every speed case (`e2e/smoke.spec.ts` three, `e2e/undead2.spec.ts` one, `e2e/fix
 10. "at 1440 by 900 the canvas reaches the bottom of the viewport". Old: the canvas box is read once. New: the same bottom is polled for up to 2 s, because the scene sizes itself after the fonts and the header settle (it read 861.6 once in ten runs). The assertion (at least 900) is unchanged.
 
 `e2e/fixes.spec.ts`
-11. "review: a tooltip over its own grave stays when the pointer goes back from the tooltip to the grave". Old: the grave's box is read once and the pointer moved there. New: the box is read until two reads agree, then the pointer moves. An early box put the pointer off the grave, so no tooltip opened (2 runs in 10). The assertions are unchanged.
+11. "review: a tooltip over its own grave stays when the pointer goes back from the tooltip to the grave". Old: the grave's box is read once and the pointer moved there. New: the web fonts are awaited and the box is read until two reads agree, then the pointer moves. An early box put the pointer off the grave, or under the Footer bar while the header's fallback text was taller, so no tooltip opened (2 runs in 10 locally, both CI runs of PR #8). The assertions are unchanged.
+
+`e2e/time.spec.ts`
+12. "at 1440 by 900 on the demo the canvas top is at most 190, with the header on one row and the footer bar in view". Old: measured as soon as the twelve graves exist. New: measured after the web fonts load and the header settles. Cause, confirmed 25 Nov 2026: with the font files held back 1.5 s, the header measured 194 px and the front row's bottom 876 px (under the Footer bar at 841); once the fonts load, 155 px and 837 px. Both CI runs of PR #8 measured during that window (header 174.9 px, graves to 856.9 px). The Fix-first row made the window long enough to fail; main had the same race with more room. The assertions are unchanged.
 
 The other e2e that compare two frames (cemetery-undead-fixes bug 2, and the sprite comparison in `e2e/undead2.spec.ts`) already paint both at one paused instant; the remaining pixel reads in `e2e/smoke.spec.ts` and `e2e/undead2.spec.ts` read a single frame against a threshold.
 

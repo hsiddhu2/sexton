@@ -171,7 +171,9 @@ test("review: a tooltip over its own grave stays when the pointer goes back from
   await page.goto("/");
   const grave = page.locator('button[data-grave-index][aria-label^="event-stream"]');
   // Spec judge-path, Deliberate test change 11: the scene sizes itself after the fonts and the header settle, so the
-  // grave's box is read once it has stopped moving; an early box put the pointer off the grave (2 runs in 10).
+  // web fonts are awaited and the grave's box is read once it has stopped moving; an early box put the pointer off the
+  // grave, or under the Footer bar while the fallback text made the header taller (2 runs in 10 locally, every CI run).
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
   let g = await grave.boundingBox();
   await expect
     .poll(async () => {
