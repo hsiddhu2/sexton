@@ -260,7 +260,8 @@ describe("Header bar (cemetery-polish task 8)", () => {
       <Header model={headerModel(cheapScan(1), true)} theme="dark" apiConfigured={true} onSubmit={noSubmit} />,
     );
     expect(container.querySelector("h1")?.textContent).toBe("Sexton cemetery");
-    expect(container.querySelector("h1 svg")?.getAttribute("aria-hidden")).toBe("true");
+    // K2d fix 1, Deliberate test change 29: the wordmark is the name alone, as in the mockup; the h1 holds no mark.
+    expect(container.querySelector("h1 svg")).toBeNull();
     const placeholder = (screen.getByLabelText("Repository URL") as HTMLInputElement).placeholder;
     expect(placeholder).toBe("Paste a public repository URL");
     expect(placeholder).not.toMatch(/\.(com|org|io)/);
@@ -269,18 +270,24 @@ describe("Header bar (cemetery-polish task 8)", () => {
     expect(container.querySelectorAll("#legend-panel .legend-chip-ghost")).toHaveLength(1);
   });
 
-  it("orders the controls evidence JSON, evidence Markdown, Legend, input, Scan in the DOM", () => {
+  // Spec cemetery-undead, Deliberate test change 16: the form, then Sound, Serious mode and the Legend.
+  it("orders the controls evidence JSON, evidence Markdown, input, Scan, Sound, Serious mode, Legend in the DOM", () => {
     const { container } = render(
-      <Header model={headerModel(cheapScan(1), true)} theme="dark" apiConfigured={true} onSubmit={noSubmit} />,
+      <Header model={headerModel(cheapScan(1), true)} theme="dark" apiConfigured={true} onSubmit={noSubmit} onSerious={() => undefined} />,
     );
     const controls = [...container.querySelectorAll<HTMLElement>("a[href], button, input")];
-    expect(controls.map((el) => el.getAttribute("aria-label") ?? el.getAttribute("name") ?? el.textContent)).toEqual([
+    expect(controls.map((el) => el.getAttribute("aria-label") ?? el.getAttribute("name") ?? el.textContent?.trim())).toEqual([
       "Download evidence pack as JSON",
       "Download evidence pack as Markdown",
-      "Legend",
       "repo",
       "Scan",
+      "Sound off",
+      "Serious mode",
+      "Legend",
     ]);
+    const sound = screen.getByRole("button", { name: "Sound off" }) as HTMLButtonElement;
+    expect(sound.disabled).toBe(true);
+    expect(document.getElementById(sound.getAttribute("aria-describedby") ?? "")?.textContent).toBe("Sound arrives in the next release");
   });
 });
 
@@ -303,5 +310,22 @@ describe("replay header text", () => {
     const kept = render(<Header model={plain} theme="light" apiConfigured={true} onSubmit={noSubmit} />);
     expect(kept.container.querySelector(".header-policy")?.textContent).toMatch(/^policy: (pass|fail), /);
     kept.unmount();
+  });
+});
+
+// Spec cemetery-undead, 10.3: the Legend names each Form in words.
+describe("Legend form words", () => {
+  it("describes each Form next to its State", () => {
+    render(<Header model={headerModel(cheapScan(1), true)} theme="dark" apiConfigured={true} onSubmit={noSubmit} />);
+    fireEvent.click(screen.getByRole("button", { name: "Legend" }));
+    const panel = document.getElementById("legend-panel")?.textContent ?? "";
+    for (const words of [
+      "Possessed: open grave, a devil zombie dancing out",
+      "Dead: cracked stone, a skeleton lounging",
+      "Haunted: cross",
+      "Restless: tilted stone, a hand clawing out",
+      "Alive: rounded stone with a party hat",
+    ]) expect(panel).toContain(words);
+    expect(document.querySelectorAll(".legend-chip")).toHaveLength(8);
   });
 });

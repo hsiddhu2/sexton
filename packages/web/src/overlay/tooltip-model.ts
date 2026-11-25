@@ -4,7 +4,8 @@ import type { FormView } from "../time/form-at.js";
 import { NOT_PUBLISHED_TEXT } from "./grave-label.js";
 
 export const GRACE_MS = 150;
-export const TOOLTIP_WIDTH = 176;
+/** Spec cemetery-undead, 7.1: wide enough for the Epitaph line. */
+export const TOOLTIP_WIDTH = 240;
 
 export interface TooltipContent {
   readonly name: string;
@@ -55,9 +56,20 @@ export function tooltipContent(pkg: PackageHealth, view?: FormView, asOfDate?: s
   };
 }
 
-/** Inside the Cell: left = cell.x + 8, top = cell.y + 4, width 176. */
-export function tooltipRect(cell: Rect): { readonly left: number; readonly top: number; readonly width: number } {
-  return { left: cell.x + 8, top: cell.y + 4, width: TOOLTIP_WIDTH };
+/**
+ * Anchored at its Cell (spec cemetery-undead, 7.1). With the scene width given, it sits beside the cell, as in the
+ * mockups (K2d fix 1): right of the cell when it fits, else left of it, else over the cell at offset (8, 4), kept
+ * inside the Scene. Without the scene width it is over the cell at offset (8, 4). The top is always cell.y + 4.
+ */
+export function tooltipRect(cell: Rect, sceneWidth?: number): { readonly left: number; readonly top: number; readonly width: number } {
+  const top = cell.y + 4;
+  const over = cell.x + 8;
+  if (sceneWidth === undefined) return { left: over, top, width: TOOLTIP_WIDTH };
+  const right = cell.x + cell.w + 8;
+  if (right >= 0 && right + TOOLTIP_WIDTH <= sceneWidth) return { left: right, top, width: TOOLTIP_WIDTH };
+  const left = cell.x - TOOLTIP_WIDTH - 8;
+  if (left >= 0 && left + TOOLTIP_WIDTH <= sceneWidth) return { left, top, width: TOOLTIP_WIDTH };
+  return { left: Math.min(over, Math.max(0, sceneWidth - TOOLTIP_WIDTH - 8)), top, width: TOOLTIP_WIDTH };
 }
 
 export interface TipState {

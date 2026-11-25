@@ -10,8 +10,47 @@ import { arbScenePackages, at, arbSceneName, arbSceneWidth, arbTheme, cheapScan 
 const NUM_RUNS = 100;
 const packagesOf = (n: number): PackageHealth[] => [...cheapScan(n).report.packages];
 const overlap = (a: Rect, b: Rect): boolean => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+const allOf = (n: number, state: PackageHealth["state"]): PackageHealth[] => packagesOf(n).map((p) => ({ ...p, state }));
 
-describe("Feature: cemetery-ui, Property 8: Layout is deterministic and no two graves overlap", () => {
+/**
+ * Spec cemetery-undead, Deliberate test changes 3 to 6: an independent model of the Tier layout. Back Tier first
+ * (Alive, 0.64), middle (Haunted and Restless, 0.8), front (Possessed and Dead, 1); no gap between Tiers; every row
+ * centred in the drawable width; sky 120 and padding 16 (design.md, decisions 6 and 11). K2d fix 1, Deliberate test
+ * change 30: the graves of a row spread apart up to 1.07, 1.2 and 1.4 cell widths (front, middle, back) to fill it.
+ */
+function tierModel(packages: readonly PackageHealth[], width: number): { rects: Rect[]; height: number; rows: number } {
+  const tierOf = (s: string): number => (s === "Alive" ? 0 : s === "Haunted" || s === "Restless" ? 1 : 2);
+  const scales = [0.64, 0.8, 1];
+  const caps = [1.4, 1.2, 1.07];
+  const rects: Rect[] = [];
+  let y = 120 + 16;
+  let rows = 0;
+  let first = true;
+  for (let t = 0; t < 3; t += 1) {
+    const members = packages.map((p, i) => [p, i] as const).filter(([p]) => tierOf(p.state) === t).map(([, i]) => i);
+    if (members.length === 0) continue;
+    if (!first) y += 0;
+    first = false;
+    const w = Math.round(192 * (scales[t] ?? 1));
+    const h = Math.round(224 * (scales[t] ?? 1));
+    const cols = Math.max(1, Math.floor((width - 32) / w));
+    const tierRows = Math.ceil(members.length / cols);
+    members.forEach((index, k) => {
+      const row = Math.floor(k / cols);
+      const inRow = Math.min(cols, members.length - row * cols);
+      const span = Math.min(width, 16384) - 32;
+      const pitch = Math.max(w, Math.min(Math.floor(w * (caps[t] ?? 1)), Math.floor(span / inRow)));
+      const left = 16 + Math.max(0, Math.floor((span - ((inRow - 1) * pitch + w)) / 2));
+      rects[index] = { x: left + (k % cols) * pitch, y: y + row * h, w, h };
+    });
+    rows += tierRows;
+    y += tierRows * h;
+  }
+  return { rects, height: y + 16, rows };
+}
+
+// Spec cemetery-undead, Deliberate test change 3: the formulas now come from the Tier model (Feature: cemetery-undead, Property 1).
+describe("Feature: cemetery-ui, Property 8: Layout is deterministic and no two graves overlap (Feature: cemetery-undead, Property 1: Tiers keep triage order and never overlap)", () => {
   it("holds for any width and 0 to 300 packages", () => {
     fc.assert(
       fc.property(arbSceneWidth, fc.integer({ min: 0, max: 300 }), arbTheme, (rawWidth, n, theme) => {
@@ -28,11 +67,11 @@ describe("Feature: cemetery-ui, Property 8: Layout is deterministic and no two g
         }
         const columns = Math.max(1, Math.floor((width - 32) / 192));
         expect(plan.columns).toBe(columns);
-        expect(plan.height).toBe(80 + 32 + Math.ceil(n / columns) * 224);
+        const model = tierModel(input.packages, width);
+        expect(plan.height).toBe(model.height);
         const seen = new Set<string>();
         plan.graves.forEach((g, i) => {
-          expect(g.rect.x).toBe(16 + (i % columns) * 192);
-          expect(g.rect.y).toBe(96 + Math.floor(i / columns) * 224);
+          expect(g.rect).toEqual(model.rects[i]);
           expect(g.rect.x).toBeGreaterThanOrEqual(0);
           expect(g.rect.y).toBeGreaterThanOrEqual(0);
           expect(g.rect.x + g.rect.w).toBeLessThanOrEqual(plan.width);
@@ -51,9 +90,14 @@ describe("Feature: cemetery-ui, Property 8: Layout is deterministic and no two g
     );
   });
 
-  it("puts the first package top-left", () => {
-    const plan = planScene({ packages: packagesOf(3), width: 1280, theme: "light", selectedIndex: null, ghostPhase: 0 });
-    expect(plan.graves[0]?.rect).toEqual({ x: 16, y: 96, w: 192, h: 224 });
+  it("puts the first package at the left of its Tier's first row, at the Tier's scale", () => {
+    const plan = planScene({ packages: allOf(3, "Dead"), width: 1280, theme: "light", selectedIndex: null, ghostPhase: 0 });
+    // Three front cells of 192, 205 apart (192 times 1.07, floored), centred in 1248: left = 16 + (1248 - 602) / 2.
+    expect(plan.graves[0]?.rect).toEqual({ x: 339, y: 136, w: 192, h: 224 });
+    expect(plan.graves[1]?.rect.x).toBe(339 + 205);
+    const back = planScene({ packages: allOf(3, "Alive"), width: 1280, theme: "light", selectedIndex: null, ghostPhase: 0 });
+    // Back cells of 123, 172 apart (123 times 1.4, floored).
+    expect(back.graves[0]?.rect).toEqual({ x: 16 + Math.floor((1248 - (2 * 172 + 123)) / 2), y: 136, w: 123, h: 143 });
   });
 
   it("changes columns at width 415 and 416", () => {
@@ -62,10 +106,10 @@ describe("Feature: cemetery-ui, Property 8: Layout is deterministic and no two g
     expect(at(416)).toBe(2);
   });
 
-  it("lays out 300 graves at width 224 in one column", () => {
-    const plan = planScene({ packages: packagesOf(300), width: 224, theme: "dark", selectedIndex: null, ghostPhase: 0 });
+  it("lays out 300 front-Tier graves at width 224 in one column", () => {
+    const plan = planScene({ packages: allOf(300, "Dead"), width: 224, theme: "dark", selectedIndex: null, ghostPhase: 0 });
     expect(plan.columns).toBe(1);
-    expect(plan.height).toBe(67312);
+    expect(plan.height).toBe(67352);
   });
 
   it("gives zero columns and height for no packages", () => {
@@ -96,7 +140,7 @@ describe("Feature: cemetery-ui, Property 19: Scene plan invariants", () => {
             expect(g.name).toBe(pkg.name);
             expect(g.state).toBe(pkg.state);
             expect(Object.keys(g).sort()).toEqual(GRAVE_KEYS);
-            expect([g.rect.w, g.rect.h]).toEqual([192, 224]);
+            expect([[192, 224], [154, 179], [123, 143]]).toContainEqual([g.rect.w, g.rect.h]);
             if (g.ghost !== null) {
               expect(g.ghost.x).toBeGreaterThanOrEqual(g.rect.x);
               expect(g.ghost.x + GHOST_WIDTH).toBeLessThanOrEqual(g.rect.x + g.rect.w);
@@ -188,11 +232,12 @@ describe("Feature: cemetery-theme, Property 2: Layout formulas, containment and 
         }
         const columns = Math.max(1, Math.floor((width - 32) / 192));
         expect(plan.columns).toBe(columns);
-        expect(plan.height).toBe(80 + 16 + Math.ceil(n / columns) * 224 + 16);
+        const model = tierModel(input.packages, width);
+        expect(plan.height).toBe(model.height);
         expect(plan.graves).toHaveLength(n);
         plan.graves.forEach((g, i) => {
           expect(g.index).toBe(i);
-          expect(g.rect).toEqual({ x: 16 + (i % columns) * 192, y: 96 + Math.floor(i / columns) * 224, w: 192, h: 224 });
+          expect(g.rect).toEqual(model.rects[i]);
           expect(g.rect.x + g.rect.w).toBeLessThanOrEqual(plan.width);
           expect(g.rect.y + g.rect.h).toBeLessThanOrEqual(plan.height);
         });
@@ -206,13 +251,14 @@ describe("Feature: cemetery-theme, Property 2: Layout formulas, containment and 
   });
 
   it("matches the 300-grave examples", () => {
-    const tall = planScene({ packages: packagesOf(300), width: 224, theme: "dark", selectedIndex: null, ghostPhase: 0 });
-    expect([tall.columns, tall.height]).toEqual([1, 67312]);
-    const b = backingStore(224, 67312, 2);
-    expect(b.scale).toBe(16384 / 67312);
+    // Spec cemetery-undead: 300 front-Tier graves, worked by hand in design.md (Deliberate test change 6).
+    const tall = planScene({ packages: allOf(300, "Dead"), width: 224, theme: "dark", selectedIndex: null, ghostPhase: 0 });
+    expect([tall.columns, tall.height]).toEqual([1, 67352]);
+    const b = backingStore(224, 67352, 2);
+    expect(b.scale).toBe(16384 / 67352);
     expect(b.height).toBeLessThanOrEqual(16384);
-    const wide = planScene({ packages: packagesOf(300), width: 1280, theme: "dark", selectedIndex: null, ghostPhase: 0 });
-    expect([wide.columns, wide.height]).toEqual([6, 11312]);
+    const wide = planScene({ packages: allOf(300, "Dead"), width: 1280, theme: "dark", selectedIndex: null, ghostPhase: 0 });
+    expect([wide.columns, wide.height]).toEqual([6, 11352]);
   });
 });
 
@@ -263,7 +309,7 @@ describe("Feature: cemetery-time, Property 3: Ground height", () => {
           const free = Number.isFinite(minHeight) ? Math.max(0, Math.floor(minHeight)) : 0;
           expect(plan.groundHeight).toBe(packages.length === 0 ? 0 : Math.max(plan.height, free));
           expect(base.groundHeight).toBe(base.height);
-          expect(plan.rows).toBe(plan.columns === 0 ? 0 : Math.ceil(packages.length / plan.columns));
+          expect(plan.rows).toBe(packages.length === 0 ? 0 : tierModel(packages, plan.width).rows);
           for (const g of plan.graves) expect(g.rect.y + g.rect.h).toBeLessThanOrEqual(plan.height);
         },
       ),

@@ -3,6 +3,8 @@ import type { FormView } from "../time/form-at.js";
 import { colourFor, PALETTE, type Theme } from "./palette.js";
 import { unitClusters, unitStars } from "./scenery-seed.js";
 import { SHAPE_BY_STATE, type ShapeId } from "./shapes.js";
+import { dancers } from "./motion.js";
+import { TIER_DRAW_ORDER, TIER_GAP, TIER_OF, TIER_SCALE, type TierId } from "./tiers.js";
 
 export type { Theme } from "./palette.js";
 export type { ShapeId } from "./shapes.js";
@@ -10,7 +12,12 @@ export type { ShapeId } from "./shapes.js";
 export const CELL_WIDTH = 192;
 export const CELL_HEIGHT = 224;
 export const PADDING = 16;
-export const SKY_HEIGHT = 80;
+/** Spec cemetery-undead: room for the harvest moon, the church and the bats. */
+export const SKY_HEIGHT = 120;
+/** Stars sit in the top band of the sky only, as before. */
+export const STAR_BAND_HEIGHT = 80;
+/** The tallest sky: when the graves fit in the fit height, the sky grows so the graves stand at the bottom (K2d fix 1). */
+export const MAX_SKY_HEIGHT = 420;
 export const MIN_WIDTH = CELL_WIDTH + 2 * PADDING;
 export const MAX_INSCRIPTIONS_PACKAGES = 60;
 export const INSCRIPTION_UNITS = 16;
@@ -19,7 +26,7 @@ export const GHOST_STEP_MS = 100;
 export const GHOST_AMPLITUDE = 6;
 export const GHOST_WIDTH = 24;
 export const GHOST_HEIGHT = 28;
-const MAX_BACKING = 16384;
+export const MAX_BACKING = 16384;
 
 export interface Rect {
   readonly x: number;
@@ -30,13 +37,13 @@ export interface Rect {
 
 /** Cell-relative geometry of one Grave. Constants, never per package. */
 export const GRAVE_GEOMETRY = {
-  shapeX: 32,
-  shapeY: 48,
-  shapeScale: 2,
-  plinth: { x: 24, y: 168, w: 144, h: 40, r: 6 },
+  shapeX: 8,
+  shapeY: 7,
+  shapeScale: 2.75,
+  plinth: { x: 44, y: 172, w: 104, h: 26, r: 5 },
   ghostX: 84,
   ghostTop: 12,
-  inscription: { x: 96, baseline: 193, maxWidth: 136, font: "14px monospace" },
+  inscription: { x: 96, baseline: 190, maxWidth: 96, font: '15px "IM Fell English SC", Georgia, serif' },
 } as const;
 
 export interface GravePlan {
@@ -57,6 +64,13 @@ export interface GravePlan {
 }
 
 export const STAR_AREA = 800;
+/** Bat positions as [fraction of the width, y in a 120 px sky]. They scale with the sky height. */
+const BAT_SPOTS: readonly (readonly [number, number])[] = [
+  [0.2, 40],
+  [0.5, 26],
+  [0.56, 50],
+  [0.62, 32],
+];
 export const GRASS_CLUSTER_WIDTH = 96;
 export const GRASS_TILE_HEIGHT = 224;
 export const BOTTOM_LINE_MIN_GAP = 10;
@@ -90,13 +104,27 @@ export interface Scenery {
   readonly groundFade: number;
   readonly stars: readonly Star[];
   readonly grass: readonly Tuft[];
+  /** Four bats at width-only positions (spec cemetery-undead, 6.2). */
+  readonly bats: readonly { readonly x: number; readonly y: number }[];
 }
 
 export interface ScenePlan {
   readonly width: number;
   readonly height: number;
+  /** Columns of the front Tier (cell width 192), or 0 with no packages. */
   readonly columns: number;
+  /** Rows over all Tiers. */
   readonly rows: number;
+  /** The y of the base of every grave row, over all Tiers, top to bottom: grass grows along these lines. */
+  readonly rowLines: readonly number[];
+  /** Grave indices in paint order: the back Tier first, the front Tier last. */
+  readonly paintOrder: readonly number[];
+  /** The Dead packages whose skeleton dances in its windows (spec cemetery-undead, 4.3, 4.4). */
+  readonly dancers: ReadonlySet<string>;
+  /** True under Reduced motion: every Character holds one still Pose. */
+  readonly reducedMotion: boolean;
+  /** The hovered or focused grave, which gets the Lantern glow, or null. */
+  readonly lantern: number | null;
   readonly groundHeight: number;
   readonly theme: Theme;
   readonly graves: readonly GravePlan[];
@@ -112,11 +140,22 @@ export interface SceneInput {
   readonly ghostPhase: number;
   /** Free height of the viewport under the header. Unreadable values count as 0. */
   readonly minHeight?: number;
+  /**
+   * The height the graves should end within: the free height less a Footer bar that stays in view (K2d fix 1).
+   * When the graves fit, the sky grows so they stand at the bottom of it. Absent or unreadable, the sky is SKY_HEIGHT.
+   */
+  readonly fitHeight?: number;
+  /** A replay: its one grave is drawn full size, at up to REPLAY_SCALE (K2d fix 1, requirement 5.8). */
+  readonly replay?: boolean;
   /** One Form per grave, in triage order; undefined entries keep the scan Form. */
   readonly forms?: readonly (FormView | undefined)[];
   /** One flag per grave: a pull request was opened for it. */
   readonly marks?: readonly boolean[];
   readonly burial?: { readonly index: number; readonly phase: number } | null;
+  /** Spec cemetery-undead, 4.2. */
+  readonly reducedMotion?: boolean;
+  /** The hovered or focused grave index, for the Lantern glow. */
+  readonly lantern?: number | null;
 }
 
 const round2 = (value: number): number => Math.round(value * 100) / 100;
@@ -138,17 +177,19 @@ function makeTuft(x: number, base: number, h: number, dir: -1 | 1, tone: "dark" 
   return { x, base, h, dir, tone, rects };
 }
 
-/** Pure. Decoration that depends on the layout width only. */
-export function sceneryFor(width: number): Scenery {
-  if (lastScenery !== null && lastScenery.width === width) return lastScenery.scenery;
+/** Pure. Decoration that depends on the layout width and the sky height only. */
+export function sceneryFor(width: number, skyHeight: number = SKY_HEIGHT): Scenery {
+  if (lastScenery !== null && lastScenery.width === width && lastScenery.sky === skyHeight) return lastScenery.scenery;
+  const sky = skyHeight;
+  const band = Math.max(STAR_BAND_HEIGHT, sky - 40);
   // The backing store never exceeds MAX_BACKING CSS pixels, so decoration is capped there too.
   const w = Number.isNaN(width) ? 0 : Math.min(width, MAX_BACKING);
   const starSpan = Math.max(w - 1, 0);
-  const stars = unitStars(Math.floor((w * SKY_HEIGHT) / STAR_AREA)).map((s, i): Star => {
+  const stars = unitStars(Math.floor((w * band) / STAR_AREA)).map((s, i): Star => {
     const near = i % 3 === 0;
     return {
       x: Math.floor(s.u * starSpan),
-      y: 4 + Math.floor(s.v * 69),
+      y: 4 + Math.floor(s.v * (band - 11)),
       size: near ? 2 : 1,
       layer: near ? "near" : "far",
     };
@@ -162,20 +203,31 @@ export function sceneryFor(width: number): Scenery {
       grass.push(makeTuft(x, 8 + Math.floor(t.v * 9), 4 + Math.floor(t.r * 5), t.r2 < 0.5 ? -1 : 1, t.r3 < 0.5 ? "dark" : "light"));
     }
   }
+  // The harvest moon grows with a taller sky, as in the mockup, and always fits inside it.
+  const moonR = Math.min(Math.floor(width / 5) - 4, Math.max(52, Math.floor(sky * 0.3)));
   const scenery: Scenery = {
-    skyHeight: SKY_HEIGHT,
-    horizonY: SKY_HEIGHT,
-    moon: { x: Math.floor(width / 6), y: 40, r: 20 },
-    fog: { y: 56, h: 96 },
+    skyHeight: sky,
+    horizonY: sky,
+    moon: { x: Math.floor(width - width / 5), y: sky > SKY_HEIGHT ? Math.round(sky * 0.4) : 62, r: moonR },
+    fog: { y: sky - 40, h: 160 },
     groundFade: 640,
     stars,
     grass,
+    bats: BAT_SPOTS.map(([u, y]) => ({ x: Math.floor(u * Math.max(w - 28, 0)), y: Math.round((y * sky) / SKY_HEIGHT) })),
   };
-  lastScenery = { width, scenery };
+  lastScenery = { width, sky, scenery };
   return scenery;
 }
 
-let lastScenery: { readonly width: number; readonly scenery: Scenery } | null = null;
+let lastScenery: { readonly width: number; readonly sky: number; readonly scenery: Scenery } | null = null;
+
+/** The scale of a replay's one grave, before it is fitted to the width and the fit height. */
+export const REPLAY_SCALE = 1.8;
+/** How far the open grave's lid reaches past its cell, in cell units. */
+export const REPLAY_OVERHANG = 60;
+
+/** How far apart graves of a Tier may spread to fill a row, as a multiple of the Tier cell width (K2d fix 1). */
+export const PITCH_CAP: Readonly<Record<TierId, number>> = { front: 1.07, middle: 1.2, back: 1.4 };
 
 /** A ghost means one or more advisories, and nothing else (5.1). */
 export function hasGhost(pkg: PackageHealth): boolean {
@@ -192,25 +244,79 @@ export function inscriptionFor(name: string, packageCount: number): string | nul
   return `${cut}…`;
 }
 
+/** Pure. The cell size of a Tier: the front cell scaled, rounded to whole pixels. */
+export function tierCell(tier: TierId): { readonly w: number; readonly h: number } {
+  const s = TIER_SCALE[tier];
+  return { w: Math.round(CELL_WIDTH * s), h: Math.round(CELL_HEIGHT * s) };
+}
+
+/** Pure. The cell of a replay's one grave: REPLAY_SCALE, or less so it fits the width and the fit height. */
+export function replayCell(width: number, fit: number | undefined): { readonly w: number; readonly h: number } {
+  // The open grave's lid lies up to REPLAY_OVERHANG cell units past each side, so the width leaves room for it.
+  const byWidth = (Math.min(width, MAX_BACKING) - 2 * PADDING) / (CELL_WIDTH + 2 * REPLAY_OVERHANG);
+  const byHeight = typeof fit === "number" && Number.isFinite(fit) && fit > 0 ? (fit - SKY_HEIGHT - 2 * PADDING) / CELL_HEIGHT : REPLAY_SCALE;
+  const s = Math.max(1, Math.min(REPLAY_SCALE, byWidth, byHeight));
+  return { w: Math.floor(CELL_WIDTH * s), h: Math.floor(CELL_HEIGHT * s) };
+}
+
 export function planScene(input: SceneInput): ScenePlan {
   const width = Number.isFinite(input.width) ? Math.max(MIN_WIDTH, Math.floor(input.width)) : MIN_WIDTH;
   const n = input.packages.length;
-  const scenery = sceneryFor(width);
+  const reducedMotion = input.reducedMotion === true;
   if (n === 0) {
-    return { width, height: 0, columns: 0, rows: 0, groundHeight: 0, theme: input.theme, graves: [], ring: null, scenery };
+    const scenery = sceneryFor(width);
+    return { width, height: 0, columns: 0, rows: 0, rowLines: [], paintOrder: [], dancers: new Set(), reducedMotion, lantern: null, groundHeight: 0, theme: input.theme, graves: [], ring: null, scenery };
   }
+  // Tiers follow the scan-date State, so a grave never moves while the scrubber does (spec cemetery-undead, 5.6).
+  const byTier: Record<TierId, number[]> = { front: [], middle: [], back: [] };
+  input.packages.forEach((pkg, index) => {
+    byTier[TIER_OF[pkg.state]].push(index);
+  });
+  // Rectangles are planned from the top of the field, then moved down by the sky height.
+  const local: Rect[] = new Array<Rect>(n);
+  const localLines: number[] = [];
+  const paintOrder: number[] = [];
+  let y = PADDING;
+  let first = true;
+  const span = Math.min(width, MAX_BACKING) - 2 * PADDING;
+  for (const tier of TIER_DRAW_ORDER) {
+    const members = byTier[tier];
+    if (members.length === 0) continue;
+    if (!first) y += TIER_GAP;
+    first = false;
+    const cell = n === 1 && input.replay === true ? replayCell(width, input.fitHeight) : tierCell(tier);
+    const cols = Math.max(1, Math.floor((width - 2 * PADDING) / cell.w));
+    const tierRows = Math.ceil(members.length / cols);
+    members.forEach((index, k) => {
+      // Each row is centred in the drawable width (the backing store stops at MAX_BACKING), and its graves spread
+      // apart up to PITCH_CAP to fill the row, as in the mockup. The rectangle stays one cell, so none overlap.
+      const row = Math.floor(k / cols);
+      const inRow = Math.min(cols, members.length - row * cols);
+      const pitch = Math.max(cell.w, Math.min(Math.floor(cell.w * PITCH_CAP[tier]), Math.floor(span / inRow)));
+      const used = (inRow - 1) * pitch + cell.w;
+      const left = PADDING + Math.max(0, Math.floor((span - used) / 2));
+      local[index] = { x: left + (k % cols) * pitch, y: y + row * cell.h, w: cell.w, h: cell.h };
+      paintOrder.push(index);
+    });
+    for (let r = 1; r <= tierRows; r += 1) localLines.push(y + r * cell.h);
+    y += tierRows * cell.h;
+  }
+  const field = y + PADDING;
+  // The sky grows to fill the fit height, so the graves stand at the bottom above the Footer bar (K2d fix 1).
+  const fit = typeof input.fitHeight === "number" && Number.isFinite(input.fitHeight) ? Math.floor(input.fitHeight) : 0;
+  const sky = Math.min(MAX_SKY_HEIGHT, Math.max(SKY_HEIGHT, fit - field));
+  const scenery = sceneryFor(width, sky);
+  const rects: Rect[] = local.map((r) => ({ x: r.x, y: r.y + sky, w: r.w, h: r.h }));
+  const rowLines = localLines.map((line) => line + sky);
+  y = field - PADDING + sky;
   const columns = Math.max(1, Math.floor((width - 2 * PADDING) / CELL_WIDTH));
-  const rows = Math.ceil(n / columns);
-  const height = SKY_HEIGHT + PADDING + rows * CELL_HEIGHT + PADDING;
+  const rows = rowLines.length;
+  const height = y + PADDING;
   const free = typeof input.minHeight === "number" && Number.isFinite(input.minHeight) ? Math.max(0, Math.floor(input.minHeight)) : 0;
   const groundHeight = Math.max(height, free);
   const graves = input.packages.map((pkg, index): GravePlan => {
-    const rect: Rect = {
-      x: PADDING + (index % columns) * CELL_WIDTH,
-      y: SKY_HEIGHT + PADDING + Math.floor(index / columns) * CELL_HEIGHT,
-      w: CELL_WIDTH,
-      h: CELL_HEIGHT,
-    };
+    const rect = rects[index] as Rect;
+    const scale = rect.w / CELL_WIDTH;
     const form = input.forms?.[index];
     const pending = form !== undefined && form.state === null;
     const state = form?.state ?? pkg.state;
@@ -225,7 +331,7 @@ export function planScene(input: SceneInput): ScenePlan {
       shape: pending ? "unmarked" : SHAPE_BY_STATE[state],
       fill: pending ? PALETTE[input.theme].border : colourFor(state, input.theme),
       ghost: showGhost
-        ? { x: rect.x + GRAVE_GEOMETRY.ghostX, y: rect.y + GRAVE_GEOMETRY.ghostTop + ghostOffset(input.ghostPhase) }
+        ? { x: rect.x + GRAVE_GEOMETRY.ghostX * scale, y: rect.y + GRAVE_GEOMETRY.ghostTop * scale + ghostOffset(input.ghostPhase) }
         : null,
       inscription: inscriptionFor(baseName, n),
       pending,
@@ -239,7 +345,9 @@ export function planScene(input: SceneInput): ScenePlan {
     selectedGrave === undefined
       ? null
       : { x: selectedGrave.rect.x + 2, y: selectedGrave.rect.y + 2, w: selectedGrave.rect.w - 4, h: selectedGrave.rect.h - 4 };
-  return { width, height, columns, rows, groundHeight, theme: input.theme, graves, ring, scenery };
+  const lantern = typeof input.lantern === "number" && Number.isInteger(input.lantern) && input.lantern >= 0 && input.lantern < n ? input.lantern : null;
+  const deadNames = input.packages.filter((p) => p.state === "Dead").map((p) => p.name);
+  return { width, height, columns, rows, rowLines, paintOrder, dancers: dancers(deadNames), reducedMotion, lantern, groundHeight, theme: input.theme, graves, ring, scenery };
 }
 
 export function backingStore(cssWidth: number, cssHeight: number, dpr: number): { scale: number; width: number; height: number } {

@@ -72,8 +72,22 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
 
   // Task 10.2: the README screenshot is the closed cemetery at 1440 by 900 with Reduced motion on.
   await page.setViewportSize({ width: 1440, height: 900 });
+  // Spec cemetery-undead, Deliberate test change 27 (no assertion changes): drop the focus and the hover that the
+  // download clicks left on the JSON link.
+  await page.evaluate(() => {
+    (document.activeElement as HTMLElement | null)?.blur();
+  });
+  await page.mouse.move(1, 899);
   await waitForFirstPaint(page);
+  // K2d fix 1, item 8: the picture shows the left-padder tooltip open with its epitaph, as in the mockup.
+  const padder = page.locator('button[data-grave-index][aria-label^="left-padder"]');
+  await padder.hover();
+  const tip = page.getByRole("tooltip");
+  await expect(tip).toContainText("Here lies left-padder");
+  await expect(tip.locator(".epitaph-punchline")).toBeVisible();
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   await page.screenshot({ path: SCREENSHOT });
+  await page.mouse.move(1, 899);
   // Back to the configured viewport, and let the Ghost drift timer run during the timing, which is the worst case.
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.emulateMedia({ reducedMotion: "no-preference" });
@@ -151,9 +165,83 @@ test("the axios replay at its Possessed stop, for the README", async ({ page, ba
   // A replay names itself in the header and shows no policy line (its policy is for the replay's end time).
   await expect(page.locator(".repo-text")).toHaveText("Replay: axios npm compromise, 31 March 2026");
   await expect(page.locator(".header-policy")).toHaveCount(0);
+  // K2d fix 1, item 4: the story is a card over the scene, the Stops are three dated cards in the Footer bar, and the
+  // header keeps its normal height.
+  const card = page.locator("main .replay-card");
+  await expect(card).toBeVisible();
+  await expect(card).toContainText("Reconstructed from public reports. Not a live scan.");
+  await expect(card.locator("a")).toHaveCount(4);
+  await expect(page.locator("footer .stop-card")).toHaveCount(3);
+  await expect(page.locator('footer .stop-card[aria-current="step"]')).toContainText("axios 1.14.1");
+  const canvasBox = await page.locator("canvas").boundingBox();
+  console.log(`axios replay canvas top ${String(canvasBox?.y)}`);
+  expect(canvasBox?.y ?? 999).toBeLessThanOrEqual(120);
   // Move focus off the slider so no focus ring is in the picture, then wait two frames for the repaint.
   await scrubber.blur();
   await waitForFirstPaint(page);
+  // K2d fix 1, item 8: the picture is taken at the 00:21 UTC Stop with the axios epitaph tooltip open.
+  await grave.hover();
+  await expect(page.getByRole("tooltip").locator(".epitaph-punchline")).toBeVisible();
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   await page.screenshot({ path: REPLAY_SCREENSHOT });
+});
+
+// Spec cemetery-undead, task 7.3 (requirement 2.3): the fonts come from the page origin and nothing leaves it.
+test("loads the fonts from /fonts on the page origin and makes no request to another origin", async ({ page, baseURL }) => {
+  const origin = new URL(baseURL ?? "http://localhost:4173").origin;
+  const requests: string[] = [];
+  page.on("request", (r) => requests.push(r.url()));
+  await page.route("**/*", async (route) => {
+    if (new URL(route.request().url()).origin === origin) await route.continue();
+    else await route.abort();
+  });
+  await page.goto("/");
+  await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  expect(requests.filter((u) => new URL(u).origin !== origin)).toEqual([]);
+  const fonts = requests.filter((u) => u.endsWith(".woff2")).map((u) => new URL(u).pathname);
+  expect(fonts.length).toBeGreaterThan(0);
+  for (const f of fonts) expect(f).toMatch(/^\/fonts\/[a-z0-9-]+\.woff2$/);
+  expect(await page.evaluate(() => document.fonts.check('16px "Instrument Sans"'))).toBe(true);
+});
+
+// K2d fix 1, item 7: a Character is drawn on a Possessed and on a Dead grave (spec cemetery-undead, requirement 3).
+test("draws the zombie on the Possessed grave and the skeleton on a Dead grave", async ({ page, baseURL }) => {
+  const origin = new URL(baseURL ?? "http://localhost:4173").origin;
+  await page.route("**/*", async (route) => {
+    if (new URL(route.request().url()).origin === origin) await route.continue();
+    else await route.abort();
+  });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
+  await waitForFirstPaint(page);
+  // Counts the canvas pixels inside a grave's button box that match a colour, within a small tolerance.
+  const count = async (label: string, hex: string): Promise<number> => {
+    const box = await page.locator(`button[data-grave-index][aria-label^="${label}"]`).boundingBox();
+    expect(box).not.toBeNull();
+    return page.evaluate(
+      ({ b, hex }) => {
+        const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+        const r = canvas.getBoundingClientRect();
+        const k = canvas.width / r.width;
+        const x = Math.round((b.x - r.left) * k);
+        const y = Math.round((b.y - r.top) * k);
+        const w = Math.round(b.width * k);
+        const h = Math.round(b.height * k);
+        const data = (canvas.getContext("2d") as CanvasRenderingContext2D).getImageData(x, y, w, h).data;
+        const want = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+        let hits = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          if (want.every((v, j) => Math.abs((data[i + j] ?? 0) - v) <= 6)) hits += 1;
+        }
+        return hits;
+      },
+      { b: box ?? { x: 0, y: 0, width: 0, height: 0 }, hex },
+    );
+  };
+  // The zombie's skin and the skeleton's bone are Costume tokens that no stone, plinth or backdrop uses.
+  await expect.poll(() => count("left-padder", "#7fae4e")).toBeGreaterThan(200);
+  await expect.poll(() => count("event-stream", "#ece5d6")).toBeGreaterThan(100);
 });

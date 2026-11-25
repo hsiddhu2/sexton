@@ -1,4 +1,33 @@
 /* Layout and look. Every colour is a custom property written by applyPalette. */
+/* Self-hosted fonts (spec cemetery-undead, requirement 2). SIL Open Font License files sit beside them. */
+@font-face {
+  font-family: "Pirata One";
+  src: url("/fonts/pirata-one-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "IM Fell English SC";
+  src: url("/fonts/im-fell-english-sc-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "IM Fell English";
+  src: url("/fonts/im-fell-english-400-italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("/fonts/instrument-sans-variable.woff2") format("woff2");
+  font-weight: 400 600;
+  font-style: normal;
+  font-display: swap;
+}
 :root {
   color-scheme: dark;
 }
@@ -11,7 +40,7 @@ body,
 }
 
 body {
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: "Instrument Sans", system-ui, sans-serif;
   line-height: 1.45;
   background: var(--bg);
   color: var(--text);
@@ -22,7 +51,8 @@ h2,
 h3,
 h4,
 h5 {
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "IM Fell English SC", Georgia, serif;
+  font-weight: 400;
 }
 
 main {
@@ -94,7 +124,7 @@ main {
   z-index: 2;
   box-sizing: border-box;
   max-width: 100%;
-  padding: 8px 10px;
+  padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--surface);
@@ -103,7 +133,7 @@ main {
   line-height: 1.35;
   overflow: hidden;
   overflow-wrap: anywhere;
-  /* The tooltip lies inside its own Cell (top 4 of 224), so the pointer over it is still over its grave button:
+  /* The tooltip is anchored at its own Cell (top 4) and may extend past a scaled Cell; near its grave the pointer is still over the grave button:
      it stays hoverable, and a click on it reaches the button underneath. */
   max-height: 216px;
   pointer-events: none;
@@ -111,7 +141,7 @@ main {
 
 .tooltip-name {
   display: block;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "IM Fell English SC", Georgia, serif;
   font-size: 0.9375rem;
   overflow-wrap: anywhere;
 }
@@ -146,29 +176,24 @@ main {
 
 .wordmark {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   gap: 8px;
   margin: 0;
-  font-size: 1.5rem;
+  font-family: "Pirata One", fantasy, serif;
+  font-size: 2.5rem;
   font-weight: 400;
+  line-height: 1;
   color: var(--wordmark);
-}
-
-.wordmark-mark {
-  fill: var(--wordmark);
-  flex: none;
-}
-
-.wordmark-cross {
-  fill: var(--surface);
+  text-shadow: 0 0 14px var(--accent-bg);
 }
 
 .wordmark-name {
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-weight: 400;
+  letter-spacing: 0.01em;
 }
 
 .wordmark-sub {
+  font-family: "IM Fell English", Georgia, serif;
   font-style: italic;
   color: var(--muted);
   font-size: 1.125rem;
@@ -230,7 +255,7 @@ main {
 }
 
 .header-policy strong {
-  color: var(--text);
+  color: var(--accent-bg);
 }
 
 .header-evidence {
@@ -275,6 +300,8 @@ main {
 }
 
 .legend-toggle,
+.sound-toggle,
+.serious-toggle,
 .drawer-close {
   padding: 6px 14px;
   border-radius: 999px;
@@ -428,6 +455,7 @@ main {
 }
 
 .legend-toggle:focus-visible,
+.serious-toggle:focus-visible,
 .repo-form button:focus-visible,
 .repo-form input:focus-visible {
   outline: 3px solid var(--focus);
@@ -492,6 +520,21 @@ main {
   display: flex;
   justify-content: flex-end;
   background: none;
+}
+
+/* A scrim behind the drawer, so the open drawer reads as a layer over the page (critic round 5). It is a
+   pseudo-element: a press on it is still a press on the backdrop, so the Repository URL box rule keeps working. */
+.backdrop::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  opacity: 0.55;
+}
+
+.backdrop > .drawer {
+  position: relative;
+  z-index: 1;
 }
 
 .drawer {
@@ -891,41 +934,174 @@ pre.signal-value {
   width: auto;
 }
 
-/* Compact header at 960 px and wider (spec cemetery-time-fixes, 7.1, 7.2): the form and the Replay group share one row,
-   and the scrubber's label, date, Play and slider share one row. Below 960 px the rules above apply. */
+/* Sound (Phase 2) and Serious mode (spec cemetery-undead, 8.1, 9.2). */
+.sound-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: not-allowed;
+}
+.sound-glyph {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+.serious-toggle[aria-pressed="true"] {
+  border-color: var(--focus);
+  background: var(--surface);
+}
+.epitaph-lead {
+  font-family: "IM Fell English", Georgia, serif;
+  font-style: italic;
+  color: var(--muted);
+}
+.epitaph-line {
+  display: block;
+}
+/* The mockup card: "Here lies" small and italic, the name on its own line in small caps, then the state in its colour. */
+.epitaph-line .epitaph-lead {
+  display: block;
+  font-size: 0.8125rem;
+}
+.epitaph-line .tooltip-name {
+  display: inline;
+  font-size: 1.0625rem;
+  letter-spacing: 0.02em;
+}
+.tooltip-state {
+  font-weight: 600;
+}
+.tooltip-state-possessed {
+  color: var(--state-possessed);
+}
+.tooltip-state-dead {
+  color: var(--state-dead);
+}
+.tooltip-state-haunted {
+  color: var(--state-haunted);
+}
+.tooltip-state-restless {
+  color: var(--state-restless);
+}
+.tooltip-state-alive {
+  color: var(--state-alive);
+}
+/* The drawer title keeps the display face; every other drawer heading is in the interface face. */
+.drawer h3,
+.drawer h4,
+.drawer h5 {
+  font-family: "Instrument Sans", system-ui, sans-serif;
+  font-weight: 600;
+}
+/* The replay banner as a compact card, with its sources on one line. */
+.replay-banner .replay-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  padding: 0;
+  list-style: none;
+}
+.epitaph-punchline,
+.drawer-epitaph {
+  font-family: "IM Fell English", Georgia, serif;
+  font-style: italic;
+  color: var(--accent-bg);
+}
+.drawer-epitaph {
+  margin: 0;
+}
+
+/* The Footer bar: Play, the History date and slider, and the Replay group, in view at the bottom
+   (spec cemetery-undead, 9.3, 9.4). */
+.night-footer {
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 8px 16px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+.night-footer .scrub {
+  flex: 1 1 20rem;
+  min-width: 0;
+  padding: 0;
+  background: var(--surface);
+  border: 0;
+}
+.night-footer .history-omitted {
+  flex: 1 1 20rem;
+  padding: 0;
+  border: 0;
+}
+.night-footer .replay-group {
+  flex: 0 1 auto;
+  align-items: center;
+}
+
+/* One header row and one footer row at 960 px and wider (spec cemetery-undead, 9.5). There the header stays in view
+   while the cemetery scrolls, so the Repository URL box is always reachable, and the Footer bar stays at the bottom.
+   Both sit below the drawer backdrop (10) and above the graves and tooltip (1, 2). Narrower, both scroll with the page. */
 @media (min-width: 960px) {
   .site-header {
-    gap: 0 16px;
-    padding: 8px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 5;
   }
-  /* A zero-height line break: the form, the Replay group, the banner and the message always start row 2 at the
-     left, with or without the evidence links on row 1. The row gap is 0, so each row 2 item carries its own 8px. */
-  .site-header::after {
-    content: "";
-    order: 1;
-    flex-basis: 100%;
-    height: 0;
+  .night-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
   }
-  .repo-form,
-  .replay-group,
-  .replay-banner,
-  .header-message {
-    order: 2;
-    margin-top: 8px;
+  .site-header {
+    gap: 8px 16px;
+    padding: 10px 24px;
+  }
+  .header-top {
+    flex: 1 1 24rem;
+    flex-wrap: nowrap;
+  }
+  .site-header {
+    column-gap: 12px;
+  }
+  .evidence-link {
+    padding: 4px 10px;
+  }
+  .header-summary {
+    min-height: 0;
   }
   .repo-form {
-    flex: 1 1 28rem;
+    flex: 0 1 20rem;
+    flex-wrap: nowrap;
   }
-  .replay-group {
-    flex: 0 1 auto;
-    align-items: center;
+  /* Two summary lines: the repository and its label, then the scan time and the policy. */
+  .header-repo {
+    flex: 1 1 100%;
   }
-  .scrub {
+  .repo-text {
+    white-space: nowrap;
+  }
+  .replay-banner {
+    flex: 0 1 56rem;
+  }
+  /* The field's placeholder says what it is; the label text stays for assistive technology. */
+  .repo-label-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .night-footer {
+    padding: 10px 24px;
+  }
+  .night-footer .scrub {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0 12px;
-    padding: 6px 16px;
   }
   .scrub-row {
     flex: none;
@@ -939,4 +1115,200 @@ pre.signal-value {
   .scrub-note {
     flex-basis: 100%;
   }
+}
+
+/* Narrow screens: the controls flow in rows instead of one full-width button each (spec cemetery-undead, 9.6). */
+@media (max-width: 600px) {
+  .site-header {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .header-top,
+  .repo-form,
+  .replay-banner {
+    flex: 1 1 100%;
+  }
+  .wordmark {
+    font-size: 2rem;
+  }
+  .night-footer {
+    gap: 6px 12px;
+  }
+  .night-footer .replay-group {
+    flex: 1 1 100%;
+  }
+  /* Scan stays beside the field, and the field never runs past the edge. */
+  .repo-form {
+    flex-wrap: nowrap;
+    align-items: flex-end;
+  }
+  .repo-form label {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+/* K2d fix 1: a replay's story in a card over the scene, top left, and its Stops as dated cards in the Footer bar. */
+.scene-main {
+  position: relative;
+}
+.replay-card {
+  margin: 8px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 0.875rem;
+}
+.replay-card .replay-date {
+  color: var(--muted);
+}
+.replay-card .replay-title {
+  font-size: 1rem;
+}
+.replay-card .replay-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding-left: 0;
+  list-style: none;
+}
+.replay-card a {
+  color: var(--wordmark);
+}
+.stop-cards {
+  display: flex;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.stop-cards li {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.stop-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--field);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.stop-card[aria-current="step"] {
+  border-color: var(--state-possessed);
+  box-shadow: 0 0 0 1px var(--state-possessed);
+}
+.stop-card:hover {
+  border-color: var(--focus);
+}
+.stop-card-date {
+  color: var(--muted);
+}
+.stop-card-name {
+  font-weight: 600;
+}
+.stop-card-state-alive {
+  color: var(--state-alive);
+}
+.stop-card-state-restless {
+  color: var(--state-restless);
+}
+.stop-card-state-haunted {
+  color: var(--state-haunted);
+}
+.stop-card-state-dead {
+  color: var(--state-dead);
+}
+.stop-card-state-possessed {
+  color: var(--state-possessed);
+}
+/* With Stop cards, the slider stays for the keyboard but out of sight; the current card shows its focus. */
+.scrub-cards .scrub-label,
+.scrub-cards .scrub-date,
+.scrub-cards .scrub-track {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.scrub-cards:has(#history-date:focus-visible) .stop-card[aria-current="step"] {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.scrub-play {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.scrub-play-glyph {
+  fill: var(--focus);
+}
+@media (min-width: 960px) {
+  .replay-card {
+    position: absolute;
+    top: 24px;
+    left: 32px;
+    z-index: 2;
+    width: 34rem;
+    margin: 0;
+    padding: 14px 20px;
+  }
+  .night-footer .scrub-cards {
+    flex-wrap: nowrap;
+    gap: 16px;
+  }
+  /* A round Play button, as in the mockup; its name stays the text. */
+  .scrub-play {
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border-color: var(--focus);
+    border-radius: 50%;
+    background: var(--field);
+  }
+  .scrub-play-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+@media (max-width: 600px) {
+  .stop-cards {
+    gap: 6px;
+  }
+  .stop-card {
+    padding: 6px 8px;
+    font-size: 0.75rem;
+  }
+}
+/* The open grave's lid lies off to the left of its box, as in the scene (K2d fix 1). */
+.legend-shape-possessed {
+  overflow: visible;
+  margin-left: 12px;
+}
+.replay-card .scrub-note {
+  font-size: 0.75rem;
+}
+.replay-card .replay-summary {
+  margin-bottom: 6px;
 }

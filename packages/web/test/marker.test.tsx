@@ -81,7 +81,11 @@ describe("Feature: cemetery-time, Property 18: The marker adds nothing but the m
           } else stripped.push(withMarks[i] as string);
         }
         expect(stripped).toEqual(without);
-        const expected = marked.graves.flatMap((g) => (g.marker ? MARKER_RECTS.map((r) => `fillRect(${String(g.rect.x + r[0])},${String(g.rect.y + r[1])},${String(r[2])},${String(r[3])})`) : []));
+        // Spec cemetery-undead, Deliberate test change 14: each grave is drawn in its own frame at its Tier scale, in
+        // paint order (back Tier first), so the four rectangles are the fixed cell offsets inside that frame.
+        const expected = marked.paintOrder
+          .map((i) => marked.graves[i])
+          .flatMap((g) => (g?.marker === true ? MARKER_RECTS.map((r) => `fillRect(${String(r[0])},${String(r[1])},${String(r[2])},${String(r[3])})`) : []));
         expect(drawn).toEqual(expected);
       }),
       { numRuns: 100 },

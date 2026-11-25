@@ -2,6 +2,8 @@ import type { State } from "@sexton/api";
 
 export type Theme = "light" | "dark";
 
+export type CostumeToken = "horns" | "eyes" | "cape" | "skin" | "bone" | "onesie" | "hat" | "flower" | "blush" | "dirt";
+
 export interface PaletteTheme {
   readonly skyTop: string;
   readonly skyMid: string;
@@ -29,42 +31,65 @@ export interface PaletteTheme {
   readonly accentText: string;
   readonly wordmark: string;
   readonly marker: string;
+  /** Church, fence, tree and bats. */
+  readonly silhouette: string;
+  /** The Lantern glow under the hovered or focused grave. */
+  readonly lantern: string;
+  /** The rim of the harvest moon; the centre is moon. */
+  readonly moonEdge: string;
+  /** Drawn Costume layers (spec cemetery-undead, design.md "Palette"). */
+  readonly costume: Readonly<Record<CostumeToken, string>>;
   readonly states: Readonly<Record<State, string>>;
 }
 
 const NIGHT: PaletteTheme = {
-  skyTop: "#070b17",
-  skyMid: "#11183a",
-  skyHorizon: "#262550",
-  groundTop: "#1f2b24",
-  bg: "#0b0f0d",
-  horizon: "#3a4470",
-  moon: "#ece8d0",
-  fog: "#aab6d6",
-  surface: "#141a2b",
-  text: "#ecebe6",
-  muted: "#b4b8c2",
-  border: "#8d93a3",
-  focus: "#7aa2ff",
-  ring: "#7aa2ff",
-  ghost: "#c7d0e6",
-  ink: "#0b0e16",
-  pit: "#04060a",
+  skyTop: "#0e0b1a",
+  skyMid: "#241339",
+  skyHorizon: "#5a2d6e",
+  groundTop: "#2e2440",
+  bg: "#120d1c",
+  horizon: "#7a3f8c",
+  moon: "#f2a030",
+  fog: "#6f5296",
+  surface: "#1a1328",
+  text: "#f1ece2",
+  muted: "#cdc4db",
+  border: "#ab9cc6",
+  focus: "#e8a30c",
+  ring: "#e8a30c",
+  ghost: "#f4f0fa",
+  ink: "#140f22",
+  pit: "#05030a",
   star: "#f4f1de",
-  starFar: "#aeb8dc",
-  grassDark: "#24362b",
-  grassLight: "#2f4a3a",
-  field: "#0e1322",
-  accentBg: "#3f64d8",
-  accentText: "#ffffff",
-  wordmark: "#efe6c4",
-  marker: "#efe6c4",
+  starFar: "#c2b5df",
+  grassDark: "#2c2140",
+  grassLight: "#3a2a52",
+  field: "#150f22",
+  accentBg: "#e8a30c",
+  accentText: "#140f22",
+  wordmark: "#f2b02e",
+  marker: "#f6e7c1",
+  silhouette: "#08060f",
+  lantern: "#ffb547",
+  moonEdge: "#d9781e",
+  costume: {
+    horns: "#d23a3a",
+    eyes: "#ff3b30",
+    cape: "#7a1f3d",
+    skin: "#7fae4e",
+    bone: "#ece5d6",
+    onesie: "#5b4a8a",
+    hat: "#f6a93b",
+    flower: "#ffd1e8",
+    blush: "#f2a7c3",
+    dirt: "#3b2a22",
+  },
   states: {
-    Alive: "#43a857",
-    Restless: "#f2d060",
-    Haunted: "#ee6a4f",
-    Dead: "#9aa0ad",
-    Possessed: "#c58cf5",
+    Alive: "#8fe3d0",
+    Restless: "#e69f00",
+    Haunted: "#56b4e9",
+    Dead: "#bfb8ad",
+    Possessed: "#cc79a7",
   },
 };
 
@@ -77,6 +102,11 @@ export const ALPHA_ZERO_BYTE = "00";
 export const MOON_HALO_ALPHA_BYTE = "40";
 export const SHADOW_ALPHA_BYTE = "80";
 export const STONE_ALPHA_BYTE = "40";
+/** Spec cemetery-undead: the Lantern glow, the Possessed glow, the vignette and the grain. */
+export const LANTERN_ALPHA_BYTE = "18";
+export const GLOW_ALPHA_BYTE = "28";
+export const VIGNETTE_ALPHA_BYTE = "b0";
+export const GRAIN_ALPHA_BYTE = "14";
 
 const FOG_PEAK = 52;
 
@@ -150,4 +180,20 @@ export function backdropStops(theme: Theme): readonly string[] {
     p.grassLight,
     mix(p.groundTop, p.pit, 128),
   ];
+}
+
+/** The tokens a glow can sit on under a grave: groundTop, the fog over the ground, the two grass tokens and bg. */
+function underGrave(p: PaletteTheme): readonly string[] {
+  return [p.groundTop, mix(p.groundTop, p.fog, FOG_PEAK), p.grassDark, p.grassLight, p.bg];
+}
+
+/**
+ * The ten Glow stops (spec cemetery-undead, requirement 1.4): the lantern at LANTERN_ALPHA_BYTE and the Possessed
+ * colour at GLOW_ALPHA_BYTE, each over the five tokens under a grave. A grave has at most one glow, so none stack.
+ */
+export function glowStops(theme: Theme): readonly string[] {
+  const p = PALETTE[theme];
+  const lantern = parseInt(LANTERN_ALPHA_BYTE, 16);
+  const glow = parseInt(GLOW_ALPHA_BYTE, 16);
+  return [...underGrave(p).map((u) => mix(u, p.lantern, lantern)), ...underGrave(p).map((u) => mix(u, p.states.Possessed, glow))];
 }

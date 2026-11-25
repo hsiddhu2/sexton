@@ -28,17 +28,15 @@ describe("Feature: cemetery-ui, Property 2: Grave shape and colour are functions
     );
   });
 
-  it("different states differ in the (shape, fill) pair, Alive and Restless sharing upright", () => {
+  // Spec cemetery-undead, Deliberate test change 2: no shape is shared any more.
+  it("different states differ in the (shape, fill) pair", () => {
     fc.assert(
       fc.property(arbState, arbState, arbTheme, (s1, s2, theme) => {
         fc.pre(s1 !== s2);
         const a = one(scenePackage("a", s1, "none"), 300, theme);
         const b = one(scenePackage("a", s2, "none"), 300, theme);
         expect(`${a.shape}|${a.fill}`).not.toBe(`${b.shape}|${b.fill}`);
-        if (a.shape === b.shape) {
-          expect([s1, s2].sort()).toEqual(["Alive", "Restless"]);
-          expect(a.shape).toBe("upright");
-        }
+        expect(a.shape).not.toBe(b.shape);
       }),
       { numRuns: NUM_RUNS },
     );
@@ -68,14 +66,16 @@ describe("Feature: cemetery-ui, Property 3: A ghost is present if and only if th
 });
 
 describe("shapes and palette examples", () => {
-  it("has five distinct shape path strings and the specified state mapping", () => {
+  // Spec cemetery-undead, Deliberate test change 1: rounded for Alive, tilted for Restless, two tilted shapes.
+  it("has six distinct shape path strings and the specified state mapping", () => {
     const paths = Object.values(SHAPES).map((s) => s.d);
-    expect(new Set(paths).size).toBe(5);
-    expect(SHAPE_BY_STATE).toEqual({ Alive: "upright", Restless: "upright", Haunted: "cross", Dead: "cracked", Possessed: "open" });
+    expect(new Set(paths).size).toBe(6);
+    expect(SHAPE_BY_STATE).toEqual({ Alive: "rounded", Restless: "tilted", Haunted: "cross", Dead: "cracked", Possessed: "open" });
     expect(SHAPES.cracked.tiltDegrees).not.toBe(0);
-    for (const id of ["upright", "cross", "open", "unmarked"] as const) expect(SHAPES[id].tiltDegrees).toBe(0);
+    expect(SHAPES.tilted.tiltDegrees).not.toBe(0);
+    for (const id of ["rounded", "cross", "open", "unmarked"] as const) expect(SHAPES[id].tiltDegrees).toBe(0);
     expect(SHAPES.open.pit).not.toBeNull();
-    for (const id of ["upright", "cross", "cracked", "unmarked"] as const) expect(SHAPES[id].pit).toBeNull();
+    for (const id of ["rounded", "tilted", "cross", "cracked", "unmarked"] as const) expect(SHAPES[id].pit).toBeNull();
   });
 
   it("has five pairwise distinct state colours per theme", () => {
@@ -205,7 +205,9 @@ describe("Feature: cemetery-theme, Property 1: Palette contrast over every backd
     expect(PALETTE.light).toBe(PALETTE.dark);
     const css = readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
     expect(css).not.toMatch(/prefers-color-scheme/);
-    expect(css).not.toMatch(/url\(/);
+    // Spec cemetery-undead, Deliberate test change 25: url() only in @font-face, only to /fonts/<file>.woff2.
+    expect(css.replace(/@font-face\s*\{[^}]*\}/g, "")).not.toMatch(/url\(/);
+    for (const m of css.matchAll(/url\(([^)]*)\)/g)) expect(m[1]).toMatch(/^"\/fonts\/[a-z0-9-]+\.woff2"$/);
     expect(css).not.toMatch(/--(horizon|moon|fog|star|star-far|grass-dark|grass-light)\b/);
     for (const file of sourceFiles(resolve(process.cwd(), "src"))) {
       expect(readFileSync(file, "utf8"), file).not.toMatch(/prefers-color-scheme/);

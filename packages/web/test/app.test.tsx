@@ -267,14 +267,16 @@ describe("App loading, error and empty states (cemetery-polish task 8)", () => {
 
 // Spec cemetery-time-fixes, task 4.6: an omitted history (requirements 6.4, 6.5).
 describe("App omitted history", () => {
-  it("shows the omitted line directly under the header in place of the scrubber, and no slider", async () => {
+  // Spec cemetery-undead, Deliberate test change 22: the omitted line sits in the Footer bar.
+  it("shows the omitted line in the footer in place of the scrubber, and no slider", async () => {
     const rec = recorder(() => ({ ...cheapScan(3), timelinesOmitted: "too-large" }));
     const { container } = mount(rec);
     await ready();
     const lines = container.querySelectorAll("p.history-omitted");
     expect(lines).toHaveLength(1);
     expect(lines[0]?.textContent).toBe("History is not shown for this scan because it is too large.");
-    expect(lines[0]?.previousElementSibling?.matches("header.site-header")).toBe(true);
+    expect(lines[0]?.parentElement?.matches("footer.night-footer")).toBe(true);
+    expect(lines[0]?.parentElement?.firstElementChild).toBe(lines[0]);
     expect(screen.queryByRole("slider")).toBeNull();
     expect(container.querySelector(".scrub")).toBeNull();
     expect(lines[0]?.getAttribute("aria-live")).toBeNull();

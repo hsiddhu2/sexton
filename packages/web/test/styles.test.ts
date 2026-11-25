@@ -71,8 +71,11 @@ describe("styles.css static checks", () => {
     expect(rulesFor(".drawer").some((r) => /width:\s*min\(32rem,\s*100%\)/.test(r.body))).toBe(true);
   });
 
-  it("has no url(), @import, colour literal, scheme query or decoration variable", () => {
-    expect(css).not.toMatch(/url\(/);
+  it("has no url() outside @font-face, no @import, colour literal, scheme query or decoration variable", () => {
+    // Spec cemetery-undead, Deliberate test change 25: url() only in @font-face, only to /fonts/<file>.woff2.
+    const outsideFaces = css.replace(/@font-face\s*\{[^}]*\}/g, "");
+    expect(outsideFaces).not.toMatch(/url\(/);
+    for (const m of css.matchAll(/url\(([^)]*)\)/g)) expect(m[1]).toMatch(/^"\/fonts\/[a-z0-9-]+\.woff2"$/);
     expect(css).not.toMatch(/@import/);
     expect(css).not.toMatch(/prefers-color-scheme/);
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(|\boklch\(|\bcolor\(|\btransparent\b/);

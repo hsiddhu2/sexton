@@ -6,6 +6,15 @@ import { GHOST_PATH, SHAPES, SHAPE_BY_STATE } from "../scene/shapes.js";
 export const TRIAGE_ORDER_TEXT =
   "Triage order: Possessed first, then state from least healthy to most healthy (Dead, Haunted, Restless, Alive), then highest advisory severity, then transitive reach, then name.";
 
+/** What each Form looks like, in words (spec cemetery-undead, 10.3). */
+export const FORM_WORDS: Readonly<Record<(typeof STATES)[number], string>> = {
+  Possessed: "open grave, a devil zombie dancing out",
+  Dead: "cracked stone, a skeleton lounging",
+  Haunted: "cross",
+  Restless: "tilted stone, a hand clawing out",
+  Alive: "rounded stone with a party hat",
+};
+
 export interface LegendProps {
   readonly theme: Theme;
 }
@@ -40,10 +49,14 @@ export function Legend({ theme }: LegendProps) {
                   aria-hidden="true"
                   focusable="false"
                 >
-                  <path d={shape.d} />
-                  {shape.detail === null ? null : <path className="legend-detail" d={shape.detail} fill="none" />}
+                  <g transform={shape.tiltDegrees === 0 ? undefined : `rotate(${String(shape.tiltDegrees)} 32 32)`}>
+                    <path d={shape.d} />
+                    {shape.detail === null ? null : <path className="legend-detail" d={shape.detail} fill="none" />}
+                  </g>
                 </svg>{" "}
-                <span>{state}</span>
+                <span>
+                  {state}: {FORM_WORDS[state]}
+                </span>
               </li>
             );
           })}
@@ -63,7 +76,7 @@ export function Legend({ theme }: LegendProps) {
             <span>Pennant: a pull request was opened</span>
           </li>
           <li className="legend-chip legend-chip-ghost">
-            <svg className="legend-ghost" viewBox="0 0 12 14" width="24" height="28" aria-hidden="true" focusable="false">
+            <svg className="legend-ghost" viewBox="0 0 24 28" width="24" height="28" aria-hidden="true" focusable="false">
               <path d={GHOST_PATH} />
             </svg>{" "}
             <span>Ghost: one or more advisories</span>

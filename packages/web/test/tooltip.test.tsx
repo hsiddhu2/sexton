@@ -44,10 +44,19 @@ describe("tooltip model", () => {
     );
   });
 
-  it("positions the tooltip at offset (8, 4) with width 176", () => {
+  // Spec cemetery-undead, Deliberate test change 23: width 240, kept inside the Scene when its width is given.
+  it("positions the tooltip at offset (8, 4) with width 240, or beside its cell inside the Scene", () => {
     fc.assert(
-      fc.property(fc.integer({ min: -50, max: 5000 }), fc.integer({ min: -50, max: 5000 }), (x, y) => {
-        expect(tooltipRect({ x, y, w: 192, h: 224 })).toEqual({ left: x + 8, top: y + 4, width: 176 });
+      fc.property(fc.integer({ min: -50, max: 5000 }), fc.integer({ min: -50, max: 5000 }), fc.integer({ min: 224, max: 6000 }), (x, y, scene) => {
+        expect(tooltipRect({ x, y, w: 192, h: 224 })).toEqual({ left: x + 8, top: y + 4, width: 240 });
+        // K2d fix 1, Deliberate test change 33: with the scene width it sits beside the cell, right when it fits,
+        // else left, else over the cell as before; always inside the Scene from a visible cell.
+        const kept = tooltipRect({ x, y, w: 192, h: 224 }, scene);
+        expect(kept.top).toBe(y + 4);
+        const right = x + 192 + 8;
+        const expected = right >= 0 && right + 240 <= scene ? right : x - 248 >= 0 && x - 8 <= scene ? x - 248 : Math.min(x + 8, Math.max(0, scene - 248));
+        expect(kept.left).toBe(expected);
+        if (x + 8 >= 0) expect(kept.left + kept.width).toBeLessThanOrEqual(Math.max(scene, 248));
       }),
       { numRuns: 100 },
     );
