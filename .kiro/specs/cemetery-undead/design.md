@@ -245,6 +245,8 @@ export function inDanceWindow(name: string, nowMs: number): boolean;
 
 ### Tiers (requirement 5)
 
+*Final values: SKY_HEIGHT 120 and TIER_GAP 0 (decision 11), rows centred (decision 6). The 160 and 12 below, and the heights worked from them in Deliberate test change 6, are the first pass; the tests pin y 136 and heights 67,352 and 11,352.*
+
 `scene/tiers.ts`:
 
 ```ts
@@ -267,6 +269,8 @@ The first Tier starts at `SKY_HEIGHT + PADDING`. `SKY_HEIGHT` becomes 160 so the
 Per-grave geometry (shape, plinth, ghost, marker, inscription) is the existing cell-relative geometry multiplied by the Tier scale. The ring, the grave button rectangle and the tooltip anchor take the scaled rectangle.
 
 ### Backdrop (requirement 6)
+
+*Final values: decisions 5 (no backdrop cache, measured medians 2.3 to 3.05 ms), 7 and 11 (sky 120, the moon at y 62 with r min(52, ...), no Tier gap) in "Decisions made during implementation" replace the numbers below.*
 
 `scene/backdrop.ts` draws the static layers once per (width, height, theme) into an offscreen canvas, and `drawScene` blits it. The layers are:
 - the sky gradient and stars;
@@ -523,6 +527,11 @@ Every existing test not listed here must pass unmodified. Titles are from the in
 `e2e/time.spec.ts`
 26. "at 1440 by 900 on the demo the canvas top is at most 190, with the form and the replay group on one row and the scrubber on one row". Old: the form and the Replay group share a header row, and the scrubber parts share a row. New: title "…with the header on one row and the footer bar in view…". The canvas top is still at most 190; the header controls share one row; the footer's bottom edge is at the viewport bottom; Play, label, date and slider share a row.
 
+`e2e/smoke.spec.ts`
+27. "demo loads under the CSP, then 300 graves redraw within budget". Addition, added during task 8 and reviewed in task 9.5. Before the README screenshot the step blurs the active element and moves the mouse to (1, 899), so the download clicks leave no focus or hover ring in docs/cemetery.png. No assertion changes, and the 16 ms budget check is unchanged.
+
+Change 26 also drops the replay sub-check of the old test (the form and the Replay group on one row, the form at x below 40), because the Replay group moved into the Footer bar.
+
 ### Visual critic protocol (requirement 14)
 
 After every visual sub-task, the Orchestrator does three things:
@@ -636,7 +645,7 @@ Checklist:
 16. **Critic round 5 (task 8).**
     - Two blocking points, both fixed. Grave names stay at least 12 px on screen whatever the Tier scale: the font is MIN_NAME_PX / scale in the cell frame, never below 15. The open drawer now has a scrim, a `.backdrop::before` in the bg token at opacity 0.55. A pseudo-element is never an event target, so a press on it is still a press on the backdrop, and the Repository URL box rule holds.
     - The final round answered READY at 1440 and 390.
-    - The README screenshot step now blurs focus and moves the mouse away first, so no hover or focus ring from the download clicks shows. It changes no assertion (Deliberate test change 19).
+    - The README screenshot step now blurs focus and moves the mouse away first, so no hover or focus ring from the download clicks shows. It changes no assertion (Deliberate test change 27).
 
 ## Notes and open items
 
@@ -645,3 +654,8 @@ Checklist:
 - **The bake.** Task 4 records whether it worked within its day or the Vector fallback was used.
 - **Alive against Restless.** 1.509:1 against the existing 1.5 minimum, so a later shade change must recheck it.
 - **Screenshots.** Task 8 records the Visual critic rounds and the final heights.
+- **Fresh-clone run on the final tree (task 9.4).** Run on 24 Nov 2026 on commit 52915bd: cloned to `build/fresh-clone` and installed with `npx npm@11 ci` (exit 0).
+  - `npm test -w @sexton/api` first: exit 0, 296 tests.
+  - Root `npm test`: exit 0, 1904 tests (action 12, api 296, cli 60, engine 1059, web 426, infra 51).
+  - `packages/web/public/demo` deleted, then bare `npx vitest run` in `packages/web`: the global setup wrote the demo files; exit 0, 426 tests.
+  - The clone was then removed.

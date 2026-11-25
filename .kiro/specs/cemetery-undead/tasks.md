@@ -17,7 +17,7 @@ Run-time notes:
 
 - Build starts only after the owner types `go` and has decided the R-UI-1 amendment (design.md "Open question for the owner").
 - Change only `packages/web`, the root `package-lock.json` (devDependencies of `@sexton/web` only), `README.md`, `CREDITS.md`, `docs/cemetery.png`, `docs/replay-axios.png`, `.kiro/steering/web.md`, `.kiro/specs/cemetery-undead`, and `docs/requirements.md` if the owner approves the amendment.
-- Tests change only where design.md lists a Deliberate test change (1 to 26). Any other existing test that fails is a regression: fix the source, not the test.
+- Tests change only where design.md lists a Deliberate test change (1 to 27). Any other existing test that fails is a regression: fix the source, not the test.
 - `numRuns` is 100 for every new property. Every new property test carries `Feature: cemetery-undead, Property N: <title>`.
 - Every visual sub-task ends with the screenshot loop of design.md "Visual critic protocol". Each round's findings are recorded as "Critic round N".
 - Each top-level task ends with an independent code review on its changed files. Every defect is fixed in the task, and the findings are recorded under "Review notes".
@@ -218,22 +218,27 @@ Run-time notes:
     - _Requirements: 15.5_
     - Review notes: READY, no defect. Acted on: the Dancer rule now says "at least one"; a stale tooltip comment in styles.css was reworded; the name font family has one source in draw.ts. Note kept: the .repo-text no-wrap rule was part of the critic fixes and is listed in design.md decision 13.
 
-- [ ] 9. Gates and the fresh-clone run
+- [x] 9. Gates and the fresh-clone run
   - Runs every gate on the final tree.
   - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5, 11.4_
-  - [ ] 9.1 Typecheck, lint, and each package's tests, then the root `npm test`
+  - [x] 9.1 Typecheck, lint, and each package's tests, then the root `npm test`
     - _Requirements: 15.3, 15.4_
-  - [ ] 9.2 `npm run test:e2e -w @sexton/web`
+    - Notes: typecheck exit 0; lint exit 0 with zero warnings. One at a time: engine 78 files 1059, api 33 files 296, web 48 files 426, cli 4 files 60, action 2 files 12, infra 51; all exit 0. Root npm test exit 0, 1904 tests (1875 before the spec). An earlier run under a system load average of 55 (other applications) timed out three property tests; the same tests passed on every run at normal load.
+  - [x] 9.2 `npm run test:e2e -w @sexton/web`
     - Record the specs run, the medians, the Canvas top and the no-CSP-violation result.
     - _Requirements: 15.4_
-  - [ ] 9.3 Check the scope and the bundle
+    - Notes: npm run test:e2e: 25 passed, none skipped (22 before the spec). 300-grave medians 3.05 ms and 2.50 ms (16 ms budget). Header 119.7 px, footer 57.3 px, canvas top 119.7 px. No CSP violation, and no request leaves the origin. The README screenshots came out byte-identical to the committed ones.
+  - [x] 9.3 Check the scope and the bundle
     - List the changed paths against the allowed list. `packages/web/package.json` shows devDependency additions only. `npm run build -w @sexton/web` passes its bundle check, and `dist` holds no model file and no bake code.
     - _Requirements: 15.1, 15.2, 11.4_
-  - [ ] 9.4 Fresh-clone run on the final tree
+    - Notes: every path changed since 7f5d049 is under packages/web or .kiro/specs/cemetery-undead, or is README.md, CREDITS.md, docs/cemetery.png, docs/replay-axios.png, .kiro/steering/web.md or docs/requirements.md (the approved R-UI-1 amendment). No package.json or package-lock.json change: the bake was not used, so no devDependency was added. npm run build -w @sexton/web exit 0, check-bundle: 16 files clean, no model file and no bake code in dist.
+  - [x] 9.4 Fresh-clone run on the final tree
     - As in cemetery-time-fixes task 9.6. Record the results in design.md.
     - _Requirements: 15.4_
-  - [ ] 9.5 Independent code review of the whole branch
+    - Notes: commit 52915bd. api alone exit 0 (296), root exit 0 (1904), bare web Vitest with the demo folder deleted exit 0 (426). Recorded in design.md. Clone removed.
+  - [x] 9.5 Independent code review of the whole branch
     - _Requirements: 15.5_
+    - Review notes: NOT READY, one defect, fixed. The smoke-test screenshot step (blur and mouse move, no assertion change) was cited as change 19, but no listed change covered it. It is now Deliberate test change 27, and both citations are corrected. Clean: paths, secrets, network, origins, injection, random sources, numRuns, budget, package files, wording, trailers, no Kiro logo. Notes acted on: change 26 now says it drops the replay-row sub-check; the Backdrop and Tiers sections point to decisions 5, 6 and 11 for the final values (no cache, sky 120, no Tier gap).
 
 ## Notes
 
