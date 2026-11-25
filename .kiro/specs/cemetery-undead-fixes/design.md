@@ -144,6 +144,9 @@ Every existing test not listed here must pass unmodified.
 `e2e/smoke.spec.ts` (cemetery-undead-2)
 4. Only if the stricter Bubble rule makes two Bubbles at once rare on the demo at 1440 by 900: the step before docs/cemetery.png waits up to 60 s, not 30 s, for two Bubbles. Checked in task 5; not made unless needed.
 
+`e2e/polish.spec.ts` (cemetery-polish), found when main aff9623 (new signals, PR #4) was merged into this branch
+4. "the pull request table of lodash is visible in the drawer". Old: 10 rows. New: 12 rows, one per signal, as spec new-signals counts twelve signals. The test already failed on main aff9623 (CI does not run e2e); this branch does not change the table. (The conditional change 4 above, the smoke wait for two Bubbles, was not needed, so the number is reused.)
+
 If the build finds another test that pins a value this fix changes on purpose, it is added here with the same Old and New form before the test is edited.
 
 ### Pictures
