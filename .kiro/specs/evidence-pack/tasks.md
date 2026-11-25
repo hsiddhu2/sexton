@@ -66,5 +66,5 @@ Builds the evidence pack: canonical JSON and SHA-256, purl and the CycloneDX 1.5
   - _Requirements: 8.1 to 8.4_
 
 - [x] 10. Close
-  - docs/architecture.md, docs/threat-model.md, README.md, ROADMAP.md; root gates; independent reviews before each commit in build/reviews/07-evidence-pack.md; merge to main with --no-ff; gates on main; PROGRESS, TRACKER, private/reports/07-evidence-pack.md.
+  - docs/architecture.md, docs/threat-model.md, README.md, ROADMAP.md; root gates; independent reviews before each commit in build/reviews/07-evidence-pack.md; merge to main with --no-ff; gates on main; PROGRESS, TRACKER, the report for 07 (kept outside the repository).
   - _Requirements: 9.4_

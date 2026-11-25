@@ -37,7 +37,7 @@ describe("sexton.policy.yml", () => {
     expect(policy.version).toBe(1);
     expect(policy.rules.map((r) => r.type)).toEqual(["forbid_state", "forbid_install_scripts", "max_age_months"]);
     const [state, scripts, age] = policy.rules;
-    expect(state).toMatchObject({ type: "forbid_state", states: ["Possessed", "Dead"] });
+    expect(state).toMatchObject({ name: "No possessed, dead or haunted dependencies", type: "forbid_state", states: ["Possessed", "Dead", "Haunted"] });
     expect(scripts).toMatchObject({ type: "forbid_install_scripts" });
     expect(age).toMatchObject({ type: "max_age_months", months: 24 });
     for (const rule of policy.rules) {

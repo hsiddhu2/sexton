@@ -2,11 +2,11 @@
 
 Sexton is a security tool, so its own hosted demo has to hold up. This page lists what can go wrong with each part of the AWS deployment and what stops it. It uses STRIDE: spoofing, tampering, repudiation, information disclosure, denial of service and elevation of privilege.
 
-It covers release 0.1 as built from `.kiro/specs/infra/design.md`. The stacks and both handlers are written and tested. Nothing is deployed yet.
+It covers release 0.1 as built from `.kiro/specs/infra/design.md`. The stacks and the three handlers (scan, remediate, snapshotter) are written and tested. They were first deployed to us-east-1 on 21 November 2026.
 
 ## What we protect
 
-1. Snapshot history. It is the only dataset that can show a maintainer handover, so losing or changing it would hurt the product most.
+1. Snapshot history. The packument shows maintainers only as they are today and at each publish, so Sexton's dated snapshots are what show a handover between releases. Losing or changing them would hurt the product most.
 2. The AWS bill. A public endpoint that calls other services can be used to run up cost.
 3. The upstream services. npm, OSV, deps.dev and GitHub are free and shared. Sexton must stay a polite client.
 4. Visitors to the site. The page must not run code from a scanned repository.

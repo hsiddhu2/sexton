@@ -2,7 +2,7 @@
 
 ## Introduction
 
-cemetery-undead-2 is Phase 2 of the "Night of the Living Deps" art pass. Phase 1 (cemetery-undead) merged to main at b513514 on 25 Nov 2026. The visual target is still the approved mockups: `private/design/mockup-night.html` and `private/design/mockup-nightreplay.html`, with their screenshots in `private/design/shots`.
+cemetery-undead-2 is Phase 2 of the "Night of the Living Deps" art pass. Phase 1 (cemetery-undead) merged to main at b513514 on 25 Nov 2026. The visual target is still the approved mockups, mockup-night.html and mockup-nightreplay.html, with their screenshots, all kept with the owner's notes outside the repository.
 
 It has two parts:
 
@@ -254,7 +254,7 @@ Paths: this spec changes `packages/web`, `README.md`, `CREDITS.md`, `docs/cemete
 
 #### Acceptance Criteria
 
-1. AFTER every visual change, THE Orchestrator SHALL take screenshots of the demo and of the axios replay at 1440 by 900 and at 390 by 844, with the Burst captured mid-animation and at its final pose, and compare them with the mockup PNGs in `private/design/shots`.
+1. AFTER every visual change, THE Orchestrator SHALL take screenshots of the demo and of the axios replay at 1440 by 900 and at 390 by 844, with the Burst captured mid-animation and at its final pose, and compare them with the mockup PNGs kept with the owner's notes.
 2. THE Visual critic SHALL answer READY or list what is off. THE Orchestrator SHALL fix and repeat until the Visual critic answers READY at both sizes.
 3. THE Orchestrator SHALL record the findings of each round in tasks.md notes in plain words.
 
@@ -266,7 +266,7 @@ Paths: this spec changes `packages/web`, `README.md`, `CREDITS.md`, `docs/cemete
 
 #### Acceptance Criteria
 
-1. THE spec tasks SHALL change only the paths listed in the Introduction, plus ignored files under private/ (the report and the trackers).
+1. THE spec tasks SHALL change only the paths listed in the Introduction, plus the owner's notes outside the repository, which git ignores (the report and the trackers).
 2. THE spec tasks SHALL add no runtime dependency, no audio file and no request to another origin at run time.
 3. THE spec tasks SHALL keep the 16 ms budget, skip no test, lower no `numRuns` and weaken no check, and SHALL change an existing test only as design.md "Deliberate test changes" lists.
 4. WHEN the gates run on the final tree, THE root `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:e2e -w @sexton/web` and the fresh-clone run SHALL exit with code 0.

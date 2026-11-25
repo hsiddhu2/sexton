@@ -30,8 +30,9 @@ function isValidSegment(s: string): boolean {
   return true;
 }
 
+/** Requirement 1.5: /orgs/{owner} is a GitHub path, not a repository. "orgs" is reserved, so no account has that name. */
 export function isValidOwner(owner: string): boolean {
-  return isValidSegment(owner);
+  return isValidSegment(owner) && owner !== "orgs";
 }
 
 export function isValidRepo(repo: string): boolean {
@@ -62,8 +63,6 @@ export function parseRepoUrl(input: string): ParseRepoUrlResult {
 
   const repo = repoSegment.endsWith(GIT_SUFFIX) ? repoSegment.slice(0, -GIT_SUFFIX.length) : repoSegment;
   if (!isValidOwner(owner) || !isValidRepo(repo)) return REJECTED;
-  // Requirement 1.5: /orgs/{owner} is a GitHub path, not a repository. "orgs" is reserved, so no account has that name.
-  if (owner === "orgs") return REJECTED;
 
   return { ok: true, repo: { owner, repo, url: formatRepoUrl({ owner, repo }) } };
 }

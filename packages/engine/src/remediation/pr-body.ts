@@ -11,6 +11,7 @@ import {
   type RemediationPlan,
   type SignalName,
 } from "../types.js";
+import { UNKNOWN_PUBLISHER } from "../state.js";
 import { escapeField as F } from "./escape-field.js";
 import { RECIPE_NOTES } from "./recipe-notes.js";
 
@@ -90,7 +91,7 @@ function renderValue(name: SignalName, signals: PackageSignals, limit: number): 
       const v = signals.publisherChange.value;
       if (v === null) return "none";
       if (v.status === "no-earlier-version") return "no earlier version";
-      const who = (r: PublishRecord): string => `${r.publisher === null ? "no name" : F(r.publisher)} (${r.method}) ${F(r.version)} ${F(r.publishTime)}`;
+      const who = (r: PublishRecord): string => `${r.publisher === null ? UNKNOWN_PUBLISHER : F(r.publisher)} (${r.method}) ${F(r.version)} ${F(r.publishTime)}`;
       return `${v.status}: ${who(v.earlier)} -> ${who(v.installed)}`;
     }
     case "newDependency": {
