@@ -131,3 +131,19 @@ Notes:
 7. Import order in `Drawer.tsx` and a RegExp built on each render in `GuidePage.tsx`. Fixed.
 
 Gates after the fixes: typecheck, lint (zero warnings) and test pass; 2289 tests across 6 workspaces.
+
+## Task 9
+
+Failed scans (9.1): `home/FailureCard.tsx` over the Scene for every failed load, in place of main's error panel. A Live scan's card comes from `liveFailureCard`, which reads only the load error's status and checked API code, with "Try the demo repo" and "Back to the sample"; the Sample scan, a scan file and a refused replay file show "This scan could not be loaded." with "Try again" and "Back to the sample". No error code, message, contract path or body text is shown or logged.
+
+Independent review before the commit. Verdict: ready. No defect found: the card is the first match of 12.2's order, only the checked code of a body is read, every request still passes checkScanUrl, and the one capability sentence on a card is in the Claim registry.
+
+Notes:
+
+1. Several rows of 12.2 were checked only by the pure property, and no page test had an order conflict. Fixed before the commit: page cases for 429 before a body code, 504 before a body code, 502 with code fetch-failed and 413 manifest-too-large.
+2. The 429 case's body code is the WAF's, which is not an API code and is dropped; the case is named for that now.
+3. Home picks the Live card from the screen state's repository Source, not the loader's hosted flag; the two agree today, since a repository Source is only made with an API base.
+4. The generic card's next step says "Try again, or try the demo repo." while its buttons are the two of 12.1; as the spec fixes them.
+5. Tests compare the alert's whole text, including the decorative "!" mark; brittle to markup but exact.
+
+Gates after the fixes: typecheck, lint (zero warnings) and test pass; 2305 tests across 6 workspaces.

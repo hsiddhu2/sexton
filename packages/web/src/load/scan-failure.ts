@@ -2,6 +2,7 @@
 // API error code only, by the first match of a fixed order. Pure.
 import type { ApiErrorCode } from "@sexton/api";
 import { claim } from "../copy/claims.js";
+import type { LoadError } from "./load-error.js";
 
 export type FailureCardId =
   | "network"
@@ -60,4 +61,14 @@ export function failureCard(status: number | null, apiCode: ApiErrorCode | null)
     default:
       return FAILURE_CARDS.generic;
   }
+}
+
+/**
+ * Pure. The card for a failed Live scan from its LoadError: its HTTP status and API code only. An error with the code
+ * fetch-failed and no status had no HTTP response (a network error); any other code (too large, not JSON, not the
+ * scan format) came on a response the API sent, so it has no status of its own here and takes the generic card.
+ */
+export function liveFailureCard(error: LoadError): FailureCard {
+  if (error.code !== "fetch-failed") return FAILURE_CARDS.generic;
+  return failureCard(error.status ?? null, error.apiCode ?? null);
 }

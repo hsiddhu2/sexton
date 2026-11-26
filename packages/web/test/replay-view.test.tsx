@@ -7,7 +7,7 @@ import axe from "axe-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App.js";
 import { REPLAY_IDS, replayAddress, type ReplayId } from "../src/replay/replay-ids.js";
-import { ReplayView, STORY_MISSING } from "../src/replay/ReplayView.js";
+import { ReplayView } from "../src/replay/ReplayView.js";
 import { REPLAY_NOT_LIVE, storySteps } from "../src/replay/replay-story.js";
 import { PLAY_STEP_MS } from "../src/time/play.js";
 import { cheapScan } from "./arbitraries.js";
@@ -230,10 +230,10 @@ describe("the Replay view (8.1 to 8.8, 8.12, 8.16, 8.19 to 8.22)", () => {
     const storyless = (() => Promise.resolve(new Response(JSON.stringify(noTimelines), { status: 200 }))) as typeof fetch;
     render(<App fetchFn={storyless} apiBase={null} initialSearch="?replay=axios" pageOrigin={ORIGIN} />);
     await waitFor(() => {
-      expect(screen.getByRole("alert").textContent).toContain("invalid-response");
+      expect(screen.getByRole("alert").textContent).toBe("!This scan could not be loaded.Try again, or open the sample.Try againBack to the sample");
     });
     cleanup();
-    // Should such a response reach the view anyway, it shows an alert, never a waiting card that waits for ever.
+    // Should such a response reach the view anyway, it shows the load failure card, never a card that waits for ever.
     const ref = { current: null };
     render(
       <ReplayView
@@ -245,7 +245,7 @@ describe("the Replay view (8.1 to 8.8, 8.12, 8.16, 8.19 to 8.22)", () => {
         onHome={() => undefined}
       />,
     );
-    expect(screen.getByRole("alert").textContent).toBe(`Scan could not be loaded${STORY_MISSING}`);
+    expect(screen.getByRole("alert").textContent).toBe("!This scan could not be loaded.Try again, or open the sample.Try againBack to the sample");
     expect(screen.queryByRole("status")).toBeNull();
   });
 

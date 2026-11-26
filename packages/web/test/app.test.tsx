@@ -80,7 +80,7 @@ describe("App", () => {
     const rec = recorder(() => cheapScan(1));
     const { container } = mount(rec, { search: "?scan=https%3A%2F%2Fevil.example%2Fx" });
     await waitFor(() => {
-      expect(screen.getByRole("alert").textContent).toContain("scan-url-rejected");
+      expect(screen.getByRole("alert").textContent).toBe("!This scan could not be loaded.Try again, or open the sample.Try againBack to the sample");
     });
     expect(rec.urls).toEqual([]);
     expect(container.querySelector("canvas")).toBeNull();
@@ -89,14 +89,14 @@ describe("App", () => {
     expect(container.textContent).not.toContain("evil.example");
   });
 
-  it("shows invalid-response errors as path, code and message", async () => {
+  it("shows the load failure card for an invalid response, with no code, path or message of the error (12.4, 12.7)", async () => {
     const rec = recorder(() => Promise.resolve(new Response(JSON.stringify({ report: 1 }), { status: 200 })));
     const { container } = mount(rec);
     await waitFor(() => {
-      expect(screen.getByRole("alert").textContent).toContain("invalid-response");
+      expect(screen.getByRole("alert").textContent).toBe("!This scan could not be loaded.Try again, or open the sample.Try againBack to the sample");
     });
-    expect(container.querySelector(".load-error li")?.textContent).toContain("/");
     expect(container.querySelector("canvas")).toBeNull();
+    expect(container.textContent).not.toContain("invalid-response");
   });
 
   it("shows the disabled field text when no API base URL is configured", async () => {
@@ -251,12 +251,13 @@ describe("App loading, error and empty states (cemetery-polish task 8)", () => {
     expect(container.querySelector("header .scan-tag")?.textContent).toBe("Sample scan");
   });
 
-  it("shows the error panel with an alert, the heading and the code in a code element", async () => {
+  it("shows the failure card with an alert, the sentence as its heading, and no error code (12.4, 12.7)", async () => {
     const rec = recorder(() => cheapScan(1));
     const { container } = mount(rec, { search: "?scan=https%3A%2F%2Fevil.example%2Fx" });
     const alert = await screen.findByRole("alert");
-    expect(alert.querySelector("h2")?.textContent).toBe("Scan could not be loaded");
-    expect(alert.querySelector("code")?.textContent).toBe("scan-url-rejected");
+    expect(alert.querySelector("h2")?.textContent).toBe("This scan could not be loaded.");
+    expect(alert.querySelector("code")).toBeNull();
+    expect(alert.textContent).not.toContain("scan-url-rejected");
     expect(container.querySelector("main.home-main .scene-card")?.contains(alert)).toBe(true);
   });
 

@@ -5,9 +5,12 @@ import type { PackageHealth, ScanResponse, State } from "@sexton/api";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Cemetery } from "../Cemetery.js";
 import { LoadingCard } from "../LoadingCard.js";
+import { LOAD_FAILED_CARD, liveFailureCard } from "../load/scan-failure.js";
+import { BACK_TO_SAMPLE, FailureCard, TRY_AGAIN, TRY_DEMO_REPO } from "./FailureCard.js";
 import type { Term } from "../glossary/glossary.js";
 import { dayText } from "../header/format-scan-time.js";
 import type { ScanKind } from "../drawer/fix-view.js";
+import type { LoadError } from "../load/load-error.js";
 import type { RemediateView } from "../load/remediate-client.js";
 import type { ScreenEvent, ScreenState } from "../load/screen-state.js";
 import type { LoadState } from "../load/use-scan-loader.js";
@@ -50,7 +53,13 @@ export interface HomeViewProps {
   readonly scanKind?: ScanKind;
   /** Opens the Guide page (the fix tab's "How does this work?"). */
   readonly onGuide?: () => void;
+  /** The failure cards' buttons (12.1, 12.5 to 12.7): a Live scan of the demo repo, the Sample scan, the same load again. */
+  readonly onDemoRepo?: () => void;
+  readonly onSample?: () => void;
+  readonly onRetry?: () => void;
 }
+
+const none = (): void => undefined;
 
 export function HomeView(props: HomeViewProps) {
   const { load } = props;
@@ -62,26 +71,26 @@ export function HomeView(props: HomeViewProps) {
           {load.status === "loading" ? (
             props.scanning !== null ? <ScanningCard label={props.scanning} /> : <LoadingCard />
           ) : (
-            <section role="alert" className="load-error">
-              <h2>Scan could not be loaded</h2>
-              <p>
-                <code>{load.error.code}</code>: {load.error.message}
-              </p>
-              {load.error.contractErrors === undefined ? null : (
-                <ul>
-                  {load.error.contractErrors.map((e, i) => (
-                    <li key={i}>
-                      {e.path} {e.code} {e.message}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
+            <LoadFailure {...props} error={load.error} />
           )}
         </div>
       </section>
     </div>
   );
+}
+
+/**
+ * The failure card of a failed load (12.1, 12.2, 12.7): from the HTTP status and API code for a Live scan, with "Try
+ * the demo repo" and "Back to the sample"; the fixed load card otherwise, with "Try again" and "Back to the sample".
+ * No other text of the error is shown (12.4).
+ */
+function LoadFailure({ screen, error, onDemoRepo, onSample, onRetry }: HomeViewProps & { readonly error: LoadError }) {
+  const sample = { label: BACK_TO_SAMPLE, onPress: onSample ?? none };
+  if (screen.view.source.kind === "repo") {
+    const card = liveFailureCard(error);
+    return <FailureCard sentence={card.sentence} next={card.next} actions={[{ label: TRY_DEMO_REPO, onPress: onDemoRepo ?? none }, sample]} />;
+  }
+  return <FailureCard sentence={LOAD_FAILED_CARD.sentence} next={LOAD_FAILED_CARD.next} actions={[{ label: TRY_AGAIN, onPress: onRetry ?? none }, sample]} />;
 }
 
 interface ReadyProps extends HomeViewProps {

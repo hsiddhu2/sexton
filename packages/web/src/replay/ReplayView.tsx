@@ -9,7 +9,9 @@ import { Cemetery } from "../Cemetery.js";
 import { LoadingCard } from "../LoadingCard.js";
 import type { Term } from "../glossary/glossary.js";
 import { TermText } from "../glossary/TermText.js";
+import { BACK_TO_SAMPLE, FailureCard, TRY_AGAIN } from "../home/FailureCard.js";
 import { useReserve } from "../home/use-reserve.js";
+import { LOAD_FAILED_CARD } from "../load/scan-failure.js";
 import type { LoadState } from "../load/use-scan-loader.js";
 import type { Theme } from "../scene/layout.js";
 import { overlayRects } from "../scene/overlay-band.js";
@@ -37,13 +39,13 @@ export interface ReplayViewProps {
   /** The Home action (8.6, 8.18): "← Cemetery", "Back to the cemetery" and "Exit replay". */
   readonly onHome: () => void;
   readonly onTerm?: (term: Term, anchor: HTMLButtonElement) => void;
+  /** The failure card's buttons (12.7): load this Replay again, or show the Sample scan. */
+  readonly onRetry?: () => void;
+  readonly onSample?: () => void;
 }
 
 const noop = (): void => undefined;
-/** A loaded file of this Replay whose Steps do not match its Stops: never a waiting card that waits for ever. */
-export const STORY_MISSING = "This replay file has no story for its steps.";
-
-export function ReplayView({ id, load, onHome, ...rest }: ReplayViewProps) {
+export function ReplayView({ id, load, onHome, onRetry, onSample, ...rest }: ReplayViewProps) {
   const card = REPLAY_CARD[id];
   // The file of this Replay once it has loaded; until then (or for a file of the other Replay) the waiting card.
   const ready = load.status === "ready" && load.response.replay?.id === id ? load : null;
@@ -72,16 +74,15 @@ export function ReplayView({ id, load, onHome, ...rest }: ReplayViewProps) {
         {hero}
         <div className="scene-card scene-card-waiting">
           {load.status === "error" || ready !== null ? (
-            <section role="alert" className="load-error">
-              <h2>Scan could not be loaded</h2>
-              {load.status === "error" ? (
-                <p>
-                  <code>{load.error.code}</code>: {load.error.message}
-                </p>
-              ) : (
-                <p>{STORY_MISSING}</p>
-              )}
-            </section>
+            // A refused file, or a loaded file whose Steps do not match its Stops (never a card that waits for ever).
+            <FailureCard
+              sentence={LOAD_FAILED_CARD.sentence}
+              next={LOAD_FAILED_CARD.next}
+              actions={[
+                { label: TRY_AGAIN, onPress: onRetry ?? noop },
+                { label: BACK_TO_SAMPLE, onPress: onSample ?? noop },
+              ]}
+            />
           ) : (
             <LoadingCard />
           )}

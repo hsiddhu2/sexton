@@ -100,9 +100,9 @@ Run-time notes:
   - [ ] 8.2 Wire every view, breadcrumb and the wordmark to it; the unknown-replay card; the `?repo=` prompt; port the still-valid cases of calm-first-visit's `way-back.test.tsx`
     - _Requirements: 10.1, 10.2, 10.5, 10.6, 10.9 to 10.13, 10.18_
 
-- [ ] 9. Failed scans
+- [x] 9. Failed scans
   - _Requirements: 12.1 to 12.7_
-  - [ ] 9.1 Show the failure card with its two buttons from `load-scan`'s status and code
+  - [x] 9.1 Show the failure card with its two buttons from `load-scan`'s status and code
     - _Requirements: 12.1 to 12.7_
 
 - [ ] 10. The Music slot

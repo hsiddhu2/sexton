@@ -1621,9 +1621,8 @@ a {
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
-/* Loading, error */
-.loading-card,
-.load-error {
+/* Loading */
+.loading-card {
   box-sizing: border-box;
   max-width: 32rem;
   margin: 24px auto;
@@ -1647,8 +1646,43 @@ a {
   margin: 0;
 }
 
-.load-error h2 {
-  margin-top: 0;
+/* A failure card over the Scene (spec clean-site, 12.1, 12.7): one sentence, one next step, two buttons. */
+.failure-card {
+  box-sizing: border-box;
+  width: 420px;
+  max-width: 86%;
+  overflow-wrap: anywhere;
+}
+
+.failure-mark {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 12px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--state-possessed) 14%, var(--ui-bg));
+  color: var(--state-possessed);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.failure-sentence {
+  margin: 0 0 6px;
+  font-size: 26px;
+  line-height: 1.2;
+}
+
+.failure-next {
+  margin: 0;
+  color: var(--ui-muted);
+}
+
+.failure-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 18px 0 0;
 }
 
 .loading-spinner {

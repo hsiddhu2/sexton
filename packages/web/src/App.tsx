@@ -11,6 +11,8 @@ import type { ScanKind } from "./drawer/fix-view.js";
 import { Header } from "./header/Header.js";
 import { headerModel } from "./header/header-model.js";
 import { scanTag } from "./header/scan-tag.js";
+import { DEMO_REPO } from "./header/examples.js";
+import { normaliseRepo } from "./header/repo-input.js";
 import { HomeView } from "./home/HomeView.js";
 import { SiteFooter } from "./home/SiteFooter.js";
 import { useMediaQuery } from "./hooks/use-media-query.js";
@@ -112,6 +114,21 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
     },
     [dispatch, loadSource],
   );
+  // The failure cards' buttons (12.5 to 12.7). Each loads even when its Source is the one that just failed.
+  const sample = useCallback((): void => {
+    const source: ViewSource = { kind: "demo" };
+    dispatch({ kind: "source", source });
+    loadSource(source);
+  }, [dispatch, loadSource]);
+  const demoRepo = useCallback((): void => {
+    // "Try the demo repo" (12.5): a Live scan of the demo repository, through the Scan field's own normalising.
+    const demo = normaliseRepo(DEMO_REPO);
+    if (demo.ok) scan(demo.url);
+  }, [scan]);
+  const shown = screen.view.source;
+  const retry = useCallback((): void => {
+    loadSource(shown);
+  }, [loadSource, shown]);
   const [welcome, setWelcome] = useState(() => !welcomeClosed());
   const hideWelcome = useCallback((): void => {
     closeWelcome();
@@ -211,7 +228,17 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
         />
       ) : source.kind === "replay" && screen.owner === "replay" ? (
         <main className="home-main">
-          <ReplayView id={source.id} load={state} theme={theme} reducedMotion={reducedMotion} repoFieldRef={repoFieldRef} onHome={goHome} onTerm={onTerm} />
+          <ReplayView
+            id={source.id}
+            load={state}
+            theme={theme}
+            reducedMotion={reducedMotion}
+            repoFieldRef={repoFieldRef}
+            onHome={goHome}
+            onTerm={onTerm}
+            onRetry={retry}
+            onSample={sample}
+          />
         </main>
       ) : (
         <main className="home-main">
@@ -228,6 +255,9 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
             onTerm={onTerm}
             scanKind={scanKind}
             onGuide={openGuide}
+            onDemoRepo={demoRepo}
+            onSample={sample}
+            onRetry={retry}
             {...(onRemediate !== undefined ? { onRemediate } : {})}
           />
         </main>

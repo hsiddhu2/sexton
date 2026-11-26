@@ -14,6 +14,7 @@ import { NO_HISTORY_TEXT } from "../src/drawer/history-rows.js";
 import { PR_LINK_TEXT } from "../src/drawer/Drawer.js";
 import { OUTCOME_TEXT } from "../src/load/remediate-client.js";
 import { resetWelcomeForTests } from "../src/guide/welcome-pref.js";
+import { BACK_TO_SAMPLE, FailureCard, TRY_AGAIN, TRY_DEMO_REPO } from "../src/home/FailureCard.js";
 import { ScanningCard } from "../src/home/ScanningCard.js";
 import { FAILURE_CARDS, LOAD_FAILED_CARD } from "../src/load/scan-failure.js";
 import { STATES } from "../src/load/lists.js";
@@ -246,7 +247,17 @@ describe("Feature: clean-site, Property 9: Claims rest on README.md", () => {
   });
 
   it("finds no unclaimed capability sentence on each failure card and the scanning card", () => {
-    for (const card of [...Object.values(FAILURE_CARDS), LOAD_FAILED_CARD]) expect(unclaimedIn(`${card.sentence}\n${card.next}`), card.sentence).toEqual([]);
+    for (const card of [...Object.values(FAILURE_CARDS), LOAD_FAILED_CARD]) {
+      const shown = render(
+        <FailureCard
+          sentence={card.sentence}
+          next={card.next}
+          actions={[TRY_DEMO_REPO, TRY_AGAIN, BACK_TO_SAMPLE].map((label) => ({ label, onPress: () => undefined }))}
+        />,
+      );
+      expect(unclaimed(shown.container), card.sentence).toEqual([]);
+      shown.unmount();
+    }
     expect(unclaimedIn("2 packages were resolved from package.json ranges: a, b")).toEqual([]);
     const view = render(<ScanningCard label="o/r" />);
     expect(unclaimed(view.container)).toEqual([]);
