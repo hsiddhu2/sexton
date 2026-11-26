@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
-/** The canvas families (spec cemetery-undead, requirement 2.4). */
-export const CANVAS_FONTS = ['15px "IM Fell English SC"'] as const;
+/** The canvas families: the grave name labels are Inter 600 (spec clean-site, 5.1). */
+export const CANVAS_FONTS = ["600 15px Inter"] as const;
 
 /**
  * Turns true once the canvas fonts have loaded, so the Scene repaints once with them. Until then the canvas draws

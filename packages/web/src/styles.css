@@ -1,30 +1,16 @@
 /* Layout and look. Every colour is a custom property written by applyPalette. */
-/* Self-hosted fonts (spec cemetery-undead, requirement 2). SIL Open Font License files sit beside them. */
+/* Self-hosted fonts (spec clean-site, requirement 5). SIL Open Font License files sit beside them. */
 @font-face {
-  font-family: "Pirata One";
-  src: url("/fonts/pirata-one-400.woff2") format("woff2");
-  font-weight: 400;
+  font-family: "Inter";
+  src: url("/fonts/inter-variable.woff2") format("woff2");
+  font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: "IM Fell English SC";
-  src: url("/fonts/im-fell-english-sc-400.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "IM Fell English";
-  src: url("/fonts/im-fell-english-400-italic.woff2") format("woff2");
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Instrument Sans";
-  src: url("/fonts/instrument-sans-variable.woff2") format("woff2");
-  font-weight: 400 600;
+  font-family: "Cormorant Garamond";
+  src: url("/fonts/cormorant-garamond-600.woff2") format("woff2");
+  font-weight: 600;
   font-style: normal;
   font-display: swap;
 }
@@ -39,20 +25,33 @@ body,
   min-height: 100%;
 }
 
+/* Inter for the interface, Cormorant Garamond for the wordmark and headlines, the system monospace stack for
+   versions, signal keys and diffs (spec clean-site, 5.1, 5.2 and 5.5). */
 body {
-  font-family: "Instrument Sans", system-ui, sans-serif;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
   line-height: 1.45;
   background: var(--bg);
   color: var(--text);
 }
 
 h1,
-h2,
+h2 {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-weight: 600;
+}
+
 h3,
 h4,
 h5 {
-  font-family: "IM Fell English SC", Georgia, serif;
-  font-weight: 400;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-weight: 600;
+}
+
+code,
+pre,
+kbd,
+samp {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 }
 
 main {
@@ -130,39 +129,6 @@ main {
   pointer-events: none;
 }
 
-.grave-tooltip {
-  position: absolute;
-  z-index: 2;
-  box-sizing: border-box;
-  max-width: 100%;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--text);
-  font-size: 0.8125rem;
-  line-height: 1.35;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-  /* The tooltip is anchored at its own Cell (top 4) and may extend past a scaled Cell; near its grave the pointer is still over the grave button:
-     it stays hoverable, and a click on it reaches the button underneath. */
-  max-height: 216px;
-  pointer-events: none;
-}
-
-.tooltip-name {
-  display: block;
-  font-family: "IM Fell English SC", Georgia, serif;
-  font-size: 0.9375rem;
-  overflow-wrap: anywhere;
-}
-
-.tooltip-line {
-  display: block;
-  color: var(--muted);
-  overflow-wrap: anywhere;
-}
-
 /* Header bar */
 .site-header {
   box-sizing: border-box;
@@ -190,22 +156,22 @@ main {
   align-items: baseline;
   gap: 8px;
   margin: 0;
-  font-family: "Pirata One", fantasy, serif;
+  font-family: "Cormorant Garamond", Georgia, serif;
   font-size: 2.5rem;
-  font-weight: 400;
+  font-weight: 600;
   line-height: 1;
   color: var(--wordmark);
   text-shadow: 0 0 14px var(--accent-bg);
 }
 
 .wordmark-name {
-  font-weight: 400;
+  font-weight: 600;
   letter-spacing: 0.01em;
 }
 
 .wordmark-sub {
-  font-family: "IM Fell English", Georgia, serif;
-  font-style: italic;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-weight: 400;
   color: var(--muted);
   font-size: 1.125rem;
 }
@@ -311,10 +277,6 @@ main {
 }
 
 .legend-toggle,
-.sound-toggle,
-.serious-toggle,
-.guide-button,
-.guide-controls button,
 .drawer-close {
   padding: 6px 14px;
   border-radius: 999px;
@@ -468,12 +430,6 @@ main {
 }
 
 .legend-toggle:focus-visible,
-.serious-toggle:focus-visible,
-.sound-toggle:focus-visible,
-.guide-button:focus-visible,
-.guide-controls button:focus-visible,
-.guide-title:focus-visible,
-.fix-first:focus-visible,
 .repo-form button:focus-visible,
 .repo-form input:focus-visible {
   outline: 3px solid var(--focus);
@@ -951,76 +907,15 @@ pre.signal-value {
   width: auto;
 }
 
-/* Sound and Serious mode (spec cemetery-undead, 8.1; spec cemetery-undead-2, 8.1). */
-.sound-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-}
-.sound-glyph {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.5;
-}
-.serious-toggle[aria-pressed="true"],
-.sound-toggle[aria-pressed="true"] {
-  border-color: var(--focus);
-  background: var(--surface);
-}
 .epitaph-lead {
-  font-family: "IM Fell English", Georgia, serif;
-  font-style: italic;
+  font-style: normal;
   color: var(--muted);
 }
-.epitaph-line {
-  display: block;
-}
-/* The mockup card: "Here lies" small and italic, the name on its own line in small caps, then the state in its colour. */
-.epitaph-line .epitaph-lead {
-  display: block;
-  font-size: 0.8125rem;
-}
-.epitaph-line .tooltip-name {
-  display: inline;
-  font-size: 1.0625rem;
-  letter-spacing: 0.02em;
-}
-.tooltip-state {
-  font-weight: 600;
-}
-.tooltip-state-possessed {
-  color: var(--state-possessed);
-}
-.tooltip-state-dead {
-  color: var(--state-dead);
-}
-.tooltip-state-haunted {
-  color: var(--state-haunted);
-}
-.tooltip-state-restless {
-  color: var(--state-restless);
-}
-.tooltip-state-alive {
-  color: var(--state-alive);
-}
-/* The drawer title keeps the display face; every other drawer heading is in the interface face. */
-.drawer h3,
-.drawer h4,
-.drawer h5 {
-  font-family: "Instrument Sans", system-ui, sans-serif;
-  font-weight: 600;
-}
-/* The replay banner as a compact card, with its sources on one line. */
 
-.epitaph-punchline,
-.drawer-epitaph {
-  font-family: "IM Fell English", Georgia, serif;
-  font-style: italic;
-  color: var(--accent-bg);
-}
+/* "Here lies" above the drawer title, in the interface face. */
 .drawer-epitaph {
   margin: 0;
+  color: var(--accent-bg);
 }
 
 /* The Footer bar: Play, the History date and slider, and the Replay group, in view at the bottom
@@ -1054,7 +949,7 @@ pre.signal-value {
 
 /* One header row and one footer row at 960 px and wider (spec cemetery-undead, 9.5). There the header stays in view
    while the cemetery scrolls, so the Repository URL box is always reachable, and the Footer bar stays at the bottom.
-   Both sit below the drawer backdrop (10) and above the graves and tooltip (1, 2). Narrower, both scroll with the page. */
+   Both sit below the drawer backdrop (10) and above the graves (1). Narrower, both scroll with the page. */
 @media (min-width: 960px) {
   .site-header {
     position: sticky;
@@ -1083,7 +978,7 @@ pre.signal-value {
   .header-summary {
     min-height: 0;
   }
-  /* 18rem, not 20: the Guide button joined the row, and with 20rem the summary column was narrow enough on Linux for
+  /* 18rem, not 20: with 20rem the summary column was narrow enough on Linux for
      the policy line to wrap, which pushed the front row under the Footer bar (spec judge-path, decision 11). */
   .repo-form {
     flex: 0 1 18rem;
@@ -1319,190 +1214,4 @@ pre.signal-value {
 }
 .replay-card .replay-summary {
   margin-bottom: 6px;
-}
-
-/* The replay Burst's caption, above its grave, as in the mockup (spec cemetery-undead-2, B3). */
-.burst-caption {
-  position: absolute;
-  z-index: 1;
-  margin: 0;
-  transform: translate(-50%, calc(-100% - 8px));
-  padding: 4px 10px;
-  border-radius: 10px;
-  background: var(--surface);
-  color: var(--muted);
-  font-size: 0.8125rem;
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-/* Speech Bubbles, as in the mockup (spec cemetery-undead-2, B2): decoration over the scene, never a target. */
-.bubble-layer {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-}
-.bubble-group {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-/* The tail: a square in the bubble's own token, turned 45 degrees on the bubble's edge, so its free half is a point
-   whose tip is on the speaker. */
-.bubble-tail {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  background: var(--text);
-  transform: translate(-50%, -50%) rotate(45deg);
-  pointer-events: none;
-}
-.bubble {
-  position: absolute;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  margin: 0;
-  padding: 8px 12px;
-  border-radius: 14px;
-  background: var(--text);
-  color: var(--ink);
-  font-size: 13.5px;
-  font-weight: 600;
-  line-height: 1.25;
-  pointer-events: none;
-}
-
-/* The Fix-first line (spec judge-path, requirement 2): a full row at the header's foot, so it reads in one line. */
-.fix-first-line {
-  flex: 1 1 100%;
-  margin: 0;
-  font-size: 0.875rem;
-}
-
-.fix-first {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  max-width: 100%;
-  padding: 2px 12px;
-  border: 2px solid var(--border);
-  border-radius: 999px;
-  background: var(--field);
-  color: var(--text);
-  font: inherit;
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.35;
-  text-align: left;
-  overflow-wrap: anywhere;
-  cursor: pointer;
-}
-
-.fix-first-chip {
-  flex: none;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-
-/* The Guide (spec judge-path, requirement 1): a card beside its Anchor. The style sheet moves nothing; a fade, when
-   motion is allowed, comes from the Web Animations API. */
-.guide {
-  position: fixed;
-  z-index: 20;
-  box-sizing: border-box;
-  width: min(300px, calc(100vw - 16px));
-  padding: 12px 14px;
-  border: 2px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--text);
-  font-size: 0.875rem;
-  box-shadow: 0 6px 20px var(--bg);
-}
-
-.guide-count,
-.guide-body {
-  margin: 0 0 8px;
-}
-
-.guide-count {
-  color: var(--muted);
-  font-size: 0.8125rem;
-}
-
-.guide-title {
-  margin: 0 0 6px;
-  font-size: 1rem;
-}
-
-.guide-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-/* The notch on the edge that faces the Anchor: a small square turned 45 degrees, half outside the card. */
-.guide-arrow {
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  margin: -7px 0 0 -7px;
-  background: var(--surface);
-  transform: rotate(45deg);
-}
-
-/* Turned 45 degrees, the square's bottom-left corner points left, top-right right, top-left up, bottom-right down. */
-.guide-arrow-left {
-  left: 0;
-  border-left: 2px solid var(--border);
-  border-bottom: 2px solid var(--border);
-}
-
-.guide-arrow-right {
-  left: 100%;
-  border-top: 2px solid var(--border);
-  border-right: 2px solid var(--border);
-}
-
-.guide-arrow-top {
-  top: 0;
-  border-top: 2px solid var(--border);
-  border-left: 2px solid var(--border);
-}
-
-.guide-arrow-bottom {
-  top: 100%;
-  border-right: 2px solid var(--border);
-  border-bottom: 2px solid var(--border);
-}
-
-/* A compact card on a narrow screen, so it fits between two rows of names. */
-@media (max-width: 599px) {
-  .guide {
-    padding: 8px 12px;
-    font-size: 0.8125rem;
-  }
-  .guide-count {
-    float: right;
-    margin: 2px 0 0 8px;
-  }
-  .guide-title {
-    margin-bottom: 4px;
-  }
-  .guide-body {
-    margin-bottom: 6px;
-  }
-  .guide-controls button {
-    padding: 3px 12px;
-  }
-}
-
-/* The control the Guide's step points at (spec judge-path, requirement 1.4). A grave keeps its own ring and focus
-   outline; the Replay button gains this outline. */
-.replay-button.guide-target {
-  outline: 3px solid var(--focus);
-  outline-offset: 3px;
 }

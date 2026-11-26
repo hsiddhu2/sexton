@@ -270,27 +270,20 @@ describe("Header bar (cemetery-polish task 8)", () => {
     expect(container.querySelectorAll("#legend-panel .legend-chip-ghost")).toHaveLength(1);
   });
 
-  // Spec cemetery-undead, Deliberate test change 16: the form, then Sound, Serious mode and the Legend.
-  it("orders the controls evidence JSON, evidence Markdown, input, Scan, Sound, Serious mode, Legend in the DOM", () => {
-    const { container } = render(
-      <Header model={headerModel(cheapScan(1), true)} theme="dark" apiConfigured={true} onSubmit={noSubmit} onSerious={() => undefined} />,
-    );
+  // Spec cemetery-undead, Deliberate test change 16: the form, then the Legend. Spec clean-site, task 2: the Sound
+  // toggle and Serious mode are gone (4.1).
+  it("orders the controls evidence JSON, evidence Markdown, input, Scan, Legend in the DOM", () => {
+    const { container } = render(<Header model={headerModel(cheapScan(1), true)} theme="dark" apiConfigured={true} onSubmit={noSubmit} />);
     const controls = [...container.querySelectorAll<HTMLElement>("a[href], button, input")];
     expect(controls.map((el) => el.getAttribute("aria-label") ?? el.getAttribute("name") ?? el.textContent?.trim())).toEqual([
       "Download evidence pack as JSON",
       "Download evidence pack as Markdown",
       "repo",
       "Scan",
-      "Sound off",
-      "Serious mode",
       "Legend",
     ]);
-    // Spec cemetery-undead-2, Deliberate test change 1: the Sound button is a working toggle, off by default, with
-    // aria-pressed and no description.
-    const sound = screen.getByRole("button", { name: "Sound off" }) as HTMLButtonElement;
-    expect(sound.disabled).toBe(false);
-    expect(sound.getAttribute("aria-pressed")).toBe("false");
-    expect(sound.hasAttribute("aria-describedby")).toBe(false);
+    expect(screen.queryByRole("button", { name: /^Sound/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Serious mode" })).toBeNull();
   });
 });
 

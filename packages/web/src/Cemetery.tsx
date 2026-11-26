@@ -16,16 +16,10 @@ import { DRAWER_SCAN_DATE_TEXT, SCRUB_NOTE_TEXT } from "./time/Scrubber.js";
 import { formAt, timelineOf, type FormView } from "./time/form-at.js";
 import { useBurial } from "./time/use-burial.js";
 import { triageOrder } from "./triage/triage.js";
-import { ghostCallDue } from "./sound/use-sound.js";
-import { BURST_CAPTION, burstStopFor } from "./replay/burst-stop.js";
+import { burstStopFor } from "./replay/burst-stop.js";
 import { BURST_MS } from "./scene/burst.js";
 import { loadMomentMs } from "./scene/rise.js";
 import { claimLoadMoment } from "./scene/load-moment.js";
-import { bellKey } from "./scene/characters/priest.js";
-import { artRect, labelRect } from "./scene/art-box.js";
-import type { Rect } from "./scene/layout.js";
-import { Bubbles, bubbleLines } from "./speech/Bubbles.js";
-import type { VoiceId } from "./sound/voices.js";
 
 export interface CemeteryProps {
   readonly response: ScanResponse;
@@ -37,19 +31,9 @@ export interface CemeteryProps {
   readonly repoFieldRef?: RefObject<HTMLInputElement | null>;
   /** Opens a pull request; present only for a hosted scan with actions.remediate true (spec remediate, 9.2). */
   readonly onRemediate?: (packageName: string) => Promise<RemediateView>;
-  /** Serious mode hides the Punchlines (spec cemetery-undead, 8). */
-  readonly serious?: boolean;
-  /** Plays a Voice when Sound is on (spec cemetery-undead-2, requirement 8). Absent, the cemetery is silent. */
-  readonly play?: (voice: VoiceId) => void;
-  /** A new value selects the Fix-first grave and focuses its button (spec judge-path, requirements 2.2 and 2.3). */
-  readonly selectRequest?: number;
-  /** Told when the drawer opens and closes, for the Guide (spec judge-path, requirements 1.18 to 1.20). */
-  readonly onDrawer?: (open: boolean) => void;
-  /** Filled with a reader of every grave's Name label in client coordinates, for the Guide (1.14). */
-  readonly labelsRef?: RefObject<(() => readonly Rect[]) | null>;
 }
 
-export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFieldRef, onRemediate, serious = false, play, selectRequest = 0, onDrawer, labelsRef }: CemeteryProps) {
+export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFieldRef, onRemediate }: CemeteryProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const order = useMemo(() => triageOrder(response.report.packages), [response]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(() => (order.length > 0 ? 0 : null));
@@ -79,7 +63,6 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
     });
   }, [order, response, asOfMs]);
   const beforeScan = asOfMs !== null && asOfMs < Date.parse(response.report.generatedAt);
-  const asOfDate = beforeScan ? scanTimeView(new Date(asOfMs).toISOString()).text : undefined;
   const drawerOpen = openIndex !== null;
   const burial = useBurial({ reducedMotion, drawerOpen });
   // A mark comes from the response log or the session list, never from a plan in `remediations` (14.5, 14.6).
@@ -90,20 +73,6 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
   );
   const burialIndex = burial.burial === null ? -1 : order.findIndex((p) => p.name === burial.burial?.name);
   const vigilIndex = burial.vigil === null ? -1 : order.findIndex((p) => p.name === burial.vigil?.name);
-  const playRef = useRef(play);
-  playRef.current = play;
-  // The bell: once when the Priest starts reading, at burial phase WALK_END, or at the start of a Vigil (10.2).
-  const belled = useRef<string | null>(null);
-  const bell = bellKey(burial.burial, burial.vigil);
-  useEffect(() => {
-    if (bell === null) {
-      belled.current = null;
-      return;
-    }
-    if (belled.current === bell) return;
-    belled.current = bell;
-    playRef.current?.("bell");
-  }, [bell]);
   // The Load moment: the first non-empty scan after a page load rises out of the ground, unless motion is reduced.
   const [riseStart] = useState<number | null>(() => {
     if (order.length === 0 || !claimLoadMoment()) return null;
@@ -119,7 +88,7 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
       clearTimeout(timer);
     };
   }, [riseStart, order.length]);
-  // The replay Burst: each arrival at the Burst Stop plays it once, with the sting and the thud (requirement 9).
+  // The replay Burst: each arrival at the Burst Stop plays it once, with no caption (spec clean-site, 4.5).
   const burstStopMs = useMemo(() => burstStopFor(response, order), [response, order]);
   const [burstStart, setBurstStart] = useState<number | null>(null);
   const [burstDone, setBurstDone] = useState(false);
@@ -135,8 +104,6 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
     if (previous === asOfMs) return undefined;
     setBurstStart(Date.now());
     setBurstDone(false);
-    playRef.current?.("sting");
-    playRef.current?.("thud");
     return undefined;
   }, [asOfMs, burstStopMs]);
   // The Burst leaves the plan BURST_MS after its start, so the Halo returns (review note, tasks 6 and 7).
@@ -176,18 +143,6 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
       }),
     [order, width, theme, selectedIndex, phase, minHeight, fit, views, marks, burial.burial, burialIndex, vigilIndex, fontsReady, reducedMotion, lantern, atBurst, burstDone, burstStart, rising, riseStart],
   );
-  // The ghost call: a grave with a Ghost gains the Lantern glow by hover or focus, at most once every 1,500 ms.
-  const lastGhostCall = useRef<number | null>(null);
-  const lanternHasGhost = lantern !== null && plan.graves[lantern]?.ghost != null;
-  useEffect(() => {
-    if (!lanternHasGhost || play === undefined) return;
-    const now = performance.now();
-    if (!ghostCallDue(lastGhostCall.current, now)) return;
-    lastGhostCall.current = now;
-    play("ghost");
-  }, [lantern, lanternHasGhost, play]);
-  // Speech Bubbles speak from the Form shown at the chosen date; hidden in Serious mode and while the drawer is open.
-  const lines = useMemo(() => bubbleLines(order, views), [order, views]);
   const request = burial.request;
   const onRemediateWithBurial = useMemo(
     () =>
@@ -216,48 +171,6 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
     containerRef.current?.querySelector<HTMLElement>(`[data-grave-index="${String(index)}"]`)?.focus();
     quietFocus.current = false; // focus events are synchronous; never leave the flag set for a later, real focus
   }, [openIndex]);
-  // Fix first: a new request selects triage index 0 and focuses its grave button, so its tooltip shows. A request
-  // made before this load is not replayed (the value at mount is the baseline).
-  const seenRequest = useRef(selectRequest);
-  const focusFixFirst = useRef(false);
-  useEffect(() => {
-    if (selectRequest === seenRequest.current) return;
-    seenRequest.current = selectRequest;
-    if (order.length === 0) return;
-    focusFixFirst.current = true;
-    setSelectedIndex(0);
-    setOpenIndex(null);
-  }, [selectRequest, order.length]);
-  useLayoutEffect(() => {
-    if (!focusFixFirst.current || openIndex !== null) return;
-    focusFixFirst.current = false;
-    containerRef.current?.querySelector<HTMLElement>('[data-grave-index="0"]')?.focus();
-  });
-  const onDrawerRef = useRef(onDrawer);
-  onDrawerRef.current = onDrawer;
-  useEffect(() => {
-    onDrawerRef.current?.(drawerOpen);
-  }, [drawerOpen]);
-  useEffect(
-    () => () => {
-      onDrawerRef.current?.(false);
-    },
-    [],
-  );
-  useEffect(() => {
-    if (labelsRef === undefined) return undefined;
-    labelsRef.current = () => {
-      const box = containerRef.current?.getBoundingClientRect();
-      if (box === undefined) return [];
-      return plan.graves.map((g) => {
-        const l = labelRect(g);
-        return { x: box.left + l.x, y: box.top + l.y, w: l.w, h: l.h };
-      });
-    };
-    return () => {
-      labelsRef.current = null;
-    };
-  }, [labelsRef, plan]);
   const openPackage = openIndex === null ? undefined : order[openIndex];
   const onDismissToField = useCallback(
     (x: number, y: number): boolean => {
@@ -297,33 +210,23 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
             ) : (
               <>
                 <Scene plan={plan} />
-                {/* No Bubble while the Burst caption shows: the caption speaks for the grave (spec cemetery-undead-fixes). */}
-                <Bubbles plan={plan} lines={lines} hidden={serious || drawerOpen || atBurst} reducedMotion={reducedMotion} />
-                {atBurst && plan.graves[0] !== undefined ? (
-                  // Plain text over the scene, not a live region: the Play line already announces the Stop (9.2).
-                  <p className="burst-caption" style={{ left: artRect(plan.graves[0]).x + artRect(plan.graves[0]).w / 2, top: plan.graves[0].rect.y }}>
-                    {BURST_CAPTION}
-                  </p>
-                ) : null}
                 <GraveButtons
                   plan={plan}
                   selectedIndex={selectedIndex}
                   packages={order}
                   onSelect={setSelectedIndex}
                   onOpen={onOpen}
-                  suppressTooltip={drawerOpen}
+                  suppressLantern={drawerOpen}
                   quietFocus={quietFocus}
                   onLantern={setLantern}
-                  serious={serious}
                   {...(views !== undefined ? { views } : {})}
-                  {...(asOfDate !== undefined ? { asOfDate } : {})}
                 />
               </>
             )}
           </div>
         </main>
       </div>
-      {openPackage === undefined ? null : <Drawer model={drawerModel(response, openPackage, openVersion)} {...(response.replay !== undefined ? { replay: response.replay } : {})} {...(asOfLine !== undefined ? { asOfLine } : {})} onClose={onClose} onDismissToField={onDismissToField} serious={serious} {...(onRemediateWithBurial !== undefined ? { onRemediate: onRemediateWithBurial } : {})} />}
+      {openPackage === undefined ? null : <Drawer model={drawerModel(response, openPackage, openVersion)} {...(response.replay !== undefined ? { replay: response.replay } : {})} {...(asOfLine !== undefined ? { asOfLine } : {})} onClose={onClose} onDismissToField={onDismissToField} {...(onRemediateWithBurial !== undefined ? { onRemediate: onRemediateWithBurial } : {})} />}
     </>
   );
 }

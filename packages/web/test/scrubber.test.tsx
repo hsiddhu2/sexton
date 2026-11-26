@@ -63,8 +63,9 @@ describe("scrubber on the demo scan (requirements 11, 12)", () => {
     await ready();
     // Apiless mount: the evidence links, the Legend, the two Replay buttons, the Play control and then the slider (the field and Scan are disabled).
     // Spec cemetery-undead-2, Deliberate test change 4: one more press, for the Sound stop. Spec judge-path, Deliberate
-    // test change 2: two more, for the Fix-first button and Guide.
-    for (let i = 0; i < 10; i += 1) await user.tab();
+    // test change 2: two more, for the Fix-first button and Guide. Spec clean-site, task 2: four fewer, for Sound,
+    // Serious mode, Guide and Fix first.
+    for (let i = 0; i < 6; i += 1) await user.tab();
     expect(document.activeElement).toBe(slider());
   });
   it("shows as of, the two caption lines and Back to now only before the scan date, and Back to now returns focus to the slider", async () => {
@@ -167,18 +168,15 @@ describe("versioned Segments (requirement 12.9)", () => {
     move(0);
     expect(slider().getAttribute("aria-valuetext")).toBe("30 Mar 2026, 23:21 UTC");
   });
-  it("shows the Segment version in the button name, tooltip and drawer title, and the report version for an unversioned Segment", async () => {
+  // Spec clean-site, task 2.1: the tooltip half went with the tooltip (4.1).
+  it("shows the Segment version in the button name and drawer title, and the report version for an unversioned Segment", async () => {
     const { container } = mount(JSON.stringify(scan()));
     await ready();
     move(1); // 2026-03-31T00:21 UTC
     expect(button(container, "pkg-0").getAttribute("aria-label")).toBe("pkg-0 9.9.9, Possessed");
     expect(button(container, "pkg-1").getAttribute("aria-label")).toBe("pkg-1 1.0.0, Restless");
     fireEvent.pointerEnter(button(container, "pkg-0"));
-    const tip = screen.getByRole("tooltip");
-    // K2d fix 1, Deliberate test change 28: the version shows once, in the "Here lies" line.
-    expect(tip.querySelector(".epitaph-line")?.textContent).toBe("Here lies pkg-0 9.9.9");
-    expect(tip.querySelector(".tooltip-state")?.textContent).toBe("Possessed");
-    expect(tip.textContent).toContain("as of 31 Mar 2026, 00:21 UTC");
+    expect(screen.queryByRole("tooltip")).toBeNull();
     fireEvent.click(button(container, "pkg-0"));
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByRole("heading", { level: 2 }).textContent).toBe("pkg-0 9.9.9");

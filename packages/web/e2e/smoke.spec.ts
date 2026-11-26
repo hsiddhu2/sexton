@@ -79,16 +79,8 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
   });
   await page.mouse.move(1, 899);
   await waitForFirstPaint(page);
-  // K2d fix 1, item 8: the picture shows a tooltip open with its epitaph, as in the mockup. Spec cemetery-undead-2,
-  // Deliberate test change 9: the tooltip is event-stream's, so left-padder is not hovered and shows its Halo.
-  const hovered = page.locator('button[data-grave-index][aria-label^="event-stream"]');
-  await hovered.hover();
-  const tip = page.getByRole("tooltip");
-  await expect(tip).toContainText("Here lies event-stream");
-  await expect(tip.locator(".epitaph-punchline")).toBeVisible();
-  // Spec cemetery-undead-2, Deliberate test change 7 (an addition): the picture shows two speech Bubbles, so wait for
-  // a show window in which both are placed (a slot is 6 s).
-  await expect(page.locator(".bubble")).toHaveCount(2, { timeout: 30_000 });
+  // Spec clean-site, task 2: the tooltip and the speech Bubbles are gone (4.1), so the picture shows neither.
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   await page.screenshot({ path: SCREENSHOT });
   await page.mouse.move(1, 899);
@@ -205,12 +197,12 @@ test("the axios replay at its Possessed stop, for the README", async ({ page, ba
   await scrubber.blur();
   await waitForFirstPaint(page);
   // Spec cemetery-undead-2, Deliberate test change 10: the picture is taken at the 00:21 UTC Stop with nothing
-  // hovered (K2d fix 1, item 8 opened the axios tooltip here), so the grave shows its Halo with the Burst caption.
+  // hovered (K2d fix 1, item 8 opened the axios tooltip here), so the grave shows its Halo.
   await page.mouse.move(1, 899);
   await expect(page.getByRole("tooltip")).toHaveCount(0);
-  // Spec cemetery-undead-2, Deliberate test change 7 (an addition): the Burst's caption shows, and under Reduced
-  // motion its final pose, the still open grave with the zombie standing, is drawn at once.
-  await expect(page.locator(".burst-caption")).toHaveText("The wind stops. A grave opens.");
+  // Spec cemetery-undead-2, Deliberate test change 7: under Reduced motion the Burst's final pose, the still open
+  // grave with the zombie standing, is drawn at once. Spec clean-site, task 2.2: with no caption (4.5).
+  await expect(page.locator(".burst-caption")).toHaveCount(0);
   const graveBox = await grave.boundingBox();
   const skin = await page.evaluate((b) => {
     const canvas = document.querySelector("canvas") as HTMLCanvasElement;
@@ -242,7 +234,7 @@ test("loads the fonts from /fonts on the page origin and makes no request to ano
   const fonts = requests.filter((u) => u.endsWith(".woff2")).map((u) => new URL(u).pathname);
   expect(fonts.length).toBeGreaterThan(0);
   for (const f of fonts) expect(f).toMatch(/^\/fonts\/[a-z0-9-]+\.woff2$/);
-  expect(await page.evaluate(() => document.fonts.check('16px "Instrument Sans"'))).toBe(true);
+  expect(await page.evaluate(() => document.fonts.check("16px Inter"))).toBe(true);
 });
 
 // K2d fix 1, item 7: a Character is drawn on a Possessed and on a Dead grave (spec cemetery-undead, requirement 3).

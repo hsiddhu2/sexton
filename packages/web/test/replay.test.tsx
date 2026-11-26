@@ -186,7 +186,8 @@ describe("the replay through the scrubber (requirement 20)", () => {
     }
   });
 
-  it("shows the version, state and reason of each Stop in the grave name, tooltip and drawer", async () => {
+  // Spec clean-site, task 2.1: the tooltip half went with the tooltip (4.1); the drawer half stays.
+  it("shows the version, state and reason of each Stop in the grave name and drawer", async () => {
     for (const id of REPLAY_IDS) {
       const { container } = mount(`?replay=${id}`);
       await ready();
@@ -195,15 +196,6 @@ describe("the replay through the scrubber (requirement 20)", () => {
         expect(slider().getAttribute("aria-valuetext")).toBe(STOP_TEXT[id][i]);
         expect(label(container)).toBe(`${id} ${expected.version}, ${expected.state}`);
         expect(label(container)).not.toContain("not yet published");
-        fireEvent.pointerEnter(grave(container));
-        const tooltip = screen.getByRole("tooltip");
-        const tip = tooltip.textContent ?? "";
-        // K2d fix 1, Deliberate test change 28: the version shows once, in the "Here lies" line; the State line is the State.
-        expect(tooltip.querySelector(".epitaph-line")?.textContent).toBe(`Here lies ${id} ${expected.version}`);
-        expect(tooltip.querySelector(".tooltip-state")?.textContent).toBe(expected.state);
-        expect(tip).not.toContain(`${expected.version}, ${expected.state}`);
-        expect(tip).toContain(expected.reason);
-        fireEvent.pointerLeave(grave(container));
       }
       for (const [i, expected] of EXPECTED_SEGMENTS[id].entries()) {
         move(i);
@@ -217,18 +209,19 @@ describe("the replay through the scrubber (requirement 20)", () => {
     }
   });
 
-  it("names the provenance regression at axios 1.14.1 and the new install script at keyv 6.0.0 in the tooltip", async () => {
+  // Spec clean-site, task 2.1: read from the drawer's State line now that the tooltip is gone (4.1).
+  it("names the provenance regression at axios 1.14.1 and the new install script at keyv 6.0.0 in the drawer", async () => {
     const axios = mount("?replay=axios");
     await ready();
     move(1);
-    fireEvent.pointerEnter(grave(axios.container));
-    expect(screen.getByRole("tooltip").textContent).toContain("provenance regression");
+    fireEvent.click(grave(axios.container));
+    expect(screen.getByRole("dialog").querySelector(".drawer-asof")?.textContent).toContain("provenance regression");
     cleanup();
     const keyv = mount("?replay=keyv");
     await ready();
     move(1);
-    fireEvent.pointerEnter(grave(keyv.container));
-    expect(screen.getByRole("tooltip").textContent).toContain("install script added in 6.0.0");
+    fireEvent.click(grave(keyv.container));
+    expect(screen.getByRole("dialog").querySelector(".drawer-asof")?.textContent).toContain("install script added in 6.0.0");
   });
 
   it("opens each replay at its first Stop with the first row of its table (spec cemetery-time-fixes, 3.1)", async () => {

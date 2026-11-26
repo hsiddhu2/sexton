@@ -5,8 +5,6 @@ import { hasGhost } from "../scene/layout.js";
 import { formAt, timelineOf } from "../time/form-at.js";
 import { stopsFor } from "../time/stops.js";
 
-export const BURST_CAPTION = "The wind stops. A grave opens.";
-
 /** The Burst Stop in ms, or null for a scan that is not a replay, or a replay with no Possessed Stop. */
 export function burstStopFor(response: ScanResponse, order: readonly PackageHealth[]): number | null {
   if (response.replay === undefined || order.length !== 1) return null;

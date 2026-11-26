@@ -5,7 +5,7 @@ import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { App } from "../src/App.js";
 import { validateScanResponse } from "../src/load/validate-scan-response.js";
-import { BURST_CAPTION, burstStopFor } from "../src/replay/burst-stop.js";
+import { burstStopFor } from "../src/replay/burst-stop.js";
 import { REPLAY_IDS, replayAddress } from "../src/replay/replay-ids.js";
 import { ART_BOX } from "../src/scene/art-box.js";
 import { BURST_MS, BURST_PARTICLES, burstFrame, FINAL_POSE, particleAt } from "../src/scene/burst.js";
@@ -135,33 +135,21 @@ describe("the Burst Stop (requirement 9.4)", () => {
     expect(burstStopFor(plain as ScanResponse, triageOrder(axios.report.packages))).toBeNull();
   });
 
-  it("shows the caption at the Burst Stop only, again on each arrival", async () => {
+  // Spec clean-site, task 2.2 (4.5): the Burst plays without its caption; the caption and Bubble cases went with them.
+  it("shows no caption at the Burst Stop or on any other Stop", async () => {
     mount("?replay=axios");
     await waitFor(() => {
       expect(screen.queryByRole("status")).toBeNull();
     });
     const min = Number(slider().min);
-    expect(document.querySelector(".burst-caption")).toBeNull();
-    fireEvent.change(slider(), { target: { value: String(min + 1) } });
-    expect(document.querySelector(".burst-caption")?.textContent).toBe(BURST_CAPTION);
-    expect(document.querySelector(".burst-caption")?.getAttribute("role")).toBeNull();
-    fireEvent.change(slider(), { target: { value: String(min + 2) } });
-    expect(document.querySelector(".burst-caption")).toBeNull();
-    fireEvent.change(slider(), { target: { value: String(min + 1) } });
-    expect(document.querySelector(".burst-caption")?.textContent).toBe(BURST_CAPTION);
+    for (const step of [0, 1, 2, 1]) {
+      fireEvent.change(slider(), { target: { value: String(min + step) } });
+      expect(document.querySelector(".burst-caption")).toBeNull();
+      expect(document.body.textContent).not.toContain("The wind stops");
+    }
   });
 
-  it("shows no Bubble while the Burst caption shows (spec cemetery-undead-fixes, decision 5)", async () => {
-    mount("?replay=axios");
-    await waitFor(() => {
-      expect(screen.queryByRole("status")).toBeNull();
-    });
-    fireEvent.change(slider(), { target: { value: String(Number(slider().min) + 1) } });
-    expect(document.querySelector(".burst-caption")?.textContent).toBe(BURST_CAPTION);
-    expect(document.querySelector(".bubble")).toBeNull();
-  });
-
-  it("shows the caption with the final pose at once under Reduced motion", async () => {
+  it("shows the final pose at once under Reduced motion, with no caption", async () => {
     setMedia("(prefers-reduced-motion: reduce)", true);
     try {
       mount("?replay=axios");
@@ -169,7 +157,7 @@ describe("the Burst Stop (requirement 9.4)", () => {
         expect(screen.queryByRole("status")).toBeNull();
       });
       fireEvent.change(slider(), { target: { value: String(Number(slider().min) + 1) } });
-      expect(document.querySelector(".burst-caption")?.textContent).toBe(BURST_CAPTION);
+      expect(document.querySelector(".burst-caption")).toBeNull();
     } finally {
       setMedia("(prefers-reduced-motion: reduce)", false);
     }

@@ -16,3 +16,19 @@ Notes:
 6. The 300-character input cap counts leading and trailing spaces. Harmless: the longest valid canonical URL is 159 characters.
 
 Gates after the fix: typecheck, lint (zero warnings) and test pass; 2259 tests across 6 workspaces.
+
+## Task 2
+
+Remove the noise (2.1 to 2.3): the grave tooltip, speech Bubbles, the guide card, the Fix-first line, Serious mode, Punchlines, sound (engine, voices, toggle, the burial bell and every other call), the Burst caption and the four old fonts, with their code, styles, stored values and tests. Interface text and canvas name labels are in Inter, the wordmark and headlines in Cormorant Garamond, code in the system monospace stack.
+
+Independent review before the commit. Verdict: ready. No defect found: no leftover reference to removed code in src, test, e2e or the configs, no test asserting the opposite of its requirement, the Priest's drawing unchanged, the CSP's `font-src 'self'` matching the two font files, every changed file in the lane.
+
+Notes:
+
+1. The deleted Guide axe case in `judge.spec.ts` also held the only real-browser axe run of the page. Fixed before the commit: kept as its own case on the demo.
+2. The Lantern glow logic moved into GraveButtons had no direct test. Fixed before the commit: `lantern.test.tsx` covers hover, key-driven focus, a pointer focus, hover over focus and the open drawer.
+3. 5.5 is not met yet for the drawer title's version and the signal keys; 5.6 may not be met for the drawer's "Here lies" colour. Both wait for the Drawer and Panel rebuild and are recorded in design.md.
+4. With the pointer resting on a grave while the drawer opens and closes, nothing is lit until the pointer leaves and comes back. This matches the old tooltip reset.
+5. 4.3 and 4.4 are checked only in e2e (no AudioContext, no audio element) and by the absence of the code. A jsdom spy test could follow in task 12.
+6. README.md, CREDITS.md, docs/requirements.md R-UI-8 and the README test still name the old Guide steps, sound or fonts; the infra cache-header tests use an old font path as a sample string. Task 12, or outside the lane, as recorded.
+

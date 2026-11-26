@@ -1,4 +1,5 @@
-// Spec cemetery-undead-fixes: browser checks of bugs 1 and 2.
+// Spec cemetery-undead-fixes: browser checks of bugs 1 and 2. Spec clean-site, task 2.1: the two tooltip cases went
+// with the tooltip (4.1).
 import { existsSync } from "node:fs";
 import { chromium, expect, test, type Page } from "@playwright/test";
 import { BUDGET_MS } from "./budget.js";
@@ -34,7 +35,8 @@ test("bug 1: the Halo is not cut in the empty corners of the selected replay gra
   await slider.press("ArrowRight");
   await slider.blur();
   await page.mouse.move(1, 899);
-  await expect(page.locator(".burst-caption")).toBeVisible();
+  // Spec clean-site, task 2.2: the Burst Stop is known by the grave's name now that the caption is gone (4.5).
+  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.1, Possessed");
   await page.waitForFunction(() => (window as unknown as HookWindow).__sextonTiming !== undefined);
   const box = await grave.boundingBox();
   expect(box).not.toBeNull();
@@ -138,63 +140,4 @@ test("judge-path 5.1: a cold Halo repaint with 300 front-row graves stays inside
   const median = ((sorted[14] ?? 0) + (sorted[15] ?? 0)) / 2;
   console.log(`median repaint with a cold Halo layer and sources, 300 front-row graves: ${median.toFixed(2)} ms (budget ${String(BUDGET_MS)} ms)`);
   expect(median).toBeLessThanOrEqual(BUDGET_MS);
-});
-
-test("bug 3: a tooltip that opens above its grave stays while the pointer is over it, and keeps its grave", async ({ page, baseURL }) => {
-  await sameOriginOnly(page, baseURL);
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto("/");
-  const grave = page.locator('button[data-grave-index][aria-label^="left-padder"]');
-  await grave.hover();
-  const tip = page.getByRole("tooltip");
-  await expect(tip).toContainText("left-padder");
-  const t = await tip.boundingBox();
-  const g = await grave.boundingBox();
-  expect(t).not.toBeNull();
-  expect(g).not.toBeNull();
-  if (t === null || g === null) return;
-  // At 1280 px the right place would cover event-stream's name, so the tooltip opens above left-padder.
-  expect(t.y + t.height).toBeLessThanOrEqual(g.y);
-  await page.mouse.move(t.x + t.width / 2, t.y + t.height / 2);
-  await page.waitForTimeout(400);
-  await expect(tip).toContainText("left-padder");
-  await page.mouse.move(2, 2);
-  await page.waitForTimeout(400);
-  await expect(tip).toHaveCount(0);
-});
-
-test("review: a tooltip over its own grave stays when the pointer goes back from the tooltip to the grave", async ({ page, baseURL }) => {
-  await sameOriginOnly(page, baseURL);
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/");
-  const grave = page.locator('button[data-grave-index][aria-label^="event-stream"]');
-  // Spec judge-path, Deliberate test change 11: the scene sizes itself after the fonts and the header settle, so the
-  // web fonts are awaited and the grave's box is read once it has stopped moving; an early box put the pointer off the
-  // grave, or under the Footer bar while the fallback text made the header taller (2 runs in 10 locally, every CI run).
-  await page.evaluate(() => document.fonts.ready.then(() => undefined));
-  let g = await grave.boundingBox();
-  await expect
-    .poll(async () => {
-      const now = await grave.boundingBox();
-      const same = now !== null && g !== null && now.x === g.x && now.y === g.y && now.width === g.width && now.height === g.height;
-      g = now;
-      return same;
-    })
-    .toBe(true);
-  expect(g).not.toBeNull();
-  if (g === null) return;
-  // Enter the grave low down, below where its tooltip opens over it.
-  await page.mouse.move(g.x + g.width / 2, g.y + g.height - 10);
-  const tip = page.getByRole("tooltip");
-  await expect(tip).toContainText("event-stream");
-  const t = await tip.boundingBox();
-  expect(t).not.toBeNull();
-  if (t === null) return;
-  await page.mouse.move(t.x + t.width / 2, t.y + t.height / 2);
-  await page.waitForTimeout(300);
-  await page.mouse.move(g.x + g.width / 2, g.y + g.height - 10);
-  await page.waitForTimeout(400);
-  await expect(tip).toContainText("event-stream");
 });

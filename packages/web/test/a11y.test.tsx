@@ -79,11 +79,12 @@ describe("axe-core, wcag2a/aa and wcag21a/aa, color-contrast off (Requirement 10
     expect(await violations()).toEqual([]);
   });
 
-  it("has no violations with a grave focused and its tooltip shown", async () => {
+  // Spec clean-site, task 2.1: the tooltip is gone (4.1), so a focused grave shows none.
+  it("has no violations with a grave focused", async () => {
     const { container } = mount();
     await ready();
     fireEvent.focus(container.querySelector("button[data-grave-index]") as HTMLElement);
-    expect(container.querySelector('[role="tooltip"]')).not.toBeNull();
+    expect(container.querySelector('[role="tooltip"]')).toBeNull();
     expect(await violations()).toEqual([]);
   });
 
@@ -168,20 +169,21 @@ describe("keyboard reach (Requirement 10.5)", () => {
     // Spec cemetery-undead, Deliberate test change 17: the header, then the roving grave, then the Footer bar: Play,
     // History date and the two Replay buttons. Spec cemetery-undead-2, Deliberate test change 2: Sound is now a stop
     // after Scan, so 12 presses and the grave at position 7. Spec judge-path, Deliberate test change 1: Guide after
-    // Legend, then the Fix-first button at the header's foot, so 14 presses and the grave at position 9.
+    // Legend, then the Fix-first button at the header's foot, so 14 presses and the grave at position 9. Spec
+    // clean-site, task 2: Sound, Serious mode, Guide and Fix first are gone, so 10 presses and the grave at position 5.
     const seen: string[] = [];
     const reached: HTMLElement[] = [];
-    for (let i = 0; i < 14; i += 1) {
+    for (let i = 0; i < 10; i += 1) {
       await user.tab();
       const el = document.activeElement as HTMLElement;
       reached.push(el);
       seen.push(el.getAttribute("aria-label") ?? (el.textContent === "" ? el.getAttribute("name") : el.textContent) ?? el.tagName);
     }
-    expect(seen.slice(0, 9)).toEqual(["Download evidence pack as JSON", "Download evidence pack as Markdown", "repo", "Scan", "Sound off", "Serious mode", "Legend", "Guide", "Fix first: left-padder 1.2.1, Possessed, maintainer change in the last 90 days"]);
+    expect(seen.slice(0, 5)).toEqual(["Download evidence pack as JSON", "Download evidence pack as Markdown", "repo", "Scan", "Legend"]);
     const first = container.querySelector<HTMLElement>('button[data-grave-index][tabindex="0"]');
     expect(first).not.toBeNull();
-    expect(reached[9]).toBe(first);
-    expect(seen.slice(10)).toEqual(["Play", "History date", "axios, Mar 2026", "keyv, Aug 2026"]);
+    expect(reached[5]).toBe(first);
+    expect(seen.slice(6)).toEqual(["Play", "History date", "axios, Mar 2026", "keyv, Aug 2026"]);
     // The roving stop is the only grave in the tab sequence.
     expect(container.querySelectorAll('button[data-grave-index]:not([tabindex="-1"])')).toHaveLength(1);
   });
@@ -250,9 +252,6 @@ describe("focus indicator (Requirement 10.7)", () => {
       ".legend-toggle:focus-visible",
       ".scrub input:focus-visible",
       ".scrub-play:focus-visible",
-      ".serious-toggle:focus-visible",
-      // Spec cemetery-undead-2, Deliberate test change 3.
-      ".sound-toggle:focus-visible",
       ".replay-button:focus-visible",
       ".repo-form button:focus-visible",
       ".repo-form input:focus-visible",

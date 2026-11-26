@@ -37,13 +37,13 @@ Run-time notes:
   - [x] 1.8 Add the chrome tokens to `scene/palette.ts` with contrast and accent-to-Restless tests; copy the Inter and Cormorant Garamond woff2 files and their OFL files into `public/fonts`
     - _Requirements: 5.4, 5.6, 5.7, 5.8, 5.9, 5.10_
 
-- [ ] 2. Remove the noise
+- [x] 2. Remove the noise
   - _Requirements: 4.1 to 4.6, 5.1 to 5.3, 5.5_
-  - [ ] 2.1 Remove the grave tooltip, speech bubbles, the guide card, the Fix-first line, Serious mode and Punchlines, with their code, styles and tests
+  - [x] 2.1 Remove the grave tooltip, speech bubbles, the guide card, the Fix-first line, Serious mode and Punchlines, with their code, styles and tests
     - _Requirements: 4.1, 4.4, 4.6_
-  - [ ] 2.2 Remove the sound engine, voices, the Sound toggle and every sound call (the burial bell included), with their tests; drop the Burst caption and keep the animation
+  - [x] 2.2 Remove the sound engine, voices, the Sound toggle and every sound call (the burial bell included), with their tests; drop the Burst caption and keep the animation
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
-  - [ ] 2.3 Remove Pirata One, IM Fell English, IM Fell English SC and Instrument Sans with their OFL files; set the interface and the canvas labels in Inter, the wordmark and headlines in Cormorant Garamond, and code text in the system monospace stack
+  - [x] 2.3 Remove Pirata One, IM Fell English, IM Fell English SC and Instrument Sans with their OFL files; set the interface and the canvas labels in Inter, the wordmark and headlines in Cormorant Garamond, and code text in the system monospace stack
     - _Requirements: 5.1, 5.2, 5.3, 5.5_
 
 - [ ] 3. The shell: header, Home, Panel and footers

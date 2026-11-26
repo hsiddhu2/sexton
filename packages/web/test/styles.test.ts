@@ -23,7 +23,7 @@ function rulesFor(selector: string): Rule[] {
 describe("styles.css static checks", () => {
   it("wraps long text with overflow-wrap: anywhere", () => {
     expect(css).toMatch(/overflow-wrap:\s*anywhere/);
-    for (const selector of [".repo-text", ".grave-tooltip", ".drawer h2", ".pr-preview"]) {
+    for (const selector of [".repo-text", ".drawer h2", ".pr-preview"]) {
       expect(rulesFor(selector).some((r) => /overflow-wrap:\s*anywhere/.test(r.body)), selector).toBe(true);
     }
   });

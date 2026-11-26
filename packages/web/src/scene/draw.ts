@@ -74,8 +74,6 @@ const LANTERN_RADIUS = 0.6;
 const GHOST_DRAW_SCALE = 2;
 const MIN_NAME_PX = 12;
 const INSCRIPTION_UNITS_PX = 15;
-/** The family part of the inscription font, so the name has one source. */
-const NAME_FAMILY = GRAVE_GEOMETRY.inscription.font.replace(/^\d+px /, "");
 /** The side face of a stone: its outline again, this far right and up in shape units, shaded with SHADOW_ALPHA_BYTE. */
 /** The ghost is drawn this far from its planned point, in cell units, so it floats over the top of its stone. */
 const GHOST_SHIFT_X = -4;
@@ -914,7 +912,7 @@ export function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan
   if (grave.inscription !== null) {
     ctx.fillStyle = colours.ink;
     // The name stays at least MIN_NAME_PX on screen whatever the Tier scale (critic round 5).
-    ctx.font = scale >= 1 ? g.inscription.font : `${String(Math.max(INSCRIPTION_UNITS_PX, Math.round(MIN_NAME_PX / scale)))}px ${NAME_FAMILY}`;
+    ctx.font = scale >= 1 ? g.inscription.font : g.inscription.font.replace(/\d+px/, `${String(Math.max(INSCRIPTION_UNITS_PX, Math.round(MIN_NAME_PX / scale)))}px`);
     ctx.textAlign = "center";
     ctx.fillText(grave.inscription, g.inscription.x, g.inscription.baseline, g.inscription.maxWidth);
   }

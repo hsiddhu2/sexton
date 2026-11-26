@@ -1,7 +1,6 @@
 // jsdom stubs: canvas 2D context, Path2D, matchMedia, ResizeObserver, requestAnimationFrame.
 import { afterEach, beforeEach } from "vitest";
 import { setLoadMomentPlayedForTests } from "../src/scene/load-moment.js";
-import { setGuideAllowedForTests } from "../src/guide/guide-pref.js";
 
 export interface CanvasCall {
   readonly method: string;
@@ -132,9 +131,6 @@ beforeEach(() => {
   // The Load moment (spec cemetery-undead-2, B5) counts as played, so existing tests see the scene at rest. Its own
   // tests clear this.
   setLoadMomentPlayedForTests(true);
-  // The Guide (spec judge-path, requirement 1) never opens by itself, so existing tests see the page without it. Its
-  // own tests allow it.
-  setGuideAllowedForTests(false);
   install();
 });
 

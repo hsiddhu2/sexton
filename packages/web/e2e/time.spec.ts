@@ -139,8 +139,10 @@ test("the axios replay shows Alive 1.14.0, then Possessed 1.14.1, then Alive 1.1
   await expect(grave).not.toHaveAttribute("aria-label", /not yet published/);
   await scrubber.press("ArrowRight");
   await expect(grave).toHaveAttribute("aria-label", "axios 1.14.1, Possessed");
-  await grave.hover();
-  await expect(page.getByRole("tooltip")).toContainText("provenance regression");
+  // Spec clean-site, task 2.1: the reason is read from the drawer's State line now that the tooltip is gone (4.1).
+  await grave.click();
+  await expect(page.locator(".drawer-asof")).toContainText("provenance regression");
+  await page.keyboard.press("Escape");
   await scrubber.press("ArrowRight");
   await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
 });
@@ -156,8 +158,9 @@ test("the keyv replay shows Alive 5.6.0, then Possessed 6.0.0 at its end, and a 
   await expect(grave).toHaveAttribute("aria-label", "keyv 5.6.0, Alive");
   await expect(grave).not.toHaveAttribute("aria-label", /not yet published/);
   await scrubber.press("End");
-  await grave.hover();
-  await expect(page.getByRole("tooltip")).toContainText("install script added in 6.0.0");
+  await grave.click();
+  await expect(page.locator(".drawer-asof")).toContainText("install script added in 6.0.0");
+  await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "axios, Mar 2026" }).click();
   await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
   await expect(page.locator('[role="note"]')).toContainText("axios");
@@ -208,7 +211,7 @@ test("at 1440 by 900 on the demo the canvas top is at most 190, with the header 
   expect(canvas.y).toBeLessThanOrEqual(190);
   expect(Math.round(footer.y + footer.height)).toBe(900);
   const middle = (b: { y: number; height: number }) => b.y + b.height / 2;
-  const controls = await Promise.all([".repo-form", ".sound-toggle", ".serious-toggle", ".legend-toggle"].map(box));
+  const controls = await Promise.all([".repo-form", ".legend-toggle"].map(box));
   for (const c of controls) expect(Math.abs(middle(c) - middle(controls[0] ?? c))).toBeLessThan(12);
   const parts = await Promise.all(["button.scrub-play", "label[for=history-date]", ".scrub-date", "#history-date"].map(box));
   for (const p of parts) expect(Math.abs(middle(p) - middle(parts[0] ?? p))).toBeLessThan(12);
