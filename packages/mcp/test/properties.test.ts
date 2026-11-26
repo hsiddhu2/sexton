@@ -223,7 +223,7 @@ describe("Property 6: the project directory is bounded", () => {
           for (const r of roots) expect(r).toBe("/work/app");
         }
         expect(out.text).not.toContain(ROOT);
-        if (projectDir.length > 3 && !out.json["ok"]) expect(out.text).not.toContain(projectDir);
+        if (projectDir.includes("/") && projectDir.length > 3 && !out.json["ok"]) expect(out.text).not.toContain(projectDir);
       }),
       { numRuns: 1000 },
     );

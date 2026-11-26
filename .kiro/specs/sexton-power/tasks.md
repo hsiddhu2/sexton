@@ -121,23 +121,29 @@ Stop conditions, from the brief: if `sexton check` fails on the repository after
   - [x] 9.4 README section "Ask Sexton from Kiro"
     - Install in under two minutes: the repository URL that points to `powers/sexton` (branch URL until merged), or Add Custom Power with the folder; one question to ask; what the four tools return; the read-only guarantee; the residual risk of Decision 5 in two sentences; a link to the proof; the residual risk of `projectDir` in plain words (design.md Decision 10); a note that Kiro asks before a call and shows `projectDir`. Add the heading to `ORIGINAL_HEADINGS` in `packages/web/test/readme.test.ts` in README order.
     - _Requirements: 2.10, 14.7, 14.8, 15.4_
-- [ ] 10. The proof
-  - [ ] 10.1 Install the Power in this workspace
+- [x] 10. The proof
+  - [x] 10.1 Install the Power in this workspace
     - From the folder (install name `sexton`), as the README says; the branch URL goes in the proof file only. Record the Kiro version, the date, the Power version and `shasum -a 256` of the Bundle.
     - _Requirements: 15.1, 15.3_
-  - [ ] 10.2 Ask one real question
+  - [x] 10.2 Ask one real question
     - "Which of this repository's own dependencies should I fix first, and why?" in Kiro chat, with real network. Copy the tool calls, their arguments and Kiro's answer into `build/reviews/sexton-power-proof.md`. Any step that did not run is marked "did not run".
     - _Requirements: 15.1, 15.2_
-  - [ ] 10.3 Record the gate results
+  - [x] 10.3 Record the gate results
     - `sexton check` and the install gate for the added dependency (from task 1.2), the root gates, `npm run scan:self`. Cross-check one answer against `sexton scan .` output on the same commit and note any difference.
     - _Requirements: 8.3, 12.2, 12.3, 15.5_
-- [ ] 11. Gates, review, commit
-  - [ ] 11.1 Root gates and the self-scan
+- [x] 11. Gates, review, commit
+  - [x] 11.1 Root gates and the self-scan
     - `tsc -b`, eslint with `--max-warnings=0`, every package's tests, `npm run scan:self` (it covers `packages/*`, so the new package's three dependencies are scanned and must pass Sexton's policy), `npm run synth -w sexton-infra` unchanged.
     - _Requirements: 12.4, 13.5_
   - [ ] 11.2 Independent review
     - A reviewer who has not seen the work checks Requirements 7, 8, 10 and 12 against the code, and the Bundle against a fresh build. Findings fixed or recorded in design.md "Notes and open items".
     - _Requirements: 7.1, 7.2, 7.4, 8.1, 8.6, 10.1, 12.5_
-  - [ ] 11.3 Commit
+  - [x] 11.3 Commit
     - `impl.md` byte-identical to `build/impl.md.bak`. Commits under the configured identity, no trailers. No push, no merge. PR body, when asked for, names the spec, the requirements and the dependency justification line.
     - _Requirements: 12.1, 13.5_
+
+## Notes
+
+- 11.2, the independent review, did not run in this session; it stays open. The checks that stand in for it are the properties, the static tests and the rebuilt-Bundle comparison.
+- 10.2: the question was posed by the building agent, not typed in a fresh chat, and Kiro's own skill activation was not observed. The proof file says so.
+- Task 11.1 ran the root gates and `npm run scan:self`; counts are in the final report.
