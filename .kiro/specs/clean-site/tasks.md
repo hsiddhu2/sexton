@@ -18,23 +18,23 @@ Run-time notes:
 
 ## Tasks
 
-- [ ] 1. Foundations: tokens, fonts, carried address code and pure models
+- [x] 1. Foundations: tokens, fonts, carried address code and pure models
   - _Requirements: 1.11, 1.12, 2.1 to 2.3, 2.13 to 2.15, 3.9, 3.10, 3.11, 3.18, 3.19, 3.22, 5.4, 5.6 to 5.10, 6.2 to 6.5, 6.7, 6.11, 10.2, 10.3, 10.5, 10.6, 10.9, 10.14, 11.1, 11.6 to 11.8, 12.2 to 12.4, 17.1 to 17.4_
-  - [ ] 1.1 Check out `load/view-address.ts`, `load/page-history.ts`, `load/scanned-pref.ts` and `test/view-address.test.ts` from spec/calm-first-visit; add `page`, `list` and the canonical form; extend the round-trip test (Property 2)
+  - [x] 1.1 Check out `load/view-address.ts`, `load/page-history.ts`, `load/scanned-pref.ts` and `test/view-address.test.ts` from spec/calm-first-visit; add `page`, `list` and the canonical form; extend the round-trip test (Property 2)
     - _Requirements: 10.5, 10.6, 10.9_
-  - [ ] 1.2 Add `load/screen-state.ts` (`reduce`, `homeOf`) with Property 1
+  - [x] 1.2 Add `load/screen-state.ts` (`reduce`, `homeOf`) with Property 1
     - _Requirements: 17.1, 17.2, 17.3, 17.4, 10.2, 10.3, 10.14_
-  - [ ] 1.3 Add `header/repo-input.ts` with Property 3
+  - [x] 1.3 Add `header/repo-input.ts` with Property 3
     - _Requirements: 1.11, 1.12_
-  - [ ] 1.4 Add `panel/reason-family.ts` with `test/fixtures/engine-reasons.json`, the web check and the api drift test; add `panel/pick-signals.ts`
+  - [x] 1.4 Add `panel/reason-family.ts` with `test/fixtures/engine-reasons.json`, the web check and the api drift test; add `panel/pick-signals.ts`
     - _Requirements: 3.9, 3.10, 3.11_
-  - [ ] 1.5 Add `panel/fix-order.ts` (Property 4), `home/headline.ts`, `home/notices.ts` and `home/list-rows.ts` (Property 5)
+  - [x] 1.5 Add `panel/fix-order.ts` (Property 4), `home/headline.ts`, `home/notices.ts` and `home/list-rows.ts` (Property 5)
     - _Requirements: 2.1, 2.2, 2.3, 2.13, 2.14, 2.15, 3.18, 3.19, 3.22, 6.2 to 6.5, 6.7, 6.11_
-  - [ ] 1.6 Add `glossary/glossary.ts` and `glossary/TermText.tsx` with Property 6
+  - [x] 1.6 Add `glossary/glossary.ts` and `glossary/TermText.tsx` with Property 6
     - _Requirements: 11.1, 11.6, 11.7, 11.8_
-  - [ ] 1.7 Export the `ApiErrorCode` type from `contract.ts`; mirror the list in `load/lists.ts` with its drift test; add `load/scan-failure.ts` and the bounded code reader (Property 7)
+  - [x] 1.7 Export the `ApiErrorCode` type from `contract.ts`; mirror the list in `load/lists.ts` with its drift test; add `load/scan-failure.ts` and the bounded code reader (Property 7)
     - _Requirements: 12.2, 12.3, 12.4_
-  - [ ] 1.8 Add the chrome tokens to `scene/palette.ts` with contrast and accent-to-Restless tests; copy the Inter and Cormorant Garamond woff2 files and their OFL files into `public/fonts`
+  - [x] 1.8 Add the chrome tokens to `scene/palette.ts` with contrast and accent-to-Restless tests; copy the Inter and Cormorant Garamond woff2 files and their OFL files into `public/fonts`
     - _Requirements: 5.4, 5.6, 5.7, 5.8, 5.9, 5.10_
 
 - [ ] 2. Remove the noise

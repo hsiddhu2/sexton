@@ -50,6 +50,9 @@ export type { PackageJsonEdit, PrIntent, RemediationEntry, RemediationKind, Reme
 export { REMEDIATION_KINDS, REMEDIATION_STATUSES } from "@sexton/engine";
 export type RemediationStatusList = typeof REMEDIATION_STATUSES;
 
+// Spec clean-site, design C10: the API's error codes, as a type only, so web can mirror the list and match a code.
+export type { ApiErrorCode } from "./http/responses.js";
+
 // The evidence pack lives in the engine (spec evidence-pack, decision 2); the contract re-exports it.
 export type { EvidencePack, EvidenceBody, EvidenceIntegrity, EvidenceScan, EvidencePlan, CycloneDxBom } from "@sexton/engine";
 

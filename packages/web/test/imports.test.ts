@@ -84,7 +84,13 @@ describe("static checks over packages/web/src", () => {
     // One exception, spec remediate design decision 14: the pull request link prefix, which only checks a URL
     // before it is shown as a link. No request goes to it; fetch is only called with the API base.
     const PR_PREFIX_LINE = 'export const PR_PREFIX = "https://github.com/hsiddhu2/sexton-demo/pull/";';
-    const text = (f: { rel: string; text: string }) => (f.rel === "load/remediate-client.ts" ? f.text.replace(PR_PREFIX_LINE, "") : f.text);
+    // Spec clean-site, design C2 and 12.2: header/repo-input.ts reads a github.com link typed into the Scan field and
+    // writes the canonical https://github.com/owner/name that is sent only as the repo= value to the API base; the
+    // failure cards in load/scan-failure.ts ask for "a github.com link". Only that host name is allowed there, and
+    // neither file calls fetch (the check above).
+    const READS_LINKS = new Set(["header/repo-input.ts", "load/scan-failure.ts"]);
+    const text = (f: { rel: string; text: string }) =>
+      READS_LINKS.has(f.rel) ? f.text.replace(/(?<![\w.])github(\\)?\.com(?![\w.-])/g, "") : f.rel === "load/remediate-client.ts" ? f.text.replace(PR_PREFIX_LINE, "") : f.text;
     expect(FILES.filter((f) => re.test(text(f))).map((f) => f.rel)).toEqual([]);
     expect(FILES.find((f) => f.rel === "load/remediate-client.ts")?.text).toContain(PR_PREFIX_LINE);
   });
