@@ -1,4 +1,5 @@
 // The Scan field's example list (spec clean-site, design C2, requirement 1.9), headed "Try one".
+import { claim } from "../copy/claims.js";
 
 export const EXAMPLES_HEADING = "Try one";
 
@@ -10,7 +11,7 @@ export interface Example {
 }
 
 export const EXAMPLES: readonly Example[] = [
-  { repo: "hsiddhu2/sexton-demo", note: "pull requests work here", good: true },
+  { repo: "hsiddhu2/sexton-demo", note: claim("example.demo"), good: true },
   { repo: "expressjs/express", note: "a popular web framework", good: false },
   { repo: "facebook/react", note: "a large repo", good: false },
 ];

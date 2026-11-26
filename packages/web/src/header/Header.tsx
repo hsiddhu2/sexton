@@ -61,7 +61,7 @@ export function Header({ tag, theme, apiConfigured, fieldRef, popover, onPopover
           }}
         />
         {/* Music renders only when a track is set in the Track slot (1.15, task 10); none is set. */}
-        <button type="button" className="ib" onClick={onTour}>
+        <button type="button" className="ib" data-tour-button onClick={onTour}>
           <TourGlyph />
           <span className="ib-text">{TOUR_BUTTON_TEXT}</span>
         </button>

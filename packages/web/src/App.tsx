@@ -202,6 +202,8 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
       {welcome && !guide ? <WelcomeBar onGuide={openGuide} onClose={hideWelcome} /> : null}
       {guide ? (
         <GuidePage
+          theme={theme}
+          onTerm={onTerm}
           onHome={goHome}
           onAttack={() => {
             openReplay("axios");

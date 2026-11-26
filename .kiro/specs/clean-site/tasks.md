@@ -84,13 +84,13 @@ Run-time notes:
   - [x] 6.3 Build `replay/ReplayView.tsx`: breadcrumb, headline and sub-line, stage with the date badge and Burst, Step panel, Back and Next step, Why card, Footer bar with Play all, Step cards and Exit replay
     - _Requirements: 8.1 to 8.12, 8.16 to 8.22, 11.2_
 
-- [ ] 7. The Guide page, the Legend and the Tour
+- [x] 7. The Guide page, the Legend and the Tour
   - _Requirements: 9.1 to 9.4, 9.10, 9.11, 11.2, 13.1 to 13.12, 17.5_
-  - [ ] 7.1 Add the Claim registry `copy/claims.ts` and its README check and phrase scan (Property 9); build `guide/guide-content.ts` and `guide/GuidePage.tsx`
+  - [x] 7.1 Add the Claim registry `copy/claims.ts` and its README check and phrase scan (Property 9); build `guide/guide-content.ts` and `guide/GuidePage.tsx`
     - _Requirements: 9.1 to 9.4, 9.10, 11.2, 17.5_
-  - [ ] 7.2 Make the Legend a Pop-over with its eight entries
+  - [x] 7.2 Make the Legend a Pop-over with its eight entries
     - _Requirements: 13.1, 13.2, 13.11, 13.12_
-  - [ ] 7.3 Build the Tour with `tour/place-card.ts` (Property 8, second half)
+  - [x] 7.3 Build the Tour with `tour/place-card.ts` (Property 8, second half)
     - _Requirements: 13.3 to 13.10_
 
 - [ ] 8. The way back

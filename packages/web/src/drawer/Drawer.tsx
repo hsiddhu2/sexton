@@ -3,6 +3,7 @@
 // one close button. Focus moves to the close button and stays inside; a press on the scrim closes it. The tab is the
 // Drawer's own state, so it never touches the address (10.16).
 import { useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { claim } from "../copy/claims.js";
 import type { Term } from "../glossary/glossary.js";
 import { TermText } from "../glossary/TermText.js";
 import { ScanTime } from "../header/ScanTime.js";
@@ -30,7 +31,7 @@ import { SIGNAL_LABELS } from "./signal-labels.js";
 export { OPEN_PR_TEXT } from "./fix-view.js";
 export const PR_LINK_TEXT = "View the pull request on GitHub";
 export const CEMETERY_CRUMB = "← Cemetery";
-export const EVIDENCE_NOTE = "Every signal carries its source and the time it was fetched.";
+export const EVIDENCE_NOTE = claim("drawer.evidence-note");
 
 export type DrawerTab = "evidence" | "fix" | "history";
 export const DRAWER_TABS: readonly { readonly id: DrawerTab; readonly label: string }[] = [

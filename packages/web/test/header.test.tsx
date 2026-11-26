@@ -271,7 +271,8 @@ describe("Header (spec clean-site, requirement 1)", () => {
     expect(panel.classList.contains("pop")).toBe(true);
     for (const state of ["Possessed", "Dead", "Haunted", "Restless", "Alive"]) expect(panel.textContent).toContain(state);
     expect(panel.textContent).toContain("one or more advisories");
-    expect(panel.querySelectorAll("svg").length).toBe(8);
+    // Each entry's grave is drawn by the scene painter into its own canvas (design C7).
+    expect(panel.querySelectorAll("canvas.grave-picture").length).toBe(8);
     fireEvent.click(toggle);
     expect(panel.hidden).toBe(true);
   });
@@ -366,19 +367,23 @@ describe("replay footer text", () => {
   });
 });
 
-// Spec cemetery-undead, 10.3: the Legend names each Form in words.
+// Spec cemetery-undead, 10.3: the Legend names each Form in words, now as each grave picture's accessible name.
 describe("Legend form words", () => {
   it("describes each Form next to its State", () => {
     render(<HeaderHarness />);
     fireEvent.click(screen.getByRole("button", { name: "Legend" }));
-    const panel = document.getElementById("legend-panel")?.textContent ?? "";
-    for (const words of [
+    const chips = [...document.querySelectorAll(".legend-chip")];
+    const words = chips.map((c) => `${c.querySelector(".badge, .legend-name")?.textContent ?? ""}: ${c.querySelector("canvas")?.getAttribute("aria-label") ?? ""}`);
+    expect(words).toEqual([
       "Possessed: open grave, a devil zombie dancing out",
       "Dead: cracked stone, a skeleton lounging",
       "Haunted: cross",
       "Restless: tilted stone, a hand clawing out",
       "Alive: rounded stone with a party hat",
-    ]) expect(panel).toContain(words);
-    expect(document.querySelectorAll(".legend-chip")).toHaveLength(8);
+      "Ghost: a ghost over a cross",
+      "Pennant: a pennant beside a rounded stone",
+      "Mound: an unmarked mound",
+    ]);
+    for (const c of chips) expect(c.querySelector("canvas")?.getAttribute("role")).toBe("img");
   });
 });

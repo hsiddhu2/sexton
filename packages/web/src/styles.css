@@ -431,7 +431,7 @@ a {
 .legend-panel {
   top: 44px;
   right: 0;
-  width: 340px;
+  width: min(380px, calc(100vw - 24px));
 }
 
 /* The Welcome bar, in the page flow under the header (9.9). */
@@ -1278,6 +1278,130 @@ a {
   font-size: 18px;
 }
 
+.guide-heading {
+  margin: 46px 0 12px;
+  font-size: 28px;
+}
+
+.guide-text,
+.guide-answer {
+  max-width: 700px;
+  margin: 0 0 12px;
+  color: var(--ui-text);
+  font-size: 15.5px;
+  line-height: 1.65;
+}
+
+.guide-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guide-step,
+.guide-qa {
+  padding: 18px;
+  border: 1px solid var(--ui-line);
+  border-radius: 12px;
+  background: var(--ui-panel);
+}
+
+.guide-step-label {
+  color: var(--ui-accent);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.guide-step-title,
+.guide-question {
+  margin: 6px 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.guide-step-text {
+  margin: 0;
+  color: var(--ui-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.guide-graves {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guide-grave {
+  display: grid;
+  grid-template-columns: 92px 110px 1fr;
+  gap: 14px;
+  align-items: center;
+  padding: 8px 16px;
+  border: 1px solid var(--ui-line);
+  border-radius: 12px;
+  background: var(--ui-panel);
+}
+
+.guide-grave .badge {
+  justify-self: start;
+}
+
+.guide-grave-meaning {
+  color: var(--ui-muted);
+  font-size: 14.5px;
+}
+
+.guide-qa {
+  margin-bottom: 10px;
+}
+
+.guide-question {
+  margin-top: 0;
+  font-size: 15.5px;
+}
+
+.guide-answer {
+  margin: 0;
+  color: var(--ui-muted);
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+
+.guide-answer code {
+  padding: 1px 6px;
+  border: 1px solid var(--ui-line);
+  border-radius: 5px;
+  background: var(--ui-bg2);
+  color: var(--ui-text);
+  font-size: 12.5px;
+}
+
+@media (max-width: 699px) {
+  .guide-headline {
+    font-size: 34px;
+  }
+
+  .guide-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .guide-grave {
+    grid-template-columns: 92px 1fr;
+  }
+
+  .guide-grave-meaning {
+    grid-column: 1 / -1;
+  }
+}
+
 .guide-buttons,
 .tour-buttons {
   display: flex;
@@ -1288,17 +1412,37 @@ a {
 
 .tour-card {
   position: fixed;
-  bottom: 24px;
-  left: 50%;
   z-index: 61;
   box-sizing: border-box;
-  width: min(320px, calc(100vw - 24px));
   padding: 18px;
   border: 1px solid var(--ui-line2);
   border-radius: 12px;
   background: var(--ui-panel2);
   box-shadow: 0 18px 50px var(--ui-bg);
-  transform: translateX(-50%);
+}
+
+/* The Tour's blocker takes every press outside the card; the dimming panels and the spotlight take none (13.5). */
+.tour-block {
+  position: fixed;
+  inset: 0;
+  z-index: 59;
+}
+
+.tour-dim {
+  position: fixed;
+  z-index: 60;
+  background: var(--ui-bg);
+  opacity: 0.74;
+  pointer-events: none;
+}
+
+.tour-spot {
+  position: fixed;
+  z-index: 60;
+  box-sizing: border-box;
+  border: 2px solid var(--ui-accent);
+  border-radius: 6px;
+  pointer-events: none;
 }
 
 .tour-title {
@@ -1437,56 +1581,37 @@ a {
   }
 }
 
-/* The Legend's contents. */
+/* The Legend's contents: each grave, its name and its meaning (13.1). */
 .legend-states {
   display: grid;
-  gap: 8px;
-  margin: 0 0 10px;
+  gap: 6px;
+  margin: 0 0 12px;
   padding: 0;
   list-style: none;
 }
 
 .legend-chip {
-  display: flex;
+  display: grid;
+  grid-template-columns: 52px 96px 1fr;
+  gap: 10px;
   align-items: center;
-  gap: 8px;
   color: var(--ui-muted);
   font-size: 12.5px;
+  line-height: 1.4;
 }
 
-.legend-shape {
-  flex: none;
-  fill: var(--muted);
+.legend-chip .badge,
+.legend-name {
+  justify-self: start;
 }
 
-.legend-shape-alive {
-  fill: var(--state-alive);
+.legend-name {
+  color: var(--ui-text);
+  font-weight: 600;
 }
 
-.legend-shape-restless {
-  fill: var(--state-restless);
-}
-
-.legend-shape-haunted {
-  fill: var(--state-haunted);
-}
-
-.legend-shape-dead {
-  fill: var(--state-dead);
-}
-
-.legend-shape-possessed {
-  fill: var(--state-possessed);
-}
-
-.legend-detail {
-  stroke: var(--ink);
-  stroke-width: 3;
-}
-
-.legend-ghost {
-  flex: none;
-  fill: var(--ghost);
+.grave-picture {
+  display: block;
 }
 
 .legend-triage {
@@ -2151,18 +2276,6 @@ pre.signal-value {
   border: 0;
   white-space: nowrap;
 }
-.legend-shape-pending {
-  fill: var(--border);
-}
-.legend-marker {
-  flex: none;
-  fill: var(--marker);
-}
 .scene-main {
   position: relative;
-}
-/* The open grave's lid lies off to the left of its box, as in the scene (K2d fix 1). */
-.legend-shape-possessed {
-  overflow: visible;
-  margin-left: 12px;
 }

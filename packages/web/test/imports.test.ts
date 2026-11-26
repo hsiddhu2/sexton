@@ -89,20 +89,22 @@ describe("static checks over packages/web/src", () => {
     // failure cards in load/scan-failure.ts ask for "a github.com link". Only that host name is allowed there, and
     // neither file calls fetch (the check above).
     const READS_LINKS = new Set(["header/repo-input.ts", "load/scan-failure.ts"]);
-    // Spec clean-site, 1.14: the scanning card names its sources in words ("Asking npm, OSV and deps.dev"). That one
-    // line, and nothing else, is allowed in home/ScanningCard.tsx, which calls no fetch.
-    const SCANNING_LINE = '"Asking npm, OSV and deps.dev"';
+    // Spec clean-site, 1.14 and design C7: the scanning card and the Guide page name the sources in words ("Asking npm,
+    // OSV and deps.dev"). Those Claims, and the README texts they rest on, live in copy/claims.ts, a data file that
+    // calls no fetch; there only the bare word deps.dev (no path, no subdomain) is allowed.
+    const CLAIMS_FILE = "copy/claims.ts";
     const text = (f: { rel: string; text: string }) =>
       READS_LINKS.has(f.rel)
         ? f.text.replace(/(?<![\w.])github(\\)?\.com(?![\w.-])/g, "")
         : f.rel === "load/remediate-client.ts"
           ? f.text.replace(PR_PREFIX_LINE, "")
-          : f.rel === "home/ScanningCard.tsx"
-            ? f.text.replace(SCANNING_LINE, "")
+          : f.rel === CLAIMS_FILE
+            ? f.text.replace(/(?<![\w./])deps\.dev(?![\w/-]|\.\w)/g, "")
             : f.text;
     expect(FILES.filter((f) => re.test(text(f))).map((f) => f.rel)).toEqual([]);
     expect(FILES.find((f) => f.rel === "load/remediate-client.ts")?.text).toContain(PR_PREFIX_LINE);
-    expect(FILES.find((f) => f.rel === "home/ScanningCard.tsx")?.text).toContain(SCANNING_LINE);
+    expect(FILES.find((f) => f.rel === CLAIMS_FILE)?.text).toContain('"Asking npm, OSV and deps.dev"');
+    expect(FILES.find((f) => f.rel === CLAIMS_FILE)?.text).not.toMatch(/fetch\(/);
   });
 });
 

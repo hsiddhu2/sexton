@@ -44,7 +44,7 @@ export function ScanField({ apiConfigured, fieldRef, examplesOpen, onExamples, o
   };
   const describedBy = !apiConfigured ? "scan-off" : refused ? "scan-hint" : undefined;
   return (
-    <div className="scan-wrap" data-popover="examples" onBlur={onBlur}>
+    <div className="scan-wrap" data-popover="examples" data-tour="scan" onBlur={onBlur}>
       <form className={refused ? "scan-form scan-refused" : "scan-form"} onSubmit={submit} noValidate role="search">
         <SearchGlyph />
         <input

@@ -110,3 +110,24 @@ Notes:
 7. design.md speaks of "the prototype" in words only, as the spec does throughout; no path or private document is named.
 
 Gates after the fixes: typecheck, lint (zero warnings) and test pass; 2268 tests across 6 workspaces. The changed e2e specs pass locally but for five cases in `time.spec.ts` and two in `smoke.spec.ts` that fail the same way before this task and wait for task 12.
+
+## Task 7
+
+The Guide page, the Legend and the Tour (7.1 to 7.3): the Claim registry `copy/claims.ts` with its README check and the rendered-text phrase scan (Property 9); the three README sentences of 18.7; the Guide page from `guide/guide-content.ts` with its graves drawn by the scene painter; the Legend as a Pop-over with its eight entries; the Tour with its blocker, dimming, spotlight, focus and `tour/place-card.ts` (Property 8, second half). The fix-tab notes, the Evidence note, the scanning card's sources line, the first example's note and a failure card's next step now come from the registry.
+
+Independent review before the commit. Verdict: not ready, for two defects:
+
+1. Three sentences say the graves are ordered worst first, and README.md does not say so: the Guide's step 2 "The worst stand in front.", the Tour's step 1 "The worst ones stand in the front row." and the Legend's fix order line. Fixed in part: the Guide sentence, which no criterion fixes, is cut. The other two are fixed word for word by 13.3 and 13.1 and true of main, but README holds no sentence about the order and only the three 18.7 sentences were approved. Left open for the owner, recorded in design.md (Task 7, item 9) with a proposed README sentence for task 12.2.
+2. In a real browser a press on the Tour's blocker moved focus to the body, so Shift+Tab reached the page behind the dimming. Fixed: the blocker cancels the press at mousedown, and the Tab trap listens on the document; a test checks both.
+
+Notes:
+
+1. The Tour card's height was a fixed 190 px. Fixed: the card's measured height is used, each step scrolls its target into view, and the property runs with card heights from 150 to 300 px.
+2. The rendered-text check did not render the outcome of Open pull request. Fixed: the outcome lines and the pull request link text are listed as what-happened lines and checked.
+3. The Tour's step 2 and the Guide's problem paragraph rest on README texts that touch them only loosely; they describe the page and the world, not a capability.
+4. "Sexton only proposes a version it can show is safe." (7.8) says a little more than README's "passes its checks"; the wording is fixed by 7.8.
+5. The capability phrase list follows C7, so verbs such as "proposes" and "shows" are not scanned.
+6. The host-string exception for `copy/claims.ts` allows the bare word deps.dev in that file and checks it has no fetch.
+7. Import order in `Drawer.tsx` and a RegExp built on each render in `GuidePage.tsx`. Fixed.
+
+Gates after the fixes: typecheck, lint (zero warnings) and test pass; 2289 tests across 6 workspaces.

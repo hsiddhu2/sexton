@@ -981,6 +981,18 @@ export function drawScene(ctx: PaintContext2D, plan: ScenePlan, scale: number, n
   if (plan.ring !== null) drawRing(ctx, plan.ring, colours.ink, colours.ring);
 }
 
+/**
+ * One grave as a still picture (spec clean-site, design C7): the same drawGrave call as the Scene, at `scale` device
+ * pixels per cell unit, moved right by `offsetX` cell units so the lid of the open grave fits. No scenery, glow or ring.
+ */
+export function drawPicture(ctx: PaintContext2D, plan: ScenePlan, grave: GravePlan, scale: number, offsetX: number): void {
+  const colours = PALETTE[plan.theme];
+  ctx.setTransform(scale, 0, 0, scale, scale * offsetX, 0);
+  paintBacking = scale > 0 && Number.isFinite(scale) ? scale : 1;
+  const deco: DecorationColours = { shadow: colours.pit + SHADOW_ALPHA_BYTE, stone: colours.ink + STONE_ALPHA_BYTE };
+  drawGrave(ctx, grave, plan, deco, 0);
+}
+
 /** Runs one grave's draws at the dim alpha and restores the context after (spec clean-site, 2.7). */
 function dimmed(ctx: PaintContext2D, draw: () => void): void {
   ctx.save();

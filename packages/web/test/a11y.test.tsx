@@ -67,7 +67,7 @@ describe("axe-core, wcag2a/aa and wcag21a/aa, color-contrast off (Requirement 10
     mount();
     await ready();
     fireEvent.click(screen.getByRole("button", { name: "Legend" }));
-    expect(screen.getByText("Ghost: one or more advisories")).toBeTruthy();
+    expect(screen.getByText("one or more advisories")).toBeTruthy();
     expect(await violations()).toEqual([]);
   });
 
@@ -161,7 +161,7 @@ describe("landmarks, labels and text alternatives (Requirements 10.1, 10.2, 10.6
     fireEvent.click(screen.getByRole("button", { name: "Legend" }));
     const legend = container.querySelector(".legend-panel")?.textContent ?? "";
     for (const s of ["Possessed", "Dead", "Haunted", "Restless", "Alive"]) expect(legend).toContain(s);
-    expect(legend).toContain("Ghost: one or more advisories");
+    expect(legend).toContain("Ghostone or more advisories");
   });
 
   it("shows the disabled field notice as text", async () => {

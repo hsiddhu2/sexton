@@ -1,6 +1,7 @@
 // The failure card of a Live scan (spec clean-site, design C10, requirement 12.2), chosen from the HTTP status and the
 // API error code only, by the first match of a fixed order. Pure.
 import type { ApiErrorCode } from "@sexton/api";
+import { claim } from "../copy/claims.js";
 
 export type FailureCardId =
   | "network"
@@ -27,7 +28,7 @@ export const FAILURE_CARDS: Readonly<Record<FailureCardId, FailureCard>> = {
   "not-readable": {
     id: "not-readable",
     sentence: "We could not read that repo.",
-    next: "Check the spelling. Sexton can only read public repos with a package.json at the top.",
+    next: claim("failure.not-readable"),
   },
   "invalid-url": { id: "invalid-url", sentence: "That is not a GitHub repo address.", next: "Write it as owner/name, or paste a github.com link." },
   "invalid-file": { id: "invalid-file", sentence: "This repo's package.json or lockfile could not be read.", next: "Check that the file is valid JSON." },
