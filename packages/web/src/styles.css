@@ -1565,6 +1565,10 @@ a {
     gap: 4px;
     margin-left: auto;
   }
+  /* The Legend opens under the button row and lines up with its right end, so it stays inside the viewport (15.5). */
+  .legend {
+    position: static;
+  }
   /* The wordmark and the four buttons share the first row at 390 px, as in the prototype (15.1). */
   .ib {
     padding: 0 10px;

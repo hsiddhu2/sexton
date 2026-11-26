@@ -71,8 +71,11 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
   expect(csp).toContain("object-src 'none'");
   expect(csp).not.toContain("unsafe-inline");
 
-  // Task 10.2: the README screenshot is the closed cemetery at 1440 by 900 with Reduced motion on.
+  // Task 10.2: the README screenshot is the closed cemetery at 1440 by 900 with Reduced motion on. Spec clean-site,
+  // task 12.2 (18.1): the picture shows Home as a returning visitor sees it, so the Welcome bar is closed first.
   await page.setViewportSize({ width: 1440, height: 900 });
+  await page.getByRole("button", { name: "Close the welcome bar" }).click();
+  await expect(page.getByRole("region", { name: "Welcome" })).toHaveCount(0);
   // Spec cemetery-undead, Deliberate test change 27 (no assertion changes): drop the focus and the hover that the
   // download clicks left on the JSON link.
   await page.evaluate(() => {
@@ -172,6 +175,8 @@ test("the axios replay at its Possessed stop, for the README", async ({ page, ba
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/?replay=axios");
+  // Spec clean-site, task 12.2 (18.1): as the cemetery picture, the Welcome bar is closed.
+  await page.getByRole("button", { name: "Close the welcome bar" }).click();
   const grave = page.locator("button[data-grave-index]").first();
   await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
   // Spec clean-site, task 6.3: the Replay moves by "Next step" and its Why card holds the sources (8.12).
@@ -191,9 +196,15 @@ test("the axios replay at its Possessed stop, for the README", async ({ page, ba
   await expect(card.locator("a")).toHaveCount(4);
   await expect(page.locator("footer .step-card")).toHaveCount(3);
   await expect(page.locator('footer .step-card[aria-current="step"]')).toContainText("A poisoned release appears");
-  const canvasBox = await page.locator("canvas").boundingBox();
+  // Spec clean-site, task 12.2: the Replay page puts its breadcrumb, headline and sub-line above the stage (8.1), so
+  // the old bound of 120 px became: the whole stage, the Step panel and the Footer bar lie inside the 900 px picture.
+  const canvasBox = await page.locator("canvas.scene-canvas").boundingBox();
   console.log(`axios replay canvas top ${String(canvasBox?.y)}`);
-  expect(canvasBox?.y ?? 999).toBeLessThanOrEqual(120);
+  expect(canvasBox?.y ?? 999).toBeLessThanOrEqual(260);
+  for (const part of ["canvas.scene-canvas", ".step-panel", ".replay-foot"]) {
+    const box = await page.locator(part).boundingBox();
+    expect((box?.y ?? 999) + (box?.height ?? 999), part).toBeLessThanOrEqual(900);
+  }
   // Move focus off the button so no focus ring is in the picture, then wait two frames for the repaint.
   await next.blur();
   await waitForFirstPaint(page);
