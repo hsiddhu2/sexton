@@ -1,0 +1,633 @@
+# Design Document: clean-site
+
+## Overview
+
+The site shell is rebuilt to the prototype the owner approved on 26 November 2026. The live canvas Scene and its Characters stay.
+
+Around them the Site adds:
+
+- a one-row header;
+- a Home view with a headline, state chips and a Graveyard / List switch;
+- a fixed Panel (Inspector and Fix order) and a Footer bar;
+- a tabbed Drawer;
+- a Replay told step by step;
+- a Guide page, a Legend pop-over and a three-step Tour;
+- a Glossary, failed-scan cards and a Track slot for music.
+
+The floating tooltip, speech bubbles, guide card, Fix-first line, Serious mode, Punchlines, the Home Play control and every generated sound go, with their code and tests.
+
+The prototype was opened in a browser on 26 November 2026 and every flow was clicked through:
+
+- At 1440 by 900 (the browser window measured 1512 by 783):
+  - Home with hover and the Inspector.
+  - A grave click into the Drawer, then its three tabs, Open pull request and Copy this as an issue.
+  - The List with a chip filter.
+  - The Legend, the Music pop-over and its dance mode.
+  - The scrubber at 12 Aug.
+  - The attack picker, and the axios Replay through all three Steps to "Back to the cemetery".
+  - A Term.
+  - The Guide page from top to bottom, and the Welcome bar.
+  - The Tour's three steps.
+  - The Scan field's examples, a failed scan, "Try the demo repo" and the scanning card.
+- At 390 wide, in frames: Home, the Drawer and the keyv Replay.
+
+### Decisions already made (26 Nov 2026)
+
+1. The prototype wins over any other description of the look. Real data wins over the prototype; the layout stays.
+2. The canvas Scene and Characters are not touched (the owner: "keep the characters, do not touch them").
+3. From spec/calm-first-visit only the way back and the addresses carry over. Not the speech bubble timing, the guide card or the per-state sounds.
+4. No GitHub sign-in. No audio file until the owner names the track and its licence; until then the Music button is not rendered.
+5. Per-step replay text goes in the replay files and is written only from sources each replay already cites.
+6. Every Guide page statement matches README.md; the page changes, not the README.
+7. Nothing is pushed without the owner's `push`. The owner does a cold look before any push.
+
+### Carry-over from spec/calm-first-visit: check out four files, redo the wiring
+
+That branch's commit 7656c07 also changes the Header, the replay banner and the error cards, which this spec replaces. Cherry-picking it would bring code that is removed one task later. Instead task 1.1 checks out the pure parts as files:
+
+- `packages/web/src/load/view-address.ts` and `test/view-address.test.ts`;
+- `packages/web/src/load/page-history.ts`;
+- `packages/web/src/load/scanned-pref.ts` (the session flag `sexton:scanned` behind 10.12).
+
+They are then extended with `page` and `list` and the canonical form. The App wiring is rewritten against the new views: push, replace, popstate, the Drawer's Back step, and the `?repo=` prompt of that spec's owner change 2. It keeps that spec's rules and the regression cases of its `test/way-back.test.tsx` that still apply. The carried `rejected` Source stays and now shows the card of 10.10. This matches product.md: any other replay value loads nothing.
+
+### Differences between the prototype and main's real data, known before the build
+
+| Prototype | Built | Reason |
+|---|---|---|
+| State colours (Possessed #f0575c, Haunted violet, Alive green) | main's five State colours | The canvas draws the graves in main's colours, and the chips and badges must agree. main's colours pass the colour-vision tests. Chrome colours (backgrounds, panel, lines, text, accent) follow the prototype. |
+| Inspector sentences such as "alice and bob became alice and mallory" | A plain sentence per Reason family plus three real signals | The engine's reason is the real data. Maintainer names show in the signals. |
+| Fix order: left-padder, lodash, event-stream, node-sass | Triage order of Possessed, Dead and Haunted, up to 5 | The Fix order follows triage order. On the demo: left-padder, event-stream, uuid, request, left-pad (by severity, then reach, then name). lodash, the one Haunted package, ranks 7th, below the Dead packages, so it is not listed. |
+| Four examples; the fourth, "acme/private-app", shows a failure | Three examples | No repository name can be promised to stay missing or private. Any bad input still shows a failure. |
+| Separate cards for "private" and "not found" | One card for missing-package-json | GitHub answers 404 for both, so the API cannot tell them apart. |
+| "No lockfile" as a failure | A note under the headline; the scan succeeds | The engine scans without a lockfile and marks the scan unlocked (R-IN-2). The partly-unlocked and capped notices of main's header move to the same place. |
+| "Open pull request" on the Sample scan | Only on a Live scan whose response has actions.remediate true | The Sample scan has no `actions`, and steering shows the button only for a hosted scan with actions.remediate true. The Sample's note says where the button works. |
+| No pull request body in the fix tab | A closed disclosure "Read the pull request text" | R-UI-4 requires a preview of the PR body. The visitor also sees what Copy puts on the clipboard. |
+| No evidence links, scan time or policy result | One site-footer line with all three | README and R-UI keep them. They leave the header. |
+| Legend: five States only | Five States plus the ghost, the pennant and the Not-published mound | R-UI-2 (a ghost means advisories) and steering's legend chips. |
+| No "Back to now" | "Back to now" shows while an earlier date is chosen | A one-press way back to the scan date. The scrubber ticks alone are hard to hit by keyboard. |
+| No too-large line | Kept | main's guard (timelinesOmitted) needs its explanation. |
+| "Reconstructed from public reports. Not a live scan." not shown | Shown once, in the Why card | product.md's text, said once. |
+| Music pop-over with "Choose a track" from disk and "Dance without sound" | Not rendered until the Track slot is set; then one on/off button | One recorded track; the button is hidden until the owner names it. |
+| Graves drawn as SVG with plates; the Step title as a caption under the replay grave | Canvas graves with Inter name labels; the Step title in the Panel | The canvas stays. A DOM caption under the grave would sit in its Art box. |
+| JetBrains Mono for versions and diffs | System monospace stack | One text face (Inter); no third font file. |
+| Hash addresses (#pkg-lodash) | Query addresses (?grave=lodash) | README links use ?replay=axios; the carried address module uses the query. |
+| Scrubber with four labelled month ticks | Native range with its start label and "Today, <date>" | Real Stops come from Segments and can be many at 300 packages. |
+| Phone Scene in the prototype's order | Front Tier first in the Narrow layout | Worst first on a phone. |
+| Tour step 3: "Paste any public GitHub repo. Sexton reads the lockfile and builds its cemetery." | "Paste a public GitHub repo with a package.json at the top. Sexton reads it and builds its cemetery." | main scans only repos with a package.json at the top and scans without a lockfile too. README "Limits" says public repositories and npm only. |
+| The scanning card's progress bar | No bar | The Site cannot measure the steps of one GET. |
+| left-padder's fix tab: "Review the maintainer change" | The plan's real title and summary ("no change proposed … bump data was not gathered") with the Possessed note | Real plan data. |
+| No `?repo=` prompt | "Scan this repository" in the Scan field on a fresh repo= link | Carried owner decision from calm-first-visit (no scan without a press). |
+| Scan tag "Sample scan" during a Replay | "Replay" | A Replay is not the Sample scan. |
+| A Pop-over counted among the exclusive owners (an earlier draft of Property 1) | One View owner plus at most one Pop-over on top | The prototype opens Terms inside the Drawer and Replay; closing those to show a Term would lose the visitor's place. |
+| Network error | Its own failure card | The prototype has none; an offline visitor would otherwise read "The scan failed on our side." |
+| Drawer Evidence: signals only | Signals, then missing signals and failing policy rules | Real engine data on main's drawer. |
+| Tour from the List view | Switches to Graveyard first | The Tour's first step points at the Scene. |
+| Escape: Tour, then Drawer, then Replay home, else close pop-overs; no Escape on the Guide page | Pop-over first, then Tour, Drawer, then Replay or Guide page home (10.3) | Escape is a way home from every view, and a Term opened inside the Drawer must close before the Drawer does. |
+| No failure card for a non-Live load | One card for a failed Sample or scan file load and a refused Replay (12.7) | main shows an error card for any failed load; the prototype never loads a file. |
+
+Taken from the prototype as it is, with no difference:
+
+- the phone order Scene, Footer bar, Panel, and a full-width Drawer under 700 px;
+- "← Cemetery" in the Drawer closing the Drawer only, and the wordmark keeping the Graveyard or List choice;
+- Terms marked in the Inspector and Drawer signal labels;
+- the scan tag hidden under 1300 px;
+- icon-only header buttons and one column under 1100 px;
+- the help line hidden under 700 px;
+- the Fix order's current-row mark;
+- "Play all" restarting at Step 1 from the last Step;
+- the Guide page's "Watch a real attack" opening the axios Replay;
+- the Welcome bar text;
+- the Replay sub-line.
+
+The build adds every further difference to the report.
+
+## Architecture
+
+```
+App.tsx
+ ├─ useView (load/use-view.ts)          View address, history, View owner, Pop-over
+ ├─ Header (header/Header.tsx)          wordmark, scan tag, ScanField + examples, four buttons, Legend
+ ├─ WelcomeBar (guide/WelcomeBar.tsx)
+ ├─ HomeView (home/HomeView.tsx)
+ │   ├─ Hero: headline, notices, chips, view switch
+ │   ├─ Scene card: Cemetery (canvas, grave buttons), help line, date badge, scanning or failure card
+ │   │   or ListView (home/ListView.tsx)
+ │   ├─ FooterBar: scrubber, Back to now, too-large line, attack picker
+ │   └─ Panel: Inspector, FixOrder (panel/)
+ ├─ ReplayView (replay/ReplayView.tsx)  stage, Step panel, Why card, Footer bar with Step cards
+ ├─ GuidePage (guide/GuidePage.tsx)
+ ├─ Drawer (drawer/Drawer.tsx)          tabs: Evidence, The fix, History
+ ├─ Tour (tour/Tour.tsx)
+ ├─ TermPopover (glossary/)
+ └─ SiteFooter: scan time, policy line, evidence links, track credit
+```
+
+Pure modules carry every rule that can be tested without a browser. Components only render and route events. Every overlay (Drawer, Replay, Guide page, Tour, Pop-overs) renders from the single `ScreenState` of C1 and from nothing else, so the model's invariants are the page's.
+
+## Components and Interfaces
+
+### C1. Screen state (requirement 17)
+
+`load/screen-state.ts`, pure:
+
+```ts
+export type ViewOwner = "none" | "drawer" | "replay" | "guide" | "tour";
+export type Popover = "none" | "legend" | "attacks" | "examples" | "term";
+export interface ScreenState {
+  readonly view: View;
+  readonly owner: ViewOwner;
+  readonly popover: Popover;
+  readonly filter: State | null;
+  readonly homeSource: ViewSource;   // the last demo, repo or scan Source shown; demo at first
+  readonly homeList: boolean;        // the Graveyard or List choice last made on Home
+  readonly tourStep: 0 | 1 | 2 | null;
+}
+export type ScreenEvent =
+  | { kind: "open-drawer"; grave: string } | { kind: "open-replay"; id: ReplayId } | { kind: "open-guide" }
+  | { kind: "open-tour" } | { kind: "open-popover"; popover: Exclude<Popover, "none"> }
+  | { kind: "close-popover" } | { kind: "close" } | { kind: "escape" } | { kind: "home" }
+  | { kind: "list"; on: boolean } | { kind: "filter"; state: State | null } | { kind: "date"; at: string | null }
+  | { kind: "tour-next" } | { kind: "source"; source: ViewSource } | { kind: "restore"; view: View };
+export function reduce(s: ScreenState, e: ScreenEvent): ScreenState;
+export function homeOf(s: ScreenState): View;   // homeSource, page home, list = homeList, no grave or at
+```
+
+The rules:
+
+- Opening a View owner replaces the previous one and closes the Pop-over (17.2). Opening a Pop-over replaces the previous Pop-over and keeps the View owner (17.3).
+- `escape` closes the Pop-over, else ends the Tour, else closes the Drawer (back to the view beneath), else turns a Replay or the Guide page into `home` (10.3).
+- `close` on the Drawer drops `view.grave` and keeps the rest (10.14).
+- `home` gives `{ view: homeOf(s), owner: "none", popover: "none", filter: null, tourStep: null }`, keeping `homeSource` (10.2, 17.4).
+- `source` (a Live scan, an example, "Try the demo repo", "Back to the sample", "Scan this repository") loads a new Source: a demo, repo or scan Source sets `homeSource` and gives Home with no grave, `at` or filter. A replay Source opens the Replay. The `rejected` Source (a replay value outside the closed set) shows the card of 10.10 with `owner = "none"` and never sets `homeSource`, so its "Back to the cemetery" and the wordmark reach the Sample scan.
+- `restore` (browser Back or Forward, or a page load) sets the View from the address and derives `owner` from it; a demo, repo or scan Source sets `homeSource`, and a Home View sets `homeList` from its list flag.
+- "Back to the cemetery" on the `rejected` card dispatches `source` with the demo Source, like "Back to the sample" (10.10, 12.6).
+- `list` sets `view.list` and `homeList`. `tour-next` advances `tourStep` and ends the Tour after step 3.
+- Every event has a defined result under every owner. `open-drawer`, `list`, `filter` and `date` are ignored (the state is unchanged) while a Replay, the Guide page or the `rejected` card is shown, and while the Tour shows. `open-tour` takes the Home action (clearing the filter and date and closing the Drawer, Replay or Guide page, as the prototype's goHome does), then switches to the Graveyard view, then starts the Tour. `open-popover` is ignored while the Tour shows. An `open-drawer` for a grave the scan lacks is ignored.
+- `owner` and `view` stay consistent: `owner = "drawer"` exactly when `view.grave` is set; `owner = "replay"` exactly when the Source is a replay; `owner = "guide"` exactly when `page = "guide"`; `owner = "tour"` exactly when `tourStep` is set.
+
+`load/use-view.ts` holds a `ScreenState`, applies `reduce`, and maps each change to a push or a replace (C8).
+
+### C2. The header and the Scan field (requirement 1)
+
+- `header/Header.tsx` renders, in order:
+  - the wordmark link, `<a href="/" aria-label="Sexton, back to the cemetery">`, which dispatches `home` on a plain primary press;
+  - `ScanTag`;
+  - `ScanField`;
+  - the buttons. Music renders only when `TRACK !== null` (1.15).
+- `header/repo-input.ts`, pure: `normaliseRepo(input: string): { ok: true; url: string; label: string } | { ok: false }`.
+  - It accepts `owner/name`, or `https://github.com/owner/name` with an optional `www.`, trailing slash or `.git`.
+  - GitHub's character rules apply. The owner is letters, digits and inner hyphens, up to 39 characters. The name is letters, digits, `-`, `_` and `.`, up to 100 characters, and not `.` or `..`.
+  - The output is `https://github.com/owner/name` (1.11, 1.12).
+- `header/examples.ts`: the three examples and their notes (1.9).
+- The scanning card (1.14) is three fixed lines with no progress bar. The Site cannot measure the steps of one GET.
+
+### C3. Home (requirements 2, 3)
+
+- `home/headline.ts`, pure: `headline(counts, total, date | null)` gives the text parts of 2.1 to 2.3.
+- `home/notices.ts`, pure: the notices of 2.13 to 2.15 from the scan metadata (moved from `header/header-model.ts`).
+- Filter dimming: `Cemetery` passes `dimmed: ReadonlySet<string>` into `planScene`. `drawScene` sets the context's `globalAlpha` to a new fixed constant, `DIM_ALPHA_BYTE / 255` from palette.ts, around every per-grave draw of a dimmed grave, on both the sprite path and the direct path: the body, its Character, the ghost, the glow, the name label and the pennant. The Halo is a scene-wide layer; a dimmed Possessed grave is left out of the Halo's sources while the filter is set. No new sprite is made, so the sprite cache is unchanged. A draw test records the alpha at each call of a dimmed grave, and the 300-grave repaint check runs with half the graves dimmed. That grave's button gets `tabIndex -1` (2.7, 2.8). A Not-published mound has no State at the chosen date, so it is dimmed whenever a filter is set. The Not-published form is a separate mound shape on main and is not touched.
+- Help line and date badge:
+  - They are DOM elements in the Scene's sky band.
+  - `scene/overlay-band.ts`, pure: `overlayRects(layout, size)` returns their rectangles.
+  - `planScene` keeps at least `OVERLAY_BAND` px of sky above the highest Art box, so both rectangles clear every Art box (2.12).
+- `panel/Inspector.tsx` shows `hover ?? focus ?? selected` (3.3 to 3.5).
+- `panel/reason-family.ts`, pure: `reasonFamily(reason): Family | null` and `reasonSentence(reason): string`. Families are keyed by the fixed leading words of each engine reason:
+
+  | Family | Leading words | Sentence |
+  |---|---|---|
+  | maintainer | "maintainer change" | "A maintainer of this package changed in the last 90 days." |
+  | provenance | "provenance regression:" | "<v> was published without provenance, though <w> had it." |
+  | install-script | "install script added in" | "<v> added an install script that earlier versions did not have." |
+  | new-dependency | "new dependency in" | "<v> added a new dependency, <name>, that looks risky." |
+  | publisher | "publisher changed in" | "<v> was published by a different account than before, <a> to <b>." |
+  | deprecated | "installed version is deprecated" | "The authors have marked this version as deprecated." |
+  | stale-advisory | "no release in" … "and an open advisory" | "No release in 24 months, and a known advisory is still open." |
+  | high | "advisory of severity High or Critical" | "A High or Critical advisory is open." |
+  | stale | "no release in" (without advisory) | "No release in 24 months." |
+  | low | "advisory of severity Moderate or Low" | "A Moderate or Low advisory is open." |
+  | unavailable | "all state signals unavailable" | "None of its health signals could be read." |
+  | none | "no rule matched" | "No rule matched. Nothing to do." |
+
+  The facts filled into the sentence (`<v>`, `<w>`, `<name>`, `<a>`, `<b>`) come only from the reason text, as plain text. Web may not import engine code (structure.md), so the drift check works in two halves:
+  - `packages/web/test/fixtures/engine-reasons.json` lists one sample reason per engine branch, and a web test checks that each has a family.
+  - An api test reads that file by path, produces every branch's reason through `@sexton/engine`'s `evaluateState`, and fails when the two lists differ.
+- `panel/pick-signals.ts`, pure: `pickSignals(pkg): [Row, Row, Row]`, by signal key, chosen by State:
+  - Possessed: the signal of its Reason family first (maintainer → `maintainerChange`, provenance → `provenanceRegression`, install-script → `newInstallScript`, new-dependency → `newDependency`, publisher → `publisherChange`), then the first two of `maintainers`, `provenance`, `hasInstallScript`;
+  - Dead: `deprecated`, `lastPublish`, `advisories`;
+  - Haunted and Restless: `advisories`, `deprecated`, `lastPublish`;
+  - Alive: `advisories`, `deprecated`, `lastPublish`.
+
+  Each row shows the plain label of C5's table.
+
+  Each row's tone (bad, warn, ok) comes from the signal value alone.
+- `panel/fix-order.ts`, pure: `fixOrder(packages, plans): FixRow[]` (3.18, 3.19, 3.22).
+- Rings: the Scene draws the selection ring for the Selected grave as today. It draws the same ring in the `ringHover` token for the hovered grave when that is not the Selected one (3.13, 3.14). The Lantern glow stays.
+- Keys (3.23, 3.24): one `keydown` listener on the document. It acts only when focus is on the body, a grave button or a Fix order row, and the screen state has `owner = "none"` and `popover = "none"`. So the scrubber, text fields and the Drawer's tabs keep their own arrow keys. Left and Right move the Selected grave in triage order with wrap, and move focus with it when focus was on a grave button; they leave `selection/selection.ts`'s `reduceSelection`, which keeps Up and Down as on main. A filtered-out grave is still reached by Left and Right (16.14).
+- The Fix order line follows 3.19's order. Hosted plans never carry `remove`; the "remove it" line exists for a scan file made by the CLI.
+
+### C4. The List (requirement 6)
+
+- `home/list-rows.ts`, pure: `listRows(packages, { query, sort, filter, at }): ListRow[]`.
+  - It takes each package's State at `at` and leaves out packages not published then (6.2).
+  - The query is trimmed and compared lower-case.
+  - Sort "state" is `triageOrder` at the scan date. Sort "name" is by name.
+- `home/ListView.tsx` renders a native table. Each row's package cell holds a button, so Enter and a press both open the Drawer and axe passes.
+- At 300 rows the DOM is about 1,500 cells, so no virtual list is needed.
+- The Find text lives in component state, not in the address.
+
+### C5. The Drawer (requirement 7)
+
+`drawer/Drawer.tsx` is rebuilt:
+
+- `role="dialog"` and `aria-modal`, using the existing `focus-trap.ts`;
+- the breadcrumb;
+- the tabs, `role="tablist"` with arrow keys between tabs.
+
+The tabs:
+
+- **Evidence:** the verdict box, then the signal table from `drawer-model.ts`, with its source and fetch time unchanged, then the missing signals and failing policy rules as on main (7.24). Each signal row shows a plain label from `drawer/signal-labels.ts`, a typed record over every name in SIGNAL_NAMES, so a new signal without a label fails typecheck: lastPublish "Last publish", deprecated "Deprecated", hasInstallScript "Install script", advisories "Advisories", maintainers "Maintainers", provenance "Provenance", transitiveReach "Transitive reach", maintainerChange "Maintainer change", provenanceRegression "Provenance lost", newInstallScript "New install script", publisherChange "Publisher change", newDependency "New dependency". Terms are marked in these labels (11.2). The signal key itself is no longer shown, so 5.5's monospace applies to versions and diffs.
+- **The fix:** `drawer/fix-view.ts`, pure: `fixView(pkg, plan | undefined, scan: "sample" | "live-remediate" | "live")`. It returns:
+  - the title and summary, and the diff lines from the PrIntent edits;
+  - which of "Open pull request", "Copy pull request text" and "Copy this as an issue" show;
+  - the note.
+
+  Only one copy button ever shows (7.3 to 7.10, 7.13 to 7.15). `drawer/clipboard.ts` wraps `navigator.clipboard.writeText` and returns "ok" or "blocked" (7.11, 7.12). `drawer/issue-text.ts`, pure, builds the plain issue text (7.6). The remediate client, its result area outside the scrolling body, and `markdown.ts` stay (7.4, 7.16).
+- **History:** `drawer/history-rows.ts`, pure, lists the Segments newest first (7.17, 7.18).
+
+### C6. The Replay (requirement 8)
+
+Contract change in `packages/api/src/contract.ts`:
+
+```ts
+export interface ReplayStep { readonly title: string; readonly happened: string; readonly shows: string }
+export interface ReplayInfo {
+  readonly id: "axios" | "keyv";
+  readonly title: string;
+  readonly summary: string;
+  readonly sources: readonly { readonly label: string; readonly url: string }[];
+  readonly steps: readonly ReplayStep[];   // one per Stop, in order (8.13, 8.15)
+  readonly why: string;                    // the "Why attackers do this" text (8.12)
+}
+```
+
+How the parts fit:
+
+- `packages/api/scripts/lib/replay-facts.mjs` gains `steps` and `why` per replay. A code comment after each sentence names the `SOURCE_URLS` key it comes from (8.14). The generator copies them.
+- `validate-scan-response.ts` checks the shapes, that the Step texts are distinct (8.13), and the count against `stopsFor` (8.15).
+- `replay/ReplayView.tsx` renders the stage (the Scene in replay mode), the Step panel, the Why card and the Footer bar.
+- `time/play.ts` keeps the Play model, with a 5,000 ms step for the Replay (8.9 to 8.11).
+- `replay/replay-ids.ts` gains `REPLAY_CARD: Record<ReplayId, { package; date; steps }>` (axios, "31 March 2026", 3; keyv, "4 August 2026", 2) for the attack picker and the sub-line, which show before a file loads (8.1, 16.7). A test checks each entry against its fixture's ReplayInfo and `stopsFor`.
+- The Burst caption text is no longer drawn. The animation stays (4.5).
+
+Draft Step texts, to be checked against the sources during the build. Only text that a cited source gives survives:
+
+- axios
+  1. "A normal day" / "axios 1.14.0 is the current release. It was built by GitHub Actions and carries provenance." / "Nothing to flag. The grave is healthy."
+  2. "A poisoned release appears" / "A compromised maintainer account publishes 1.14.1 by hand. It adds a new dependency, plain-crypto-js 4.2.1, whose install script runs the payload." / "The grave turns Possessed. 1.14.0 had provenance and 1.14.1 has none. That drop is the warning."
+  3. "npm removes the bad release" / "About three hours later npm removes 1.14.1. A fresh install gets 1.14.0 again." / "The grave is healthy again. Anyone who installed in those hours got the bad release."
+- keyv
+  1. "A normal day" / "keyv 5.6.0 is the current release. It runs nothing when you install it." / "Nothing to flag. The grave is healthy."
+  2. "A poisoned release appears" / "keyv 6.0.0 is published with a new preinstall script, node setup.mjs. It still carries valid provenance from GitHub Actions." / "The grave turns Possessed. An install script appeared that the earlier version did not have."
+
+### C7. The Guide page and the Welcome bar (requirement 9)
+
+- `copy/claims.ts` is the Claim registry: `Claim { id; text; readme }`, where `readme` is the README.md text the Claim rests on. Every Claim the Site shows is in it:
+  - the Guide page steps and answers;
+  - the fix-tab notes;
+  - the Tour steps;
+  - the scanning card's "Asking npm, OSV and deps.dev";
+  - the failure cards' next steps that name a capability;
+  - the example note "pull requests work here".
+- Components import Claims by id. The check works on rendered text, not on source: a test renders Home, the List, the Drawer on each tab for each fix-tab case, the Guide page, the Legend, the Tour at each step, each failure card and the scanning card, and splits the visible text into sentences. Every sentence that holds a capability phrase ("pull request", "sign in", "sign-in", "GitHub Action", "sexton check", "scans", "deps.dev", "OSV", "opens", "reads", "read", "public repo", "package.json") must equal a Claim's text, or be one of a listed set of control labels and headings: "Open pull request", "Copy pull request text", "Read the pull request text", "Scan", "Sample scan", "Scan this repository", "What is a pull request?", "Do I have to sign in to GitHub?", "So how does the pull request get opened?", "Can it check my repo automatically?", "a pull request was opened", "Reading package.json and the lockfile", "Reading each headstone", "New here? Read the two-minute guide first.", the notices of 2.13 and 2.14, the unavailable-family sentence of 3.9, "Copied. Paste it into a pull request or an issue on your repo.", "Read the guide", "No pull request is proposed for a Restless package.", and the sentences (not the next steps) of every failure card of 12.2 and 12.7, which describe what happened rather than what Sexton can do. Replay Step and why texts are left out: they rest on the replay's cited sources (8.14), not on README. A new capability sentence outside the registry fails the test (17.5).
+- `guide/guide-content.ts` holds the page's structure and takes its sentences from the registry (9.4).
+- Each grave picture on the Guide page and in the Legend is drawn by the scene painter into a small canvas with the same grave-drawing call, so the pictures are the real graves.
+- `guide/welcome-pref.ts`: `sexton:welcome`, every access in try/catch. Only the value "closed" is ever written or read (9.6 to 9.8).
+
+### C8. The View address and history (requirement 10)
+
+`load/view-address.ts` (carried) changes:
+
+```ts
+export interface View {
+  readonly source: ViewSource;        // demo | replay | repo | scan | rejected, as carried
+  readonly page: "home" | "guide";
+  readonly list: boolean;             // view=list
+  readonly grave: string | null;
+  readonly at: string | null;
+}
+```
+
+Rules:
+
+- **Precedence:** replay > repo > scan > demo.
+- **Canonical form:** a replay or `rejected` View holds only its Source. A Guide page View holds only its Source (demo, repo or scan) and `page`. Any other View holds a Source, `list`, `grave` and `at`. `parseView` drops parts a view does not take (10.9). The Step is not in the address: a Replay always opens at Step 1, as product.md says.
+- **`formatView`:** writes the parts in the order replay, repo, scan, page, view, grave, at.
+- **Push** on: a new Source, the Guide page, a Replay, the List switch, the Home action from a Replay or the Guide page, a Drawer open (10.7, 10.15).
+- **Replace** on: the scrubber and a dropped bad part (10.8, 10.9). A Step or a tab changes nothing in the address (10.16).
+- **The Drawer's Back step:** opening pushes an entry marked `drawerPushed`. A close that is not a popstate goes back one entry. When a close leads straight on to a new View, the Drawer's entry is replaced by that View instead. Both rules are as in calm-first-visit B3.
+- **`?repo=`:** follows that spec's owner change 2 with `scanned-pref.ts` (10.11, 10.12).
+- **Home:** the wordmark, the Replay and Guide breadcrumbs and Escape go to `homeOf(state)`, which keeps `repo=` after a Live scan (10.2). The Drawer's breadcrumb closes the Drawer (10.14). "Back to the sample" pushes "/" (12.6).
+
+### C9. Glossary (requirement 11)
+
+`glossary/glossary.ts`:
+
+```ts
+export const TERMS = ["provenance", "advisory", "maintainer", "deprecated", "install script", "transitive reach", "pull request", "last publish", "publisher"] as const;
+export type Term = (typeof TERMS)[number];
+export const MEANING: { readonly [K in Term]: string } = { … };   // a missing Term fails typecheck (11.8)
+export const FORMS: Readonly<Record<string, Term>> = { advisories: "advisory", maintainers: "maintainer", "install scripts": "install script", "pull requests": "pull request", publishers: "publisher" };
+export function markTerms(text: string): readonly ({ text: string } | { text: string; term: Term })[];
+```
+
+- `markTerms` splits on word boundaries, longest form first, ignoring case. Joining the parts' text gives back the input (11.7).
+- `glossary/TermText.tsx` renders the parts with `<button type="button" class="term">`. It is used only for running text (11.2, 11.3).
+- The meanings are the prototype's, cut to at most 25 words.
+
+### C10. Failed scans (requirement 12)
+
+- `packages/api/src/contract.ts` adds `export type { ApiErrorCode } from "./http/responses.js"`, a type only.
+- `load/lists.ts` mirrors the list as `API_ERROR_CODES` with a drift test like the other lists. The WAF's `rate-limited` and the edge's `not-deployed` bodies are outside that list. They are reached through their status (429, 503).
+- `load/load-scan.ts`, for a non-2xx response:
+  - reads at most 4 KiB of the body;
+  - parses it as JSON in try/catch;
+  - keeps `code` only when it is in the list.
+- `LoadError` gains `apiCode?: ApiErrorCode`.
+- `load/scan-failure.ts`, pure: `failureCard(status | null, apiCode | null): FailureCard`, which returns a member of the fixed card table by the order of 12.2. A null status is a network error with no HTTP response.
+- No body text is kept, shown or logged (12.3, 12.4).
+
+### C11. Legend and Tour (requirement 13)
+
+- `header/Legend.tsx` becomes a Pop-over: `position: absolute` under its button, outside the page flow (13.2). It holds the five States, the ghost, the pennant and the Not-published mound (13.1).
+- `tour/tour-steps.ts`: the three steps, each a target id, a title and a sentence from the Claim registry (13.3, 13.4).
+- `tour/place-card.ts`, pure: `placeCard(target: Rect, viewport: Size): { x; y; width }`.
+  - The card is `min(320, viewport.width − 24)` wide.
+  - It sits below the target, else above it, else beside it.
+  - It always lies inside the viewport with a 12 px margin (13.6).
+- `tour/Tour.tsx` draws a full-screen blocker, a spotlight box with the dimming shadow, and the card (13.5, 13.7).
+
+### C12. Music (requirement 14)
+
+`music/track.ts`:
+
+```ts
+export interface Track { readonly file: string; readonly title: string; readonly artist: string; readonly licence: string; readonly source: string; readonly bpm: number }
+export const TRACK: Track | null = null;   // set only when the owner names the track and its licence
+```
+
+The parts:
+
+- `music/use-music.ts` creates one `HTMLAudioElement` with `loop` on the first turn-on (14.7), and pauses it on turn-off.
+- `scene/motion.ts` gains `poseClock(nowMs, beat: { beatMs } | null, reducedMotion)`:
+  - with a beat, one Pose step per half beat;
+  - without one, the 12 Poses a second of today;
+  - under reduced motion, a still Pose (14.3 to 14.5).
+- The CSP plugin in `vite.config.ts` adds `media-src 'self'` only when `TRACK` is set, with a vite-csp test (14.8).
+- The candidate the owner has named (Ghost Party, The Piano Says, CC BY 3.0) is not shipped until he confirms it.
+
+### C13. Layouts and phone (requirement 15)
+
+- CSS breakpoints are 1300, 1100 and 700 px:
+  - under 1300: the scan tag hides;
+  - under 1100: one column and icon-only buttons;
+  - under 700: the header wraps, the help line hides and the Drawer is full width.
+- `planScene` gains `frontFirst: boolean`, true in the Narrow layout. It stacks the Tiers with Possessed and Dead on top. Grave rectangles still never overlap, and the keyboard order stays triage order (15.3).
+
+### C14. Type and colour (requirement 5)
+
+- Fonts: Inter (variable, latin) and Cormorant Garamond 600 (latin), woff2.
+  - They are copied, with their OFL.txt, from the files of the `@fontsource-variable/inter` and `@fontsource/cormorant-garamond` packages at a pinned version. No package dependency is added.
+  - The canvas label font becomes Inter 600.
+  - Instrument Sans, Pirata One and both IM Fell faces are removed (5.3).
+- Tokens: the prototype's chrome colours join palette.ts under new names with a `ui` prefix (`uiBg`, `uiBg2`, `uiPanel`, `uiPanel2`, `uiLine`, `uiLine2`, `uiText`, `uiMuted`, `uiFaint`, `uiAccent`, `uiAccentInk`), so the canvas tokens `bg`, `text` and `muted` stay as they are. `ringHover` joins the ring rules of web.md: it sits on the Ring casing, is at least 3:1 against ink and is not cut by the Halo.
+  - Each text token is checked at 4.5:1 against every background it is used on (5.8).
+  - Where the prototype's `faint` (#6f6a8a) fails, it is lightened until it passes. This is listed as a difference.
+  - The accent is checked at least 10 apart in CIEDE2000 from Restless #e69f00 (5.10). If #e9a23b fails, the accent is moved, keeping its hue family, and the change is listed.
+
+### C15. Site footer (requirement 16.12)
+
+One line under the main area holds:
+
+- the scan time, in a `<time>` element;
+- main's policy line (status, label and failing rules);
+- "Evidence JSON" and "Evidence Markdown", as main offers them;
+- the track credit, when a track is set.
+
+The Sample's evidence downloads keep the Fixture name inside the files. 1.7 covers the pages, not the downloaded files.
+
+## Data Models
+
+- `ReplayInfo` gains `steps` and `why` (C6). Both replay files are regenerated by `npm run demo:generate -w @sexton/api`.
+- `contract.ts` exports the `ApiErrorCode` type (C10). `LoadError` gains `apiCode`.
+- `View` gains `page` and `list` (C8). `ScreenState` holds the View, the View owner, the Pop-over, the filter, the home Source and the Tour step (C1).
+- Stored values:
+  - kept or added: `sexton:welcome` (localStorage, "closed") and `sexton:scanned` (sessionStorage, carried);
+  - removed: `sexton:sound`, `sexton:serious` and `sexton:guide`.
+
+## Error Handling
+
+- Storage unavailable: the Welcome bar hides for the page load once closed (9.8). The `?repo=` reload rule falls back to the prompt.
+- Clipboard refused: the blocked message shows, and the text stays readable in the disclosure (7.12, 7.16).
+- A Replay file whose Step count differs from its Stops is refused as invalid-response (8.15).
+- A replay outside the closed set loads nothing and shows its card (10.10). A bad grave or date, or a part the view does not take, is dropped with a replace (10.9).
+- An API error body that is not JSON, is larger than 4 KiB, or carries an unknown code is matched by status, else gets the generic card (12.2, 12.3).
+- No API base: the Scan field is disabled with its reason (1.13), and the third Tour step says so (13.4).
+
+## Correctness Properties
+
+### Property 1: One View owner, one Pop-over, and home in one action
+
+For any start state made by `restore` from any canonical View, including the `rejected` Source, and any sequence of up to 50 ScreenEvents of every kind, `source` and `restore` included, every state `reduce` reaches satisfies all of the following:
+
+- The View owner and the View agree:
+  - `owner = "drawer"` exactly when `view.grave` is set;
+  - `owner = "replay"` exactly when the Source is a replay;
+  - `owner = "guide"` exactly when `page = "guide"`;
+  - `owner = "tour"` exactly when `tourStep` is set.
+- `homeSource` is never a replay or `rejected` Source.
+- An `open-*` event of a View owner that is not ignored leaves `popover = "none"`; an ignored event leaves the state unchanged.
+- An `open-popover` event keeps the View owner and the View.
+- `escape` follows 10.3 in full: with a Pop-over open it closes only the Pop-over; else with the Tour it ends only the Tour; else with the Drawer it drops only `view.grave`; else from a Replay or the Guide page it gives the `home` result; else it changes nothing.
+- `home` from any reached state gives `{ view: homeOf(s), owner: "none", popover: "none", filter: null, tourStep: null }` with `homeSource` unchanged, and `homeOf(s)` has `homeSource` as its Source, `page = "home"`, `list = homeList`, no grave and no `at`.
+
+Because every overlay renders only from this state, the page shows at most one View owner and one Pop-over.
+
+**Validates: Requirements 17.1, 17.2, 17.3, 17.4, 10.2, 10.3, 10.14**
+
+### Property 2: The View address round-trips and never throws
+
+For any canonical View `v`, `parseView(formatView(v), true)` equals `v`. A canonical View is one of:
+
+- a replay Source and nothing else;
+- the `rejected` Source and nothing else;
+- a demo, repo or scan Source with `page = "guide"` and nothing else;
+- a demo, repo or scan Source with `page = "home"`, any list flag, an optional grave of 1 to 214 characters and an optional ISO instant.
+
+For any string, `parseView` returns a canonical View without throwing.
+
+**Validates: Requirements 10.5, 10.6, and 10.9 for parts a view does not take.** Dropping a grave or date that the loaded scan lacks is checked by example tests after a load, with the replace.
+
+### Property 3: Repository input normalises or is refused
+
+For any owner and name built from GitHub's allowed characters:
+
+- `normaliseRepo` gives `https://github.com/owner/name` for `owner/name`, for `https://github.com/owner/name`, and for either with a trailing slash or `.git`;
+- normalising its own output gives the same output.
+
+For any string outside those shapes, `normaliseRepo` gives `{ ok: false }`.
+
+**Validates: Requirements 1.11, 1.12**
+
+### Property 4: Fix order is the triage order of what needs fixing
+
+For any list of 0 to 300 packages with plans:
+
+- `fixOrder` returns at most 5 rows;
+- every row is a Possessed, Dead or Haunted package;
+- the rows are the first such packages in the order `triageOrder` gives, with none skipped;
+- each row's line is the one 3.19 gives for its plan, State and Reason family.
+
+**Validates: Requirements 3.18, 3.19, 3.22**
+
+### Property 5: The List shows each matching package once, in order
+
+For any list of 0 to 300 packages, query, sort, filter and date, `listRows` returns exactly the packages that meet all three conditions:
+
+- published at that date;
+- the name contains the trimmed query, ignoring case;
+- the State at that date matches the filter.
+
+Each appears once, sorted by name or by triage order.
+
+**Validates: Requirements 6.2, 6.3, 6.4, 6.5, 6.7, 6.11**
+
+### Property 6: Marking Terms keeps the text and finds every Term
+
+For any text built from words and Term forms in any case:
+
+- joining the parts of `markTerms` gives the text unchanged;
+- every Term form in the text comes back as a marked part mapped to its Term;
+- every Term has a meaning of 1 to 25 words.
+
+**Validates: Requirements 11.1, 11.6, 11.7**
+
+### Property 7: Every failed scan gets exactly one card from the fixed table
+
+For any status (null, or an HTTP status from 400 to 599) and any `apiCode` (a known code or null):
+
+- `failureCard` returns one member of the fixed card table;
+- the card is the first match of 12.2's order;
+- the result depends on those two inputs only.
+
+`load-scan`'s code reader keeps a body code only when it is in `API_ERROR_CODES`, for any body string up to 8 KiB.
+
+**Validates: Requirements 12.2, 12.3**
+
+### Property 8: Overlays clear the graves, and the Tour card fits
+
+For any scan of 1 to 300 packages, and for both replay fixtures at each Step, at any width from 320 to 1600 and with `frontFirst` true and false:
+
+- the help line (Home only) and date badge rectangles from `overlayRects` intersect no grave's Art box.
+
+For any target rectangle inside any viewport from 320 by 480 to 1600 by 1000:
+
+- the card from `placeCard` lies inside the viewport with its 12 px margin.
+
+**Validates: Requirements 2.12, 13.6**
+
+### Property 9: Claims rest on README.md
+
+For every Claim in the Claim registry, README.md contains its `readme` text. The rendered-text check of C7 finds no capability sentence outside the registry and the listed labels. This is a check over fixed lists, run once, not a generated property.
+
+**Validates: Requirements 9.4, 17.5**
+
+## Testing Strategy
+
+- **Unit and property tests:** Vitest and Testing Library in jsdom for components. fast-check for Properties 1 to 8, each tagged `Feature: clean-site, Property N: <title>`, with numRuns 100, and 1000 for the security invariants: Property 3 (`normaliseRepo` builds the request URL from untrusted input) and the code-reader half of Property 7 (nothing kept from an untrusted error body).
+- **Example tests:**
+  - the header order, the scan tag, and the Fixture name never in the DOM;
+  - the chips and the filter;
+  - the Inspector on hover, focus and leave, and the keys of 3.23 and 3.24 with focus in the scrubber and with the Drawer open;
+  - the fix tab for each case of 7.3 to 7.15, with one copy button at most;
+  - clipboard ok and blocked, and the History tab;
+  - the Replay Steps for both fixtures, with distinct texts and the Step count;
+  - the Guide page sections and the Welcome bar with and without storage;
+  - the Legend with its eight entries and the Tour, including with no API base;
+  - the Music button absent while `TRACK` is null;
+  - each failure card, including 429 with code `rate-limited`;
+  - the three notices;
+  - the reason-family drift check (web and api halves).
+- **axe:** checks on Home, the List, the Drawer on each tab, a Replay and the Guide page.
+- **Playwright e2e:** a new `e2e/clean.spec.ts`, with a fresh profile, at 1440 by 900 and 390 by 844. It checks:
+  - every flow of the prototype;
+  - one View owner and one Pop-over at most, sampled during each flow;
+  - no DOM element over an Art box but the allowed ones;
+  - the List of 300 packages, from a generated fixture, updating within 100 ms per key;
+  - the repaint budget at 300 graves;
+  - no request outside the origin and the API base;
+  - no AudioContext and no audio element created.
+- **Replay texts:** every Step and why sentence is checked by hand against its cited source during the build, with the source key beside it in replay-facts.mjs.
+
+### Deliberate test changes
+
+Removed with their features, in the same commit (4.6):
+
+- `bubbles.test.tsx`, `sound.test.tsx`, `serious.test.tsx`, `tooltip.test.tsx`, `tooltip-place.test.ts`, `guide.test.tsx` and `fix-first.test.tsx`;
+- the Punchline cases of `epitaph.test.ts`;
+- the bell case of `priest.test.tsx`;
+- the caption case of `burst-rise.test.tsx`;
+- the Home Play cases of `play.test.ts`;
+- the e2e cases for bubbles, sound, the tooltip, the guide card and the Fix-first line in `judge.spec.ts`, `undead2.spec.ts`, `fixes.spec.ts` and `polish.spec.ts`.
+
+Expected to change:
+
+- `header.test.tsx`, `a11y.test.tsx`, `fonts.test.ts`, `asset-names.test.ts`, `styles.test.ts`;
+- `drawer.test.tsx`, `drawer-result.test.tsx`, `pr-preview.test.tsx`, `remediate.test.tsx`, `hosted-plans.test.tsx`;
+- `replay.test.tsx`, `replay-header.test.tsx`, `scrubber.test.tsx`, `marker.test.tsx`;
+- `app.test.tsx`, `smoke.test.tsx`, `readme.test.ts`, `fit.test.tsx`;
+- `validate-scan-response.test.ts`, `load-scan.test.ts`, `lists.test.ts`;
+- `selection.test.ts` (Left and Right leave `reduceSelection`), `scan-time.test.tsx`, `shapes-palette.test.ts`, `halo.test.ts`, `art-box.test.ts`, `grave-buttons.test.tsx`, `draw.test.ts`, `layout.test.ts`, `tiers.test.ts`, `motion.test.tsx`, `vite-csp.test.ts`;
+- the e2e `smoke`, `time`, `judge` and `remediate` specs.
+
+The build lists each changed test in "Decisions made during implementation" with its reason, as earlier specs did.
+
+### Review protocol
+
+- **Before every commit:** typecheck, lint and test at the root with zero warnings, then an independent review by a reviewer that has not seen the implementation. The reviewer gets this folder, the diff against main, docs/requirements.md and the steering files.
+- **Before the report:** the built site, in a fresh profile at 1440 by 900 and 390 by 844, through every flow of the prototype. With the Music button absent, the review checks that no audio is created. The built site is placed next to the prototype, and every difference is listed with its reason.
+
+## Calls made without a user decision
+
+1. **Headline count.** The prototype counts only Possessed packages as "need you now", and this is kept. On the demo it reads "1 of 12 dependencies needs you now." while 5 are Dead. The Fix order lists the Dead ones.
+2. **Fix order.** Up to 5 rows from Possessed, Dead and Haunted, in triage order. Restless and Alive never appear.
+3. **Fix tab buttons.** One copy button at most. "Copy pull request text" shows for a Proposed plan. "Copy this as an issue" shows for a Possessed, Dead or Haunted package without one. Restless and Alive get a sentence and no button, as in the prototype.
+4. **Pull request text.** It stays readable in a closed disclosure (R-UI-4).
+5. **Footer line.** The evidence links, scan time and policy line move to one site-footer line.
+6. **Failure cards.** One card covers private and not found. 429 gets its own card, because it comes from Sexton's WAF.
+7. **Examples.** Three, not four.
+8. **Phone.** The Tiers stack front first in the Narrow layout.
+9. **Canvas labels.** The name labels change to Inter. Nothing else in the Characters changes.
+10. **Fonts.** Copied from the @fontsource packages' published files. No package dependency is added.
+11. **Faint text.** The faint colour is lightened where the prototype's value fails AA. The accent moves if it is closer than 10 to Restless.
+12. **Step titles.** Step 1 titles may repeat across the two replays. The texts differ within a replay.
+13. **Burst caption.** "The wind stops. A grave opens." goes. The Step title says it in words.
+14. **Unknown replay.** A replay value outside the closed set shows "That replay does not exist." with "Back to the cemetery". It still loads nothing.
+15. **Documents outside lane 1's README section.** Requirement 18 changes several things that LANES.md gives to other lanes:
+    - README.md beyond "Try it in two minutes": the sound line, "What Sexton does", "Replay", "Pre-existing code" and the credit line;
+    - CREDITS.md;
+    - docs/JUDGES.md;
+    - docs/requirements.md.
+
+    - packages/api: `src/contract.ts`, `scripts/lib/replay-facts.mjs`, the demo generator and their tests (lane 2's package in LANES.md).
+
+    Lanes 2 and 3 have merged their branches, and leaving these unchanged would make them false or leave the Replay story with no data. The owner is asked to confirm this at go. Three Claims need README text that README lacks today (18.7): "The hosted site needs no sign-in and never asks for a GitHub password.", "Sexton reads a repository's package.json and package-lock.json at its root." and "Sexton proposes a bump only to a version that passes its checks; otherwise it proposes no change." All three are true of main: the hosted scan takes only a URL, intake fetches the two files at the repository root, and a plan with no passing candidate has status no-safe-version with no change. They are added only if the owner approves; otherwise the Claims that rest on them (the fix-tab notes' "No sign-in needed." and "Sexton only proposes a version it can show is safe.", the Guide's sign-in answer and the Tour's step 3) are cut to what README states.
+16. **product.md and structure.md.** Two always-included steering files will be out of date after the build. This lane may change only web.md, so the owner is asked at go to choose: let this lane update them, or hand them to lane 3 before the merge.
+    - product.md names the old fonts, sound, speech bubbles and the replay "banner".
+    - structure.md names src/sound, src/speech, the overlay tooltip and epitaph Serious mode.
+17. **Gold button.** The Inspector's gold button opens the package the Inspector shows. Moving the pointer from a grave to the Panel returns the Inspector to the Selected grave, as in the prototype, so the button then acts on the Selected grave.
+18. **Missing Term.** The check for a Term without a meaning is the typecheck gate, not a Vitest test. The typecheck runs before every commit like the tests.
+
+## Decisions made during implementation
+
+None yet.
