@@ -131,7 +131,7 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
   const times = await page.evaluate(() => (window as unknown as TimingWindow).__sextonTiming?.redraw(30) ?? []);
   expect(times).toHaveLength(30);
   const med = median(times);
-  console.log(`median redraw of 300 graves over 30 paints: ${med.toFixed(2)} ms`);
+  console.log(`median redraw of 300 graves over 30 paints: ${med.toFixed(2)} ms (budget ${String(BUDGET_MS)} ms)`);
   expect(med).toBeLessThanOrEqual(BUDGET_MS);
   // Spec cemetery-time, 12.6: a second timed pass after a scrubber move (Home, then one step right), by keyboard.
   const scrubber = page.getByRole("slider", { name: "History date" });
@@ -143,7 +143,7 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
   const moved = await page.evaluate(() => (window as unknown as TimingWindow).__sextonTiming?.redraw(30) ?? []);
   expect(moved).toHaveLength(30);
   const movedMedian = median(moved);
-  console.log(`median redraw of 300 graves after a scrubber move over 30 paints: ${movedMedian.toFixed(2)} ms`);
+  console.log(`median redraw of 300 graves after a scrubber move over 30 paints: ${movedMedian.toFixed(2)} ms (budget ${String(BUDGET_MS)} ms)`);
   expect(movedMedian).toBeLessThanOrEqual(BUDGET_MS);
 
   // Spec cemetery-undead-2, Deliberate test change 8 (an addition): 300 graves all in the front row, Possessed and
@@ -164,7 +164,7 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
   const frontTimes = await page.evaluate(() => (window as unknown as TimingWindow).__sextonTiming?.redraw(30) ?? []);
   expect(frontTimes).toHaveLength(30);
   const frontMedian = median(frontTimes);
-  console.log(`median redraw of 300 front-row graves over 30 paints: ${frontMedian.toFixed(2)} ms`);
+  console.log(`median redraw of 300 front-row graves over 30 paints: ${frontMedian.toFixed(2)} ms (budget ${String(BUDGET_MS)} ms)`);
   expect(frontMedian).toBeLessThanOrEqual(BUDGET_MS);
   expect(cspViolations).toEqual([]);
 });

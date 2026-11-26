@@ -233,6 +233,6 @@ test("requirement 6.3: 300 front-row graves repaint inside 16 ms during a burial
   const times = await page.evaluate(() => (window as unknown as HookWindow).__sextonTiming?.redrawBurial(30, 150) ?? []);
   expect(times).toHaveLength(30);
   const m = median(times);
-  console.log(`median repaint of 300 front-row graves during a burial: ${m.toFixed(2)} ms`);
+  console.log(`median repaint of 300 front-row graves during a burial: ${m.toFixed(2)} ms (budget ${String(BUDGET_MS)} ms)`);
   expect(m).toBeLessThanOrEqual(BUDGET_MS);
 });

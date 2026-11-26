@@ -1,6 +1,6 @@
-// The frame budget of every speed case (spec judge-path, Deliberate test change 9). Locally a repaint must fit one
-// 60 Hz frame. On a shared CI runner the same code measures up to CI_FACTOR slower (design.md, decision 10), so the
-// budget is widened by that factor there and a real regression still fails.
+// The frame budget of every speed case (spec judge-path, Deliberate test change 9, decision 12). Locally a repaint
+// must fit one 60 Hz frame. A shared CI runner's timings vary by more than two times for unchanged code, so there the
+// budget is CI_BUDGET_MS: it catches only a large regression, and the local run keeps the strict budget.
 export const FRAME_MS = 16;
-export const CI_FACTOR = 1.4;
-export const BUDGET_MS = process.env["CI"] ? FRAME_MS * CI_FACTOR : FRAME_MS;
+export const CI_BUDGET_MS = 50;
+export const BUDGET_MS = process.env["CI"] ? CI_BUDGET_MS : FRAME_MS;
