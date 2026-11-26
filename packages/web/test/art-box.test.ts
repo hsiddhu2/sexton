@@ -14,6 +14,8 @@ import { BoundsContext, unionOf, type Box } from "./bounds-context.js";
 import { readDemoScan } from "./support/demo-scan.js";
 
 const NUM_RUNS = 100;
+/** Time limit for the Part box property: 60 s on CI, where it takes about 20 s, and the 20 s default locally. */
+const PART_BOX_TIMEOUT_MS = process.env["CI"] ? 60_000 : 20_000;
 const SHAPES: readonly ShapeId[] = ["rounded", "tilted", "cross", "cracked", "open", "unmarked"];
 /** The Tier scales and the replay scale (design.md A1). */
 export const PROBE_SCALES: readonly number[] = [0.64, 0.8, 1, REPLAY_SCALE];
@@ -245,7 +247,7 @@ describe("Feature: cemetery-undead-fixes, Property 2: Part boxes hold every mark
       ),
       { numRuns: NUM_RUNS },
     );
-  });
+  }, PART_BOX_TIMEOUT_MS);
 
   it("keeps every Part box inside ART_BOX, and covers less of the cell than the core Form box for the cross and the open grave", () => {
     for (const shape of SHAPES) for (const p of FORM_PARTS[shape]) expect(inside({ minX: p.x, minY: p.y, maxX: p.x + p.w, maxY: p.y + p.h }, ART_BOX), shape).toBe(true);

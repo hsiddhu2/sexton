@@ -1,5 +1,5 @@
 import fc from "fast-check";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
   CONTRACT_ERROR_TEXT,
   validateScanResponse,
@@ -477,35 +477,47 @@ describe("Property 20: The replay fixtures pass the validator, also under mutati
 
 // Spec cemetery-time-fixes, task 4.5.
 describe("Property 2: The validator accepts the omitted reason only as \"too-large\" and never with timelines", () => {
-  it("Feature: cemetery-time-fixes, Property 2: The validator accepts the omitted reason only as \"too-large\" and never with timelines", () => {
-    const arbValue: fc.Arbitrary<unknown> = fc.oneof(
-      fc.constant("too-large"),
-      fc.constantFrom("TOO-LARGE", "Too-Large", " too-large", "too-large ", "too_large", "too-large\n", ""),
-      fc.string({ maxLength: 20 }),
-      fc.integer(),
-      fc.boolean(),
-      fc.constant(null),
-      fc.array(fc.string({ maxLength: 5 }), { maxLength: 3 }),
-      fc.dictionary(fc.string({ maxLength: 5 }), fc.string({ maxLength: 5 }), { maxKeys: 2 }),
-    );
-    const base = readDemoScan() as Record<string, unknown>;
-    const noTimelines: Record<string, unknown> = { ...base };
+  const arbValue: fc.Arbitrary<unknown> = fc.oneof(
+    fc.constant("too-large"),
+    fc.constantFrom("TOO-LARGE", "Too-Large", " too-large", "too-large ", "too_large", "too-large\n", ""),
+    fc.string({ maxLength: 20 }),
+    fc.integer(),
+    fc.boolean(),
+    fc.constant(null),
+    fc.array(fc.string({ maxLength: 5 }), { maxLength: 3 }),
+    fc.dictionary(fc.string({ maxLength: 5 }), fc.string({ maxLength: 5 }), { maxKeys: 2 }),
+  );
+  let base: Record<string, unknown> = {};
+  let noTimelines: Record<string, unknown> = {};
+  beforeAll(() => {
+    base = readDemoScan() as Record<string, unknown>;
+    noTimelines = { ...base };
     Reflect.deleteProperty(noTimelines, "timelines");
-    fc.assert(
-      fc.property(arbValue, fc.boolean(), (v, withTimelines) => {
-        const body = withTimelines ? { ...base, timelinesOmitted: v } : { ...noTimelines, timelinesOmitted: v };
-        const result = validateScanResponse(body);
-        const valid = v === "too-large" && !withTimelines;
-        expect(result.ok).toBe(valid);
-        if (!result.ok) {
-          expect(result.errors).toEqual([{ path: "/timelinesOmitted", code: "UNKNOWN_VALUE", message: expect.any(String) as string }]);
-          if (typeof v === "string" && v.length >= 4) for (const e of result.errors) expect(e.message).not.toContain(v);
-        }
-      }),
-      { numRuns: 100 },
-    );
+  });
+  // A string that is part of the fixed message, such as "valu", is in the message whether or not it is echoed,
+  // so the echo check skips it. The message must still be exactly the fixed text.
+  const inFixedMessage = (v: string): boolean => CONTRACT_ERROR_TEXT.UNKNOWN_VALUE.includes(v);
+  const check = (v: unknown, withTimelines: boolean): void => {
+    const body = withTimelines ? { ...base, timelinesOmitted: v } : { ...noTimelines, timelinesOmitted: v };
+    const result = validateScanResponse(body);
+    const valid = v === "too-large" && !withTimelines;
+    expect(result.ok).toBe(valid);
+    if (!result.ok) {
+      expect(result.errors).toEqual([{ path: "/timelinesOmitted", code: "UNKNOWN_VALUE", message: CONTRACT_ERROR_TEXT.UNKNOWN_VALUE }]);
+      if (typeof v === "string" && v.length >= 4 && !inFixedMessage(v)) for (const e of result.errors) expect(e.message).not.toContain(v);
+    }
+  };
+  const property = fc.property(arbValue, fc.boolean(), check);
+
+  it("Feature: cemetery-time-fixes, Property 2: The validator accepts the omitted reason only as \"too-large\" and never with timelines", () => {
+    fc.assert(property, { numRuns: 100 });
     // Without the key the result is unchanged.
     expect(validateScanResponse(base).ok).toBe(true);
     expect(validateScanResponse(noTimelines).ok).toBe(true);
+  });
+
+  it("does not count part of a fixed message as an echo (CI seed 832389104, path 72:36)", () => {
+    fc.assert(property, { seed: 832389104, path: "72:36", endOnFailure: true });
+    for (const withTimelines of [false, true]) check("valu", withTimelines);
   });
 });
