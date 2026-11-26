@@ -92,7 +92,9 @@ Run the exploration tests on the UNFIXED stack and loader before any fix. No net
     - _Requirements: 2.1, 2.2, 2.4, 3.5_
 - [ ] 7. After the owner types deploy (deploy 5), not part of the build
   - _Requirements: 2.1, 2.2, 2.3, 2.7_
-  - [ ] 7.1 Deploy both stacks as the runbook says, run every smoke check including check 20, and record the fallback path's header under Decision 4
+  - [x] 7.1 Deploy both stacks as the runbook says, run every smoke check including check 20, and record the fallback path's header under Decision 4
     - _Requirements: 2.1, 2.2, 2.3, 2.7_
+    - Notes (26 Nov 2026): deploy 5 from main 8952877. The owner asked for smoke checks 1, 2, 3, 14 and 20 on this deploy; all five pass; check 20 exit 0, both INFO lines `no-cache` (Decision 4).
   - [ ] 7.2 In a browser that opened the site before the deploy, reload normally after the deploy and confirm the new application and demo data load once the pre-deploy copy has expired, and that a browser fetching after deploy 5 needs no hard reload at the following web deploy
     - _Requirements: 2.3_
+    - Not checked on deploy 5. Both parts are checked at the next deploy.
