@@ -9,8 +9,10 @@ import { readOnlyFiles } from "./read-only-files.js";
 import { createServer } from "./server.js";
 
 const real = createRealDeps(process.cwd());
+// The pipeline gets no way to write to stdout (MCP messages only) and no environment (Requirements 1.5, 7.4).
+const toStderr = { write: (text: string): void => void process.stderr.write(text) };
 const server = createServer({
-  cli: { ...real, files: readOnlyFiles(real.files) },
+  cli: { ...real, files: readOnlyFiles(real.files), stdout: toStderr, stderr: toStderr, env: {} },
   fs: { realpath: (p) => realpath(p), stat: (p) => stat(p), lstat: (p) => lstat(p) },
   scanTimeoutMs: 55_000,
   cacheTtlMs: 900_000,

@@ -1,7 +1,7 @@
 // explain_package result. Spec: .kiro/specs/sexton-power, Requirement 4. Pure.
 import type { PipelineResult } from "@sexton/cli";
 import { SIGNAL_NAMES, type Advisory, type PackageHealth } from "@sexton/engine";
-import { boundValue, capList, CAP, clean, MAX, type Cut } from "../bound.js";
+import { boundValue, capList, CAP, clean, cleanOrNull, MAX, type Cut } from "../bound.js";
 import { planView, plansByPackage } from "./plan-view.js";
 
 function signalView(pkg: PackageHealth, name: (typeof SIGNAL_NAMES)[number], cut: Cut): Record<string, unknown> {
@@ -13,7 +13,7 @@ function signalView(pkg: PackageHealth, name: (typeof SIGNAL_NAMES)[number], cut
     if (list.truncated) cut.truncated = true;
     return {
       ...base,
-      value: list.items.map((a) => ({ id: clean(a.id, MAX.name), severity: a.severity, summary: clean(a.summary, MAX.advisorySummary) })),
+      value: list.items.map((a) => ({ id: clean(a.id, MAX.name), severity: clean(a.severity, 40), summary: clean(a.summary, MAX.advisorySummary) })),
     };
   }
   return { ...base, value: boundValue(signal.value, cut) };
@@ -40,8 +40,8 @@ export function explainView(scan: PipelineResult, name: string): Record<string, 
       name: clean(pkg.name, MAX.name),
       version: clean(pkg.installedVersion, MAX.version),
       declaredRange: intake === undefined ? null : clean(intake.declaredRange, MAX.other),
-      origin: intake?.origin ?? null,
-      resolution: intake?.resolution ?? null,
+      origin: cleanOrNull(intake?.origin, 40),
+      resolution: cleanOrNull(intake?.resolution, 40),
     },
     state: pkg.state,
     reason: clean(pkg.stateReason, MAX.reason),

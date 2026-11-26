@@ -187,7 +187,7 @@ The spec changes no scoring, no state rule, no policy rule, no plan and no Segme
 
 #### Acceptance Criteria
 
-1. THE `@sexton/mcp` package SHALL add exactly one third-party runtime dependency, `@modelcontextprotocol/server` pinned to `2.4.0`, and SHALL list `@sexton/engine` and `@sexton/cli` as its only other runtime dependencies.
+1. THE `@sexton/mcp` package SHALL declare exactly one third-party runtime dependency (the lockfile also gains the two packages that library itself depends on, `@modelcontextprotocol/core` 2.4.0 and `zod` 4.6.7, and the Bundle contains them), `@modelcontextprotocol/server` pinned to `2.4.0`, and SHALL list `@sexton/engine` and `@sexton/cli` as its only other runtime dependencies.
 2. THE spec SHALL record that `sexton check` on a project whose only direct dependency is `@modelcontextprotocol/server` 2.4.0 passed on 26 Nov 2026 with Sexton's own policy (Alive, no install script, provenance present, published 23 Oct 2026).
 3. WHEN task 1 adds the dependency, THE install SHALL go through the install gate (`.kiro/hooks/supply-chain.json`) and SHALL pass it.
 4. IF `sexton check` on the repository fails after the dependency is added, THEN THE work SHALL stop and report, and SHALL NOT change `sexton.policy.yml`.

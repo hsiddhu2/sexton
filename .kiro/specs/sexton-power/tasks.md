@@ -8,7 +8,7 @@ Stop conditions, from the brief: if `sexton check` fails on the repository after
 
 - [x] 1. Baseline and the one new dependency
   - [x] 1.1 Confirm the starting point
-    - Branch `kiro/power` from origin/main 8952877. Root gates green before any change; record the test count. `.kiro/agents/impl.md` byte-identical to `build/impl.md.bak` before every commit.
+    - Branch `kiro/power` from origin/main 8952877. Root gates green before any change; record the test count. `.kiro/agents/impl.md` unchanged against origin/main before every commit.
     - _Requirements: 12.3, 13.5_
   - [x] 1.2 Create `packages/mcp/package.json` and add `@modelcontextprotocol/server` 2.4.0
     - Package `@sexton/mcp` 0.1.0, `type: module`, Apache-2.0, `engines.node >=22`, scripts `build` (`tsc -b`), `pretest` (`tsc -b`), `test` (`vitest run`), dependencies `@sexton/engine`, `@sexton/cli` (the versions in their package.json) and `@modelcontextprotocol/server` pinned to `2.4.0`, no range, no other dependency. Run the install through the install gate. Record the gate's output and `sexton check` on the repository (exit 0 expected). Commit the lockfile change. If the gate or `sexton check` fails: stop and report, do not edit `sexton.policy.yml`.
@@ -135,15 +135,15 @@ Stop conditions, from the brief: if `sexton check` fails on the repository after
   - [x] 11.1 Root gates and the self-scan
     - `tsc -b`, eslint with `--max-warnings=0`, every package's tests, `npm run scan:self` (it covers `packages/*`, so the new package's three dependencies are scanned and must pass Sexton's policy), `npm run synth -w sexton-infra` unchanged.
     - _Requirements: 12.4, 13.5_
-  - [ ] 11.2 Independent review
+  - [x] 11.2 Independent review
     - A reviewer who has not seen the work checks Requirements 7, 8, 10 and 12 against the code, and the Bundle against a fresh build. Findings fixed or recorded in design.md "Notes and open items".
     - _Requirements: 7.1, 7.2, 7.4, 8.1, 8.6, 10.1, 12.5_
   - [x] 11.3 Commit
-    - `impl.md` byte-identical to `build/impl.md.bak`. Commits under the configured identity, no trailers. No push, no merge. PR body, when asked for, names the spec, the requirements and the dependency justification line.
+    - `.kiro/agents/impl.md` unchanged against origin/main. Commits under the configured identity, no trailers. No push, no merge. PR body, when asked for, names the spec, the requirements and the dependency justification line.
     - _Requirements: 12.1, 13.5_
 
 ## Notes
 
-- 11.2, the independent review, did not run in this session; it stays open. The checks that stand in for it are the properties, the static tests and the rebuilt-Bundle comparison.
+- 11.2 was reviewed by the `security-reviewer` agent (read-only subagent) on 26 Nov 2026: 8 findings (0 defects, 8 notes), 8 handled (3 code, 4 test, 1 spec wording). Details in design.md "Notes and open items: review of task 11.2".
 - 10.2: the question was posed by the building agent, not typed in a fresh chat, and Kiro's own skill activation was not observed. The proof file says so.
 - Task 11.1 ran the root gates and `npm run scan:self`; counts are in the final report.

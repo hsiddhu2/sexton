@@ -41,6 +41,7 @@ export class ScanCache {
     if (entry === undefined) {
       entry = this.start(key, root);
       this.entries.set(key, entry);
+      this.purge();
     }
     return this.race(entry.promise);
   }

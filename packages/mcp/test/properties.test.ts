@@ -44,14 +44,9 @@ describe("Property 1: the project is never changed", () => {
           const projectFiles = tmpl(project, lock, policy);
           const before = JSON.stringify(projectFiles);
           const h = await harness({ projectFiles, nodes: ALIAS_NODES });
-          let written = 0;
-          const inner = h.captured.deps.files.writeText;
-          h.captured.deps.files.writeText = (...a) => {
-            written += 1;
-            return inner(...a);
-          };
           for (const c of calls) await h.client.callTool(c.tool, c.args);
-          expect(written).toBe(0);
+          // The counter sits on the port the pipeline sees, outside readOnlyFiles, so a pipeline that wrote would be counted.
+          expect(h.writes.count).toBe(0);
           expect(h.captured.writes.size).toBe(0);
           expect(JSON.stringify(projectFiles)).toBe(before);
         },

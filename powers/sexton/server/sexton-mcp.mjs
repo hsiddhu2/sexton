@@ -43349,6 +43349,7 @@ var ScanCache = class {
     if (entry2 === void 0) {
       entry2 = this.start(key, root);
       this.entries.set(key, entry2);
+      this.purge();
     }
     return this.race(entry2.promise);
   }
@@ -43463,7 +43464,7 @@ function signalView(pkg, name, cut) {
       cut.truncated = true;
     return {
       ...base,
-      value: list2.items.map((a) => ({ id: clean(a.id, MAX.name), severity: a.severity, summary: clean(a.summary, MAX.advisorySummary) }))
+      value: list2.items.map((a) => ({ id: clean(a.id, MAX.name), severity: clean(a.severity, 40), summary: clean(a.summary, MAX.advisorySummary) }))
     };
   }
   return { ...base, value: boundValue(signal.value, cut) };
@@ -43490,8 +43491,8 @@ function explainView(scan, name) {
       name: clean(pkg.name, MAX.name),
       version: clean(pkg.installedVersion, MAX.version),
       declaredRange: intake === void 0 ? null : clean(intake.declaredRange, MAX.other),
-      origin: intake?.origin ?? null,
-      resolution: intake?.resolution ?? null
+      origin: cleanOrNull(intake?.origin, 40),
+      resolution: cleanOrNull(intake?.resolution, 40)
     },
     state: pkg.state,
     reason: clean(pkg.stateReason, MAX.reason),
@@ -43556,8 +43557,8 @@ function scanView(scan) {
       version: clean(p.installedVersion, MAX.version),
       state: p.state,
       reason: clean(p.stateReason, MAX.reason),
-      origin: origins.get(p.name) ?? null,
-      highestAdvisory: highestAdvisory(p),
+      origin: cleanOrNull(origins.get(p.name), 40),
+      highestAdvisory: cleanOrNull(highestAdvisory(p), 40),
       hasPlan: plans.get(p.name)?.status === "proposed"
     })),
     truncated: packages.truncated || unresolved.truncated
@@ -43626,8 +43627,9 @@ function createServer(deps) {
 
 // packages/mcp/dist/bin.js
 var real = createRealDeps(process.cwd());
+var toStderr = { write: (text) => void process.stderr.write(text) };
 var server = createServer({
-  cli: { ...real, files: readOnlyFiles(real.files) },
+  cli: { ...real, files: readOnlyFiles(real.files), stdout: toStderr, stderr: toStderr, env: {} },
   fs: { realpath: (p) => realpath2(p), stat: (p) => stat(p), lstat: (p) => lstat3(p) },
   scanTimeoutMs: 55e3,
   cacheTtlMs: 9e5,

@@ -1,7 +1,7 @@
 // scan_project result. Spec: .kiro/specs/sexton-power, Requirement 3. Pure.
 import type { PipelineResult } from "@sexton/cli";
 import { ENGINE_VERSION, STATE_ORDER, triageOrder } from "@sexton/engine";
-import { capList, CAP, clean, MAX } from "../bound.js";
+import { capList, CAP, clean, cleanOrNull, MAX } from "../bound.js";
 import { highestAdvisory } from "./highest-advisory.js";
 import { plansByPackage } from "./plan-view.js";
 
@@ -27,8 +27,8 @@ export function scanView(scan: PipelineResult): Record<string, unknown> {
       version: clean(p.installedVersion, MAX.version),
       state: p.state,
       reason: clean(p.stateReason, MAX.reason),
-      origin: origins.get(p.name) ?? null,
-      highestAdvisory: highestAdvisory(p),
+      origin: cleanOrNull(origins.get(p.name), 40),
+      highestAdvisory: cleanOrNull(highestAdvisory(p), 40),
       hasPlan: plans.get(p.name)?.status === "proposed",
     })),
     truncated: packages.truncated || unresolved.truncated,

@@ -10,6 +10,7 @@ Status: the Power is installed in this workspace and answered a real question wi
 - Kiro IDE: 1.4.121 (`version` in `/Applications/Kiro.app/Contents/Resources/app/package.json`).
 - Power: `sexton` 0.1.0, installed from the folder `/Users/harpreetsiddhu/Documents/Personal/Projects/Kiroween2026/sexton-kiro/powers/sexton` through Powers panel, Add Custom Power, Import power from a folder. The install name is the folder name, `sexton`; Kiro copied it to `~/.kiro/powers/installed/sexton`, and the installed `server/sexton-mcp.mjs` is byte-identical to the committed Bundle (`cmp`).
 - Bundle: `powers/sexton/server/sexton-mcp.mjs`, 1,625,522 bytes, SHA-256 `7fa242b4c9a821f970c4dcdd6bf5e23593dcfcc6611260a7acb3b5592505e7a7`. Commit a5d23fd.
+- After the live session, the independent review (task 11.2) led to three small code changes, and the Bundle was rebuilt: new SHA-256 `2f7e52a87ff849c0a681ba3a4ba157e9290667bc0aff6ee7e783f4c941b69737`. The session above ran on the Bundle with the SHA-256 listed in the previous line. The live session was not repeated on the new Bundle.
 - Node: the server runs on the `node` first on Kiro's PATH, v20.19.5 on this machine (spike). The Bundle also ran under v22.23.4 in the stdio smoke test.
 - Install from the branch URL **did not run**: the branch `kiro/power` is not pushed. After a push it would be `https://github.com/hsiddhu2/sexton/tree/kiro/power/powers/sexton`. The README names the `main` URL, which does not exist until the branch is merged.
 
@@ -17,7 +18,7 @@ Status: the Power is installed in this workspace and answered a real question wi
 
 "Which of this repository's own dependencies should I fix first, and why?" The workspace root is `/Users/harpreetsiddhu/Documents/Personal/Projects/Kiroween2026/sexton-kiro`.
 
-Who asked: the question was posed by the agent session that is building the Power, as prompt B instructs, not typed by a person into a fresh chat. The agent called the tools directly by their ids (`plugin::sexton::tool::sexton::<tool>`). **Not shown, did not run:** Kiro choosing the Power on its own from the keywords, and the skill `skills/sexton/SKILL.md` being loaded by activation. Neither was observed.
+Who asked: the question was posed by the agent session that is building the Power, as the task asks, not typed by a person into a fresh chat. The agent called the tools directly by their ids (`plugin::sexton::tool::sexton::<tool>`). **Not shown, did not run:** Kiro choosing the Power on its own from the keywords, and the skill `skills/sexton/SKILL.md` being loaded by activation. Neither was observed.
 
 ### Tool calls and their results
 
@@ -102,7 +103,7 @@ Powers panel, Add Custom Power, Import power from a folder, `build/spike/power`.
 
 ### Outcome against design.md Decision 10
 
-None of the three original outcomes held: a Power's own `mcp.json` cannot reach the project directory (cwd is the installed Power folder, no workspace variable, no roots, nothing in the environment), while a server declared in the workspace's `.kiro/settings/mcp.json` can. The work stopped there under prompt B. The owner then chose option 2 on 26 Nov 2026: each tool takes `projectDir`, bounded (absolute, real path, a directory, with a plain-file `package.json`), and the skill tells Kiro to pass the workspace root. The spec was changed first, in commit 794d730. The residual risk is written in design.md Decision 10 and in the README.
+None of the three original outcomes held: a Power's own `mcp.json` cannot reach the project directory (cwd is the installed Power folder, no workspace variable, no roots, nothing in the environment), while a server declared in the workspace's `.kiro/settings/mcp.json` can. The work stopped there for the owner's choice. The owner then chose option 2 on 26 Nov 2026: each tool takes `projectDir`, bounded (absolute, real path, a directory, with a plain-file `package.json`), and the skill tells Kiro to pass the workspace root. The spec was changed first, in commit 794d730. The residual risk is written in design.md Decision 10 and in the README.
 
 ### Cleanup state
 

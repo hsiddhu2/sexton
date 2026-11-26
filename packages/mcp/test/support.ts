@@ -75,6 +75,8 @@ export interface Harness {
   readonly logs: string[];
   readonly client: Client;
   readonly deps: McpDeps;
+  /** Calls of writeText on the port the pipeline sees (the outer, read-only port). Requirement 7.7. */
+  readonly writes: { count: number };
 }
 
 export interface Client {
@@ -150,7 +152,19 @@ export async function harness(options: HarnessOptions = {}): Promise<Harness> {
   const logs: string[] = [];
   let cli: CliDeps = { ...captured.deps, files: readOnlyFiles(captured.deps.files) };
   if (options.cli !== undefined) cli = options.cli(cli);
+  const writes = { count: 0 };
+  const outer = cli.files.writeText;
+  cli = {
+    ...cli,
+    files: {
+      ...cli.files,
+      writeText: (...args) => {
+        writes.count += 1;
+        return outer(...args);
+      },
+    },
+  };
   const deps: McpDeps = { cli, fs, scanTimeoutMs: options.scanTimeoutMs ?? 30_000, cacheTtlMs: 900_000, now: options.now ?? (() => 0), log: (l) => void logs.push(l) };
   const server = createServer(deps);
-  return { server, captured, fs, logs, client: await connect(server), deps };
+  return { server, captured, fs, logs, client: await connect(server), deps, writes };
 }
