@@ -85,3 +85,14 @@ Date: 25 Nov 2026. Agent: gravedigger (.kiro/agents/gravedigger.md, corrected th
 | D3 | **Still stands** | `count-references.ts:16-60`, `choose-kind.ts:15`, `import-sites.ts:19` | There is no `@types/*` or `tslib` exemption anywhere in `packages/engine` or `packages/cli`. The count is imports-only. |
 
 **unsafe**: three defects stand (D1, D2, D3), each with a concrete input that makes a repository worse or hides a missing review.
+
+## Review after merging main, 25 Nov 2026
+
+Agent: gravedigger, run once as a one-step subagent workflow (wf_6188c1d8e4635075) over packages/engine/src/remediation at 5b96ecc. That is kiro/depth with main c39b2c3 merged, after the remediation-safety spec fixed D1 to D4.
+
+Notes, all defence in depth and none a defect:
+- `pr-intent.ts:36-47` does not re-check that migrate edits are on `package.json` with an allowed op. The types and `runRecipe` enforce it, but a caller who builds the `migrations` map by hand skips that filter.
+- `choose-kind.ts:25` and `plan.ts` do not check that a remove target is in `dependencies`. The CLI enforces it through `importSitesFor`.
+- `pr-body.ts:221` falls back to the 5-item list, but nothing re-checks the result against `MAX_BODY_CHARS`. Every field is bounded, so no oversized body could be built.
+
+Verdict line, verbatim: **Verdict: safe with notes.** D1 to D4 hold and all seven items pass. The merge changed nothing under `remediation`. The only findings are the three defence-in-depth notes above.

@@ -26,6 +26,7 @@ inclusion: always
   - Deployed only to us-east-1. Stack and table names end in the stage, which is dev.
 - scripts/self-scan.mjs: Sexton scans its own dependencies. CI runs it as npm run scan:self.
 - .github/workflows: ci.yml runs the gates, the self-scan and the infra synth. sexton.yml runs the Action on pull requests.
+- CI runs the browser tests in an e2e job on Ubuntu after the gates: it installs Chromium (cached by Playwright version) and runs npm run test:e2e -w @sexton/web.
 - docs: ADRs, threat model, architecture. docs/requirements.md is the product requirements.
 - .kiro: specs, steering, hooks, agents, settings. Committed. Never ignored.
 - private: research and filings. Ignored. Never committed.
