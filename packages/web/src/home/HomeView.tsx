@@ -5,15 +5,16 @@ import type { PackageHealth, ScanResponse, State } from "@sexton/api";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Cemetery } from "../Cemetery.js";
 import { LoadingCard } from "../LoadingCard.js";
-import { LOAD_FAILED_CARD, liveFailureCard } from "../load/scan-failure.js";
-import { BACK_TO_SAMPLE, FailureCard, TRY_AGAIN, TRY_DEMO_REPO } from "./FailureCard.js";
+import { LOAD_FAILED_CARD, liveFailureCard, NO_SUCH_REPLAY_TEXT } from "../load/scan-failure.js";
+import { BACK_TO_CEMETERY, BACK_TO_SAMPLE, FailureCard, TRY_AGAIN, TRY_DEMO_REPO } from "./FailureCard.js";
 import type { Term } from "../glossary/glossary.js";
 import { dayText } from "../header/format-scan-time.js";
 import type { ScanKind } from "../drawer/fix-view.js";
 import type { Beat } from "../scene/motion.js";
 import type { LoadError } from "../load/load-error.js";
 import type { RemediateView } from "../load/remediate-client.js";
-import type { ScreenEvent, ScreenState } from "../load/screen-state.js";
+import type { ScreenState } from "../load/screen-state.js";
+import type { Dispatch } from "../load/use-view.js";
 import type { LoadState } from "../load/use-scan-loader.js";
 import { STATES } from "../load/lists.js";
 import { FixOrder } from "../panel/FixOrder.js";
@@ -41,12 +42,19 @@ const NO_STOPS: readonly number[] = [];
 export interface HomeViewProps {
   readonly load: LoadState;
   readonly screen: ScreenState;
-  readonly dispatch: (event: ScreenEvent) => void;
+  readonly dispatch: Dispatch;
   readonly theme: Theme;
   readonly reducedMotion: boolean;
   readonly repoFieldRef: RefObject<HTMLInputElement | null>;
   /** The repository as owner/name while a Live scan loads, for the scanning card (1.14); else null. */
   readonly scanning: string | null;
+  /** True while a Live scan is shown, so a failed load shows the Live scan's card (12.2). */
+  readonly live?: boolean;
+  /**
+   * True when the loaded response is the one the screen state's Source names. After Back or Forward the old response
+   * may show for a moment; a grave or date is checked against the scan only once its own response is in (10.9).
+   */
+  readonly current?: boolean;
   readonly onRemediate?: (packageName: string) => Promise<RemediateView>;
   readonly onReplay: (id: ReplayId) => void;
   readonly onTerm?: (term: Term, anchor: HTMLButtonElement) => void;
@@ -87,9 +95,11 @@ export function HomeView(props: HomeViewProps) {
  * the demo repo" and "Back to the sample"; the fixed load card otherwise, with "Try again" and "Back to the sample".
  * No other text of the error is shown (12.4).
  */
-function LoadFailure({ screen, error, onDemoRepo, onSample, onRetry }: HomeViewProps & { readonly error: LoadError }) {
+function LoadFailure({ screen, live, error, onDemoRepo, onSample, onRetry }: HomeViewProps & { readonly error: LoadError }) {
+  // A replay value outside the closed set loads nothing (10.10); its one button loads the Sample scan.
+  if (screen.view.source.kind === "rejected") return <FailureCard sentence={NO_SUCH_REPLAY_TEXT} actions={[{ label: BACK_TO_CEMETERY, onPress: onSample ?? none }]} />;
   const sample = { label: BACK_TO_SAMPLE, onPress: onSample ?? none };
-  if (screen.view.source.kind === "repo") {
+  if (live === true) {
     const card = liveFailureCard(error);
     return <FailureCard sentence={card.sentence} next={card.next} actions={[{ label: TRY_DEMO_REPO, onPress: onDemoRepo ?? none }, sample]} />;
   }
@@ -107,7 +117,7 @@ function formOf(response: ScanResponse, pkg: PackageHealth, atMs: number | null)
   return atMs === null ? scanForm : formAt(timelineOf(response, pkg.name), atMs, scanForm);
 }
 
-function ReadyHome({ response, loadId, screen, dispatch, theme, reducedMotion, repoFieldRef, onRemediate, onReplay, onTerm, scanKind, onGuide, beat }: ReadyProps) {
+function ReadyHome({ response, loadId, screen, current = true, dispatch, theme, reducedMotion, repoFieldRef, onRemediate, onReplay, onTerm, scanKind, onGuide, beat }: ReadyProps) {
   const order = useMemo(() => triageOrder(response.report.packages), [response]);
   const indexOf = useMemo(() => new Map(order.map((p, i) => [p.name, i])), [order]);
   // The date, from the screen state (view.at).
@@ -121,6 +131,14 @@ function ReadyHome({ response, loadId, screen, dispatch, theme, reducedMotion, r
     return i === -1 ? last : i;
   }, [atIso, stops, last]);
   const index = homeIndex;
+  // A grave or date the loaded scan does not have leaves the address with a replace, and the rest shows (10.9).
+  const grave = screen.view.grave;
+  const badGrave = current && grave !== null && !indexOf.has(grave);
+  const badDate = current && atIso !== null && (stops.indexOf(Date.parse(atIso)) === -1 || stops.indexOf(Date.parse(atIso)) === last);
+  useEffect(() => {
+    if (badGrave) dispatch({ kind: "close" }, "replace");
+    if (badDate) dispatch({ kind: "date", at: null }, "replace");
+  }, [badGrave, badDate, dispatch]);
   const showScrubber = stopInfo.hasTimelines;
   const asOfMs = showScrubber ? (stops[index] ?? null) : null;
   const earlier = showScrubber && index < last && asOfMs !== null;
@@ -140,7 +158,8 @@ function ReadyHome({ response, loadId, screen, dispatch, theme, reducedMotion, r
   };
 
   // The Selected grave, and the graves under the pointer and holding focus (3.3 to 3.5).
-  const [selected, setSelected] = useState<number | null>(() => (order.length > 0 ? 0 : null));
+  // At load the Selected grave is the one whose Drawer the address opens, else the first in triage order.
+  const [selected, setSelected] = useState<number | null>(() => (grave !== null ? indexOf.get(grave) : undefined) ?? (order.length > 0 ? 0 : null));
   const [hover, setHover] = useState<number | null>(null);
   const [focus, setFocus] = useState<number | null>(null);
   const onLook = useCallback((h: number | null, f: number | null): void => {
@@ -150,7 +169,7 @@ function ReadyHome({ response, loadId, screen, dispatch, theme, reducedMotion, r
   const looked = hover ?? focus ?? selected;
   const lookedPkg = looked === null ? undefined : order[looked];
 
-  const drawerOpen = screen.owner === "drawer";
+  const drawerOpen = screen.owner === "drawer" && !badGrave;
   const openDrawer = useCallback(
     (name: string): void => {
       if (indexOf.has(name)) dispatch({ kind: "open-drawer", grave: name });
@@ -300,7 +319,7 @@ function ReadyHome({ response, loadId, screen, dispatch, theme, reducedMotion, r
             popoverOpen={screen.popover !== "none"}
             {...(onTerm !== undefined ? { onTerm } : {})}
             {...(onGuide !== undefined ? { onGuide } : {})}
-            open={screen.view.grave}
+            open={badGrave ? null : grave}
             onOpen={openDrawer}
             onClose={closeDrawer}
             filter={filter}

@@ -1,6 +1,6 @@
 // The Scan field (spec clean-site, design C2, requirements 1.9 to 1.13): a wide field with its Scan button and the
 // example list, a Pop-over that opens when the field gains focus.
-import { useState, type FocusEvent, type FormEvent, type RefObject } from "react";
+import { useEffect, useState, type FocusEvent, type FormEvent, type RefObject } from "react";
 import { HOSTED_UNAVAILABLE_TEXT } from "../load/use-scan-loader.js";
 import { EXAMPLES, EXAMPLES_HEADING } from "./examples.js";
 import { SearchGlyph } from "./icons.js";
@@ -8,18 +8,27 @@ import { normaliseRepo, REPO_INPUT_HINT } from "./repo-input.js";
 
 export const SCAN_PLACEHOLDER = "Scan a GitHub repo, for example  facebook/react";
 export const SCAN_FIELD_NAME = "GitHub repository to scan";
+/** The Scan button's name while a repository from the address waits for a press (10.11, 10.18). */
+export const SCAN_PROMPT_TEXT = "Scan this repository";
 
 export interface ScanFieldProps {
   readonly apiConfigured: boolean;
   readonly fieldRef?: RefObject<HTMLInputElement | null>;
+  /** A repository from the address that waits for a press: it fills the field (10.11). */
+  readonly prompt?: string | null;
   readonly examplesOpen: boolean;
   readonly onExamples: (open: boolean) => void;
   /** Starts a Live scan of the canonical repository URL. */
   readonly onScan: (url: string) => void;
 }
 
-export function ScanField({ apiConfigured, fieldRef, examplesOpen, onExamples, onScan }: ScanFieldProps) {
-  const [value, setValue] = useState("");
+export function ScanField({ apiConfigured, fieldRef, prompt = null, examplesOpen, onExamples, onScan }: ScanFieldProps) {
+  const [value, setValue] = useState(prompt ?? "");
+  useEffect(() => {
+    if (prompt !== null) setValue(prompt);
+  }, [prompt]);
+  // The button reads "Scan this repository" while the field still holds the waiting repository.
+  const prompting = prompt !== null && value === prompt;
   const [refused, setRefused] = useState(false);
   const scan = (input: string): boolean => {
     const repo = normaliseRepo(input);
@@ -68,7 +77,7 @@ export function ScanField({ apiConfigured, fieldRef, examplesOpen, onExamples, o
           }}
         />
         <button type="submit" className="scan-button" disabled={!apiConfigured}>
-          Scan
+          {prompting ? SCAN_PROMPT_TEXT : "Scan"}
         </button>
       </form>
       {apiConfigured ? null : (

@@ -15,6 +15,8 @@ export const MUSIC_BUTTON_TEXT = "Music";
 export interface HeaderProps {
   /** The scan tag text, or null when nothing is shown (a rejected replay value). */
   readonly tag: string | null;
+  /** A repository from the address that waits for a press (10.11), or null. */
+  readonly prompt?: string | null;
   readonly theme: Theme;
   readonly apiConfigured: boolean;
   /** The Scan field, so the page can move focus to it. */
@@ -32,7 +34,7 @@ export interface HeaderProps {
   readonly music?: { readonly on: boolean; readonly onToggle: () => void };
 }
 
-export function Header({ tag, theme, apiConfigured, fieldRef, popover, onPopover, onScan, onHome, onGuide, onTour, music }: HeaderProps) {
+export function Header({ tag, prompt = null, theme, apiConfigured, fieldRef, popover, onPopover, onScan, onHome, onGuide, onTour, music }: HeaderProps) {
   return (
     <header className="site-header">
       <Wordmark onHome={onHome} />
@@ -44,6 +46,7 @@ export function Header({ tag, theme, apiConfigured, fieldRef, popover, onPopover
       <ScanField
         apiConfigured={apiConfigured}
         {...(fieldRef !== undefined ? { fieldRef } : {})}
+        prompt={prompt}
         examplesOpen={popover === "examples"}
         onExamples={(open) => {
           if (open) onPopover("examples");

@@ -1,6 +1,7 @@
 // The site shell (spec clean-site, Architecture): the header, the Welcome bar, Home (or a Replay, or the Guide page), the site
 // footer, the Tour and the Term Pop-over. The screen state of load/screen-state.ts, held by load/use-view.ts, is the
 // one owner of what is open; every overlay renders from it. The loader follows the Source it names.
+import type { ScanResponse } from "@sexton/api";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Term } from "./glossary/glossary.js";
 import { TermPopover, type TermAnchor } from "./glossary/TermPopover.js";
@@ -20,7 +21,8 @@ import { requestRemediation, type RemediateView } from "./load/remediate-client.
 import { homeOf, type Popover } from "./load/screen-state.js";
 import { DEMO_ADDRESS, useScanLoader } from "./load/use-scan-loader.js";
 import { useView } from "./load/use-view.js";
-import { HOME_VIEW, parseView, type View, type ViewSource } from "./load/view-address.js";
+import { isReload, mayResume, readScanned, sessionStore, writeScanned } from "./load/scanned-pref.js";
+import { formatView, HOME_VIEW, parseView, type View, type ViewSource } from "./load/view-address.js";
 import { replayAddress, type ReplayId } from "./replay/replay-ids.js";
 import { ReplayView } from "./replay/ReplayView.js";
 import { applyPalette, type Theme } from "./scene/palette.js";
@@ -49,22 +51,42 @@ function sourceKey(source: ViewSource): string {
   }
 }
 
+/** Pure. What the loader reads first: the Source of the address, with a repository left to the App (10.11, 10.12). */
+function loaderSearch(view: View): string {
+  const source = view.source;
+  return source.kind === "repo" || source.kind === "demo" ? "" : formatView({ ...HOME_VIEW, source });
+}
+
 export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
-  const loader = useScanLoader({ fetchFn, pageOrigin, apiBase, initialSearch });
+  const hosted = apiBase !== null;
+  // The page shows the View its address names (10.6); a repository waits for a press unless this is a reload after
+  // the visitor's own scan (10.11, 10.12).
+  const [initial] = useState((): View => parseView(initialSearch, hosted));
+  const [resume] = useState(
+    () => initial.source.kind === "repo" && mayResume(initial.source.url, readScanned(sessionStore()), isReload()),
+  );
+  const loader = useScanLoader({ fetchFn, pageOrigin, apiBase, initialSearch: loaderSearch(initial) });
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const theme: Theme = "dark";
   const repoFieldRef = useRef<HTMLInputElement | null>(null);
   useLayoutEffect(() => {
     applyPalette(document.documentElement, theme);
   }, [theme]);
-  // The page loads the Source its address names, as the loader does; the rest of the address joins in task 8.
-  const [initial] = useState((): View => ({ ...HOME_VIEW, source: parseView(initialSearch, false).source }));
-  const { state: screen, dispatch } = useView(initial);
-  const loaded = useRef(sourceKey(initial.source));
-  const { loadFrom, submitRepo } = loader;
+  const { state: screen, dispatch } = useView(initial, { hosted });
+  // What the loader shows. A repository that waits for a press shows the Sample scan under its prompt.
+  const firstKey = initial.source.kind === "repo" ? sourceKey({ kind: "demo" }) : sourceKey(initial.source);
+  const loaded = useRef(firstKey);
+  const [loadedKey, setLoadedKey] = useState(firstKey);
+  const markLoaded = useCallback((key: string): void => {
+    loaded.current = key;
+    setLoadedKey(key);
+  }, []);
+  // The responses of Live scans shown in this page, so Back and Forward show them again with no request.
+  const held = useRef(new Map<string, ScanResponse>());
+  const { loadFrom, submitRepo, show } = loader;
   const loadSource = useCallback(
     (source: ViewSource): void => {
-      loaded.current = sourceKey(source);
+      markLoaded(sourceKey(source));
       switch (source.kind) {
         case "demo":
           loadFrom(DEMO_ADDRESS);
@@ -73,6 +95,7 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
           loadFrom(replayAddress(source.id), "replay");
           return;
         case "repo":
+          writeScanned(sessionStore(), source.url);
           submitRepo(source.url);
           return;
         case "scan":
@@ -83,30 +106,61 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
           return;
       }
     },
-    [loadFrom, submitRepo],
+    [loadFrom, submitRepo, markLoaded],
   );
-  /** Loads `source` unless it is the one already loaded. */
+  /**
+   * Shows `source` unless it is the one already loaded. A repository is never scanned here: a held response shows
+   * again, else its prompt shows over the Sample scan (10.11).
+   */
   const ensure = useCallback(
     (source: ViewSource): void => {
-      if (sourceKey(source) !== loaded.current) loadSource(source);
+      const key = sourceKey(source);
+      if (key === loaded.current) return;
+      if (source.kind !== "repo") {
+        loadSource(source);
+        return;
+      }
+      const response = held.current.get(source.url);
+      if (response !== undefined) {
+        markLoaded(key);
+        show(response, "hosted");
+        return;
+      }
+      if (loaded.current !== sourceKey({ kind: "demo" })) loadSource({ kind: "demo" });
     },
-    [loadSource],
+    [loadSource, markLoaded, show],
   );
-  // The loader follows the Source the screen state names, whatever event changed it (Escape included).
+  // A reload after the visitor's own scan starts it again (10.12).
+  useEffect(() => {
+    if (resume) loadSource(initial.source);
+    // Runs once per mount: the first address is read a single time.
+  }, []);
+  const { state } = loader;
+  useEffect(() => {
+    if (state.status === "ready" && state.source === "hosted" && loaded.current.startsWith("repo:")) held.current.set(loaded.current.slice(5), state.response);
+  }, [state]);
+  // The loader follows the Source the screen state names, whatever event changed it (Escape and Back included).
   const shownSource = screen.view.source;
   useEffect(() => {
     ensure(shownSource);
   }, [shownSource, ensure]);
+  /** The repository waiting for a press, or null (10.11). */
+  const prompt = shownSource.kind === "repo" && loadedKey !== sourceKey(shownSource) ? shownSource.url : null;
+  const screenRef = useRef(screen);
+  screenRef.current = screen;
+  const promptRef = useRef(prompt);
+  promptRef.current = prompt;
+  // The Home action (10.2). A prompt is not a scan, so from it or from a view opened over it Home is the Sample scan.
   const goHome = useCallback((): void => {
-    ensure(homeOf(screen).source);
-    dispatch({ kind: "home" });
-  }, [ensure, screen, dispatch]);
+    const home = homeOf(screenRef.current).source;
+    if (home.kind === "repo" && home.url === promptRef.current) dispatch({ kind: "source", source: { kind: "demo" } });
+    else dispatch({ kind: "home" });
+  }, [dispatch]);
   const openReplay = useCallback(
     (id: ReplayId): void => {
       dispatch({ kind: "open-replay", id });
-      ensure({ kind: "replay", id });
     },
-    [dispatch, ensure],
+    [dispatch],
   );
   const scan = useCallback(
     (url: string): void => {
@@ -116,7 +170,8 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
     },
     [dispatch, loadSource],
   );
-  // The failure cards' buttons (12.5 to 12.7). Each loads even when its Source is the one that just failed.
+  // The failure cards' buttons (12.5 to 12.7) and the unknown replay's "Back to the cemetery" (10.10). Each loads even
+  // when its Source is the one that just failed.
   const sample = useCallback((): void => {
     const source: ViewSource = { kind: "demo" };
     dispatch({ kind: "source", source });
@@ -143,9 +198,8 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
     dispatch({ kind: "open-guide" });
   }, [hideWelcome, dispatch]);
   const openTour = useCallback((): void => {
-    ensure(homeOf(screen).source);
     dispatch({ kind: "open-tour" });
-  }, [ensure, screen, dispatch]);
+  }, [dispatch]);
   const onPopover = useCallback(
     (popover: Popover): void => {
       dispatch(popover === "none" ? { kind: "close-popover" } : { kind: "open-popover", popover });
@@ -162,17 +216,20 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
     [dispatch],
   );
 
-  // Escape (10.3): the Drawer handles its own and marks the event, so one press closes one thing.
+  // Escape (10.3): a Pop-over, else the Tour, else the Drawer, else a Replay or the Guide page goes home. The Drawer
+  // handles its own and marks the event, so one press closes one thing; its last step is the Home action of goHome.
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
       if (event.key !== "Escape" || event.defaultPrevented) return;
-      dispatch({ kind: "escape" });
+      const s = screenRef.current;
+      if (s.popover === "none" && (s.owner === "replay" || s.owner === "guide")) goHome();
+      else dispatch({ kind: "escape" });
     };
     document.addEventListener("keydown", onKey);
     return () => {
       document.removeEventListener("keydown", onKey);
     };
-  }, [dispatch]);
+  }, [dispatch, goHome]);
   // A press outside the open Pop-over closes it (11.5, 13.12).
   const popover = screen.popover;
   useEffect(() => {
@@ -189,7 +246,6 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
     };
   }, [popover, dispatch]);
 
-  const { state } = loader;
   const model = useMemo(
     () => (state.status === "ready" ? headerModel(state.response, state.isDemo, state.source === "hosted" ? apiBase : null) : null),
     [state, apiBase],
@@ -209,7 +265,8 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
   return (
     <>
       <Header
-        tag={scanTag(source)}
+        tag={scanTag(prompt === null ? source : { kind: "demo" })}
+        prompt={prompt}
         theme={theme}
         apiConfigured={apiBase !== null}
         fieldRef={repoFieldRef}
@@ -257,6 +314,8 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
             reducedMotion={reducedMotion}
             repoFieldRef={repoFieldRef}
             scanning={scanning}
+            live={source.kind === "repo" && prompt === null}
+            current={loadedKey === sourceKey(source)}
             onReplay={openReplay}
             onTerm={onTerm}
             scanKind={scanKind}

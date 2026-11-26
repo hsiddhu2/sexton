@@ -123,7 +123,7 @@ describe("opening a replay (requirement 18)", () => {
     }
   });
 
-  it("wins over ?scan= and shows the load failure card (12.7) with no request for any other value", async () => {
+  it("wins over ?scan= and shows the unknown replay card (10.10) with no request for any other value", async () => {
     const wins = mount("?scan=%2Fdemo%2Fscan.json&replay=keyv");
     await ready();
     expect(wins.urls).toEqual([`${ORIGIN}/replay/keyv.json`]);
@@ -131,14 +131,14 @@ describe("opening a replay (requirement 18)", () => {
     for (const bad of ["other", "", "AXIOS", "axios%2F..", "..%2Fdemo%2Fscan", "https%3A%2F%2Fevil.example%2Fx.json"]) {
       const { urls } = mount(`?replay=${bad}`);
       await waitFor(() => {
-        expect(screen.getByRole("alert").textContent).toBe("!This scan could not be loaded.Try again, or open the sample.Try againBack to the sample");
+        expect(screen.getByRole("alert").textContent).toBe("!That replay does not exist.Back to the cemetery");
       });
       expect(urls).toEqual([]);
       cleanup();
     }
     const repeated = mount("?replay=axios&replay=keyv");
     await waitFor(() => {
-      expect(screen.getByRole("alert").textContent).toBe("!This scan could not be loaded.Try again, or open the sample.Try againBack to the sample");
+      expect(screen.getByRole("alert").textContent).toBe("!That replay does not exist.Back to the cemetery");
     });
     expect(repeated.urls).toEqual([]);
   });

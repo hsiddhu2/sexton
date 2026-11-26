@@ -93,11 +93,11 @@ Run-time notes:
   - [x] 7.3 Build the Tour with `tour/place-card.ts` (Property 8, second half)
     - _Requirements: 13.3 to 13.10_
 
-- [ ] 8. The way back
+- [x] 8. The way back
   - _Requirements: 10.1 to 10.18, 17.1 to 17.4_
-  - [ ] 8.1 Add `load/use-view.ts`: `ScreenState`, push and replace, popstate, the Drawer's Back step, the Escape order
+  - [x] 8.1 Add `load/use-view.ts`: `ScreenState`, push and replace, popstate, the Drawer's Back step, the Escape order
     - _Requirements: 10.3, 10.4, 10.7, 10.8, 10.14 to 10.17, 17.1, 17.2, 17.3, 17.4_
-  - [ ] 8.2 Wire every view, breadcrumb and the wordmark to it; the unknown-replay card; the `?repo=` prompt; port the still-valid cases of calm-first-visit's `way-back.test.tsx`
+  - [x] 8.2 Wire every view, breadcrumb and the wordmark to it; the unknown-replay card; the `?repo=` prompt; port the still-valid cases of calm-first-visit's `way-back.test.tsx`
     - _Requirements: 10.1, 10.2, 10.5, 10.6, 10.9 to 10.13, 10.18_
 
 - [x] 9. Failed scans

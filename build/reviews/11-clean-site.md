@@ -163,3 +163,26 @@ Notes:
 5. With `TRACK` a constant, the App wiring of the button and the beat is checked through a Header harness and the hook, and fully once a track is set; the README credit test becomes a real check then too.
 
 Gates after the fixes: typecheck, lint (zero warnings) and test pass; 2317 tests across 6 workspaces.
+
+## Task 8
+
+The way back (8.1, 8.2): `load/use-view.ts` holds the screen state with the View address in step, `load/history-step.ts` says whether each change pushes, replaces, goes back over the Drawer's entry or leaves the address alone, Back and Forward restore the View of their entry, and Escape's last step is the Home action. The wordmark, the breadcrumbs, Exit replay and "Back to the cemetery" go through it. An unknown replay shows "That replay does not exist." with "Back to the cemetery". A fresh repo= link fills the Scan field and shows "Scan this repository" with no request; a reload of the tab that started the scan starts it again; a Live scan shown in the page is held, so Back and Forward show it with no request.
+
+Independent review before the commit. Verdict: not ready, for one defect, fixed before the commit:
+
+1. Back and Forward lost the date or grave of an entry whose Source differed from the scan still loaded: after Back from a Replay to `?at=<a demo date>`, Home checked that date against the Replay's response for one render, dropped it with a replace, and the address became "/". Fixed: Home checks a grave or date only once the loaded response belongs to the shown Source. A new case sets a date, opens a Replay, goes Back and checks the date and slider, then a Drawer, the Guide page and Back.
+
+Notes:
+
+1. If the popstate of the page's own Back step came later than the 500 ms fallback, the entry beneath would show as it was. Not seen in a browser; left as it is.
+2. A visitor's own Back pressed while the page's Back step runs is taken as that step. Left as it is.
+3. A reload that resumes a Live scan (10.12) first starts the Sample scan's request, which is aborted; under StrictMode in development the resume runs twice, the first request aborted. Harmless.
+4. A press of "Scan this repository" on an address whose repo= is not canonical (repo=a/b) pushes the canonical address as a new entry, so Back returns to the prompt. No request is sent without the press.
+5. A fresh `?repo=X&grave=g` keeps its grave and date until the scan runs; nothing is checked against the Sample scan under the prompt (changed with the fix above).
+6. Escape does nothing on the unknown replay card: it has no View owner, and 10.3 names only a Replay or the Guide page. The wordmark and the card's button lead home.
+7. A doc comment in `load/scan-failure.ts` sat above the wrong constant. Fixed.
+8. `history.length` grows across the cases of a file; `way-back.test.tsx` starts each case with a fresh entry, so its length checks are relative.
+9. The Home action from Home with a date is a replace, as recorded in design.md.
+10. Every fetch still passes checkScanUrl; a held response is shown with no fetch.
+
+Gates after the fixes: typecheck, lint (zero warnings) and test pass; 2357 tests across 6 workspaces. Playwright, before the fix (no change to the paths it covers since): 34 passed, 8 failed, the same eight that failed before this task (the four demo-label cases and the canvas top in `time.spec.ts`, the 360 px full-bleed case in `polish.spec.ts`, and the evidence link names and the README replay picture in `smoke.spec.ts`).

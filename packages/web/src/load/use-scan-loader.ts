@@ -24,6 +24,8 @@ export interface ScanLoader {
   readonly loadFrom: (address: string, source?: LoadSource) => void;
   /** Returns fixed text when no request started, or null when one did. */
   readonly submitRepo: (value: string) => string | null;
+  /** Shows a response already held in memory, with no request (a Live scan shown again on Back or Forward). */
+  readonly show: (response: ScanResponse, source: LoadSource) => void;
 }
 
 export const DEMO_ADDRESS = "/demo/scan.json";
@@ -100,5 +102,12 @@ export function useScanLoader(deps: ScanLoaderDeps): ScanLoader {
     [apiBase, start],
   );
 
-  return { state, loadFrom: start, submitRepo };
+  const show = useCallback((response: ScanResponse, source: LoadSource): void => {
+    idRef.current += 1;
+    controllerRef.current?.abort();
+    controllerRef.current = null;
+    setState({ status: "ready", loadId: idRef.current, response, isDemo: false, source });
+  }, []);
+
+  return { state, loadFrom: start, submitRepo, show };
 }

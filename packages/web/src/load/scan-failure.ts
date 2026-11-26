@@ -38,6 +38,8 @@ export const FAILURE_CARDS: Readonly<Record<FailureCardId, FailureCard>> = {
   generic: { id: "generic", sentence: "The scan failed on our side.", next: "Try again, or try the demo repo." },
 };
 
+/** The card of a replay value outside the closed set (10.10): nothing is loaded. */
+export const NO_SUCH_REPLAY_TEXT = "That replay does not exist.";
 /** The card of 12.7, for a failed Sample scan or scan file load or a refused Replay file. */
 export const LOAD_FAILED_CARD = { sentence: "This scan could not be loaded.", next: "Try again, or open the sample." } as const;
 

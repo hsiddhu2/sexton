@@ -134,8 +134,17 @@ beforeEach(() => {
   install();
 });
 
-afterEach(() => {
+afterEach(async () => {
   reset();
+  // A Back step the page took (a Drawer close, spec clean-site 10.17) lands a task later. Let it land here, after the
+  // case has unmounted, then start the next case on "/", so no popstate reaches the next case's page.
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  try {
+    window.history.replaceState(null, "", "/");
+  } catch {
+    // A case that replaced the history API keeps its own.
+  }
 });
 
 install();
