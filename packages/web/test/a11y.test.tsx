@@ -167,20 +167,21 @@ describe("keyboard reach (Requirement 10.5)", () => {
     await ready();
     // Spec cemetery-undead, Deliberate test change 17: the header, then the roving grave, then the Footer bar: Play,
     // History date and the two Replay buttons. Spec cemetery-undead-2, Deliberate test change 2: Sound is now a stop
-    // after Scan, so 12 presses and the grave at position 7.
+    // after Scan, so 12 presses and the grave at position 7. Spec judge-path, Deliberate test change 1: Guide after
+    // Legend, then the Fix-first button at the header's foot, so 14 presses and the grave at position 9.
     const seen: string[] = [];
     const reached: HTMLElement[] = [];
-    for (let i = 0; i < 12; i += 1) {
+    for (let i = 0; i < 14; i += 1) {
       await user.tab();
       const el = document.activeElement as HTMLElement;
       reached.push(el);
       seen.push(el.getAttribute("aria-label") ?? (el.textContent === "" ? el.getAttribute("name") : el.textContent) ?? el.tagName);
     }
-    expect(seen.slice(0, 7)).toEqual(["Download evidence pack as JSON", "Download evidence pack as Markdown", "repo", "Scan", "Sound off", "Serious mode", "Legend"]);
+    expect(seen.slice(0, 9)).toEqual(["Download evidence pack as JSON", "Download evidence pack as Markdown", "repo", "Scan", "Sound off", "Serious mode", "Legend", "Guide", "Fix first: left-padder 1.2.1, Possessed, maintainer change in the last 90 days"]);
     const first = container.querySelector<HTMLElement>('button[data-grave-index][tabindex="0"]');
     expect(first).not.toBeNull();
-    expect(reached[7]).toBe(first);
-    expect(seen.slice(8)).toEqual(["Play", "History date", "axios, Mar 2026", "keyv, Aug 2026"]);
+    expect(reached[9]).toBe(first);
+    expect(seen.slice(10)).toEqual(["Play", "History date", "axios, Mar 2026", "keyv, Aug 2026"]);
     // The roving stop is the only grave in the tab sequence.
     expect(container.querySelectorAll('button[data-grave-index]:not([tabindex="-1"])')).toHaveLength(1);
   });

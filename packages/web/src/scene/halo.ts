@@ -3,10 +3,11 @@
 // the cells of the selected and the Lantern grave, and the Art box of a grave whose burial, Vigil or Burst plays are
 // cut out of it. One pure function, haloMask, gives the painter and the property test the same sources and cuts.
 import { artRect, FORM_PARTS, formParts, intersects, labelRect, MARKER_BOX } from "./art-box.js";
-import { PRIEST_BOX } from "./characters/priest.js";
+import { PRIEST_PARTS } from "./characters/priest.js";
 import type { GravePlan, Rect, ScenePlan } from "./layout.js";
 import { CELL_WIDTH } from "./layout.js";
 import { STATE_BY_SHAPE } from "./characters/vector.js";
+import { BURIAL_SINK_PX, burialFrame } from "../time/burial.js";
 
 /** The Halo's radius, in cell widths of its grave. */
 export const HALO_RADIUS = 2.4;
@@ -18,11 +19,8 @@ export const HALO_FEATHER = 32;
  * cut (its margin, 8 px) by more than one and a quarter blurs, so the solid cut's edge falls where the Halo is already
  * almost gone and shows no step. Where the canvas has no filter, the linear HALO_FEATHER strips remain.
  */
-export const HALO_GROW = 16;
-export const HALO_BLUR = 6;
-/** The selection ring's line, from 1 px outside the cell to 6 px inside it; the focus outline, 4 to 11 px inside. */
-export const RING_BAND = { outside: 1, inside: 6 } as const;
-export const OUTLINE_BAND = { from: 4, to: 11 } as const;
+export const HALO_GROW = 12;
+export const HALO_BLUR = 3;
 /**
  * The Halo's centre in cell units: above the zombie's head, so most of the bloom rises into the open ground and sky
  * behind the grave, where nothing is cut (visual critic round 1).
@@ -40,7 +38,7 @@ export interface HaloSource {
 
 export interface HaloMask {
   readonly sources: readonly HaloSource[];
-  /** Every cut: the graves' parts below, then the names, the bands and the playing Art boxes. */
+  /** Every cut: the graves' parts below, then the names and the playing Art boxes. */
   readonly cuts: readonly Rect[];
   /** The graves whose Part, Ghost and pennant boxes are among the cuts, for the painter's sprites. */
   readonly parted: readonly GravePlan[];
@@ -59,39 +57,44 @@ export function playingGraves(plan: ScenePlan): readonly number[] {
   return [...out].sort((a, b) => a - b);
 }
 
-/** The four strips of the selection ring's line round a cell. */
-export function ringBand(cell: Rect): Rect[] {
-  const o = RING_BAND.outside;
-  const t = RING_BAND.outside + RING_BAND.inside;
-  return [
-    { x: cell.x - o, y: cell.y - o, w: cell.w + 2 * o, h: t },
-    { x: cell.x - o, y: cell.y + cell.h - RING_BAND.inside, w: cell.w + 2 * o, h: t },
-    { x: cell.x - o, y: cell.y - o, w: t, h: cell.h + 2 * o },
-    { x: cell.x + cell.w - RING_BAND.inside, y: cell.y - o, w: t, h: cell.h + 2 * o },
-  ];
-}
+/** The burial's phase is cut in this many steps, so the Halo layer is repainted about once per Pose frame. */
+export const BURIAL_CUT_STEPS = 24;
 
-/** The four strips of the focus outline inside a cell. */
-export function outlineBand(cell: Rect): Rect[] {
-  const a = OUTLINE_BAND.from;
-  const t = OUTLINE_BAND.to - OUTLINE_BAND.from;
-  return [
-    { x: cell.x + a, y: cell.y + a, w: cell.w - 2 * a, h: t },
-    { x: cell.x + a, y: cell.y + cell.h - OUTLINE_BAND.to, w: cell.w - 2 * a, h: t },
-    { x: cell.x + a, y: cell.y + a, w: t, h: cell.h - 2 * a },
-    { x: cell.x + cell.w - OUTLINE_BAND.to, y: cell.y + a, w: t, h: cell.h - 2 * a },
-  ];
-}
-
-/** The regions a burial or a Vigil may draw on, in scene pixels: each part to the plinth top, the mound, the Priest. */
-export function buryingRegions(g: GravePlan): Rect[] {
+/**
+ * Pure. The regions a burial or a Vigil may draw on, in scene pixels, at a burial phase (null for the Vigil): each part
+ * where the sinking stone is over the whole step of BURIAL_CUT_STEPS that holds the phase, clipped at the plinth top;
+ * the mound and the ground it sits on; the Priest; the name; the pennant. Following the stone leaves no column above it
+ * (spec judge-path, requirement 6).
+ */
+export function buryingRegions(g: GravePlan, phase: number | null): Rect[] {
   const scale = g.rect.w / CELL_WIDTH;
   const at = (r: Rect): Rect => ({ x: g.rect.x + r.x * scale, y: g.rect.y + r.y * scale, w: r.w * scale, h: r.h * scale });
-  const out = FORM_PARTS[g.shape].map((p) => at({ x: p.x, y: p.y, w: p.w, h: Math.max(p.h, PLINTH_TOP - p.y) }));
-  out.push(at(MOUND_BOX), at(PRIEST_BOX), labelRect(g));
+  let sinkLo = 0;
+  let sinkHi = 0;
+  if (phase !== null) {
+    const p = Number.isFinite(phase) ? Math.min(1, Math.max(0, phase)) : 0;
+    const k = Math.min(BURIAL_CUT_STEPS - 1, Math.floor(p * BURIAL_CUT_STEPS));
+    const p0 = k / BURIAL_CUT_STEPS;
+    const p1 = (k + 1) / BURIAL_CUT_STEPS;
+    // The sink is piecewise linear in the phase: its extremes over the step lie at the step's ends or at a bend.
+    const samples = [p0, p1, ...BURIAL_BENDS.filter((b) => b > p0 && b < p1)].map(burialFrame);
+    sinkLo = Math.min(...samples.map((f) => f.sink));
+    sinkHi = Math.max(...samples.map((f) => f.sink));
+  }
+  const out: Rect[] = [];
+  for (const part of FORM_PARTS[g.shape]) {
+    const top = part.y + sinkLo * BURIAL_SINK_PX;
+    // A burial clips its stone at the plinth top; a Vigil draws the stone where it stands, unclipped.
+    const bottom = phase === null ? part.y + part.h : Math.min(part.y + part.h + sinkHi * BURIAL_SINK_PX, PLINTH_TOP);
+    if (bottom > top) out.push(at({ x: part.x, y: top, w: part.w, h: bottom - top }));
+  }
+  out.push(at(MOUND_BOX), ...PRIEST_PARTS.map(at), labelRect(g));
   if (g.marker) out.push(at(MARKER_BOX));
   return out;
 }
+
+/** The phases where the burial's sink bends: it reaches the bottom, then starts back up. */
+const BURIAL_BENDS = [0.35, 0.65] as const;
 
 /** The burial mound at its widest, in cell units. */
 export const MOUND_BOX: Rect = { x: 36, y: 154, w: 120, h: 28 };
@@ -137,9 +140,12 @@ export function haloMask(plan: ScenePlan): HaloMask {
     const add = (c: Rect): void => {
       if (intersects(c, reach)) cuts.push(c);
     };
-    // Cut where a checked token can sit: each grave's drawn parts and name, the ring's line, the focus outline, and
+    // Cut where a checked token can sit: each grave's drawn parts and name, and
     // the Art box of a grave whose burial, Vigil or Burst plays (spec cemetery-undead-fixes, bug 1).
     for (const g of plan.graves) {
+      // A grave whose burial plays is cut by its burial regions below, which follow the sinking stone; its parts at
+      // rest would leave a column where the stone was (spec judge-path, requirement 6).
+      if (g.burial !== null) continue;
       const parts = formParts(g);
       if (parts.some((p) => intersects(p, reach))) {
         parted.push(g);
@@ -147,11 +153,9 @@ export function haloMask(plan: ScenePlan): HaloMask {
       }
     }
     partCount = cuts.length;
+    // The selection ring and the focus outline are not cut: each sits on its own ink casing, so the gold never sits
+    // on the Halo (spec judge-path, requirement 4).
     for (const g of plan.graves) add(labelRect(g));
-    const selected = plan.selected === null ? undefined : plan.graves[plan.selected];
-    if (selected !== undefined) for (const b of ringBand(selected.rect)) add(b);
-    const lantern = plan.lantern === null ? undefined : plan.graves[plan.lantern];
-    if (lantern !== undefined) for (const b of outlineBand(lantern.rect)) add(b);
     for (const i of playingGraves(plan)) {
       const g = plan.graves[i];
       if (g === undefined) continue;
@@ -161,7 +165,7 @@ export function haloMask(plan: ScenePlan): HaloMask {
       }
       // A burial or a Vigil: the stone sinks inside its own columns down to the plinth top, a mound shows and the
       // Priest walks and reads. Only those are cut, so the Halo's edge still follows the grave.
-      for (const r of buryingRegions(g)) add(r);
+      for (const r of buryingRegions(g, g.burial)) add(r);
     }
   }
   const r = (v: number): string => String(Math.round(v * 100) / 100);
@@ -201,6 +205,38 @@ function softCut(c: Rect, x: number, y: number): number {
   return Math.min(1, Math.max(0, fx * fy));
 }
 
+/** How far a cut reaches past its edge in either model of the soft edge. */
+const CUT_REACH = Math.max(HALO_FEATHER, HALO_GROW + 4 * HALO_BLUR);
+const BUCKET = 64;
+const buckets = new WeakMap<readonly Rect[], Map<string, Rect[]>>();
+
+/**
+ * The cuts that can touch a point: a cut farther than CUT_REACH changes nothing there. Kept in grid buckets per mask,
+ * in mask order, so the product over them equals the product over every cut.
+ */
+function cutsNear(mask: HaloMask, x: number, y: number): readonly Rect[] {
+  let grid = buckets.get(mask.cuts);
+  if (grid === undefined) {
+    grid = new Map();
+    for (const c of mask.cuts) {
+      const i0 = Math.floor((c.x - CUT_REACH) / BUCKET);
+      const i1 = Math.floor((c.x + c.w + CUT_REACH) / BUCKET);
+      const j0 = Math.floor((c.y - CUT_REACH) / BUCKET);
+      const j1 = Math.floor((c.y + c.h + CUT_REACH) / BUCKET);
+      for (let i = i0; i <= i1; i += 1) {
+        for (let j = j0; j <= j1; j += 1) {
+          const k = `${String(i)},${String(j)}`;
+          const list = grid.get(k);
+          if (list === undefined) grid.set(k, [c]);
+          else list.push(c);
+        }
+      }
+    }
+    buckets.set(mask.cuts, grid);
+  }
+  return grid.get(`${String(Math.floor(x / BUCKET))},${String(Math.floor(y / BUCKET))}`) ?? [];
+}
+
 /**
  * Pure. The Halo's alpha at a point, as the painter composites it: the sources over each other, then each cut removes
  * all of it inside the cut, and outside it what its soft edge removes: a blurred grown copy (`blur`, the browser path)
@@ -214,7 +250,7 @@ export function haloAlphaAt(mask: HaloMask, peak: number, x: number, y: number, 
   }
   let alpha = 1 - clear;
   if (alpha === 0) return 0;
-  for (const c of mask.cuts) {
+  for (const c of cutsNear(mask, x, y)) {
     const d = distanceTo(c, x, y);
     if (d === 0) return 0;
     if (edge === "strips") {

@@ -1,4 +1,6 @@
-import { labelRect } from "./art-box.js";
+import { formParts, labelRect } from "./art-box.js";
+import { haloMask, uncutHaloAlphaAt } from "./halo.js";
+import { HALO_ALPHA_BYTE } from "./palette.js";
 import { BURST_MS } from "./burst.js";
 import { setSpritesEnabled } from "./sprites.js";
 import { haloLayerAlphaAt, resetHaloLayer } from "./draw.js";
@@ -28,10 +30,20 @@ export interface SextonTiming {
   paintVariant(variant: PlanVariant): void;
   /** n full paints, each with the Halo layer painted afresh, each timed (spec cemetery-undead-fixes, 2.9). */
   redrawHalo(n: number): number[];
+  /** n full paints, each with the Halo layer and its sources painted afresh: a Cold Halo repaint (spec judge-path, 5.1). */
+  redrawHaloCold(n: number): number[];
   /** The Halo layer's alpha, 0 to 255, at a scene point, or null (spec cemetery-undead-fixes, bug 1). */
   haloAlpha(x: number, y: number): number | null;
   /** n synchronous paints with a Burst at n phases across its length, each timed. */
   redrawBurst(n: number): number[];
+  /** n synchronous paints with a burial on grave `index` at n phases across it, each timed (spec judge-path, 6.3). */
+  redrawBurial(n: number, index: number): number[];
+  /** Every grave's Part, Ghost and pennant boxes and every Name label, in CSS pixels of the canvas. */
+  guarded(): Rect[];
+  /** The selection ring's rectangle, or null. */
+  ring(): Rect | null;
+  /** The model's uncut Halo alpha, 0 to 255, at a scene point of the current plan. */
+  uncutHalo(x: number, y: number): number;
 }
 
 declare global {
@@ -100,8 +112,38 @@ export function installTimingHook(repaint: () => void, current: () => ScenePlan,
       }
       return times;
     },
+    redrawHaloCold(n: number): number[] {
+      const times: number[] = [];
+      for (let i = 0; i < n; i += 1) {
+        const plan = { ...current(), riseStartMs: null };
+        resetHaloLayer(true);
+        const start = performance.now();
+        paint(plan);
+        times.push(performance.now() - start);
+      }
+      return times;
+    },
     haloAlpha(x: number, y: number): number | null {
       return haloLayerAlphaAt(x, y);
+    },
+    redrawBurial(n: number, index: number): number[] {
+      const times: number[] = [];
+      for (let i = 0; i < n; i += 1) {
+        const plan = { ...planVariant(current(), { priest: { index, phase: i / n } }), riseStartMs: null };
+        const start = performance.now();
+        paint(plan);
+        times.push(performance.now() - start);
+      }
+      return times;
+    },
+    guarded(): Rect[] {
+      return current().graves.flatMap((g) => [...formParts(g), labelRect(g)]);
+    },
+    ring(): Rect | null {
+      return current().ring;
+    },
+    uncutHalo(x: number, y: number): number {
+      return 255 * uncutHaloAlphaAt(haloMask(current()), parseInt(HALO_ALPHA_BYTE, 16) / 255, x, y);
     },
     redrawBurst(n: number): number[] {
       const times: number[] = [];

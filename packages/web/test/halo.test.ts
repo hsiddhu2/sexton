@@ -3,7 +3,7 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { artRect, formParts, labelRect } from "../src/scene/art-box.js";
 import { drawScene, type PaintContext2D } from "../src/scene/draw.js";
-import { buryingRegions, HALO_BLUR, HALO_CX, HALO_CY, HALO_FEATHER, HALO_GROW, haloAlphaAt, haloMask, HALO_RADIUS, outlineBand, ringBand, uncutHaloAlphaAt } from "../src/scene/halo.js";
+import { buryingRegions, HALO_BLUR, HALO_CX, HALO_CY, HALO_FEATHER, HALO_GROW, haloAlphaAt, haloMask, HALO_RADIUS, uncutHaloAlphaAt } from "../src/scene/halo.js";
 import { CELL_WIDTH, planScene, type Rect, type ScenePlan } from "../src/scene/layout.js";
 import { GLOW_ALPHA_BYTE, HALO_ALPHA_BYTE, PALETTE } from "../src/scene/palette.js";
 import { STATES } from "../src/load/lists.js";
@@ -50,24 +50,25 @@ const arbCase: fc.Arbitrary<Case> = fc
   });
 
 describe("Feature: cemetery-undead-2, Property 3: The Halo paints nothing under a grave or a name", () => {
-  it("is zero in every Part box, name label, the ring's line, the focus outline and the Art box of a playing grave, and uncut far from them", () => {
+  it("is zero in every Part box, name label and the Art box of a playing grave, and uncut far from them, ring and outline included", () => {
     fc.assert(
       fc.property(arbCase, ({ plan, playing }) => {
         const mask = haloMask(plan);
         // The regions, worked out here from the plan, not read from the mask. Spec cemetery-undead-fixes, Deliberate
-        // test change 1: each grave's Part, Ghost and pennant boxes, not its whole Form box; the selection ring's line
-        // and the focus outline, not the whole selected and Lantern cells.
+        // test change 1: each grave's Part, Ghost and pennant boxes, not its whole Form box. Spec judge-path, Deliberate
+        // test change 3: the selection ring and the focus outline sit on their Ring casing and are not cut, so they are
+        // not among the regions, and the far check below treats them as uncut ground.
         const regions: Rect[] = [];
-        for (const g of plan.graves) regions.push(...formParts(g), labelRect(g));
-        if (plan.selected !== null) regions.push(...ringBand((plan.graves[plan.selected] as { rect: Rect }).rect));
-        if (plan.lantern !== null) regions.push(...outlineBand((plan.graves[plan.lantern] as { rect: Rect }).rect));
+        // A grave whose burial plays has no parts at rest among them: its burial regions below follow the stone.
+        for (const g of plan.graves) regions.push(...(g.burial === null ? formParts(g) : []), labelRect(g));
         // A Burst's grave keeps its Art box cut (it has no Halo of its own while it plays); a burial or a Vigil cuts
         // its parts to the plinth top, the mound and the Priest (spec cemetery-undead-fixes, bug 1).
         for (const i of playing) {
           const g = plan.graves[i];
           if (g === undefined) continue;
           if (plan.burst !== null && plan.burst.startMs !== null && plan.burst.index === i) regions.push(artRect(g));
-          else regions.push(...buryingRegions(g));
+          // Spec judge-path, Deliberate test change 3: the burial regions at the burial's phase.
+          else regions.push(...buryingRegions(g, g.burial));
         }
         for (const r of regions) {
           for (const [x, y] of pointsIn(r)) {

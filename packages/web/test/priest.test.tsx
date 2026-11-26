@@ -3,8 +3,10 @@ import { act, renderHook } from "@testing-library/react";
 import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
 import { ART_BOX } from "../src/scene/art-box.js";
-import { bellKey, drawPriest, PRIEST_AT_X, PRIEST_BOX, PRIEST_FROM_X, PRIEST_H, PRIEST_W, priestPose, WALK_END } from "../src/scene/characters/priest.js";
-import { buryingRegions } from "../src/scene/halo.js";
+import { bellKey, drawPriest, PRIEST_PARTS, PRIEST_AT_X, PRIEST_BOX, PRIEST_FROM_X, PRIEST_H, PRIEST_W, priestPose, WALK_END } from "../src/scene/characters/priest.js";
+import { BURIAL_CUT_STEPS, buryingRegions } from "../src/scene/halo.js";
+import { FORM_PARTS } from "../src/scene/art-box.js";
+import { BURIAL_SINK_PX, burialFrame } from "../src/time/burial.js";
 import { drawGrave } from "../src/scene/draw.js";
 import { CELL_HEIGHT, CELL_WIDTH, type GravePlan } from "../src/scene/layout.js";
 import { GRAVE_GEOMETRY } from "../src/scene/layout.js";
@@ -112,7 +114,8 @@ describe("the burial's regions (spec cemetery-undead-fixes, bug 1)", () => {
         const plan = { ...base, graves: [grave], priest: { index: 0, phase } };
         const ctx = new BoundsContext();
         drawGrave(ctx, grave, plan, { shadow: "#05030a80", stone: "#140f2240" }, 0);
-        const regions = buryingRegions(grave);
+        // Spec judge-path, Deliberate test change 5: the regions at the burial's phase, which follow the sinking stone.
+        const regions = buryingRegions(grave, phase);
         const inAny = (x: number, y: number): boolean => regions.some((r) => x >= r.x - 0.5 && x <= r.x + r.w + 0.5 && y >= r.y - 0.5 && y <= r.y + r.h + 0.5);
         for (const m of ctx.marks) {
           if (m.style === "#05030a80") continue;
@@ -176,5 +179,40 @@ describe("the Vigil (requirement 10.3, 10.4)", () => {
       result.current.request("lodash");
     });
     expect(result.current.vigil).toBeNull();
+  });
+});
+
+describe("Feature: judge-path, Property 5: The burial regions hold every mark of a burial at its phase", () => {
+  const SHAPES_ = ["rounded", "tilted", "cross", "cracked", "open"] as const;
+  it("holds every point drawn at any phase, and each part's region starts at most one cut step above the sunk stone", () => {
+    // The most the stone moves in one cut step: the whole sink happens over the first 0.35 of the phase.
+    const stepMove = BURIAL_SINK_PX / (BURIAL_CUT_STEPS * 0.35);
+    fc.assert(
+      fc.property(fc.constantFrom(...SHAPES_), fc.double({ min: 0, max: 1, noNaN: true }), (shape, phase) => {
+        const pkg = scenePackage("b", "Dead", "none");
+        const base = planScene({ packages: [pkg], width: 1440, theme: "dark", selectedIndex: null, ghostPhase: 0 });
+        const grave = { ...(base.graves[0] as GravePlan), rect: { x: 0, y: 0, w: CELL_WIDTH, h: CELL_HEIGHT }, shape, marker: true, burial: phase, ghost: null, inscription: null };
+        const plan = { ...base, graves: [grave], priest: { index: 0, phase } };
+        const ctx = new BoundsContext();
+        drawGrave(ctx, grave, plan, { shadow: "#05030a80", stone: "#140f2240" }, 0);
+        const regions = buryingRegions(grave, phase);
+        const inAny = (x: number, y: number): boolean => regions.some((r) => x >= r.x - 0.5 && x <= r.x + r.w + 0.5 && y >= r.y - 0.5 && y <= r.y + r.h + 0.5);
+        for (const m of ctx.marks) {
+          if (m.style === "#05030a80") continue;
+          for (const [px, py] of m.poly) {
+            if (py > 168 && m.kind !== "fillText" && m.box.maxY <= 168) continue;
+            expect(inAny(px, Math.min(py, m.box.maxY))).toBe(true);
+          }
+        }
+        // The part regions come first; the mound, the Priest's parts, the name and the pennant follow. Each part region starts
+        // within one cut step of where its part sits on the sinking stone, so no column stays above the stone.
+        const sunk = burialFrame(phase).sink * BURIAL_SINK_PX;
+        for (const region of regions.slice(0, -(3 + PRIEST_PARTS.length))) {
+          const match = FORM_PARTS[shape].some((p) => p.x === region.x && p.w === region.w && region.y >= p.y + sunk - stepMove - 1e-9 && region.y <= p.y + sunk + stepMove + 1e-9);
+          expect(match, `${shape} ${String(phase)} ${String(region.y)}`).toBe(true);
+        }
+      }),
+      { numRuns: NUM_RUNS },
+    );
   });
 });

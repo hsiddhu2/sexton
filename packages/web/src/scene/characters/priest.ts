@@ -24,6 +24,15 @@ const STEPS = 6;
  */
 export const PRIEST_BOX = { x: PRIEST_AT_X - 10 * PRIEST_SCALE, y: FEET_Y - 80 * PRIEST_SCALE, w: PRIEST_FROM_X + PRIEST_W - (PRIEST_AT_X - 10 * PRIEST_SCALE), h: 80 * PRIEST_SCALE } as const;
 
+const r = (x: number, y: number, w: number, h: number): { x: number; y: number; w: number; h: number } => ({ x, y, w, h });
+
+/**
+ * The 4-unit grid blocks, merged into runs, that the Priest touches at any phase or the Vigil, in cell units: his own
+ * outline, not the box round it, so the Halo is cut only where he is (spec judge-path, decision 7). Measured by the
+ * outline probe; the burial regions test fails when a mark leaves them.
+ */
+export const PRIEST_PARTS: readonly { readonly x: number; readonly y: number; readonly w: number; readonly h: number }[] = [r(192, 84, 24, 8), r(188, 92, 32, 4), r(192, 96, 24, 4), r(192, 100, 20, 4), r(192, 104, 24, 4), r(188, 108, 32, 4), r(168, 112, 48, 4), r(168, 116, 52, 4), r(172, 120, 16, 4), r(196, 120, 28, 4), r(172, 124, 52, 4), r(172, 128, 48, 4), r(168, 132, 24, 4), r(196, 132, 24, 4), r(168, 136, 8, 4), r(184, 136, 48, 4), r(188, 140, 40, 4), r(192, 144, 36, 4), r(184, 148, 44, 4), r(188, 152, 40, 4), r(192, 156, 40, 4), r(184, 160, 40, 8), r(192, 168, 24, 4), r(184, 172, 44, 4), r(184, 176, 40, 4), r(188, 180, 32, 4), r(180, 184, 48, 4), r(184, 188, 40, 4), r(184, 192, 44, 4), r(180, 196, 48, 4)];
+
 export interface PriestPose {
   readonly x: number;
   readonly step: 0 | 1;
