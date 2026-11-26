@@ -11,7 +11,7 @@ Run-time notes:
   - `packages/web`;
   - in `packages/api`: `src/contract.ts` (replay types and the `ApiErrorCode` type export), `scripts/lib/replay-facts.mjs`, the demo generator, and their tests with the reason-family drift test;
   - README.md, CREDITS.md and docs/JUDGES.md where requirement 18 names them;
-  - `docs/cemetery.png`, `docs/replay-axios.png`, `docs/requirements.md`, `.kiro/steering/web.md` and this folder.
+  - `docs/cemetery.png`, `docs/replay-axios.png`, `docs/requirements.md`, `.kiro/steering/web.md`, `.kiro/steering/product.md`, `.kiro/steering/structure.md` and this folder.
 - No new package dependency. Font files are copied in with their OFL files.
 - Tests of a removed feature go in the same commit as the removal. Every changed test is listed in design.md with its reason. `numRuns` is 100 for every new property (1000 for Property 3 and the code reader of Property 7), tagged `Feature: clean-site, Property N: <title>`.
 - Gates before every commit: `npm run typecheck`, `npm run lint` and `npm test` at the root, zero warnings, then an independent review. Check `git branch --show-current` before every commit. Commits carry no trailer. Notes name no tool.
@@ -121,5 +121,16 @@ Run-time notes:
     - _Requirements: 16.1, 16.2, 16.8 to 16.11, 16.13, 16.14_
   - [x] 12.2 Retake the two README pictures; update README.md, CREDITS.md and docs/JUDGES.md; rewrite `.kiro/steering/web.md`; docs/requirements.md 1.1
     - _Requirements: 18.1 to 18.5, 18.7_
-  - [ ] 12.3 Review the built site against the prototype in a fresh profile at both sizes; list every difference with its reason; write the report, kept outside the repository, with the frame time at 300 graves and what was removed
+  - [ ] 12.3 After task 13, review the built site against the prototype in a fresh profile at both sizes; list every difference with its reason; write the report, kept outside the repository, with the frame time at 300 graves and what was removed
     - _Requirements: 18.6_
+
+- [ ] 13. A little mischief
+  - _Requirements: 19.1 to 19.10, 4.1, 12.1, 18.1, 18.4_
+  - [ ] 13.1 Add `copy/mischief.ts` with the texts of design C16 and its test; show the Epitaph line in the Inspector
+    - _Requirements: 19.1, 19.2, 19.10, 4.1_
+  - [ ] 13.2 Add the Dry line to every failure card and the unknown-replay card, and the Scanning line to the scanning card
+    - _Requirements: 19.3, 19.4, 19.8, 19.10, 12.1_
+  - [ ] 13.3 Move `paintGhost` to an exported `drawGhost` in `scene/draw.ts` with the Scene's output unchanged; add `scene/GhostPicture.tsx` and the Guide ghost in the Tour card and the Welcome bar
+    - _Requirements: 19.5, 19.6, 19.7, 19.9_
+  - [ ] 13.4 Update web.md (Inspector, failure cards, scanning card, the ghost exception) and structure.md (`copy/mischief.ts`); update `e2e/clean.spec.ts` and run the whole e2e suite; retake docs/cemetery.png
+    - _Requirements: 18.1, 18.4, 19.9_

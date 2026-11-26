@@ -14,7 +14,7 @@ Around them the Site adds:
 - a Guide page, a Legend pop-over and a three-step Tour;
 - a Glossary, failed-scan cards and a Track slot for music.
 
-The floating tooltip, speech bubbles, guide card, Fix-first line, Serious mode, Punchlines, the Home Play control and every generated sound go, with their code and tests.
+The floating tooltip, speech bubbles, guide card, Fix-first line, Serious mode, Punchlines (the Inspector's Epitaph line of C16 apart), the Home Play control and every generated sound go, with their code and tests.
 
 The prototype was opened in a browser on 26 November 2026 and every flow was clicked through:
 
@@ -415,6 +415,55 @@ One line under the main area holds:
 - the track credit, when a track is set.
 
 The Sample's evidence downloads keep the Fixture name inside the files. 1.7 covers the pages, not the downloaded files.
+
+### C16. A little mischief (requirement 19)
+
+`copy/mischief.ts`, pure, holds every line below and nothing else. Components import from it; a test renders the Inspector for every Reason family, every failure card and the scanning card and checks each shown line is in this file (19.10). None of the lines names a capability, so the Claim registry check of C7 is unchanged.
+
+**Epitaph lines** (19.1), keyed by C3's Reason family. These are main's Punchlines, which the owner approved on 24 and 25 November 2026, moved from the removed epitaph module:
+
+| Family | Epitaph line |
+|---|---|
+| maintainer | The keys changed hands. Nobody heard the door. |
+| provenance | It used to carry papers. This one came without. |
+| install-script | It came back with a script, and it runs before you do. |
+| new-dependency | It brought a new friend along. Check the friend. |
+| publisher | A new hand signed this one. The pipeline did not. |
+| deprecated | Deprecated, not departed. |
+| stale-advisory | Two years without a release, and a hole still open. |
+| high | Something serious walks these grounds. |
+| unavailable | Nobody could find its records. |
+| stale | Two years of silence. It may just be resting. |
+| low | A small advisory keeps it awake. |
+| none | Alive and well, as far as the records show. |
+
+**Dry lines** (19.3, 19.4), keyed by the failure card:
+
+| Card | Dry line | Then (unchanged) |
+|---|---|---|
+| network | The lantern went out halfway down the path. | We could not reach the scan service. |
+| rate-limited | Easy now, even the dead take turns. | Too many scans from your network right now. |
+| busy | The gravediggers upstream are swamped. | GitHub or npm is busy right now. |
+| not-readable | We knocked, and nobody answered. | We could not read that repo. |
+| invalid-url | That address leads to no cemetery we know. | That is not a GitHub repo address. |
+| invalid-file | The headstone is cracked. | This repo's package.json or lockfile could not be read. |
+| too-large | That plot is too big for one shovel. | This repo's package.json or lockfile is larger than 5 MiB. |
+| invalid-policy | The house rules are smudged. | This repo's sexton.policy.yml is not valid. |
+| generic | Our shovel slipped. | The scan failed on our side. |
+| `load-failed` (12.7) | This one would not come out of the ground. | This scan could not be loaded. |
+| `no-such-replay` (10.10) | No such ghost story is told here. | That replay does not exist. |
+
+**Scanning line** (19.8): "Lantern lit. Mind the roots."
+
+**Guide ghost** (19.5 to 19.7): the ghost is painted today by a local `paintGhost` closure inside `drawGrave` in `scene/draw.ts`. Task 13.3 lifts it into an exported `drawGhost(ctx, x, y, size, phase)` in the same file, which `drawGrave` calls on both its sprite path and its direct path with the transform it uses today, so the Scene's output, sprites and Art boxes stay the same (the existing draw, sprite and art-box tests pass unedited). `scene/GhostPicture.tsx` calls `drawGhost` once, at drift phase 0, into a 28 by 28 CSS px canvas, with no animation loop. `GravePicture`'s "ghost" kind is not reused, because it draws the ghost over a Haunted grave, which means an advisory. The Guide ghost is `aria-hidden="true"`, has no tab stop and `pointer-events: none`, and sits in the normal flow inside the Tour card's title row and at the start of the Welcome bar, so it covers nothing. It is never drawn in the Scene or beside a grave picture. web.md's rule "Nothing else is a ghost" gains this one exception. The Characters' code is not changed.
+
+Calls made:
+- The Epitaph line follows the Reason family, not the State alone, because the reason is the real data and the owner approved these lines per reason.
+- The Dry line is a paragraph in the muted colour at the top of the card, `aria-hidden="true"`. The card is `role="alert"`, so a screen reader announces the plain sentence and the next step only. Clear wins.
+- The Epitaph line shows only at the scan date, because the line follows the scan-date reason; at an earlier date it would describe the wrong State.
+- The Epitaph line is plain text: no Term is marked in it, as it is a flourish, not an explanation.
+- Tests expected to change in task 13: the failure-card cases of `failure-cards.test.tsx` and `home.test.tsx`, `guide-tour.test.tsx`, `a11y.test.tsx`, `claims.test.tsx` (the new lines hold no capability phrase, so only rendering changes), `draw.test.ts` (its existing cases pass unedited; it gains one case for `drawGhost`), and e2e `clean.spec.ts` (the Welcome bar and Tour cover samples). Each is listed with its reason in "Decisions made during implementation".
+- Clear wins: no Dry line replaces or shortens a sentence or a next step.
 
 ## Data Models
 

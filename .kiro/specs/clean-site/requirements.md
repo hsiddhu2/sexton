@@ -15,9 +15,10 @@ This spec rebuilds the site shell around the canvas scene. It adds:
 - a Replay told step by step;
 - a Guide page, a Legend pop-over and a three-step Tour;
 - plain meanings for jargon and clear failed-scan cards;
-- a slot for one music track.
+- a slot for one music track;
+- a little mischief that never gets in the way.
 
-It removes the floating tooltip, speech bubbles, the guide card, the Fix-first line, Serious mode, Punchlines and every generated sound. From spec calm-first-visit (not merged) it carries over only the way back and the per-view addresses.
+It removes the floating tooltip, speech bubbles, the guide card, the Fix-first line, Serious mode, Punchlines (other than the Inspector's Epitaph line of requirement 19) and every generated sound. From spec calm-first-visit (not merged) it carries over only the way back and the per-view addresses.
 
 Out of scope: GitHub sign-in, any change to the engine's state rules, the canvas Characters and their art, private repositories.
 
@@ -28,6 +29,7 @@ Out of scope: GitHub sign-in, any change to the engine's state rules, the canvas
 - **Wide layout**: a viewport at least 1100 px wide. **Middle layout**: 700 to 1099 px. **Narrow layout**: under 700 px.
 - **Home**: the page of a loaded non-replay scan (the Sample scan, a Live scan or a scan file opened with ?scan=) with the Scene or the List, the Panel and the Footer bar. A filter, an earlier date, the Drawer, the Tour or a Pop-over may sit on Home; a Replay and the Guide page replace it.
 - **Home action**: the move to Home of 10.2, taken by the wordmark, "← Cemetery" on a Replay or the Guide page, "Back to the cemetery", "Exit replay", "Go to the cemetery" and the last step of the Escape order. It lands on the **Home start**: Home of the scan shown before the Replay or Guide page opened (the Sample scan when none was), at its scan date, with no filter, Drawer, Tour or Pop-over, and with the Graveyard or List choice last made on Home.
+- **Epitaph line**, **Dry line**, **Scanning line**, **Guide ghost**: the four kinds of mischief of requirement 19, with their texts in design C16.
 - **Sample scan**: the demo scan at /demo/scan.json. Its repository name (sexton-demo/fixture) is the **Fixture name**.
 - **Live scan**: a hosted scan of a repository through the API base, started by the visitor.
 - **Panel**: the column with the Inspector card and the Fix order card.
@@ -140,7 +142,7 @@ Out of scope: GitHub sign-in, any change to the engine's state rules, the canvas
 
 #### Acceptance Criteria
 
-1. THE Site SHALL show no floating grave tooltip, speech bubble, guide card, Fix-first line, Serious mode toggle, Punchline, Play control on Home or Sound toggle.
+1. THE Site SHALL show no floating grave tooltip, speech bubble, guide card, Fix-first line, Serious mode toggle, Punchline (other than the Inspector's Epitaph line of 19.1), Play control on Home or Sound toggle.
 2. THE Site SHALL play no sound other than the Track slot's track.
 3. THE Site SHALL create no AudioContext.
 4. THE Site SHALL read and write none of the stored values sexton:sound, sexton:serious and sexton:guide.
@@ -313,7 +315,7 @@ Out of scope: GitHub sign-in, any change to the engine's state rules, the canvas
 
 #### Acceptance Criteria
 
-1. WHEN a Live scan fails THE Scene SHALL show a failure card with one sentence, one next step, and the buttons "Try the demo repo" and "Back to the sample".
+1. WHEN a Live scan fails THE Scene SHALL show a failure card with one sentence (after the Dry line of 19.3), one next step, and the buttons "Try the demo repo" and "Back to the sample".
 2. THE failure card SHALL be chosen from the HTTP status and the API error code only, by the first match in this order:
    - no HTTP response (network error): "We could not reach the scan service." Next step: "Check your connection and try again."
    - status 429: "Too many scans from your network right now." Next step: "Wait a few minutes and try again."
@@ -424,3 +426,22 @@ Out of scope: GitHub sign-in, any change to the engine's state rules, the canvas
 5. THE build SHALL move docs/requirements.md to version 1.1, correct its header line, rewrite R-UI-4 and R-UI-8, and add a change-log line.
 6. THE review SHALL use the built site in a fresh browser profile at 1440 by 900 and 390 by 844 through every flow of the prototype, and SHALL list every difference from the prototype with its reason.
 7. WHEN the owner approves at go THE build SHALL add to README.md the three facts the Claim registry rests on that README lacks: "The hosted site needs no sign-in and never asks for a GitHub password.", "Sexton reads a repository's package.json and package-lock.json at its root." and "Sexton proposes a bump only to a version that passes its checks; otherwise it proposes no change."
+
+### Requirement 19: A little mischief, never in the way
+
+**User Story:** As a first visitor, I want the cemetery to make me smile once or twice, and still know what to tap next.
+
+Added on 26 November 2026 by the owner after the build started, from the UX judging brief: "Scare me, then make it easy. I want an interface with a little mischief in it, like a ghost that guides me or an error message that makes me laugh. If I smile and still know what to tap next, you've won me over." Every line is listed in design.md C16 so the owner can read it before the build ends.
+
+#### Acceptance Criteria
+
+1. WHILE the Inspector shows a package at the scan date THE Inspector SHALL show, in one paragraph under the package name, the Epitaph line of design C16 for that package's Reason family, as plain text with no Term marked, in Inter in the muted text colour, never in italics or a script face.
+2. IF a package's reason has no Reason family, or an earlier date is chosen (3.12), THEN THE Inspector SHALL show no Epitaph line.
+3. WHEN a failure card of 12.2, 12.7 or 10.10 shows THE card SHALL open with its Dry line of design C16, then its plain sentence, then its next step, if it has one, and its buttons, so the plain sentence and the next step keep their wording, order and buttons.
+4. THE Dry line SHALL be one sentence of at most 10 words, SHALL name no capability, and SHALL sit inside the same card before the plain sentence, hidden from assistive technology, so the card's heading and announcement stay the plain sentence.
+5. WHILE the Tour shows THE Tour card SHALL show the Guide ghost beside its step title.
+6. WHILE the Welcome bar shows THE Welcome bar SHALL show the Guide ghost at its start, before its text.
+7. THE Guide ghost SHALL be a still picture drawn by the Scene's own ghost drawing function into a small canvas inside the Tour card or the Welcome bar, SHALL be hidden from assistive technology, SHALL take no input, and SHALL never be drawn inside the Scene or beside a grave picture, so it never stands for an advisory.
+8. WHILE a Live scan is loading THE scanning card SHALL show the Scanning line of design C16 under "This usually takes a few seconds.", as one more line in the same card.
+9. THE mischief of this requirement SHALL add no new element outside the Panel, the failure cards of 12.2 and 12.7, the 10.10 card, the Tour card, the Welcome bar and the scanning card, SHALL add no speech bubble, floating element or tooltip, and SHALL add nothing that moves by itself; the Guide ghost is still under every motion setting.
+10. THE Epitaph lines, Dry lines and the Scanning line SHALL be the exact texts of design C16, held in one file, with a test that fails when a shown line is not in that file.
