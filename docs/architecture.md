@@ -2,7 +2,7 @@
 
 Sexton runs as a small serverless app in one region, us-east-1. One CloudFront distribution serves the cemetery web app and the scan API from the same domain. Two Lambda functions do the work. Two DynamoDB tables hold the response cache and the snapshot history.
 
-This page covers release 0.1. The stacks are built and tested. The handler code for the two functions comes next, and until it lands each function answers 503. It follows the infra spec in `.kiro/specs/infra/design.md`, which also lists the AWS documentation page behind every fact used here.
+This page covers release 0.1. The stacks are built, tested and deployed to us-east-1, with three handlers: scan, remediate and the snapshotter. It follows the infra spec in `.kiro/specs/infra/design.md`, which also lists the AWS documentation page behind every fact used here.
 
 ## The picture
 
@@ -29,7 +29,7 @@ There are two CloudFormation stacks. `SextonData-dev` holds the two tables and a
 
 ## The request path
 
-Here is what happens when you paste a repository URL into the cemetery. Every step is built. None is deployed yet.
+Here is what happens when you paste a repository URL into the cemetery. Every step is built and deployed.
 
 1. The browser sends `GET /api/scan?repo=<url>` to the CloudFront domain. The web app and the API share that domain, so there is no CORS.
 2. WAF checks the request. The AWS managed rule groups block known bad input. A rate rule blocks one IP after 100 requests to `/api/` in 5 minutes, with HTTP 429.
@@ -56,7 +56,7 @@ The daily path is shorter, and it is built too. EventBridge Scheduler invokes th
 
 Every download runs its own scan, so the pack can differ from the scan on screen, and each download counts against the rate rule. The demo writes `evidence.json` and `evidence.md` next to `scan.json` at build time, and the header links to them.
 
-The `format` parameter reaches the function only after the next deploy of the edge stack. Until then CloudFront drops it, and the Markdown link returns JSON.
+CloudFront forwards the `format` parameter to the function, so the Markdown link returns Markdown.
 
 ## Opening a pull request
 
@@ -136,7 +136,7 @@ The CDK deploy handler copies the web build into the bucket. CDK grants its inva
 
 ## What it costs
 
-These are estimates from public prices, not a bill. Nothing has been deployed yet.
+These are estimates from public prices, not a bill.
 
 At zero traffic the demo costs about 8.40 USD a month. Almost all of that is WAF: 5 USD for the web ACL and 1 USD for each of its three rules. The Secrets Manager placeholder adds 0.40 USD.
 
