@@ -209,7 +209,7 @@ test("the axios replay at its Possessed stop, for the README", async ({ page, ba
   await next.blur();
   await waitForFirstPaint(page);
   // Spec cemetery-undead-2, Deliberate test change 10: the picture is taken at the 00:21 UTC Stop with nothing
-  // hovered (K2d fix 1, item 8 opened the axios tooltip here), so the grave shows its Halo.
+  // hovered (an earlier version of this test opened the axios tooltip here), so the grave shows its Halo.
   await page.mouse.move(1, 899);
   await expect(page.getByRole("tooltip")).toHaveCount(0);
   // Spec cemetery-undead-2, Deliberate test change 7: under Reduced motion the Burst's final pose, the still open
@@ -249,7 +249,7 @@ test("loads the fonts from /fonts on the page origin and makes no request to ano
   expect(await page.evaluate(() => document.fonts.check("16px Inter"))).toBe(true);
 });
 
-// K2d fix 1, item 7: a Character is drawn on a Possessed and on a Dead grave (spec cemetery-undead, requirement 3).
+// A Character is drawn on a Possessed and on a Dead grave (spec cemetery-undead, requirement 3).
 test("draws the zombie on the Possessed grave and the skeleton on a Dead grave", async ({ page, baseURL }) => {
   const origin = new URL(baseURL ?? "http://localhost:4173").origin;
   await page.route("**/*", async (route) => {

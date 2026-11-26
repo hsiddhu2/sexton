@@ -40,7 +40,7 @@ export function fitHeight(free: number, footer: number, pinned: boolean): number
 }
 
 /**
- * The height of the Footer bar while it stays in view over the scene (960 px and wider), else 0 (K2d fix 1).
+ * The height of the Footer bar while it stays in view over the scene (960 px and wider), else 0.
  * Every `.night-footer` node is measured and observed, and the nodes are found again when `key` changes (a new
  * response can replace a footer). The height is the tallest sticky node (spec cemetery-undead-2, A8).
  */

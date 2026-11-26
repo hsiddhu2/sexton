@@ -1,4 +1,4 @@
-// K2d fix 1: the scene fills the screen as in the approved mockups. The sky grows so the graves stand at the bottom
+// The scene fills the screen as in the approved design. The sky grows so the graves stand at the bottom
 // above a Footer bar that stays in view, a replay's one grave is drawn full size, and a replay's Stops show as cards.
 import type { PackageHealth, ScanResponse } from "@sexton/api";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";

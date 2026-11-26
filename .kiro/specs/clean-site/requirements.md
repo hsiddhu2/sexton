@@ -431,7 +431,7 @@ Out of scope: GitHub sign-in, any change to the engine's state rules, the canvas
 
 **User Story:** As a first visitor, I want the cemetery to make me smile once or twice, and still know what to tap next.
 
-Added on 26 November 2026 by the owner after the build started, from the UX judging brief: "Scare me, then make it easy. I want an interface with a little mischief in it, like a ghost that guides me or an error message that makes me laugh. If I smile and still know what to tap next, you've won me over." Every line is listed in design.md C16 so the owner can read it before the build ends.
+Added on 26 November 2026 by the owner after the build started, from the UX judge's published judging criteria: "Scare me, then make it easy. I want an interface with a little mischief in it, like a ghost that guides me or an error message that makes me laugh. If I smile and still know what to tap next, you've won me over." Every line is listed in design.md C16 so the owner can read it before the build ends.
 
 #### Acceptance Criteria
 

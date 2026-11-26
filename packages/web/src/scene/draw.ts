@@ -114,7 +114,7 @@ const MARKER_BASE_Y = 168;
 const MOUND_RX = 60;
 const MOUND_RY = 14;
 const GLOW_RADIUS = 200;
-/** The Possessed glow is centred over the pit, at this cell y (K2d fix 1). */
+/** The Possessed glow is centred over the pit, at this cell y. */
 const GLOW_CY = 104;
 /** The pennant at fixed Cell offsets: pole, then three flag rows. Right of every stone box, above the Plinth top. */
 const MARKER_RECTS: readonly (readonly [number, number, number, number])[] = [
@@ -280,7 +280,7 @@ function drawScenery(ctx: PaintContext2D, plan: ScenePlan, nowMs: number): void 
   ctx.fillRect(0, s.horizonY - FENCE_HEIGHT + 4, plan.width, 1);
   ctx.fillRect(0, s.horizonY - 6, plan.width, 1);
 
-  // The ground: a low hill in front of the fence, lit along its top edge, darker towards the front (K2d fix 1).
+  // The ground: a low hill in front of the fence, lit along its top edge, darker towards the front.
   const hillTop = s.horizonY - HILL_RISE;
   const ground = ctx.createLinearGradient(0, hillTop, 0, hillTop + Math.max(s.groundFade / 3, (plan.groundHeight - hillTop) * 0.55));
   ground.addColorStop(0, colours.groundTop);
@@ -382,7 +382,7 @@ function clipAndPose(grave: GravePlan, plan: ScenePlan, clips: readonly ClipId[]
 
 /**
  * At most one glow under a grave: the Lantern glow on the hovered or focused grave, else the Possessed glow. All glows
- * are drawn on the ground before any grave, so a wide glow never tints a neighbouring stone (K2d fix 1).
+ * are drawn on the ground before any grave, so a wide glow never tints a neighbouring stone.
  */
 function drawGlow(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan): void {
   const lantern = plan.lantern === grave.index;
@@ -729,7 +729,7 @@ function drawBody(
   ctx.translate(-SHAPE_HALF * g.shapeScale, -SHAPE_HALF * g.shapeScale);
   ctx.scale(g.shapeScale, g.shapeScale);
   if (def.pit !== null) {
-    // The mound of dug earth, then the dark mouth of the pit in it (K2d fix 1).
+    // The mound of dug earth, then the dark mouth of the pit in it.
     const rim = pitRimPath(grave.shape);
     if (rim !== null) {
       ctx.fillStyle = colours.surface;
@@ -859,7 +859,7 @@ export function drawGhost(ctx: PaintContext2D, x: number, y: number, size: numbe
   const colours = PALETTE.dark;
   ctx.save();
   ctx.translate(x, y + ghostOffset(phase));
-  // Drawn larger and higher than its planned point, floating over the top of its stone, as in the mockup.
+  // Drawn larger and higher than its planned point, floating over the top of its stone, as in the approved design.
   ctx.translate(GHOST_SHIFT_X, GHOST_SHIFT_Y);
   ctx.scale(size, size);
   const paintGhost = (c: PaintContext2D): void => {

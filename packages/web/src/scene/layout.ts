@@ -17,7 +17,7 @@ export const PADDING = 16;
 export const SKY_HEIGHT = 120;
 /** Stars sit in the top band of the sky only, as before. */
 export const STAR_BAND_HEIGHT = 80;
-/** The tallest sky: when the graves fit in the fit height, the sky grows so the graves stand at the bottom (K2d fix 1). */
+/** The tallest sky: when the graves fit in the fit height, the sky grows so the graves stand at the bottom. */
 export const MAX_SKY_HEIGHT = 420;
 export const MIN_WIDTH = CELL_WIDTH + 2 * PADDING;
 export const MAX_INSCRIPTIONS_PACKAGES = 60;
@@ -156,11 +156,11 @@ export interface SceneInput {
   /** Free height of the viewport under the header. Unreadable values count as 0. */
   readonly minHeight?: number;
   /**
-   * The height the graves should end within: the free height less a Footer bar that stays in view (K2d fix 1).
+   * The height the graves should end within: the free height less a Footer bar that stays in view.
    * When the graves fit, the sky grows so they stand at the bottom of it. Absent or unreadable, the sky is SKY_HEIGHT.
    */
   readonly fitHeight?: number;
-  /** A replay: its one grave is drawn full size, at up to REPLAY_SCALE (K2d fix 1, requirement 5.8). */
+  /** A replay: its one grave is drawn full size, at up to REPLAY_SCALE (requirement 5.8). */
   readonly replay?: boolean;
   /** One Form per grave, in triage order; undefined entries keep the scan Form. */
   readonly forms?: readonly (FormView | undefined)[];
@@ -232,7 +232,7 @@ export function sceneryFor(width: number, skyHeight: number = SKY_HEIGHT): Scene
       grass.push(makeTuft(x, 8 + Math.floor(t.v * 9), 4 + Math.floor(t.r * 5), t.r2 < 0.5 ? -1 : 1, t.r3 < 0.5 ? "dark" : "light"));
     }
   }
-  // The harvest moon grows with a taller sky, as in the mockup, and always fits inside it.
+  // The harvest moon grows with a taller sky, as in the approved design, and always fits inside it.
   const moonR = Math.min(Math.floor(width / 5) - 4, Math.max(52, Math.floor(sky * 0.3)));
   const scenery: Scenery = {
     skyHeight: sky,
@@ -256,7 +256,7 @@ export const REPLAY_SCALE = 1.8;
 export const REPLAY_OVERHANG = 60;
 
 /**
- * How far apart graves of a Tier may spread to fill a row, as a multiple of the Tier cell width (K2d fix 1). The middle
+ * How far apart graves of a Tier may spread to fill a row, as a multiple of the Tier cell width. The middle
  * and back caps give the front pitch of 205 px, so their rows line up with the front columns (spec cemetery-undead-2, A5).
  */
 export const PITCH_CAP: Readonly<Record<TierId, number>> = { front: 1.07, middle: 1.334, back: 1.667 };
@@ -376,7 +376,7 @@ export function planScene(input: SceneInput): ScenePlan {
     const tierRows = Math.ceil(members.length / cols);
     members.forEach((index, k) => {
       // Each row is centred in the drawable width (the backing store stops at MAX_BACKING), and its graves spread
-      // apart up to PITCH_CAP to fill the row, as in the mockup. The rectangle stays one cell, so none overlap.
+      // apart up to PITCH_CAP to fill the row, as in the approved design. The rectangle stays one cell, so none overlap.
       const row = Math.floor(k / cols);
       const inRow = Math.min(cols, members.length - row * cols);
       const pitch = Math.max(cell.w, Math.min(Math.floor(cell.w * PITCH_CAP[tier]), Math.floor(span / inRow)));
@@ -389,7 +389,7 @@ export function planScene(input: SceneInput): ScenePlan {
     y += tierRows * cell.h;
   }
   const field = y + PADDING;
-  // The sky grows to fill the fit height, so the graves stand at the bottom above the Footer bar (K2d fix 1).
+  // The sky grows to fill the fit height, so the graves stand at the bottom above the Footer bar.
   // At least OVERLAY_BAND of sky stays above the graves for the help line and the date badge (spec clean-site, 2.12).
   const sky = Math.min(MAX_SKY_HEIGHT, Math.max(SKY_HEIGHT, OVERLAY_BAND, fitIn - field));
   const scenery = sceneryFor(width, sky);

@@ -1,7 +1,7 @@
 import type { ScanResponse, State } from "@sexton/api";
 import { formAt, timelineOf } from "../time/form-at.js";
 
-/** One Stop of a replay, as its card in the Footer bar shows it (K2d fix 1). */
+/** One Stop of a replay, as its card in the Footer bar shows it. */
 export interface StopCard {
   readonly name: string;
   readonly version: string | null;

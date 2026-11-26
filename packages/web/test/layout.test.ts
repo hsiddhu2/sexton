@@ -15,8 +15,8 @@ const allOf = (n: number, state: PackageHealth["state"]): PackageHealth[] => pac
 /**
  * Spec cemetery-undead, Deliberate test changes 3 to 6: an independent model of the Tier layout. Back Tier first
  * (Alive, 0.64), middle (Haunted and Restless, 0.8), front (Possessed and Dead, 1); no gap between Tiers; every row
- * centred in the drawable width; sky 120 and padding 16 (design.md, decisions 6 and 11). K2d fix 1, Deliberate test
- * change 30: the graves of a row spread apart up to 1.07, 1.2 and 1.4 cell widths (front, middle, back) to fill it.
+ * centred in the drawable width; sky 120 and padding 16 (design.md, decisions 6 and 11). The
+ * graves of a row spread apart up to 1.07, 1.2 and 1.4 cell widths (front, middle, back) to fill it.
  * Spec cemetery-undead-2, Deliberate test change 5: the middle and back caps are 1.334 and 1.667.
  */
 function tierModel(packages: readonly PackageHealth[], width: number): { rects: Rect[]; height: number; rows: number } {
