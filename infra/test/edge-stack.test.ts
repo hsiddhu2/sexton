@@ -1,7 +1,7 @@
 import { Annotations, Match } from "aws-cdk-lib/assertions";
 import { beforeAll, describe, expect, it } from "vitest";
 import { CONTENT_SECURITY_POLICY, HSTS_MAX_AGE_SECONDS } from "../lib/web-security-headers.js";
-import { build, resourcesOfType, type Built } from "./helpers.js";
+import { build, policyConfigOf, resourcesOfType, type Behaviour, type Built } from "./helpers.js";
 
 let built: Built;
 beforeAll(() => {
@@ -115,7 +115,9 @@ describe("distribution (5.3, 5.4, 5.7, 5.8, 5.9)", () => {
 
   it("routes /api/* to the function URL: GET/HEAD, HTTPS only, no cache, repo-only origin request policy", () => {
     const behaviours = config()["CacheBehaviors"] as Record<string, unknown>[];
-    expect(behaviours).toHaveLength(2);
+    expect(behaviours).toHaveLength(3);
+    // Spec fresh-site: the hashed build output follows the API behaviours.
+    expect(behaviours[2]).toMatchObject({ PathPattern: "/assets/*" });
     // Spec remediate, Requirement 8.3: /api/remediate comes first, all methods, no cache.
     expect(behaviours[0]).toMatchObject({
       PathPattern: "/api/remediate",
@@ -187,11 +189,13 @@ describe("distribution (5.3, 5.4, 5.7, 5.8, 5.9)", () => {
     expect(CONTENT_SECURITY_POLICY).toBe(
       "default-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
     );
+    // Spec fresh-site: every attached policy carries the same security headers; two of them add Cache-Control.
     const cfg = config();
-    const policies = [cfg["DefaultCacheBehavior"], ...(cfg["CacheBehaviors"] as unknown[])].map(
-      (b) => (b as Record<string, unknown>)["ResponseHeadersPolicyId"],
+    const attached = [cfg["DefaultCacheBehavior"], ...(cfg["CacheBehaviors"] as unknown[])].map((b) =>
+      policyConfigOf(built.edgeTemplate, b as Behaviour),
     );
-    expect(policies.every((p) => JSON.stringify(p).includes("SecurityHeaders"))).toBe(true);
+    expect(attached).toHaveLength(4);
+    for (const policy of attached) expect(policy["SecurityHeadersConfig"]).toEqual(attached[0]?.["SecurityHeadersConfig"]);
   });
 });
 

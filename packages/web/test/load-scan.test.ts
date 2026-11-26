@@ -338,3 +338,157 @@ describe("useScanLoader examples", () => {
     await waitFor(() => expect(bad.result.current.state.status).toBe("error"));
   });
 });
+
+// Spec fresh-site, Properties 5 and 6: one reload fetch for a stale static scan, one fetch otherwise.
+// Requirements 2.4, 2.5, 3.6.
+
+/** A JSON body that parses but fails the format check: the deploy 4 case, a scan from before newDependency and publisherChange. */
+function staleScanBody(): Uint8Array {
+  const scan = cheapScan(1) as unknown as { report: { packages: { signals: Record<string, unknown> }[] } };
+  const signals = scan.report.packages[0]?.signals ?? {};
+  delete signals["newDependency"];
+  delete signals["publisherChange"];
+  return enc.encode(JSON.stringify(scan));
+}
+
+const arbInvalidResponseBody: fc.Arbitrary<Uint8Array> = fc.oneof(
+  fc.constant(staleScanBody()),
+  fc.constant(enc.encode(`{"report":{"generatedAt":"x","packages":[]},"policy":5}`)),
+  fc.jsonValue().map((j) => enc.encode(JSON.stringify({ j }))),
+).filter((bytes) => reference({ status: 200, bytes, throws: null }, MAX).code === "invalid-response");
+
+const arbOutcome: fc.Arbitrary<Outcome> = fc.record({
+  status: fc.constantFrom(200, 404, 500, 503),
+  bytes: arbBody,
+  throws: fc.option(fc.constant("network down"), { nil: null }),
+});
+
+const segment = fc.stringMatching(/^[A-Za-z0-9_-]{1,10}$/);
+const jsonAddress = fc
+  .tuple(fc.constantFrom("/demo/", "/replay/", "/"), segment, fc.option(fc.constant("?v=1"), { nil: "" }))
+  .map(([prefix, name, query]) => `https://x.example${prefix}${name}.json${query}`);
+const otherAddress = fc.oneof(
+  segment.map((s) => `https://x.example/api/scan?repo=${s}`),
+  segment.map((s) => `https://x.example/${s}`),
+  segment.map((s) => `https://x.example/${s}.json/more`),
+);
+
+function scripted(outcomes: readonly Outcome[], record: Recorded[]): typeof fetch {
+  return ((url: unknown, init?: RequestInit) => {
+    const outcome = outcomes[record.length] ?? outcomes[outcomes.length - 1];
+    record.push({ url, init });
+    if (outcome === undefined || outcome.throws !== null) return Promise.reject(new Error("network down"));
+    return Promise.resolve(new Response(outcome.bytes, { status: outcome.status }));
+  }) as unknown as typeof fetch;
+}
+
+function expectResult(result: Awaited<ReturnType<typeof loadScan>>, outcome: Outcome): void {
+  const expected = reference(outcome, MAX);
+  expect(result.ok).toBe(expected.ok);
+  if (!result.ok) {
+    expect(result.error.code).toBe(expected.code);
+    expect(result.error.status).toBe(expected.status);
+    assertFixedMessage(result.error);
+  }
+}
+
+const FIXED_INIT = {
+  method: "GET",
+  credentials: "omit",
+  redirect: "error",
+  referrerPolicy: "no-referrer",
+  headers: { Accept: "application/json" },
+};
+
+describe("Feature: fresh-site, Property 5: one reload fetch for a stale static scan", () => {
+  it("fetches a .json address once more with cache reload and returns the second result", async () => {
+    await fc.assert(
+      fc.asyncProperty(jsonAddress, arbInvalidResponseBody, arbOutcome, async (url, first, second) => {
+        const record: Recorded[] = [];
+        const controller = new AbortController();
+        const fetchFn = scripted([{ status: 200, bytes: first, throws: null }, second], record);
+        const result = await loadScan(url, { fetchFn, signal: controller.signal, maxBytes: MAX });
+        expect(record).toHaveLength(2);
+        expect(record[0]?.url).toBe(url);
+        expect(record[1]?.url).toBe(url);
+        expect(record[0]?.init).toEqual({ ...FIXED_INIT, signal: controller.signal });
+        expect(record[1]?.init).toEqual({ ...FIXED_INIT, signal: controller.signal, cache: "reload" });
+        expectResult(result, second);
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  it("loads the new demo scan after the old copy fails the format check (deploy 4)", async () => {
+    const record: Recorded[] = [];
+    const signal = new AbortController().signal;
+    let calls = 0;
+    const fetchFn = ((url: unknown, init?: RequestInit) => {
+      record.push({ url, init });
+      calls += 1;
+      return Promise.resolve(new Response(calls === 1 ? staleScanBody() : VALID));
+    }) as unknown as typeof fetch;
+    const result = await loadScan("https://x.example/demo/scan.json", { fetchFn, signal });
+    expect(result.ok).toBe(true);
+    expect(record).toHaveLength(2);
+    expect(record[1]?.init?.cache).toBe("reload");
+  });
+});
+
+describe("Feature: fresh-site, Property 6: every other load is one fetch with the old result", () => {
+  it("fetches once with no cache option when the address is not .json or the first result is not invalid-response", async () => {
+    const outsideRetry = fc.oneof(
+      fc.tuple(otherAddress, arbOutcome),
+      fc.tuple(jsonAddress, arbOutcome.filter((o) => o.throws !== null || reference(o, MAX).code !== "invalid-response")),
+    );
+    await fc.assert(
+      fc.asyncProperty(outsideRetry, async ([url, outcome]) => {
+        const record: Recorded[] = [];
+        const controller = new AbortController();
+        const result = await loadScan(url, { fetchFn: scripted([outcome], record), signal: controller.signal, maxBytes: MAX });
+        expect(record).toHaveLength(1);
+        expect(record[0]?.init).toEqual({ ...FIXED_INIT, signal: controller.signal });
+        expect(record[0]?.init).not.toHaveProperty("cache");
+        expectResult(result, outcome);
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  it("never fetches /api/scan twice, even when the answer fails the format check", async () => {
+    const record: Recorded[] = [];
+    const signal = new AbortController().signal;
+    const fetchFn = fetchReturning(() => new Response(staleScanBody()), record);
+    const result = await loadScan("https://x.example/api/scan?repo=a%2Fb", { fetchFn, signal });
+    expect(result.ok ? null : result.error.code).toBe("invalid-response");
+    expect(record).toHaveLength(1);
+  });
+
+  it("does not retry after an abort during the first fetch", async () => {
+    const record: Recorded[] = [];
+    const controller = new AbortController();
+    const fetchFn = ((url: unknown, init?: RequestInit) => {
+      record.push({ url, init });
+      controller.abort();
+      return Promise.resolve(new Response(staleScanBody()));
+    }) as unknown as typeof fetch;
+    const result = await loadScan("https://x.example/demo/scan.json", { fetchFn, signal: controller.signal });
+    expect(result.ok ? null : result.error.code).toBe("fetch-failed");
+    expect(record).toHaveLength(1);
+  });
+
+  it("returns fetch-failed when the load is aborted between the two fetches", async () => {
+    const record: Recorded[] = [];
+    const controller = new AbortController();
+    const fetchFn = ((url: unknown, init?: RequestInit) => {
+      record.push({ url, init });
+      if (record.length === 1) return Promise.resolve(new Response(staleScanBody()));
+      controller.abort();
+      return Promise.reject(new DOMException("aborted", "AbortError"));
+    }) as unknown as typeof fetch;
+    const result = await loadScan("https://x.example/replay/axios.json", { fetchFn, signal: controller.signal });
+    expect(result.ok ? null : result.error.code).toBe("fetch-failed");
+    expect(record).toHaveLength(2);
+    expect(record[1]?.init?.signal).toBe(controller.signal);
+  });
+});

@@ -1,6 +1,6 @@
 # Implementation Plan
 Run the exploration tests on the UNFIXED stack and loader before any fix. No network and no AWS in tests. `GithubTokenSecret` and the Data stack must not change. No IAM change. Do not deploy: deploy 5 waits for the owner's word, and may be held until lane 1's branch is on main.
-- [ ] 1. Write bug condition exploration tests
+- [x] 1. Write bug condition exploration tests
   - **Property 1: Bug Condition** - Unhashed web paths are sent no-cache
   - **Property 2: Fix Checking** - Hashed assets are sent immutable
   - **Property 5: Fix Checking** - One reload fetch for a stale static scan
@@ -10,83 +10,85 @@ Run the exploration tests on the UNFIXED stack and loader before any fix. No net
   - _Bug_Condition: isBugCondition(X) where path is outside /api/ and /assets/, the browser copy is stale, and the response has no Cache-Control_
   - _Expected_Behavior: Cache-Control no-cache outside /assets/, public, max-age=31536000, immutable inside it; one reload fetch for a static scan that fails the format check_
   - _Requirements: 1.1, 1.3, 1.4, 2.1, 2.2, 2.4_
-  - [ ] 1.1 Add `infra/lib/web-cache-headers.ts` with the constants and `expectedCacheControl`, and the `selectBehaviour` test helper in `infra/test/helpers.ts`
+  - [x] 1.1 Add `infra/lib/web-cache-headers.ts` with the constants and `expectedCacheControl`, and the `selectBehaviour` test helper in `infra/test/helpers.ts`
     - The constants file is data only and changes no resource, so it can exist before the fix. `selectBehaviour` matches CloudFront path patterns in template order, then the default.
     - _Requirements: 2.1, 2.2_
-  - [ ] 1.2 Write the infra exploration tests in `infra/test/cache-headers.test.ts`
+  - [x] 1.2 Write the infra exploration tests in `infra/test/cache-headers.test.ts`
     - Property 1 and Property 2 over generated paths, `numRuns` 100, plus one example per file group: `/`, `/index.html`, `/demo/scan.json`, `/replay/axios.json`, `/fonts/pirata-one-400.woff2`, `/no-such-page`, `/assets/index-abc12345.js`. `/no-such-page` shows only that the default behaviour is selected.
     - The policy cases: `WebHeaders` and `AssetHeaders` exist with one `Cache-Control` custom header each, override true, and `SecurityHeaders` has none.
     - _Requirements: 2.1, 2.2_
-  - [ ] 1.3 Write the loader exploration tests in `packages/web/test/load-scan.test.ts`
+  - [x] 1.3 Write the loader exploration tests in `packages/web/test/load-scan.test.ts`
     - Property 5, `numRuns` 100, and the deploy 4 example: first body missing `newDependency` and `publisherChange`, second body valid, address `https://x.example/demo/scan.json`. Assert ok, two calls, `cache: "reload"` on the second.
     - _Requirements: 2.4_
-  - [ ] 1.4 Run on unfixed code and record the counterexamples
+  - [x] 1.4 Run on unfixed code and record the counterexamples
     - Run `npm test -w sexton-infra -- cache-headers` and `npm test -w @sexton/web -- load-scan`. **EXPECTED OUTCOME**: the new cases FAIL.
     - Record the failure text in the task notes. If a case passes on unfixed code, stop and re-check the root cause before going on.
     - _Requirements: 1.1, 1.3, 1.4_
-- [ ] 2. Write preservation tests and run them on the unfixed code
+    - Notes (26 Nov 2026): infra 10 of 17 cases failed. The default behaviour's policy has no Cache-Control header (`expected [] to deeply equal [ { value: 'no-cache', …(1) } ]`), there is no `/assets/*` behaviour (`expected [ '/api/remediate', '/api/*' ] to deeply equal [ '/api/remediate', '/api/*', …(1) ]`), and `WebHeaders` does not exist (`expected undefined to be defined`). Loader: both Property 5 cases failed with one fetch (`expected [ { …(2) } ] to have a length of 2 but got 1`) and `invalid-response` for the deploy 4 example. Read-only check of the hosted site: every path `cache-control: (none)`, exit 1.
+- [x] 2. Write preservation tests and run them on the unfixed code
   - **Property 3, 4 and 6: Preservation** - API behaviours, security headers and every other load unchanged
   - **EXPECTED OUTCOME**: PASS on unfixed code. If one fails, stop and narrow its domain. Never change the old code to make it pass.
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
-  - [ ] 2.1 Write Properties 3 and 4 in `infra/test/cache-headers.test.ts`
+  - [x] 2.1 Write Properties 3 and 4 in `infra/test/cache-headers.test.ts`
     - Property 3: generated `/api/` paths select `/api/remediate` or `/api/*` with `SecurityHeaders`, no custom header, CachingDisabled. `numRuns` 100.
     - Property 4: every behaviour's policy has the existing `SecurityHeadersConfig` and no CORS.
     - Examples: CachingOptimized and the S3 origin on the default behaviour, the error responses, one S3 origin, three origin access controls in total (one S3, two function URL), the bucket deployment's `DistributionPaths` `["/*"]`.
     - On the fixed code the same file also checks the three policies and their custom headers: `SecurityHeaders` none, `WebHeaders` and `AssetHeaders` one each. These two policy cases are written in task 1.2 and fail before the fix.
     - _Requirements: 3.1, 3.2, 3.3, 3.4_
-  - [ ] 2.2 Write Property 6 in `packages/web/test/load-scan.test.ts`
+  - [x] 2.2 Write Property 6 in `packages/web/test/load-scan.test.ts`
     - Generated addresses and response kinds outside the retry case: one call, no `cache` option, the same result as the current code. Include `/api/scan`, a valid first response, 500, over-size, invalid JSON and a rejected fetch. `numRuns` 100.
     - _Requirements: 2.5, 3.6_
-  - [ ] 2.3 Run on the unfixed code and record the results
+  - [x] 2.3 Run on the unfixed code and record the results
     - Properties 3, 4 and 6 PASS. The task 1 cases still FAIL, as expected. Record both in the task notes.
     - _Requirements: 3.1, 3.2, 3.6_
-- [ ] 3. Fix: send Cache-Control from CloudFront and retry a stale static scan once
+    - Notes (26 Nov 2026): on the unfixed code the 7 preservation cases in `cache-headers.test.ts` passed (Property 3, Property 4, `/no-such-page`, CachingOptimized and the S3 origin, the error responses, one S3 origin and three origin access controls, `DistributionPaths`), and 17 of 19 loader cases passed, Property 6 included. The task 1 cases still failed.
+- [x] 3. Fix: send Cache-Control from CloudFront and retry a stale static scan once
   - _Requirements: 2.1, 2.2, 2.4, 2.5, 2.6, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
-  - [ ] 3.1 Add the two response headers policies and the `/assets/*` behaviour in `infra/lib/edge-stack.ts`
+  - [x] 3.1 Add the two response headers policies and the `/assets/*` behaviour in `infra/lib/edge-stack.ts`
     - One security headers object shared by `SecurityHeaders`, `WebHeaders` and `AssetHeaders`. One S3 origin shared by the default and `/assets/*` behaviours. `/assets/*` after `/api/*`. `SecurityHeaders` keeps its logical ID and content.
     - _Bug_Condition: path outside /api/ and /assets/ with no Cache-Control_
     - _Expected_Behavior: WEB_CACHE_CONTROL on the default behaviour, ASSET_CACHE_CONTROL on /assets/*, both with override_
     - _Preservation: API behaviours, security headers, cache policy, origin, error responses, IAM and Data stack unchanged_
     - _Requirements: 2.1, 2.2, 3.1, 3.2, 3.3, 3.4, 3.5_
-  - [ ] 3.2 Update the two existing assertions the fix changes in `infra/test/edge-stack.test.ts`
+  - [x] 3.2 Update the two existing assertions the fix changes in `infra/test/edge-stack.test.ts`
     - Line 118, `expect(behaviours).toHaveLength(2)`, becomes 3, with a check that `behaviours[2]` is `/assets/*`.
     - The security headers test changes from "every policy ID contains SecurityHeaders" to "every attached policy has the same SecurityHeadersConfig". No other existing assertion changes.
     - _Requirements: 3.2_
-  - [ ] 3.3 Add the retry to `packages/web/src/load/load-scan.ts`
+  - [x] 3.3 Add the retry to `packages/web/src/load/load-scan.ts`
     - `run` takes an optional `cache`; `loadScan` retries once with `cache: "reload"` when the result is `invalid-response` and the URL path ends in `.json`. No other file under `packages/web/src` changes.
     - _Requirements: 2.4, 2.5, 3.6_
-  - [ ] 3.4 Add `packages/web/test/asset-names.test.ts`
+  - [x] 3.4 Add `packages/web/test/asset-names.test.ts`
     - No `assets` entry in `packages/web/public`; `vite.config.ts` sets none of `assetsDir`, `assetFileNames`, `entryFileNames`, `chunkFileNames`.
     - _Requirements: 2.6_
-  - [ ] 3.5 Verify the exploration tests now pass
+  - [x] 3.5 Verify the exploration tests now pass
     - Rerun the task 1 tests. **EXPECTED OUTCOME**: PASS.
     - _Requirements: 2.1, 2.2, 2.4_
-  - [ ] 3.6 Verify the preservation tests still pass
+  - [x] 3.6 Verify the preservation tests still pass
     - Rerun the task 2 tests and the whole infra suite, including `iam.test.ts`, `data-stack.test.ts` and `nag.test.ts`. **EXPECTED OUTCOME**: PASS, with no new cdk-nag acknowledgement.
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
-- [ ] 4. Cache header check script
+- [x] 4. Cache header check script
   - _Requirements: 2.7_
-  - [ ] 4.1 Write `infra/scripts/check-cache-headers.ts` and include `scripts` in `infra/tsconfig.json`
+  - [x] 4.1 Write `infra/scripts/check-cache-headers.ts` and include `scripts` in `infra/tsconfig.json`
     - Pure `findHashedAsset`, `checkPaths`, `verdict` and `exitStatus`. The fallback path's verdict is INFO and does not count. `main` fetches each path, prints path, status, header and verdict, and exits with `exitStatus`. `main` runs only when the file is the entry point (`import.meta.url === pathToFileURL(process.argv[1]).href`), so a test import makes no request. Read-only, no credentials.
     - _Requirements: 2.7_
-  - [ ] 4.2 Test it in `infra/test/check-cache-headers.test.ts`
+  - [x] 4.2 Test it in `infra/test/check-cache-headers.test.ts`
     - Examples against a fixture `index.html`, INFO for the fallback path, `exitStatus`, and Property 7 over generated header strings, `numRuns` 100. No network: `main` is not called and does not run on import.
     - _Requirements: 2.7_
-- [ ] 5. Docs
+- [x] 5. Docs
   - _Requirements: 2.8_
-  - [ ] 5.1 `build/infra/10-deploy.md`: smoke check 20 runs `npx tsx infra/scripts/check-cache-headers.ts "$DOMAIN"`; the Edge resource table lists `WebHeaders`, `AssetHeaders` and the `/assets/*` behaviour; the resource count follows the synth
+  - [x] 5.1 `build/infra/10-deploy.md`: smoke check 20 runs `npx tsx infra/scripts/check-cache-headers.ts "$DOMAIN"`; the Edge resource table lists `WebHeaders`, `AssetHeaders` and the `/assets/*` behaviour; the resource count follows the synth
     - _Requirements: 2.8_
-  - [ ] 5.2 `docs/architecture.md`: one paragraph on browser caching, CloudFront TTL and invalidation
+  - [x] 5.2 `docs/architecture.md`: one paragraph on browser caching, CloudFront TTL and invalidation
     - _Requirements: 2.8_
-- [ ] 6. Checkpoint - Ensure all tests pass
+- [x] 6. Checkpoint - Ensure all tests pass
   - _Requirements: 2.1, 2.2, 2.4, 3.5, 3.6_
-  - [ ] 6.1 Run `npm run typecheck`, `npm run lint` and `npm test` at the repository root
+  - [x] 6.1 Run `npm run typecheck`, `npm run lint` and `npm test` at the repository root
     - Ensure all tests pass, ask the user if questions arise.
     - _Requirements: 3.5, 3.6_
-  - [ ] 6.2 Synth and diff
+  - [x] 6.2 Synth and diff
     - Build the engine and the web app with `VITE_SEXTON_API=/api`, run `cdk synth --strict` with no warnings, load the bundles, and run `cdk diff --method template` for both stacks. Record the diff in full. Expected: Data no differences; Edge two new response headers policies and the distribution update, plus code and web asset keys if main moved. Any IAM line, any change to `GithubTokenSecret`, or any replaced resource stops the work for the owner.
     - _Requirements: 3.5_
-  - [ ] 6.3 Independent review of the branch, findings under "Review notes" in design.md, defects fixed before the commit
+  - [x] 6.3 Independent review of the branch, findings under "Review notes" in design.md, defects fixed before the commit
     - _Requirements: 2.1, 2.2, 2.4, 3.5_
 - [ ] 7. After the owner types deploy (deploy 5), not part of the build
   - _Requirements: 2.1, 2.2, 2.3, 2.7_
