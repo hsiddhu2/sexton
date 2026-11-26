@@ -6,7 +6,7 @@ import { loadScan } from "./load-scan.js";
 import { parseReplayParam, replayAddress } from "../replay/replay-ids.js";
 
 export type LoadState =
-  | { readonly status: "loading"; readonly loadId: number }
+  | { readonly status: "loading"; readonly loadId: number; readonly source: LoadSource }
   | { readonly status: "error"; readonly loadId: number; readonly error: LoadError }
   | {
       readonly status: "ready";
@@ -27,7 +27,8 @@ export interface ScanLoader {
 }
 
 export const DEMO_ADDRESS = "/demo/scan.json";
-export const HOSTED_UNAVAILABLE_TEXT = "hosted scan arrives with release 0.1 infra";
+/** Spec clean-site, 1.13: the reason the Scan field is disabled with no API base. */
+export const HOSTED_UNAVAILABLE_TEXT = "Scanning is off in this build.";
 export const REPO_INPUT_TEXT = "Enter a repository URL of 1 to 200 characters.";
 const MAX_REPO_LENGTH = 200;
 
@@ -40,7 +41,7 @@ export interface ScanLoaderDeps {
 
 export function useScanLoader(deps: ScanLoaderDeps): ScanLoader {
   const { fetchFn, pageOrigin, apiBase, initialSearch } = deps;
-  const [state, setState] = useState<LoadState>({ status: "loading", loadId: 0 });
+  const [state, setState] = useState<LoadState>({ status: "loading", loadId: 0, source: "address" });
   const controllerRef = useRef<AbortController | null>(null);
   const idRef = useRef(0);
 
@@ -51,7 +52,7 @@ export function useScanLoader(deps: ScanLoaderDeps): ScanLoader {
       controllerRef.current?.abort();
       const controller = new AbortController();
       controllerRef.current = controller;
-      setState({ status: "loading", loadId });
+      setState({ status: "loading", loadId, source });
       const check = checkScanUrl(address, pageOrigin, apiBase);
       if (!check.ok) {
         setState({ status: "error", loadId, error: makeLoadError("scan-url-rejected") });

@@ -33,11 +33,13 @@ async function ready(): Promise<void> {
   });
 }
 const slider = (): HTMLInputElement => screen.getByRole("slider", { name: "History date" }) as HTMLInputElement;
-const headerTime = (): HTMLElement => document.querySelector<HTMLElement>(".site-header .header-time") as HTMLElement;
-const headerAsOf = (): HTMLElement | null => document.querySelector<HTMLElement>(".site-header .as-of");
+// Spec clean-site, task 3: the header no longer holds the times (16.12 moves the scan time to the site footer). The
+// site footer keeps the replay's window end in a time element, and the card over the scene shows the chosen Stop.
+const footerTime = (): HTMLElement => document.querySelector<HTMLElement>(".site-footer time") as HTMLElement;
+const cardDate = (): string => document.querySelector(".replay-card .replay-date")?.textContent ?? "";
 
-describe("the replay header labels its two times (requirement 2)", () => {
-  it("reads Window ends and Showing at every Stop of axios and keyv, with times from the response", async () => {
+describe("a replay's two times (requirement 2)", () => {
+  it("keeps the window end in the site footer and the chosen Stop in the card at every Stop of axios and keyv", async () => {
     for (const id of REPLAY_IDS) {
       mount(`?replay=${id}`);
       await ready();
@@ -46,32 +48,27 @@ describe("the replay header labels its two times (requirement 2)", () => {
       const max = Number(slider().max);
       for (let v = Number(slider().min); v <= max; v += 1) {
         fireEvent.change(slider(), { target: { value: String(v) } });
-        expect(headerTime().textContent).toMatch(/^Window ends /);
-        expect(headerTime().querySelector("time")?.getAttribute("dateTime")).toBe(scanTime);
-        const asOf = headerAsOf();
-        if (asOf !== null) {
-          expect(asOf.textContent).toMatch(/^Showing /);
-          expect(asOf.querySelector("time")?.getAttribute("dateTime")).toMatch(/^\d{4}-\d{2}-\d{2}T/);
-        }
+        expect(footerTime().getAttribute("dateTime")).toBe(scanTime);
+        expect(cardDate()).toBe(slider().getAttribute("aria-valuetext"));
       }
       cleanup();
     }
   });
 
-  it("reads Window ends 31 Mar 2026, 03:29 UTC and Showing 31 Mar 2026, 00:21 UTC at the axios Possessed Stop", async () => {
+  it("shows 31 Mar 2026, 00:21 UTC in the card at the axios Possessed Stop, with the window end 31 Mar 2026, 03:29 UTC", async () => {
     mount("?replay=axios");
     await ready();
     fireEvent.change(slider(), { target: { value: String(Number(slider().min) + 1) } });
-    expect(headerTime().textContent).toBe("Window ends 31 Mar 2026, 03:29 UTC");
-    expect(headerAsOf()?.textContent).toBe("Showing 31 Mar 2026, 00:21 UTC");
+    expect(footerTime().textContent).toBe("31 Mar 2026, 03:29 UTC");
+    expect(cardDate()).toBe("31 Mar 2026, 00:21 UTC");
   });
 
-  it("keeps the scan time and the as of text on the demo", async () => {
+  it("keeps the scan time in the site footer and shows the date badge on the demo", async () => {
     mount("");
     await ready();
-    expect(headerTime().textContent).not.toMatch(/Window ends/);
+    expect(footerTime().textContent).toBe("12 Nov 2026, 00:00 UTC");
     fireEvent.change(slider(), { target: { value: slider().min } });
-    expect(headerAsOf()?.textContent).toMatch(/^as of /);
+    expect(document.querySelector(".date-badge")?.textContent).toMatch(/^Viewing /);
   });
 });
 

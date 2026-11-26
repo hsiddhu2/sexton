@@ -283,13 +283,23 @@ describe("palette contrast (WCAG 2.1 relative luminance)", () => {
   it("every pair that styles.css builds from custom properties meets its minimum, in both themes", () => {
     const css = readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
     const vars = (theme: "light" | "dark"): Record<string, string> => cssVariables(theme);
-    const backgrounds = ["--bg", "--surface"];
+    // Spec clean-site, task 3: a chrome text token with no background in its rule sits on the chrome backgrounds; the
+    // chrome lines (--ui-line, --ui-line2) are decorative separators from the approved prototype. Every control they
+    // edge is named by its text or fill, so they are not held to 3:1.
+    const canvasBackgrounds = ["--bg", "--surface"];
+    const chromeBackgrounds = ["--ui-bg", "--ui-bg2", "--ui-panel", "--ui-panel2"];
+    const DECORATIVE = new Set(["--ui-line", "--ui-line2"]);
     let checked = 0;
     for (const block of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
       const body = block[2] ?? "";
       const fg = /(?:^|[;\s])color:\s*var\((--[a-z-]+)\)/.exec(body)?.[1];
       const bgVar = /background:\s*var\((--[a-z-]+)\)/.exec(body)?.[1];
-      const edges = [...body.matchAll(/(?:border[a-z-]*|outline):[^;]*var\((--[a-z-]+)\)/g)].map((m) => m[1] ?? "");
+      // A colour-mix edge is a tinted pill border (the tags and the gold button), decorative like the chrome lines.
+      const edges = [...body.matchAll(/(?:border[a-z-]*|outline):([^;]*)var\((--[a-z-]+)\)/g)]
+        .filter((m) => !(m[1] ?? "").includes("color-mix"))
+        .map((m) => m[2] ?? "")
+        .filter((e) => !DECORATIVE.has(e) && e !== bgVar); // an edge in the fill's own colour draws no boundary
+      const backgrounds = fg?.startsWith("--ui-") === true || edges.some((e) => e.startsWith("--ui-")) ? chromeBackgrounds : canvasBackgrounds;
       for (const theme of THEMES) {
         const v = vars(theme);
         const value = (name: string): string => {

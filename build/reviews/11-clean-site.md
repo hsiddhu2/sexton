@@ -32,3 +32,26 @@ Notes:
 5. 4.3 and 4.4 are checked only in e2e (no AudioContext, no audio element) and by the absence of the code. A jsdom spy test could follow in task 12.
 6. README.md, CREDITS.md, docs/requirements.md R-UI-8 and the README test still name the old Guide steps, sound or fonts; the infra cache-header tests use an old font path as a sample string. Task 12, or outside the lane, as recorded.
 
+
+## Task 3
+
+The shell (3.1 to 3.5): the one-row header with the wordmark link, the scan tag, the Scan field with its examples and the scanning card, and the header buttons; Home with the headline, notices, chips with canvas dimming and tab order, the Graveyard / List switch, the help line and date badge in the sky band; the Panel with the Inspector, the hover ring, the Fix order and the keys; the Footer bar and the site footer; the Welcome bar. The screen state is held by an in-memory hook and owns what is open; the Guide page, Tour and List are first versions until their tasks.
+
+Independent review before the commit. Verdict: not ready, for two defects, both fixed before the commit:
+
+1. Escape on a Replay (or on a Guide page opened from one) changed the screen state to Home but left the replay loaded. Fixed: the loader now follows the Source the screen state names whatever event changed it; a test takes a Replay home on Escape and checks the Sample scan loads.
+2. During the Load moment, a grave that had finished rising was drawn at full alpha under a filter. Fixed: that branch is dimmed too; a test draws the Load moment with every grave dimmed.
+
+Notes:
+
+1. On a Replay the Cemetery still keeps its own Drawer, so a Drawer can sit on the Replay owner and the hero, Footer bar and Panel are not inert then. Recorded in design.md; task 6 removes it (8.19).
+2. The Drawer handles its own Escape, so a Pop-over over the Drawer would close after it, and a Drawer closed by the reducer gets no focus return. Tasks 5 and 8.
+3. The help line and the date badge could overlap in a narrow Scene. Fixed: the help line hides while the badge shows.
+4. HomeView places the overlays by the model's constant offsets; CSS holds the widths. Left as it is; the model and CSS share the values 460, 240 and 28.
+5. A test title and a code comment did not match. Fixed.
+6. Focus on a grave makes it the Selected grave, as on main. Recorded in design.md.
+7. The contrast pair check no longer holds the chrome lines and tinted borders to 3:1, the Scan field's edge among them; the field is also marked by its icon, placeholder and gold Scan button. Recorded in design.md.
+8. The first Tour card takes no focus and has no blocker; task 7.3.
+9. The Inspector heading holds the Selected mark; the Fixture-name check skips the Drawer; the 300-grave repaint with half dimmed waits for the e2e work of task 12.
+
+Gates after the fixes: typecheck, lint (zero warnings) and test pass; 2226 tests across 6 workspaces.

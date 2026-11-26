@@ -23,7 +23,7 @@ function rulesFor(selector: string): Rule[] {
 describe("styles.css static checks", () => {
   it("wraps long text with overflow-wrap: anywhere", () => {
     expect(css).toMatch(/overflow-wrap:\s*anywhere/);
-    for (const selector of [".repo-text", ".drawer h2", ".pr-preview"]) {
+    for (const selector of [".inspector-name", ".drawer h2", ".pr-preview"]) {
       expect(rulesFor(selector).some((r) => /overflow-wrap:\s*anywhere/.test(r.body)), selector).toBe(true);
     }
   });
@@ -40,8 +40,10 @@ describe("styles.css static checks", () => {
     expect(css.match(/transition\s*:/g)).toBeNull();
   });
 
-  it("gives .header-summary a min-height", () => {
-    expect(rulesFor(".header-summary").some((r) => /min-height:/.test(r.body))).toBe(true);
+  // Spec clean-site, 1.2: one header row of 64 px in the Wide and Middle layouts.
+  it("gives the header one row of 64 px, and lets it wrap under 700 px", () => {
+    expect(rulesFor(".site-header").some((r) => /height:\s*64px/.test(r.body))).toBe(true);
+    expect(css).toMatch(/@media \(max-width: 699px\)\s*\{\s*\.site-header\s*\{[^}]*flex-wrap:\s*wrap[^}]*height:\s*auto/);
   });
 
   it("keeps main free of horizontal padding and gives .panel-main 16px", () => {
@@ -62,9 +64,9 @@ describe("styles.css static checks", () => {
     expect(css).not.toMatch(/outline:\s*(none|0)\b/);
   });
 
-  it("stacks the header at 600px and lets the field shrink", () => {
-    expect(css).toMatch(/@media \(max-width: 600px\)/);
-    expect(rulesFor(".repo-form input").some((r) => /min-width:\s*0/.test(r.body) && /flex:\s*1 1 auto/.test(r.body))).toBe(true);
+  it("puts the Scan field on its own row under 700 px and lets the field shrink", () => {
+    expect(css).toMatch(/@media \(max-width: 699px\)[\s\S]*\.scan-wrap\s*\{[^}]*flex-basis:\s*100%/);
+    expect(rulesFor(".scan-form input").some((r) => /min-width:\s*0/.test(r.body) && /flex:\s*1 1 auto/.test(r.body))).toBe(true);
   });
 
   it("sizes the drawer to min(32rem, 100%)", () => {
@@ -89,11 +91,15 @@ describe("styles.css static checks", () => {
     for (const name of used) expect(known.has(name), name).toBe(true);
   });
 
-  it("styles the new accent button with the accent tokens", () => {
-    for (const selector of [".scan-button", ".drawer-remediate-button"]) {
+  it("styles the accent buttons with the accent tokens", () => {
+    for (const [selector, bg, fg] of [
+      [".scan-button", "--ui-accent", "--ui-accent-ink"],
+      [".button-primary", "--ui-accent", "--ui-accent-ink"],
+      [".drawer-remediate-button", "--accent-bg", "--accent-text"],
+    ] as const) {
       const body = rulesFor(selector)[0]?.body ?? "";
-      expect(body, selector).toMatch(/background:\s*var\(--accent-bg\)/);
-      expect(body, selector).toMatch(/(^|[;\s])color:\s*var\(--accent-text\)/);
+      expect(body, selector).toMatch(new RegExp(`background:\\s*var\\(${bg}\\)`));
+      expect(body, selector).toMatch(new RegExp(`(^|[;\\s])color:\\s*var\\(${fg}\\)`));
     }
   });
 

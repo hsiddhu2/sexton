@@ -147,7 +147,8 @@ describe("Drawer in Cemetery", () => {
       target.focus();
       fireEvent.click(target);
       const dialog = screen.getByRole("dialog");
-      expect(container.querySelector("[inert]")?.querySelector("main")).not.toBeNull();
+      // Spec clean-site, task 3: the page owns the one main; the Cemetery makes its scene inert.
+      expect(container.querySelector("[inert]")?.querySelector(".scene-main")).not.toBeNull();
       expect(dialog.closest("[inert]")).toBeNull();
       if (close === "escape") fireEvent.keyDown(dialog, { key: "Escape" });
       else if (close === "button") fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));

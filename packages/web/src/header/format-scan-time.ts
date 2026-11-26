@@ -33,3 +33,11 @@ export function scanTimeView(value: string): ScanTimeView {
   const text = `${String(d.getUTCDate())} ${month} ${pad(d.getUTCFullYear(), 4)}, ${pad(d.getUTCHours(), 2)}:${pad(d.getUTCMinutes(), 2)} UTC`;
   return { text, dateTime: value };
 }
+
+/** Pure. The UTC day of an instant, as "12 Nov 2026"; "unknown" for an instant that is not finite. */
+export function dayText(ms: number): string {
+  if (!Number.isFinite(ms)) return "unknown";
+  const d = new Date(ms);
+  const month = MONTHS[d.getUTCMonth()];
+  return month === undefined ? "unknown" : `${String(d.getUTCDate())} ${month} ${pad(d.getUTCFullYear(), 4)}`;
+}

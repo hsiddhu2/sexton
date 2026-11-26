@@ -1,5 +1,6 @@
 import {
   ALPHA_ZERO_BYTE,
+  dimAlpha,
   FOG_PEAK_ALPHA_BYTE,
   GLOW_ALPHA_BYTE,
   HALO_ALPHA_BYTE,
@@ -34,6 +35,8 @@ export interface PaintContext2D {
   fillStyle: string | CanvasGradient | CanvasPattern;
   strokeStyle: string | CanvasGradient | CanvasPattern;
   lineWidth: number;
+  /** Set only around the draws of a grave dimmed by a filter (spec clean-site, 2.7). */
+  globalAlpha?: number;
   font: string;
   textAlign: CanvasTextAlign;
   setTransform(a: number, b: number, c: number, d: number, e: number, f: number): void;
@@ -930,20 +933,31 @@ export function drawScene(ctx: PaintContext2D, plan: ScenePlan, scale: number, n
   // The Load moment: each grave rises out of the ground in triage order; the glows wait for the last one (B5).
   const rising = plan.riseStartMs !== null && nowMs - plan.riseStartMs < loadMomentMs(plan.graves.length);
   if (!rising) {
-    for (const grave of plan.graves) drawGlow(ctx, grave, plan);
+    for (const grave of plan.graves) {
+      if (grave.dimmed) dimmed(ctx, () => {
+        drawGlow(ctx, grave, plan);
+      });
+      else drawGlow(ctx, grave, plan);
+    }
     drawHalo(ctx, plan);
   }
   for (const index of plan.paintOrder) {
     const grave = plan.graves[index];
     if (grave === undefined) continue;
     if (!rising || plan.riseStartMs === null) {
-      drawGrave(ctx, grave, plan, deco, nowMs);
+      if (grave.dimmed) dimmed(ctx, () => {
+        drawGrave(ctx, grave, plan, deco, nowMs);
+      });
+      else drawGrave(ctx, grave, plan, deco, nowMs);
       continue;
     }
     const up = riseAt(nowMs - plan.riseStartMs - loadDelay(grave.index, plan.graves.length));
     if (up <= 0) continue;
     if (up >= 1) {
-      drawGrave(ctx, grave, plan, deco, nowMs);
+      if (grave.dimmed) dimmed(ctx, () => {
+        drawGrave(ctx, grave, plan, deco, nowMs);
+      });
+      else drawGrave(ctx, grave, plan, deco, nowMs);
       continue;
     }
     // Clipped to its cell and moved down by what is left to rise; its Ghost shows once it stands.
@@ -953,6 +967,7 @@ export function drawScene(ctx: PaintContext2D, plan: ScenePlan, scale: number, n
     ctx.clip();
     ctx.translate(0, (1 - up) * grave.rect.h);
     paintDirect = true;
+    if (grave.dimmed) ctx.globalAlpha = dimAlpha();
     try {
       drawGrave(ctx, grave.ghost === null ? grave : { ...grave, ghost: null }, plan, deco, nowMs);
     } finally {
@@ -960,19 +975,36 @@ export function drawScene(ctx: PaintContext2D, plan: ScenePlan, scale: number, n
     }
     ctx.restore();
   }
-  if (plan.ring !== null) {
-    // The Ring casing: ink on each side of the gold line, so the gold sits on ink and never on the Halo (spec
-    // judge-path, requirement 4.1). Filled, so the ring stays one stroke and the last call.
-    const r = plan.ring;
-    const o = RING_LINE_WIDTH / 2 + RING_CASING;
-    const t = 2 * o;
-    ctx.fillStyle = colours.ink;
-    ctx.fillRect(r.x - o, r.y - o, r.w + t, t);
-    ctx.fillRect(r.x - o, r.y + r.h - o, r.w + t, t);
-    ctx.fillRect(r.x - o, r.y + o, t, r.h - t);
-    ctx.fillRect(r.x + r.w - o, r.y + o, t, r.h - t);
-    ctx.strokeStyle = colours.ring;
-    ctx.lineWidth = RING_LINE_WIDTH;
-    ctx.strokeRect(plan.ring.x, plan.ring.y, plan.ring.w, plan.ring.h);
+  // The hover ring (spec clean-site, 3.13) sits on the Ring casing like the selection ring, in ringHover.
+  if (plan.hoverRing !== null) drawRing(ctx, plan.hoverRing, colours.ink, colours.ringHover);
+  // The selection ring is the last call (spec judge-path, requirement 4.1).
+  if (plan.ring !== null) drawRing(ctx, plan.ring, colours.ink, colours.ring);
+}
+
+/** Runs one grave's draws at the dim alpha and restores the context after (spec clean-site, 2.7). */
+function dimmed(ctx: PaintContext2D, draw: () => void): void {
+  ctx.save();
+  ctx.globalAlpha = dimAlpha();
+  try {
+    draw();
+  } finally {
+    ctx.restore();
   }
+}
+
+/**
+ * A ring on its Ring casing: ink on each side of the line, so the line sits on ink and never on the Halo (spec
+ * judge-path, requirement 4.1). Filled, so the ring stays one stroke.
+ */
+function drawRing(ctx: PaintContext2D, r: Rect, ink: string, line: string): void {
+  const o = RING_LINE_WIDTH / 2 + RING_CASING;
+  const t = 2 * o;
+  ctx.fillStyle = ink;
+  ctx.fillRect(r.x - o, r.y - o, r.w + t, t);
+  ctx.fillRect(r.x - o, r.y + r.h - o, r.w + t, t);
+  ctx.fillRect(r.x - o, r.y + o, t, r.h - t);
+  ctx.fillRect(r.x + r.w - o, r.y + o, t, r.h - t);
+  ctx.strokeStyle = line;
+  ctx.lineWidth = RING_LINE_WIDTH;
+  ctx.strokeRect(r.x, r.y, r.w, r.h);
 }

@@ -19,9 +19,17 @@ export interface GraveButtonsProps {
   readonly views?: readonly (FormView | undefined)[];
   /** Told the grave under the pointer, else the one holding key-driven focus, for the Lantern glow; null when none. */
   readonly onLantern?: (index: number | null) => void;
+  /** Spec clean-site, 3.3 to 3.5 and 3.13: told the grave under the pointer, or null. */
+  readonly onHover?: (index: number | null) => void;
+  /** Spec clean-site, 3.3: told the grave whose button has focus, or null. */
+  readonly onFocusGrave?: (index: number | null) => void;
+  /** The one grave in the tab order; the Selected grave when absent. */
+  readonly tabStop?: number | null;
+  /** Spec clean-site, 2.8: the dimmed graves' buttons leave the tab order. */
+  readonly dimmed?: ReadonlySet<string>;
 }
 
-export function GraveButtons({ plan, selectedIndex, packages, onSelect, onOpen, suppressLantern = false, quietFocus, views, onLantern }: GraveButtonsProps) {
+export function GraveButtons({ plan, selectedIndex, packages, onSelect, onOpen, suppressLantern = false, quietFocus, views, onLantern, onHover, onFocusGrave, tabStop, dimmed }: GraveButtonsProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [hovered, setHovered] = useState<number | null>(null);
   const [focused, setFocused] = useState<number | null>(null);
@@ -35,6 +43,15 @@ export function GraveButtons({ plan, selectedIndex, packages, onSelect, onOpen, 
   useEffect(() => {
     onLantern?.(lit);
   }, [lit, onLantern]);
+  const [pointer, setPointer] = useState<number | null>(null);
+  const [holder, setHolder] = useState<number | null>(null);
+  useEffect(() => {
+    onHover?.(pointer);
+  }, [pointer, onHover]);
+  useEffect(() => {
+    onFocusGrave?.(holder);
+  }, [holder, onFocusGrave]);
+  const stop = tabStop === undefined ? selectedIndex : tabStop;
 
   // A focus counts as key-driven when a key was pressed after the last pointer press (any element, so Tab into the grave counts).
   const keyDriven = useRef(false);
@@ -76,7 +93,7 @@ export function GraveButtons({ plan, selectedIndex, packages, onSelect, onOpen, 
             className="grave-button"
             data-grave-index={i}
             aria-label={graveLabel(pkg, views?.[i], plan.graves[i]?.marker === true)}
-            tabIndex={i === selectedIndex ? 0 : -1}
+            tabIndex={i === stop && dimmed?.has(pkg.name) !== true ? 0 : -1}
             style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
             onKeyDown={onKeyDown}
             onFocus={() => {
@@ -86,15 +103,19 @@ export function GraveButtons({ plan, selectedIndex, packages, onSelect, onOpen, 
               const key = !programmatic && keyDriven.current;
               keyDriven.current = false;
               setFocused(key ? i : null);
+              setHolder(i);
             }}
             onBlur={() => {
               setFocused((f) => (f === i ? null : f));
+              setHolder((f) => (f === i ? null : f));
             }}
             onPointerEnter={() => {
               setHovered(i);
+              setPointer(i);
             }}
             onPointerLeave={() => {
               setHovered((h) => (h === i ? null : h));
+              setPointer((h) => (h === i ? null : h));
             }}
             onClick={() => {
               onOpen(i);

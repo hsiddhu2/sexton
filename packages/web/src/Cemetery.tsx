@@ -1,5 +1,5 @@
-import type { ScanResponse } from "@sexton/api";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
+import type { ScanResponse, State } from "@sexton/api";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Drawer } from "./drawer/Drawer.js";
 import type { RemediateView } from "./load/remediate-client.js";
 import { drawerModel } from "./drawer/drawer-model.js";
@@ -21,6 +21,9 @@ import { BURST_MS } from "./scene/burst.js";
 import { loadMomentMs } from "./scene/rise.js";
 import { claimLoadMoment } from "./scene/load-moment.js";
 
+/** The shortest Scene with a reserve below it (spec clean-site): room for the sky band and one Tier. */
+export const MIN_SCENE_HEIGHT = 420;
+
 export interface CemeteryProps {
   readonly response: ScanResponse;
   readonly theme: Theme;
@@ -31,21 +34,85 @@ export interface CemeteryProps {
   readonly repoFieldRef?: RefObject<HTMLInputElement | null>;
   /** Opens a pull request; present only for a hosted scan with actions.remediate true (spec remediate, 9.2). */
   readonly onRemediate?: (packageName: string) => Promise<RemediateView>;
+  /**
+   * Spec clean-site: the Selected grave (an index in triage order) when the page owns it. Absent, the Cemetery keeps
+   * its own selection, as before.
+   */
+  readonly selected?: number | null;
+  readonly onSelect?: (index: number) => void;
+  /**
+   * Spec clean-site, design C1: the package whose Drawer is open when the screen state owns it (null for none), with
+   * the open and close requests. Absent, the Cemetery keeps its own Drawer state, as a replay still does.
+   */
+  readonly open?: string | null;
+  readonly onOpen?: (name: string) => void;
+  readonly onClose?: () => void;
+  /** Spec clean-site, 2.7 and 2.8: graves of another State at the shown date are dimmed and leave the tab order. */
+  readonly filter?: State | null;
+  /** Told the grave under the pointer and the grave whose button has focus, for the Inspector (3.3 to 3.5). */
+  readonly onLook?: (hover: number | null, focus: number | null) => void;
+  /** Height kept free under the Scene for the Footer bar and the site footer (spec clean-site). */
+  readonly reserve?: number;
+  /** Shown in place of the Scene (the List, spec clean-site 6.1); the Drawer still opens from it. */
+  readonly replaceScene?: ReactNode;
 }
 
-export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFieldRef, onRemediate }: CemeteryProps) {
+export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFieldRef, onRemediate, ...page }: CemeteryProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const order = useMemo(() => triageOrder(response.report.packages), [response]);
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(() => (order.length > 0 ? 0 : null));
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [localSelected, setLocalSelected] = useState<number | null>(() => (order.length > 0 ? 0 : null));
+  const [localOpen, setLocalOpen] = useState<number | null>(null);
+  const selectionOwned = page.selected !== undefined;
+  const selectedIndex = page.selected === undefined ? localSelected : page.selected;
+  const pageSelect = page.onSelect;
+  const setSelectedIndex = useCallback(
+    (index: number): void => {
+      if (selectionOwned) pageSelect?.(index);
+      else setLocalSelected(index);
+    },
+    [selectionOwned, pageSelect],
+  );
+  const openIndex = useMemo((): number | null => {
+    if (page.open === undefined) return localOpen;
+    if (page.open === null) return null;
+    const i = order.findIndex((p) => p.name === page.open);
+    return i === -1 ? null : i;
+  }, [page.open, localOpen, order]);
+  const pageOpen = page.onOpen;
+  const pageClose = page.onClose;
+  const controlled = page.open !== undefined;
+  const setOpenIndex = useCallback(
+    (index: number | null): void => {
+      if (!controlled) {
+        setLocalOpen(index);
+        return;
+      }
+      if (index === null) pageClose?.();
+      else {
+        const name = order[index]?.name;
+        if (name !== undefined) pageOpen?.(name);
+      }
+    },
+    [controlled, pageOpen, pageClose, order],
+  );
+  // The grave under the pointer, for the hover ring (spec clean-site, 3.13).
+  const [hover, setHover] = useState<number | null>(null);
+  const [focus, setFocus] = useState<number | null>(null);
+  const onLook = page.onLook;
+  useEffect(() => {
+    onLook?.(hover, focus);
+  }, [hover, focus, onLook]);
   // The grave under the pointer or holding focus gets the Lantern glow (spec cemetery-undead, 6.4).
   const [lantern, setLantern] = useState<number | null>(null);
   const returnFocusTo = useRef<number | null>(null);
   const quietFocus = useRef(false);
   const width = useContainerWidth(containerRef);
-  const minHeight = useFreeHeight(containerRef, width);
+  const free = useFreeHeight(containerRef, width);
   const footerHeight = usePinnedFooterHeight(width, response);
-  const fit = fitHeight(minHeight, footerHeight, footerHeight > 0);
+  const reserve = page.reserve ?? 0;
+  // With a reserve the Scene ends above the Footer bar and the site footer, and its graves stand at its bottom.
+  const minHeight = reserve > 0 ? Math.max(MIN_SCENE_HEIGHT, free - reserve) : free;
+  const fit = reserve > 0 ? (free > 0 ? minHeight : 0) : fitHeight(free, footerHeight, footerHeight > 0);
   const anyGhost = useMemo(() => order.some(hasGhost), [order]);
   const phase = useGhostPhase(anyGhost, reducedMotion);
   // A new plan object once the canvas fonts load, so the Scene repaints with them (spec cemetery-undead, 2.4).
@@ -63,6 +130,25 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
     });
   }, [order, response, asOfMs]);
   const beforeScan = asOfMs !== null && asOfMs < Date.parse(response.report.generatedAt);
+  // Spec clean-site, 2.7: every grave of another State at the shown date, and every Not-published mound, is dimmed.
+  const filter = page.filter ?? null;
+  const dimmedNames = useMemo((): ReadonlySet<string> | undefined => {
+    if (filter === null) return undefined;
+    const out = new Set<string>();
+    order.forEach((pkg, i) => {
+      const view = views?.[i];
+      const state = view === undefined ? pkg.state : view.state;
+      if (state !== filter) out.add(pkg.name);
+    });
+    return out;
+  }, [filter, order, views]);
+  // The one grave in the tab order: the Selected grave, or the first one not dimmed while it is (2.8, 16.8).
+  const tabStop = useMemo((): number | null => {
+    if (dimmedNames === undefined || selectedIndex === null) return selectedIndex;
+    if (!dimmedNames.has(order[selectedIndex]?.name ?? "")) return selectedIndex;
+    const first = order.findIndex((p) => !dimmedNames.has(p.name));
+    return first === -1 ? null : first;
+  }, [dimmedNames, selectedIndex, order]);
   const drawerOpen = openIndex !== null;
   const burial = useBurial({ reducedMotion, drawerOpen });
   // A mark comes from the response log or the session list, never from a plan in `remediations` (14.5, 14.6).
@@ -140,8 +226,10 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
         ...(views !== undefined ? { forms: views } : {}),
         ...(atBurst && !burstDone ? { burst: { index: 0, startMs: burstStart } } : {}),
         ...(rising && riseStart !== null ? { rise: { startMs: riseStart } } : {}),
+        ...(dimmedNames !== undefined ? { dimmed: dimmedNames } : {}),
+        hover: drawerOpen ? null : hover,
       }),
-    [order, width, theme, selectedIndex, phase, minHeight, fit, views, marks, burial.burial, burialIndex, vigilIndex, fontsReady, reducedMotion, lantern, atBurst, burstDone, burstStart, rising, riseStart],
+    [order, width, theme, selectedIndex, phase, minHeight, fit, views, marks, burial.burial, burialIndex, vigilIndex, fontsReady, reducedMotion, lantern, atBurst, burstDone, burstStart, rising, riseStart, dimmedNames, hover, drawerOpen],
   );
   const request = burial.request;
   const onRemediateWithBurial = useMemo(
@@ -155,14 +243,17 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
           },
     [onRemediate, request],
   );
-  const onOpen = useCallback((index: number): void => {
-    setSelectedIndex(index);
-    setOpenIndex(index);
-  }, []);
+  const onOpen = useCallback(
+    (index: number): void => {
+      setSelectedIndex(index);
+      setOpenIndex(index);
+    },
+    [setSelectedIndex, setOpenIndex],
+  );
   const onClose = useCallback((): void => {
     returnFocusTo.current = openIndex;
     setOpenIndex(null);
-  }, [openIndex]);
+  }, [openIndex, setOpenIndex]);
   useLayoutEffect(() => {
     if (openIndex !== null || returnFocusTo.current === null) return;
     const index = returnFocusTo.current;
@@ -183,7 +274,7 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
       setOpenIndex(null);
       return true;
     },
-    [repoFieldRef],
+    [repoFieldRef, setOpenIndex],
   );
   const openView = openIndex === null ? undefined : views?.[openIndex];
   const openVersion = openView?.version;
@@ -194,7 +285,7 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
   return (
     <>
       <div inert={openPackage !== undefined}>
-        <main className="scene-main">
+        <div className="scene-main">
           {/* A replay's story sits in a card over the scene, top left, as in the mockup (K2d fix 1). */}
           {response.replay === undefined ? null : (
             <ReplayBanner
@@ -205,7 +296,9 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
             />
           )}
           <div ref={containerRef} className="scene-container">
-            {order.length === 0 ? (
+            {page.replaceScene !== undefined ? (
+              page.replaceScene
+            ) : order.length === 0 ? (
               <p className="cemetery-empty">no direct dependencies in this scan</p>
             ) : (
               <>
@@ -219,12 +312,16 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
                   suppressLantern={drawerOpen}
                   quietFocus={quietFocus}
                   onLantern={setLantern}
+                  onHover={setHover}
+                  onFocusGrave={setFocus}
+                  tabStop={tabStop}
+                  {...(dimmedNames !== undefined ? { dimmed: dimmedNames } : {})}
                   {...(views !== undefined ? { views } : {})}
                 />
               </>
             )}
           </div>
-        </main>
+        </div>
       </div>
       {openPackage === undefined ? null : <Drawer model={drawerModel(response, openPackage, openVersion)} {...(response.replay !== undefined ? { replay: response.replay } : {})} {...(asOfLine !== undefined ? { asOfLine } : {})} onClose={onClose} onDismissToField={onDismissToField} {...(onRemediateWithBurial !== undefined ? { onRemediate: onRemediateWithBurial } : {})} />}
     </>

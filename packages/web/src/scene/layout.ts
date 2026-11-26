@@ -4,6 +4,7 @@ import { colourFor, PALETTE, type Theme } from "./palette.js";
 import { unitClusters, unitStars } from "./scenery-seed.js";
 import { SHAPE_BY_STATE, type ShapeId } from "./shapes.js";
 import { dancers } from "./motion.js";
+import { OVERLAY_BAND } from "./overlay-band.js";
 import { TIER_DRAW_ORDER, TIER_GAP, TIER_OF, TIER_SCALE, type TierId } from "./tiers.js";
 
 export type { Theme } from "./palette.js";
@@ -61,6 +62,8 @@ export interface GravePlan {
   readonly marker: boolean;
   /** Burial phase in [0, 1], or null when no burial plays on this grave. */
   readonly burial: number | null;
+  /** True while a filter is set and the grave is of another State, or Not published (spec clean-site, 2.7). */
+  readonly dimmed: boolean;
 }
 
 export const STAR_AREA = 800;
@@ -129,6 +132,8 @@ export interface ScenePlan {
   readonly theme: Theme;
   readonly graves: readonly GravePlan[];
   readonly ring: Rect | null;
+  /** The hover ring on the grave under the pointer when it is not the Selected one, or null (spec clean-site, 3.13). */
+  readonly hoverRing: Rect | null;
   readonly scenery: Scenery;
   /** The selected grave, which holds the ring, or null (spec cemetery-undead-2, A3). */
   readonly selected: number | null;
@@ -170,6 +175,10 @@ export interface SceneInput {
   readonly priest?: { readonly index: number; readonly phase: number | null } | null;
   /** Spec cemetery-undead-2, B5: the Load moment's start on the page clock. */
   readonly rise?: { readonly startMs: number } | null;
+  /** Spec clean-site, 2.7: the names of the graves drawn at the dim alpha while a filter is set. */
+  readonly dimmed?: ReadonlySet<string>;
+  /** Spec clean-site, 3.13: the grave under the pointer, which gets the hover ring unless it is the Selected one. */
+  readonly hover?: number | null;
 }
 
 const round2 = (value: number): number => Math.round(value * 100) / 100;
@@ -282,7 +291,7 @@ export function planScene(input: SceneInput): ScenePlan {
   const reducedMotion = input.reducedMotion === true;
   if (n === 0) {
     const scenery = sceneryFor(width);
-    return { width, height: 0, columns: 0, rows: 0, rowLines: [], paintOrder: [], dancers: new Set(), reducedMotion, lantern: null, groundHeight: 0, theme: input.theme, graves: [], ring: null, scenery, selected: null, burst: null, priest: null, riseStartMs: null };
+    return { width, height: 0, columns: 0, rows: 0, rowLines: [], paintOrder: [], dancers: new Set(), reducedMotion, lantern: null, groundHeight: 0, theme: input.theme, graves: [], ring: null, hoverRing: null, scenery, selected: null, burst: null, priest: null, riseStartMs: null };
   }
   // Tiers follow the scan-date State, so a grave never moves while the scrubber does (spec cemetery-undead, 5.6).
   const byTier: Record<TierId, number[]> = { front: [], middle: [], back: [] };
@@ -321,7 +330,8 @@ export function planScene(input: SceneInput): ScenePlan {
   const field = y + PADDING;
   // The sky grows to fill the fit height, so the graves stand at the bottom above the Footer bar (K2d fix 1).
   const fit = typeof input.fitHeight === "number" && Number.isFinite(input.fitHeight) ? Math.floor(input.fitHeight) : 0;
-  const sky = Math.min(MAX_SKY_HEIGHT, Math.max(SKY_HEIGHT, fit - field));
+  // At least OVERLAY_BAND of sky stays above the graves for the help line and the date badge (spec clean-site, 2.12).
+  const sky = Math.min(MAX_SKY_HEIGHT, Math.max(SKY_HEIGHT, OVERLAY_BAND, fit - field));
   const scenery = sceneryFor(width, sky);
   const rects: Rect[] = local.map((r) => ({ x: r.x, y: r.y + sky, w: r.w, h: r.h }));
   const rowLines = localLines.map((line) => line + sky);
@@ -354,6 +364,7 @@ export function planScene(input: SceneInput): ScenePlan {
       pending,
       marker: !pending && input.marks?.[index] === true,
       burial: !pending && burial != null && burial.index === index ? Math.min(1, Math.max(0, burial.phase)) : null,
+      dimmed: input.dimmed?.has(pkg.name) === true,
     };
   });
   const selected = input.selectedIndex;
@@ -362,6 +373,11 @@ export function planScene(input: SceneInput): ScenePlan {
     selectedGrave === undefined
       ? null
       : { x: selectedGrave.rect.x + 2, y: selectedGrave.rect.y + 2, w: selectedGrave.rect.w - 4, h: selectedGrave.rect.h - 4 };
+  const hover = typeof input.hover === "number" && Number.isInteger(input.hover) ? graves[input.hover] : undefined;
+  const hoverRing: Rect | null =
+    hover === undefined || hover.index === selectedGrave?.index
+      ? null
+      : { x: hover.rect.x + 2, y: hover.rect.y + 2, w: hover.rect.w - 4, h: hover.rect.h - 4 };
   const lantern = typeof input.lantern === "number" && Number.isInteger(input.lantern) && input.lantern >= 0 && input.lantern < n ? input.lantern : null;
   const deadNames = input.packages.filter((p) => p.state === "Dead").map((p) => p.name);
   const inRange = (i: unknown): i is number => typeof i === "number" && Number.isInteger(i) && i >= 0 && i < n;
@@ -376,7 +392,7 @@ export function planScene(input: SceneInput): ScenePlan {
     : null;
   const riseStartMs = input.rise != null && !reducedMotion && Number.isFinite(input.rise.startMs) ? input.rise.startMs : null;
   return {
-    width, height, columns, rows, rowLines, paintOrder, dancers: dancers(deadNames), reducedMotion, lantern, groundHeight, theme: input.theme, graves, ring, scenery,
+    width, height, columns, rows, rowLines, paintOrder, dancers: dancers(deadNames), reducedMotion, lantern, groundHeight, theme: input.theme, graves, ring, hoverRing, scenery,
     selected: selectedGrave === undefined ? null : selectedGrave.index,
     burst,
     priest,

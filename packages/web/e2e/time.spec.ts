@@ -55,12 +55,12 @@ test("the scrubber moves by keyboard, shows as of, and Back to now returns to th
   await expect(scrubber).toBeVisible();
   const last = await scrubber.getAttribute("max");
   await expect(scrubber).toHaveValue(last ?? "");
-  await expect(page.locator(".as-of")).toHaveCount(0);
+  await expect(page.locator(".date-badge")).toHaveCount(0);
   const before = await page.locator("canvas").first().evaluate((c) => (c as HTMLCanvasElement).toDataURL());
   await scrubber.focus();
   await scrubber.press("Home");
   await expect(scrubber).toHaveValue("0");
-  await expect(page.locator(".as-of")).toContainText("as of");
+  await expect(page.locator(".date-badge")).toContainText("Viewing");
   await expect(page.locator("button[data-grave-index][aria-label$=\"not yet published on this date\"]").first()).toBeVisible();
   // The canvas repaints in the next animation frame.
   await expect
@@ -72,7 +72,7 @@ test("the scrubber moves by keyboard, shows as of, and Back to now returns to th
   await page.getByRole("button", { name: "Back to now" }).click();
   await expect(scrubber).toHaveValue(last ?? "");
   await expect(scrubber).toBeFocused();
-  await expect(page.locator(".as-of")).toHaveCount(0);
+  await expect(page.locator(".date-badge")).toHaveCount(0);
 });
 
 // Task 7.5: the two incident replays in a real browser. Written 23 Nov 2026, run by the orchestrator.
@@ -161,7 +161,8 @@ test("the keyv replay shows Alive 5.6.0, then Possessed 6.0.0 at its end, and a 
   await grave.click();
   await expect(page.locator(".drawer-asof")).toContainText("install script added in 6.0.0");
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "axios, Mar 2026" }).click();
+  await page.getByRole("button", { name: "Watch a real attack" }).click();
+  await page.getByRole("button", { name: /^axios/ }).click();
   await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
   await expect(page.locator('[role="note"]')).toContainText("axios");
 });

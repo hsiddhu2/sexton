@@ -16,7 +16,8 @@ inclusion: always
   - scripts/generate-demo-scan.mjs also writes the replay fixtures to packages/web/public/replay from scripts/lib/replay-facts.mjs.
 - packages/web: the cemetery. Reads from api. Never calls registries directly.
   - src/scene: canvas drawing, palette and characters. src/drawer and src/header: DOM. src/triage: ordering. src/load: API clients.
-  - src/time: scrubber, play and burial; form-at.ts only looks up Segments. src/replay: replay ids, buttons and banner. src/overlay: grave buttons and their labels.
+  - src/time: scrubber, play and burial; form-at.ts only looks up Segments. src/replay: replay ids and banner. src/overlay: grave buttons and their labels.
+  - src/home: Home, the List, the Footer bar and the site footer. src/panel: the Inspector and the Fix order. src/guide: the Guide page and the Welcome bar. src/tour: the Tour. src/glossary: the Terms and their meanings.
   - public/fonts: the self-hosted fonts. public/replay: the replay fixtures.
 - packages/action: GitHub Action wrapping cli. action.yml is the composite action. src/post-comment.ts posts the comment.
 - infra: CDK app. bin/sexton.ts is the entry. lib/app.ts builds two stacks.

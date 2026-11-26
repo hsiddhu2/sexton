@@ -108,7 +108,7 @@ describe("axe-core, wcag2a/aa and wcag21a/aa, color-contrast off (Requirement 10
   it("has no violations with the repository field disabled", async () => {
     mount({ apiBase: null });
     await ready();
-    expect((screen.getByLabelText("Repository URL") as HTMLInputElement).disabled).toBe(true);
+    expect((screen.getByLabelText("GitHub repository to scan") as HTMLInputElement).disabled).toBe(true);
     expect(await violations()).toEqual([]);
   });
 });
@@ -126,7 +126,7 @@ describe("landmarks, labels and text alternatives (Requirements 10.1, 10.2, 10.6
     expect(container.querySelectorAll("h1")).toHaveLength(1);
     expect(container.querySelectorAll("header")).toHaveLength(1);
     expect(container.querySelectorAll("main")).toHaveLength(1);
-    expect(screen.getByLabelText("Repository URL")).toBeTruthy();
+    expect(screen.getByLabelText("GitHub repository to scan")).toBeTruthy();
   });
 
   it("hides the canvas and labels every grave button with name, version and state", async () => {
@@ -143,8 +143,9 @@ describe("landmarks, labels and text alternatives (Requirements 10.1, 10.2, 10.6
   it("conveys state, policy status and notices as text", async () => {
     const { container } = mount();
     await ready();
-    expect(container.querySelector(".header-policy")?.textContent).toMatch(/policy: (pass|fail)/);
-    expect(container.querySelector("header")?.textContent).toContain("demo fixture, recorded data");
+    expect(container.querySelector(".footer-policy")?.textContent).toMatch(/policy: (pass|fail)/);
+    expect(container.querySelector("header .scan-tag")?.textContent).toBe("Sample scan");
+    expect(container.querySelector(".headline")?.textContent).toBe("1 of 12 dependencies needs you now.");
     fireEvent.click(container.querySelector("button[data-grave-index]") as HTMLElement);
     expect(screen.getByRole("dialog").textContent).toMatch(/State: (Possessed|Dead|Haunted|Restless|Alive)/);
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
@@ -157,34 +158,57 @@ describe("landmarks, labels and text alternatives (Requirements 10.1, 10.2, 10.6
   it("shows the disabled field notice as text", async () => {
     const { container } = mount({ apiBase: null });
     await ready();
-    expect(container.querySelector(".repo-disabled")?.textContent).toContain("hosted scan");
+    expect(container.querySelector(".scan-note")?.textContent).toBe("Scanning is off in this build.");
   });
 });
 
 describe("keyboard reach (Requirement 10.5)", () => {
-  it("reaches the two evidence links, the Legend control, field, submit and one grave stop by Tab, and wraps out of the page", async () => {
+  // Spec clean-site, task 3: the header (wordmark, field, Scan, the three examples while the field holds focus, What is
+  // Sexton?, Legend, Tour), the Welcome bar, the chips and the view switch, the one roving grave, the Footer bar, the
+  // Panel, then the site footer's evidence links.
+  it("reaches the header, the Welcome bar, the chips, one grave stop, the Footer bar, the Panel and the evidence links by Tab, in that order", async () => {
     const user = userEvent.setup();
     const { container } = mount({ apiBase: API });
     await ready();
-    // Spec cemetery-undead, Deliberate test change 17: the header, then the roving grave, then the Footer bar: Play,
-    // History date and the two Replay buttons. Spec cemetery-undead-2, Deliberate test change 2: Sound is now a stop
-    // after Scan, so 12 presses and the grave at position 7. Spec judge-path, Deliberate test change 1: Guide after
-    // Legend, then the Fix-first button at the header's foot, so 14 presses and the grave at position 9. Spec
-    // clean-site, task 2: Sound, Serious mode, Guide and Fix first are gone, so 10 presses and the grave at position 5.
     const seen: string[] = [];
     const reached: HTMLElement[] = [];
-    for (let i = 0; i < 10; i += 1) {
+    for (let i = 0; i < 60; i += 1) {
       await user.tab();
       const el = document.activeElement as HTMLElement;
+      if (el === document.body) break;
       reached.push(el);
-      seen.push(el.getAttribute("aria-label") ?? (el.textContent === "" ? el.getAttribute("name") : el.textContent) ?? el.tagName);
+      seen.push(el.getAttribute("aria-label") ?? el.textContent?.trim() ?? el.tagName);
     }
-    expect(seen.slice(0, 5)).toEqual(["Download evidence pack as JSON", "Download evidence pack as Markdown", "repo", "Scan", "Legend"]);
-    const first = container.querySelector<HTMLElement>('button[data-grave-index][tabindex="0"]');
-    expect(first).not.toBeNull();
-    expect(reached[5]).toBe(first);
-    expect(seen.slice(6)).toEqual(["Play", "History date", "axios, Mar 2026", "keyv, Aug 2026"]);
-    // The roving stop is the only grave in the tab sequence.
+    const order = [
+      "Sexton, back to the cemetery",
+      "GitHub repository to scan",
+      "Scan",
+      "hsiddhu2/sexton-demopull requests work here",
+      "What is Sexton?",
+      "Legend",
+      "Tour",
+      "Read the guide",
+      "Close the welcome bar",
+      "Possessed 1",
+      "Alive 2",
+      "Graveyard",
+      "List",
+      "History date",
+      "Watch a real attack",
+      "See the evidence",
+      "1left-padderreview the maintainer change",
+      "Evidence JSON",
+      "Evidence Markdown",
+    ];
+    const at = order.map((name) => seen.indexOf(name));
+    for (const [i, index] of at.entries()) expect(index, order[i]).toBeGreaterThanOrEqual(0);
+    expect([...at].sort((a, b) => a - b)).toEqual(at);
+    // The roving stop is the only grave in the tab sequence, between the view switch and the Footer bar.
+    const graves = reached.filter((el) => el.matches("button[data-grave-index]"));
+    expect(graves).toHaveLength(1);
+    const g = reached.indexOf(graves[0] as HTMLElement);
+    expect(g).toBeGreaterThan(seen.indexOf("List"));
+    expect(g).toBeLessThan(seen.indexOf("History date"));
     expect(container.querySelectorAll('button[data-grave-index]:not([tabindex="-1"])')).toHaveLength(1);
   });
 
@@ -223,7 +247,7 @@ describe("keyboard reach (Requirement 10.5)", () => {
     await ready();
     const negatives = [...container.querySelectorAll<HTMLElement>('[tabindex="-1"]')];
     for (const el of negatives) expect(el.matches("button[data-grave-index]")).toBe(true);
-    expect((screen.getByLabelText("Repository URL") as HTMLInputElement).disabled).toBe(false);
+    expect((screen.getByLabelText("GitHub repository to scan") as HTMLInputElement).disabled).toBe(false);
   });
 
   it("has no axe violations on a small synthetic scan", async () => {
@@ -245,18 +269,15 @@ describe("focus indicator (Requirement 10.7)", () => {
     }));
 
   it("gives every DOM control a focus-visible outline of at least 2px", () => {
+    // Spec clean-site, task 3: one rule gives every control the accent outline; the grave buttons, the Drawer, the
+    // scrubber and the replay keep their own.
     for (const selector of [
+      ":focus-visible",
       ".grave-button:focus-visible",
       ".drawer button:focus-visible",
       ".drawer-body:focus-visible",
-      ".legend-toggle:focus-visible",
       ".scrub input:focus-visible",
       ".scrub-play:focus-visible",
-      ".replay-button:focus-visible",
-      ".repo-form button:focus-visible",
-      ".repo-form input:focus-visible",
-      ".evidence-link:focus-visible",
-      ".drawer a:focus-visible",
       ".pr-table-wrap:focus-visible",
     ]) {
       const rule = focusRules.find((r) => r.selectors.includes(selector));

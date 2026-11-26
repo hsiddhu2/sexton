@@ -141,6 +141,16 @@ export const GRAIN_ALPHA_BYTE = "14";
  * check guards can sit (scene/halo.ts), so it is not a Glow stop.
  */
 export const HALO_ALPHA_BYTE = "a0";
+/**
+ * Spec clean-site, 2.7: the one fixed alpha of a grave dimmed by a filter, as a byte; the painter sets
+ * globalAlpha to DIM_ALPHA_BYTE / 255 around every per-grave draw of a dimmed grave. Categorical, not a scale.
+ */
+export const DIM_ALPHA_BYTE = "38";
+
+/** Pure. The globalAlpha of a dimmed grave. */
+export function dimAlpha(): number {
+  return parseInt(DIM_ALPHA_BYTE, 16) / 255;
+}
 
 const FOG_PEAK = 52;
 

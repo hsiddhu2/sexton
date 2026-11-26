@@ -42,3 +42,6 @@ export function normaliseRepo(input: string): RepoInput {
   if (!validOwner(owner) || !validName(name)) return REFUSED;
   return { ok: true, url: `https://github.com/${owner}/${name}`, label: `${owner}/${name}` };
 }
+
+/** Spec clean-site, 1.12: shown when the Scan input is neither owner/name nor a repository link. */
+export const REPO_INPUT_HINT = "Enter a repo as owner/name, or paste a github.com link.";

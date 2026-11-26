@@ -1,5 +1,5 @@
 import type { PackageHealth, State } from "@sexton/api";
-import { cleanup, fireEvent, render } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 import { Cemetery } from "../src/Cemetery.js";
@@ -59,30 +59,31 @@ describe("grave buttons", () => {
     );
   });
 
-  it("moves focus with an arrow key, does not open anything, and prevents default", () => {
+  // Spec clean-site, 3.23: Left and Right moved to the page; Up and Down stay on the grave buttons.
+  it("moves focus with Down, does not open anything, and prevents default", () => {
     const { container } = render(<Cemetery response={cheapScan(3)} theme="light" reducedMotion={true} />);
     const list = buttons(container);
     list[0]?.focus();
-    const notPrevented = fireEvent.keyDown(list[0] as HTMLElement, { key: "ArrowRight" });
+    const notPrevented = fireEvent.keyDown(list[0] as HTMLElement, { key: "ArrowDown" });
     expect(notPrevented).toBe(false);
-    expect(document.activeElement).toBe(list[1]);
-    expect(buttons(container).map((b) => b.tabIndex)).toEqual([-1, 0, -1]);
+    expect(document.activeElement).not.toBe(list[0]);
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("clamps at the edges", () => {
+  it("clamps Up at the first grave", () => {
     const { container } = render(<Cemetery response={cheapScan(3)} theme="light" reducedMotion={true} />);
     const list = buttons(container);
     list[0]?.focus();
-    fireEvent.keyDown(list[0] as HTMLElement, { key: "ArrowLeft" });
+    fireEvent.keyDown(list[0] as HTMLElement, { key: "ArrowUp" });
     expect(document.activeElement).toBe(list[0]);
   });
 
-  it("does not prevent default or move focus for Alt+ArrowLeft", () => {
+  it("does not prevent default or move focus for Alt+ArrowUp, nor for Left on its own", () => {
     const { container } = render(<Cemetery response={cheapScan(3)} theme="light" reducedMotion={true} />);
     const list = buttons(container);
     list[1]?.focus();
-    const result = fireEvent.keyDown(list[1] as HTMLElement, { key: "ArrowLeft", altKey: true });
-    expect(result).toBe(true);
+    expect(fireEvent.keyDown(list[1] as HTMLElement, { key: "ArrowUp", altKey: true })).toBe(true);
+    expect(fireEvent.keyDown(list[1] as HTMLElement, { key: "ArrowLeft" })).toBe(true);
     expect(document.activeElement).toBe(list[1]);
   });
 

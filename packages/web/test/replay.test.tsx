@@ -10,6 +10,7 @@ import { checkScanUrl } from "../src/load/check-scan-url.js";
 import { REPLAY_BANNER_TEXT, ReplayBanner } from "../src/replay/ReplayBanner.js";
 import { REPLAY_IDS, parseReplayParam, replayAddress, type ReplayId } from "../src/replay/replay-ids.js";
 import { stopsFor } from "../src/time/stops.js";
+import { readDemoScanText } from "./support/demo-scan.js";
 import { EIGHT_URLS, EXPECTED_SEGMENTS, readReplay, readReplayText } from "./support/replay-fixture.js";
 
 afterEach(cleanup);
@@ -30,6 +31,8 @@ function mount(search: string): Mounted {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     urls.push(url);
     const id = REPLAY_IDS.find((r) => url === `${ORIGIN}${replayAddress(r)}`);
+    // Spec clean-site, task 3: the attack picker sits in the Footer bar of a loaded scan, so the demo is served too.
+    if (id === undefined && url === `${ORIGIN}/demo/scan.json`) return Promise.resolve(new Response(readDemoScanText(), { status: 200 }));
     return Promise.resolve(
       id === undefined ? new Response("not found", { status: 404 }) : new Response(readReplayText(id), { status: 200 }),
     );
@@ -55,41 +58,52 @@ const STOP_TEXT = {
 } as const;
 
 describe("opening a replay (requirement 18)", () => {
-  it("renders the Replay group after the Scan button with the two button texts", async () => {
+  // Spec clean-site, 16.7 and 16.16: "Watch a real attack" in the Footer bar opens the attack picker in place of the
+  // Replay group.
+  it("opens the attack picker from the Footer bar with its heading, its line and one button per Replay, and closes it again", async () => {
     mount("");
     await ready();
-    const group = screen.getByRole("group", { name: "Replay an attack" });
-    expect([...group.querySelectorAll("button")].map((b) => b.textContent)).toEqual(["axios, Mar 2026", "keyv, Aug 2026"]);
-    const scan = screen.getByRole("button", { name: "Scan" });
-    expect(scan.compareDocumentPosition(group) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const watch = screen.getByRole("button", { name: "Watch a real attack" });
+    expect(watch.closest("footer.foot-bar")).not.toBeNull();
+    expect(watch.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(watch);
+    const pop = document.getElementById("attack-pop") as HTMLElement;
+    expect(pop.querySelector(".pop-heading")?.textContent).toBe("Two real npm attacks from 2026");
+    expect(pop.querySelector(".pop-line")?.textContent).toBe(
+      "A trusted package was taken over and a bad version was published. See how each one would have looked in your cemetery.",
+    );
+    expect([...pop.querySelectorAll("button.attack")].map((b) => b.textContent)).toEqual(["axios31 March 2026. 3 steps.", "keyv4 August 2026. 2 steps."]);
+    fireEvent.click(watch);
+    expect(document.getElementById("attack-pop")).toBeNull();
   });
 
-  it("names the group with the visible label Replay an attack (spec cemetery-time-fixes, 8.1)", async () => {
-    mount("");
-    await ready();
-    const group = screen.getByRole("group", { name: "Replay an attack" });
-    const label = group.querySelector(".replay-label") as HTMLElement;
-    expect(label.textContent).toBe("Replay an attack");
-    expect(group.getAttribute("aria-labelledby")).toBe(label.id);
-    expect(group.hasAttribute("aria-label")).toBe(false);
-    expect(group.firstElementChild).toBe(label);
-  });
-
-  it("loads each fixture from the page origin when its button is pressed, then a second one from the header", async () => {
+  it("loads each fixture from the page origin when its picker button is pressed, then a second one from the replay", async () => {
     const { urls, container } = mount("");
     await ready();
-    fireEvent.click(screen.getByRole("button", { name: "axios, Mar 2026" }));
+    const pick = (name: RegExp): void => {
+      fireEvent.click(screen.getByRole("button", { name: "Watch a real attack" }));
+      fireEvent.click(screen.getByRole("button", { name }));
+    };
+    pick(/^axios/);
     await waitFor(() => {
       expect(label(container)).toBe("axios 1.14.0, Alive");
     });
     expect(urls).toEqual([`${ORIGIN}/demo/scan.json`, `${ORIGIN}/replay/axios.json`]);
-    fireEvent.click(screen.getByRole("button", { name: "keyv, Aug 2026" }));
+    expect(container.querySelector("header .scan-tag")?.textContent).toBe("Replay");
+    pick(/^keyv/);
     await waitFor(() => {
       expect(label(container)).toBe("keyv 5.6.0, Alive");
     });
     expect(urls[2]).toBe(`${ORIGIN}/replay/keyv.json`);
     // The scrubber is at the first Stop of the replay.
     expect(slider().getAttribute("aria-valuetext")).toBe(STOP_TEXT.keyv[0]);
+    // The wordmark takes the Home action and loads the Sample scan again.
+    fireEvent.click(screen.getByRole("link", { name: "Sexton, back to the cemetery" }), { button: 0 });
+    await waitFor(() => {
+      expect(container.querySelectorAll("button[data-grave-index]").length).toBeGreaterThan(1);
+    });
+    expect(urls[3]).toBe(`${ORIGIN}/demo/scan.json`);
+    expect(container.querySelector("header .scan-tag")?.textContent).toBe("Sample scan");
   });
 
   it("loads the matching fixture for ?replay=axios and ?replay=keyv instead of the demo", async () => {
@@ -125,9 +139,8 @@ describe("opening a replay (requirement 18)", () => {
   it("shows no demo label, no evidence downloads and no pull request button on a replay", async () => {
     const { container } = mount("?replay=axios");
     await ready();
-    expect(container.textContent).not.toContain("demo fixture, recorded data");
+    expect(container.querySelector("header .scan-tag")?.textContent).toBe("Replay");
     expect(container.querySelector(".evidence-link")).toBeNull();
-    expect(container.querySelector(".header-evidence")).toBeNull();
     fireEvent.click(grave(container));
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).queryByRole("button", { name: "Open pull request" })).toBeNull();
@@ -237,18 +250,18 @@ describe("the replay through the scrubber (requirement 20)", () => {
     }
   });
 
-  it("shows the replay title in place of the repository and no policy line, at every Stop", async () => {
+  // Spec clean-site, 8.1: the Replay's headline and sub-line in place of the Home headline; no policy line.
+  it("shows the replay headline and sub-line and no policy line, at every Stop", async () => {
     for (const id of REPLAY_IDS) {
       const { container } = mount(`?replay=${id}`);
       await ready();
-      const title = (readReplay(id) as { replay: { title: string } }).replay.title;
       for (let i = 0; i < EXPECTED_SEGMENTS[id].length; i += 1) {
         move(i);
-        expect(container.querySelector(".repo-text")?.textContent).toBe(title);
-        expect(container.querySelector(".header-policy")).toBeNull();
-        const header = container.querySelector("header.site-header")?.textContent ?? "";
-        expect(header).not.toContain("no scan metadata in this response");
-        expect(header).not.toContain("policy:");
+        expect(container.querySelector(".headline")?.textContent).toBe(`Watch the ${id} attack unfold`);
+        expect(container.querySelector(".hero-line")?.textContent).toMatch(/^\d{1,2} [A-Z][a-z]+ 2026\. A real attack on one package, step by step\. Watch the grave change\.$/);
+        expect(container.querySelector(".footer-policy")).toBeNull();
+        expect(container.textContent).not.toContain("policy:");
+        expect(container.textContent).not.toContain("no scan metadata in this response");
       }
       cleanup();
     }

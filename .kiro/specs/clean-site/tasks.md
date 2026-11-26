@@ -46,17 +46,17 @@ Run-time notes:
   - [x] 2.3 Remove Pirata One, IM Fell English, IM Fell English SC and Instrument Sans with their OFL files; set the interface and the canvas labels in Inter, the wordmark and headlines in Cormorant Garamond, and code text in the system monospace stack
     - _Requirements: 5.1, 5.2, 5.3, 5.5_
 
-- [ ] 3. The shell: header, Home, Panel and footers
+- [x] 3. The shell: header, Home, Panel and footers
   - _Requirements: 1.1 to 1.10, 1.13 to 1.17, 2.4 to 2.15, 3.1 to 3.8, 3.12 to 3.17, 3.20, 3.21, 3.23, 3.24, 3.25, 9.5 to 9.9, 9.11, 11.2, 16.3 to 16.7, 16.12, 16.15, 16.16_
-  - [ ] 3.1 Rebuild the header: wordmark link, scan tag, Scan field with examples, the scanning card, the four buttons
+  - [x] 3.1 Rebuild the header: wordmark link, scan tag, Scan field with examples, the scanning card, the four buttons
     - _Requirements: 1.1 to 1.10, 1.13 to 1.17_
-  - [ ] 3.2 Build Home: headline, notices, chips with canvas dimming and tab order, the Graveyard / List switch, the help line and date badge in the reserved sky band (Property 8, first half)
+  - [x] 3.2 Build Home: headline, notices, chips with canvas dimming and tab order, the Graveyard / List switch, the help line and date badge in the reserved sky band (Property 8, first half)
     - _Requirements: 2.4 to 2.15_
-  - [ ] 3.3 Build the Panel: Inspector with hover, focus and Selected; the hover ring; Fix order rows with the current-row mark; the keys
+  - [x] 3.3 Build the Panel: Inspector with hover, focus and Selected; the hover ring; Fix order rows with the current-row mark; the keys
     - _Requirements: 3.1 to 3.8, 3.12 to 3.17, 3.20, 3.21, 3.23, 3.24, 3.25, 11.2_
-  - [ ] 3.4 Build the Footer bar (scrubber, Back to now, too-large line, attack picker) and the site footer (scan time, policy line, evidence links, credit slot)
+  - [x] 3.4 Build the Footer bar (scrubber, Back to now, too-large line, attack picker) and the site footer (scan time, policy line, evidence links, credit slot)
     - _Requirements: 16.3, 16.4, 16.5, 16.6, 16.7, 16.12, 16.15, 16.16_
-  - [ ] 3.5 Add the Welcome bar with `guide/welcome-pref.ts`
+  - [x] 3.5 Add the Welcome bar with `guide/welcome-pref.ts`
     - _Requirements: 9.5 to 9.9, 9.11_
 
 - [ ] 4. The List view

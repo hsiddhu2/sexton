@@ -106,7 +106,8 @@ test("no AudioContext is made by hover, focus, a key press or a replay", async (
   await graves.nth(1).hover();
   await graves.first().focus();
   await page.keyboard.press("Shift");
-  await page.getByRole("button", { name: "axios, Mar 2026" }).click();
+  await page.getByRole("button", { name: "Watch a real attack" }).click();
+  await page.getByRole("button", { name: /^axios/ }).click();
   await expect(page.locator("button[data-grave-index]")).toHaveCount(1);
   const slider = page.getByRole("slider", { name: "History date" });
   await slider.focus();

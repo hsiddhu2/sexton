@@ -1,5 +1,5 @@
 import type { ChangeEvent, RefObject } from "react";
-import { scanTimeView } from "../header/format-scan-time.js";
+import { dayText, scanTimeView } from "../header/format-scan-time.js";
 import type { StopCard } from "../replay/stop-cards.js";
 export const SCRUB_NOTE_TEXT = "Before the scan date Sexton uses only dated facts. Deprecation, undated advisories and snapshot history are unknown.";
 export const DRAWER_SCAN_DATE_TEXT = "The drawer shows the scan date.";
@@ -53,14 +53,15 @@ export function Scrubber({ stops, index, onChange, inputRef, playing = false, on
   return (
     <section className={withCards ? "scrub scrub-cards" : "scrub"} aria-label="History">
       <div className="scrub-row">
-        {stops.length > 1 ? (
+        {/* Play only where the page passes it: a Replay. Home has no Play control (spec clean-site, 4.1). */}
+        {stops.length > 1 && onPlay !== undefined ? (
           <button type="button" className="scrub-play" onClick={playing ? onPause : onPlay}>
             <PlayGlyph playing={playing} />
             <span className="scrub-play-text">{playing ? "Pause" : "Play"}</span>
           </button>
         ) : null}
         <label htmlFor="history-date" className="scrub-label">
-          History date
+          History
         </label>
         <span className="scrub-date">{text}</span>
       </div>
@@ -102,6 +103,13 @@ export function Scrubber({ stops, index, onChange, inputRef, playing = false, on
           <path d={tickPath(stops.length)} />
         </svg>
       </div>
+      {/* Spec clean-site, 16.3: the start label and "Today, <scan date>" under the range. */}
+      {withCards ? null : (
+        <p className="scrub-ends">
+          <span>{dayText(stops[0] ?? 0)}</span>
+          <span>Today, {dayText(stops[last] ?? 0)}</span>
+        </p>
+      )}
       {index < last && !withCards ? <p className="scrub-note">{SCRUB_NOTE_TEXT}</p> : null}
       {index < last && !withCards ? <p className="scrub-note">{DRAWER_SCAN_DATE_TEXT}</p> : null}
       <p className="scrub-live visually-hidden" aria-live="polite">

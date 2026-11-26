@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { STATES } from "../load/lists.js";
+import { ListGlyph } from "./icons.js";
 import type { Theme } from "../scene/palette.js";
 import { GHOST_PATH, SHAPES, SHAPE_BY_STATE } from "../scene/shapes.js";
 
@@ -17,25 +17,23 @@ export const FORM_WORDS: Readonly<Record<(typeof STATES)[number], string>> = {
 
 export interface LegendProps {
   readonly theme: Theme;
+  /**
+   * Spec clean-site, design C11: the Legend is a Pop-over owned by the screen state, so it never pushes the page.
+   * Absent, the Legend keeps its own open state, as before.
+   */
+  readonly open?: boolean;
+  readonly onToggle?: () => void;
 }
 
 // Colour comes from the CSS classes below, keyed by the Theme on the container.
-export function Legend({ theme }: LegendProps) {
-  const [open, setOpen] = useState(false);
+export function Legend({ theme, open = false, onToggle }: LegendProps) {
   return (
-    <div className="legend" data-theme={theme}>
-      <button
-        type="button"
-        className="legend-toggle"
-        aria-expanded={open}
-        aria-controls="legend-panel"
-        onClick={() => {
-          setOpen((value) => !value);
-        }}
-      >
-        Legend
+    <div className="legend" data-theme={theme} data-popover="legend">
+      <button type="button" className="ib legend-toggle" aria-expanded={open} aria-controls="legend-panel" onClick={onToggle}>
+        <ListGlyph />
+        <span className="ib-text">Legend</span>
       </button>
-      <div id="legend-panel" className="legend-panel" hidden={!open}>
+      <div id="legend-panel" className="legend-panel pop" hidden={!open}>
         <ul className="legend-states">
           {STATES.map((state) => {
             const shape = SHAPES[SHAPE_BY_STATE[state]];

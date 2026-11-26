@@ -120,7 +120,7 @@ describe("Feature: cemetery-ui, Property 8: Layout is deterministic and no two g
 });
 
 const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
-const GRAVE_KEYS = ["burial", "fill", "ghost", "index", "inscription", "marker", "name", "pending", "rect", "shape", "state"];
+const GRAVE_KEYS = ["burial", "dimmed", "fill", "ghost", "index", "inscription", "marker", "name", "pending", "rect", "shape", "state"];
 
 describe("Feature: cemetery-ui, Property 19: Scene plan invariants", () => {
   it("holds for any packages, theme, phase and selection", () => {

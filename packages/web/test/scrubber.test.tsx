@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App.js";
 import { cheapScan } from "./arbitraries.js";
 import { readDemoScanText } from "./support/demo-scan.js";
+import { readReplayText } from "./support/replay-fixture.js";
 import { setMedia } from "./setup.js";
 import { PLAY_STEP_MS } from "../src/time/play.js";
 afterEach(cleanup);
@@ -28,6 +29,10 @@ function mount(text: string = readDemoScanText(), options: { apiBase?: string | 
   return render(
     <App fetchFn={fetchOf(text, options.calls)} apiBase={options.apiBase ?? null} initialSearch="" pageOrigin="http://localhost" />,
   );
+}
+/** Spec clean-site, 4.1: Home has no Play control; a Replay keeps it until its own view lands (task 6). */
+function mountReplay() {
+  return render(<App fetchFn={fetchOf(readReplayText("axios"))} apiBase={null} initialSearch="?replay=axios" pageOrigin="http://localhost" />);
 }
 async function ready(): Promise<void> {
   await waitFor(() => {
@@ -61,30 +66,35 @@ describe("scrubber on the demo scan (requirements 11, 12)", () => {
     const user = userEvent.setup();
     mount();
     await ready();
-    // Apiless mount: the evidence links, the Legend, the two Replay buttons, the Play control and then the slider (the field and Scan are disabled).
-    // Spec cemetery-undead-2, Deliberate test change 4: one more press, for the Sound stop. Spec judge-path, Deliberate
-    // test change 2: two more, for the Fix-first button and Guide. Spec clean-site, task 2: four fewer, for Sound,
-    // Serious mode, Guide and Fix first.
-    for (let i = 0; i < 6; i += 1) await user.tab();
+    // Spec clean-site, task 3: the slider is the Footer bar's first stop, after the header, the Welcome bar, the chips,
+    // the view switch and the one roving grave.
+    let presses = 0;
+    while (document.activeElement !== slider() && presses < 40) {
+      await user.tab();
+      presses += 1;
+    }
     expect(document.activeElement).toBe(slider());
+    expect(document.querySelectorAll("button[data-grave-index]")[0]?.compareDocumentPosition(slider()) ?? 0).toBeTruthy();
   });
   it("shows as of, the two caption lines and Back to now only before the scan date, and Back to now returns focus to the slider", async () => {
     const user = userEvent.setup();
     const { container } = mount();
     await ready();
-    expect(container.querySelector(".as-of")).toBeNull();
+    // Spec clean-site, 2.3, 2.11 and 16.4: the date badge, the past-tense headline and Back to now replace "as of".
+    expect(container.querySelector(".date-badge")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Back to now" })).toBeNull();
     expect(screen.queryByText(NOTE)).toBeNull();
     expect(screen.queryByText("The drawer shows the scan date.")).toBeNull();
+    expect(container.querySelector(".scrub-ends")?.textContent).toMatch(/Today, 12 Nov 2026$/);
     move(0);
-    const asOf = container.querySelector(".as-of");
-    expect(asOf?.textContent).toMatch(/^as of /);
-    expect(asOf?.querySelector("time")?.getAttribute("datetime")).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(container.querySelector(".date-badge")?.textContent).toMatch(/^Viewing \d{1,2} [A-Z][a-z]{2} \d{4}$/);
+    expect(container.querySelector(".headline")?.textContent).toMatch(/needed you on \d{1,2} [A-Z][a-z]{2} \d{4}\.$/);
     expect(screen.getByText(NOTE)).toBeTruthy();
     expect(screen.getByText("The drawer shows the scan date.")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Back to now" }));
     expect(slider().value).toBe(slider().max);
     expect(document.activeElement).toBe(slider());
-    expect(container.querySelector(".as-of")).toBeNull();
+    expect(container.querySelector(".date-badge")).toBeNull();
     expect(screen.queryByText(NOTE)).toBeNull();
   });
   it("shows the Not-published form in the grave names at the first Stop and the scan states at the last", async () => {
@@ -104,12 +114,12 @@ describe("scrubber on the demo scan (requirements 11, 12)", () => {
     const calls: string[] = [];
     const { container } = mount(readDemoScanText(), { calls });
     await ready();
-    const policy = container.querySelector(".header-policy")?.textContent;
+    const policy = container.querySelector(".footer-policy")?.textContent;
     const links = [...container.querySelectorAll("a.evidence-link")].map((a) => a.getAttribute("href"));
     const before = calls.length;
     move(0);
     move(2);
-    expect(container.querySelector(".header-policy")?.textContent).toBe(policy);
+    expect(container.querySelector(".footer-policy")?.textContent).toBe(policy);
     expect([...container.querySelectorAll("a.evidence-link")].map((a) => a.getAttribute("href"))).toEqual(links);
     expect(calls).toHaveLength(before);
   });
@@ -119,7 +129,7 @@ describe("scrubber on the demo scan (requirements 11, 12)", () => {
     await ready();
     move(1);
     expect(slider().value).toBe("1");
-    await user.type(screen.getByLabelText("Repository URL"), "https://github.com/a/b");
+    await user.type(screen.getByLabelText("GitHub repository to scan"), "https://github.com/a/b");
     await user.click(screen.getByRole("button", { name: "Scan" }));
     await waitFor(() => {
       expect(slider().value).toBe(slider().max);
@@ -193,8 +203,17 @@ describe("versioned Segments (requirement 12.9)", () => {
   });
 });
 
-// Spec cemetery-time-fixes, task 3.5: the Play control (requirement 4).
+// Spec cemetery-time-fixes, task 3.5: the Play control (requirement 4). Spec clean-site, 4.1: Home has no Play
+// control any more, so these cases run on a Replay, which keeps it until task 6 rebuilds it as "Play all".
 describe("the Play control", () => {
+  it("is not on Home", async () => {
+    mount();
+    await ready();
+    expect(slider()).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Play" })).toBeNull();
+    expect(document.querySelector("button.scrub-play")).toBeNull();
+  });
+
   const play = (): HTMLButtonElement => document.querySelector<HTMLButtonElement>("button.scrub-play") as HTMLButtonElement;
   const live = (): string => document.querySelector(".scrub-live")?.textContent ?? "";
   const step = (ms: number): void => {
@@ -208,7 +227,7 @@ describe("the Play control", () => {
 
   // Spec cemetery-undead, Deliberate test change 20: in the Footer bar, Play comes first, then the label, date and slider.
   it("is a native button named Play before the History date label and the slider, inside a polite live section", async () => {
-    mount();
+    mountReplay();
     await ready();
     const button = screen.getByRole("button", { name: "Play" });
     expect(button).toBe(play());
@@ -230,7 +249,7 @@ describe("the Play control", () => {
 
   it("starts with Enter and with Space, and its name becomes Pause", async () => {
     const user = userEvent.setup();
-    mount();
+    mountReplay();
     await ready();
     play().focus();
     await user.keyboard("{Enter}");
@@ -245,9 +264,10 @@ describe("the Play control", () => {
   });
 
   it("at the last Stop moves to Stop 0, steps every 1,500 ms, announces each step and stops at the last", async () => {
-    mount();
+    mountReplay();
     await ready();
     const max = Number(slider().max);
+    move(max);
     expect(slider().value).toBe(String(max));
     vi.useFakeTimers();
     fireEvent.click(play());
@@ -269,7 +289,7 @@ describe("the Play control", () => {
   });
 
   it("pauses on Pause and keeps the Stop", async () => {
-    mount();
+    mountReplay();
     await ready();
     vi.useFakeTimers();
     fireEvent.click(play());
@@ -282,28 +302,20 @@ describe("the Play control", () => {
     expect(slider().value).toBe("1");
   });
 
-  it("pauses on a slider move and on Back to now", async () => {
-    mount();
+  it("pauses on a slider move", async () => {
+    mountReplay();
     await ready();
     vi.useFakeTimers();
     fireEvent.click(play());
-    move(3);
+    move(2);
     expect(play().textContent).toBe("Play");
     step(5 * PLAY_STEP_MS);
-    expect(slider().value).toBe("3");
-    fireEvent.click(play());
-    step(PLAY_STEP_MS);
-    expect(slider().value).toBe("4");
-    fireEvent.click(screen.getByRole("button", { name: "Back to now" }));
-    expect(slider().value).toBe(slider().max);
-    expect(play().textContent).toBe("Play");
-    step(5 * PLAY_STEP_MS);
-    expect(slider().value).toBe(slider().max);
+    expect(slider().value).toBe("2");
   });
 
   it("makes the same steps at the same times under Reduced motion", async () => {
     setMedia("(prefers-reduced-motion: reduce)", true);
-    mount();
+    mountReplay();
     await ready();
     vi.useFakeTimers();
     fireEvent.click(play());
@@ -327,7 +339,7 @@ describe("the Play control", () => {
   });
 
   it("has no axe violations while playing", async () => {
-    mount();
+    mountReplay();
     await ready();
     vi.useFakeTimers();
     fireEvent.click(play());

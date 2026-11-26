@@ -57,7 +57,7 @@ for (const width of [1280, 1440]) test(`a press on the Repository URL box closes
   await page.setViewportSize({ width, height: 800 });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
-  const field = page.getByLabel("Repository URL");
+  const field = page.getByLabel("GitHub repository to scan");
   await field.fill("https://github.com/hsiddhu2/sexton-demo");
   await field.press("Enter");
   await page.locator(GRAVE).click();

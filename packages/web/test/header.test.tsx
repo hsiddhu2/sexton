@@ -1,9 +1,16 @@
 import type { ScanResponse } from "@sexton/api";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import fc from "fast-check";
-import { afterEach, describe, expect, it } from "vitest";
+import { useState } from "react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cemetery } from "../src/Cemetery.js";
-import { Header } from "../src/header/Header.js";
+import { Header, type HeaderProps } from "../src/header/Header.js";
+import { SiteFooter } from "../src/home/SiteFooter.js";
+import { EXAMPLES } from "../src/header/examples.js";
+import { REPO_INPUT_HINT } from "../src/header/repo-input.js";
+import { SAMPLE_TAG, scanTag } from "../src/header/scan-tag.js";
+import { HOSTED_UNAVAILABLE_TEXT } from "../src/load/use-scan-loader.js";
+import type { Popover } from "../src/load/screen-state.js";
 import { failingRulesText } from "../src/header/failing-rules-text.js";
 import { headerModel } from "../src/header/header-model.js";
 import { scanTimeView } from "../src/header/format-scan-time.js";
@@ -11,12 +18,31 @@ import { arbHeaderResponse, arbHostilePair, cheapScan, mapFreeText } from "./arb
 
 afterEach(cleanup);
 
-const noSubmit = (): string | null => null;
+const noop = (): void => undefined;
 
-function renderHeader(response: ScanResponse, isDemo: boolean, apiConfigured = true) {
-  return render(
-    <Header model={headerModel(response, isDemo)} theme="light" apiConfigured={apiConfigured} onSubmit={noSubmit} />,
+/** The header with its Pop-over held as the screen state holds it. */
+function HeaderHarness(props: Partial<HeaderProps>) {
+  const [popover, setPopover] = useState<Popover>("none");
+  return (
+    <Header
+      tag={SAMPLE_TAG}
+      theme="dark"
+      apiConfigured={true}
+      popover={popover}
+      onPopover={setPopover}
+      onScan={noop}
+      onHome={noop}
+      onGuide={noop}
+      onTour={noop}
+      {...props}
+    />
   );
+}
+
+// Spec clean-site, task 3: the scan time, the policy line and the evidence links moved from the header to the site
+// footer (16.12), so the model's values are checked there.
+function renderFooter(response: ScanResponse, isDemo: boolean) {
+  return render(<SiteFooter model={headerModel(response, isDemo)} />);
 }
 
 describe("Property 14: Header values follow the response exactly", () => {
@@ -48,20 +74,18 @@ describe("Property 14: Header values follow the response exactly", () => {
         expect(model.repoText).toBe(scan === undefined ? "no scan metadata in this response" : scan.repo.url);
         expect(model.demoLabel).toBe(isDemo ? "demo fixture, recorded data" : null);
 
-        const { container, unmount } = renderHeader(response, isDemo);
+        const { container, unmount } = renderFooter(response, isDemo);
         const text = container.textContent ?? "";
-        expect(text).toContain(model.repoText);
         expect(text).toContain(scanTimeView(model.scanTime).text);
-        expect(text).toContain(model.policyStatus);
-        expect(text).toContain(model.policyLabel);
-        if (model.unlockedNotice !== null) expect(text).toContain(model.unlockedNotice);
-        expect(text.includes("demo fixture, recorded data")).toBe(isDemo);
+        expect(text).toContain(`policy: ${model.policyStatus}, ${model.policyLabel}, ${failingRulesText(model.failingRules)}`);
+        // The repository and the Fixture name are never shown (1.7).
+        expect(text).not.toContain("sexton-demo/fixture");
         // Spec evidence-pack: the only links are the two evidence links, with fixed demo addresses here.
         const links = [...container.querySelectorAll("a")];
         if (isDemo) {
-          expect(links.map((a) => [a.getAttribute("href"), a.getAttribute("aria-label"), a.hasAttribute("download")])).toEqual([
-            ["/demo/evidence.json", "Download evidence pack as JSON", true],
-            ["/demo/evidence.md", "Download evidence pack as Markdown", true],
+          expect(links.map((a) => [a.getAttribute("href"), a.textContent, a.hasAttribute("download")])).toEqual([
+            ["/demo/evidence.json", "Evidence JSON", true],
+            ["/demo/evidence.md", "Evidence Markdown", true],
           ]);
         } else expect(links).toHaveLength(0);
         unmount();
@@ -76,7 +100,7 @@ function tags(root: Element): string[] {
 }
 
 function view(response: ScanResponse): { header: string[]; overlay: string[]; drawer: string[]; preview: string[]; previewLinks: (string | null)[]; text: string } {
-  const h = renderHeader(response, false);
+  const h = renderFooter(response, false);
   const header = tags(h.container);
   const headerText = h.container.textContent ?? "";
   h.unmount();
@@ -119,44 +143,120 @@ describe("Property 22: Untrusted strings are rendered only as text", () => {
           if (bad !== "A") expect(hostile.preview.includes(bad)).toBe(false);
         }
         for (const href of hostile.previewLinks) expect(href?.startsWith("https://") ?? false).toBe(true);
+        // The scan tag of a Live scan shows its repository as text only.
         const repo = response.report.scan?.repo.url;
-        if (repo !== undefined) expect(hostile.text).toContain(`${prefix}${repo}`);
+        if (repo !== undefined) {
+          const tag = scanTag({ kind: "repo", url: `${prefix}${repo}` });
+          const shown = render(<HeaderHarness tag={tag} />);
+          expect(shown.container.querySelector(".scan-tag")?.textContent).toBe(tag);
+          expect(tags(shown.container).filter((t) => t === "SCRIPT" || t === "IMG" || t === "IFRAME")).toEqual([]);
+          shown.unmount();
+        }
       }),
       { numRuns: 100 },
     );
   });
 });
 
-describe("Header examples", () => {
-  it("says so when scan metadata is absent and still shows the time", () => {
-    const response = cheapScan(1);
-    const { container } = renderHeader(response, false);
-    expect(container.textContent).toContain("no scan metadata in this response");
-    expect(container.textContent).toContain("12 Nov 2026, 00:00 UTC");
-    expect(container.querySelector("time")?.getAttribute("datetime")).toBe("2026-11-12T00:00:00.000Z");
+describe("Header (spec clean-site, requirement 1)", () => {
+  it("orders the wordmark, the scan tag, the Scan field and Scan, then What is Sexton?, Legend and Tour, with no Music button", () => {
+    const { container } = render(<HeaderHarness />);
+    const header = container.querySelector("header") as HTMLElement;
+    const controls = [...header.querySelectorAll<HTMLElement>("a[href], button, input")];
+    expect(controls.map((el) => el.getAttribute("aria-label") ?? el.textContent?.trim())).toEqual([
+      "Sexton, back to the cemetery",
+      "GitHub repository to scan",
+      "Scan",
+      "What is Sexton?",
+      "Legend",
+      "Tour",
+    ]);
+    expect(header.querySelector(".scan-tag")?.textContent).toBe("Sample scan");
+    // The tag sits between the wordmark and the field.
+    expect(header.querySelector(".wordmark")?.nextElementSibling?.querySelector(".scan-tag")).not.toBeNull();
+    expect(screen.queryByRole("button", { name: "Music" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Sound/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Serious mode" })).toBeNull();
+    expect((screen.getByRole("link", { name: "Sexton, back to the cemetery" }) as HTMLAnchorElement).getAttribute("href")).toBe("/");
   });
 
-  it("disables the field and the submit control with the exact text when no API is configured", () => {
-    const { container } = renderHeader(cheapScan(1), false, false);
-    expect((screen.getByLabelText("Repository URL") as HTMLInputElement).disabled).toBe(true);
+  it("names the tag for each Source and never shows the Fixture name (1.5 to 1.7, 1.16, 1.17)", () => {
+    expect(scanTag({ kind: "demo" })).toBe("Sample scan");
+    expect(scanTag({ kind: "replay", id: "axios" })).toBe("Replay");
+    expect(scanTag({ kind: "scan", address: "/x.json" })).toBe("Scan file");
+    expect(scanTag({ kind: "repo", url: "https://github.com/expressjs/express" })).toBe("expressjs/express");
+    expect(scanTag({ kind: "rejected" })).toBeNull();
+    const { container } = render(<HeaderHarness tag={null} />);
+    expect(container.querySelector(".scan-tag")).toBeNull();
+  });
+
+  it("takes the Home action on a plain press of the wordmark and follows the link on a modified press", () => {
+    const onHome = vi.fn();
+    render(<HeaderHarness onHome={onHome} />);
+    const link = screen.getByRole("link", { name: "Sexton, back to the cemetery" });
+    expect(fireEvent.click(link, { button: 0 })).toBe(false);
+    expect(onHome).toHaveBeenCalledTimes(1);
+    expect(fireEvent.click(link, { button: 0, metaKey: true })).toBe(true);
+    expect(onHome).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables the field and Scan, described by the exact text, when no API base is configured (1.13)", () => {
+    render(<HeaderHarness apiConfigured={false} />);
+    const field = screen.getByRole("textbox", { name: "GitHub repository to scan" }) as HTMLInputElement;
+    expect(field.disabled).toBe(true);
     expect((screen.getByRole("button", { name: "Scan" }) as HTMLButtonElement).disabled).toBe(true);
-    expect(container.textContent).toContain("hosted scan arrives with release 0.1 infra");
+    expect(document.getElementById(field.getAttribute("aria-describedby") ?? "")?.textContent).toBe(HOSTED_UNAVAILABLE_TEXT);
+    expect(HOSTED_UNAVAILABLE_TEXT).toBe("Scanning is off in this build.");
   });
 
-  it("enables the field when an API is configured and hides the disabled text", () => {
-    const { container } = renderHeader(cheapScan(1), false, true);
-    expect((screen.getByLabelText("Repository URL") as HTMLInputElement).disabled).toBe(false);
-    expect(container.textContent).not.toContain("hosted scan arrives");
-  });
-
-  it("shows a returned validation message in an alert", () => {
-    render(<Header model={null} theme="light" apiConfigured={true} onSubmit={() => "fixed message"} />);
+  it("starts a Live scan of the canonical URL for owner/name or a link (1.11)", () => {
+    const onScan = vi.fn();
+    render(<HeaderHarness onScan={onScan} />);
+    const field = screen.getByRole("textbox", { name: "GitHub repository to scan" });
+    fireEvent.change(field, { target: { value: " https://github.com/expressjs/express.git " } });
     fireEvent.click(screen.getByRole("button", { name: "Scan" }));
-    expect(screen.getByRole("alert").textContent).toBe("fixed message");
+    expect(onScan).toHaveBeenCalledWith("https://github.com/expressjs/express");
+    fireEvent.change(field, { target: { value: "facebook/react" } });
+    fireEvent.click(screen.getByRole("button", { name: "Scan" }));
+    expect(onScan).toHaveBeenLastCalledWith("https://github.com/facebook/react");
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 
-  it("keeps the legend closed at load and lists the contents when opened", () => {
-    const { container } = renderHeader(cheapScan(1), false);
+  it("marks the field, keeps focus in it, sends nothing and shows the hint for any other input (1.12)", () => {
+    const onScan = vi.fn();
+    render(<HeaderHarness onScan={onScan} fieldRef={{ current: null }} />);
+    const field = screen.getByRole("textbox", { name: "GitHub repository to scan" });
+    field.focus();
+    fireEvent.change(field, { target: { value: "not a repo" } });
+    fireEvent.submit(field.closest("form") as HTMLFormElement);
+    expect(onScan).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert").textContent).toBe(REPO_INPUT_HINT);
+    expect(REPO_INPUT_HINT).toBe("Enter a repo as owner/name, or paste a github.com link.");
+    expect(field.getAttribute("aria-invalid")).toBe("true");
+    expect(document.activeElement).toBe(field);
+  });
+
+  it("shows the three examples under Try one on focus, and an example fills the field and starts its scan (1.9, 1.10)", () => {
+    const onScan = vi.fn();
+    const { container } = render(<HeaderHarness onScan={onScan} />);
+    expect(container.querySelector(".examples")).toBeNull();
+    const field = screen.getByRole("textbox", { name: "GitHub repository to scan" }) as HTMLInputElement;
+    fireEvent.focus(field);
+    const list = container.querySelector(".examples") as HTMLElement;
+    expect(list.querySelector(".pop-heading")?.textContent).toBe("Try one");
+    expect([...list.querySelectorAll(".example")].map((b) => [b.querySelector(".example-repo")?.textContent, b.querySelector(".example-note")?.textContent])).toEqual([
+      ["hsiddhu2/sexton-demo", "pull requests work here"],
+      ["expressjs/express", "a popular web framework"],
+      ["facebook/react", "a large repo"],
+    ]);
+    expect(EXAMPLES).toHaveLength(3);
+    fireEvent.click(screen.getByRole("button", { name: /^expressjs\/express/ }));
+    expect(field.value).toBe("expressjs/express");
+    expect(onScan).toHaveBeenCalledWith("https://github.com/expressjs/express");
+  });
+
+  it("keeps the legend closed at load and lists the contents as a Pop-over when opened", () => {
+    const { container } = render(<HeaderHarness />);
     const toggle = screen.getByRole("button", { name: "Legend" });
     const panel = container.querySelector("#legend-panel") as HTMLElement;
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
@@ -164,31 +264,16 @@ describe("Header examples", () => {
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
     expect(panel.hidden).toBe(false);
+    expect(panel.classList.contains("pop")).toBe(true);
     for (const state of ["Possessed", "Dead", "Haunted", "Restless", "Alive"]) expect(panel.textContent).toContain(state);
     expect(panel.textContent).toContain("one or more advisories");
-    expect(panel.textContent).toContain(
-      "Triage order: Possessed first, then state from least healthy to most healthy (Dead, Haunted, Restless, Alive), then highest advisory severity, then transitive reach, then name.",
-    );
     expect(panel.querySelectorAll("svg").length).toBe(8);
+    fireEvent.click(toggle);
+    expect(panel.hidden).toBe(true);
   });
+});
 
-  it("omits the demo label for a non-demo load of a response naming sexton-demo/fixture", () => {
-    const response = cheapScan(1);
-    (response.report as unknown as Record<string, unknown>)["scan"] = {
-      repo: { owner: "sexton-demo", repo: "fixture", url: "https://github.com/sexton-demo/fixture" },
-      unlocked: false,
-      unlockedPackages: [],
-      lockfileVersion: 3,
-      capped: false,
-      totalDirect: 1,
-      skipped: { peer: 0, optional: 0, invalidName: 0 },
-      unresolved: [],
-    };
-    const { container } = renderHeader(response, false);
-    expect(container.textContent).toContain("https://github.com/sexton-demo/fixture");
-    expect(container.textContent).not.toContain("demo fixture, recorded data");
-  });
-
+describe("site footer and header model", () => {
   it("states that no lockfile exists for an unlocked scan", () => {
     const response = cheapScan(1);
     (response.report as unknown as Record<string, unknown>)["scan"] = {
@@ -205,6 +290,12 @@ describe("Header examples", () => {
     expect(model.unlockedNotice).toBe("unlocked scan: no lockfile exists, so versions were resolved from declared ranges");
     expect(model.cappedNotice).toBe("capped: showing 1 of 400 direct dependencies");
   });
+
+  it("shows the scan time in a time element", () => {
+    const { container } = renderFooter(cheapScan(1), false);
+    expect(container.textContent).toContain("12 Nov 2026, 00:00 UTC");
+    expect(container.querySelector("time")?.getAttribute("datetime")).toBe("2026-11-12T00:00:00.000Z");
+  });
 });
 
 describe("Header failing rules text", () => {
@@ -212,9 +303,9 @@ describe("Header failing rules text", () => {
     expect(failingRulesText(0)).toBe("0 failing rules");
     expect(failingRulesText(1)).toBe("1 failing rule");
     expect(failingRulesText(2)).toBe("2 failing rules");
-    const { container } = renderHeader(cheapScan(1), false);
+    const { container } = renderFooter(cheapScan(1), false);
     const model = headerModel(cheapScan(1), false);
-    expect(container.querySelector(".header-policy")?.textContent).toContain(failingRulesText(model.failingRules));
+    expect(container.querySelector(".footer-policy")?.textContent).toContain(failingRulesText(model.failingRules));
   });
 });
 
@@ -241,55 +332,18 @@ describe("evidence links", () => {
     );
   });
 
-  it("renders the line after the policy line with download links", () => {
-    const { container } = render(
-      <Header model={headerModel(cheapScan(1), true)} theme="light" apiConfigured={true} onSubmit={noSubmit} />,
-    );
-    const evidence = container.querySelector(".header-evidence");
-    expect(evidence?.tagName).toBe("DIV");
-    expect(evidence?.previousElementSibling?.classList.contains("header-top")).toBe(true);
-    const links = [...(evidence?.querySelectorAll("a") ?? [])];
-    expect(links.map((a) => a.textContent)).toEqual(["JSON", "Markdown"]);
+  it("renders the links after the policy line with download links", () => {
+    const { container } = render(<SiteFooter model={headerModel(cheapScan(1), true)} />);
+    const links = [...container.querySelectorAll("a")];
+    expect(links.map((a) => a.textContent)).toEqual(["Evidence JSON", "Evidence Markdown"]);
     for (const a of links) expect(a.hasAttribute("download")).toBe(true);
-  });
-});
-
-describe("Header bar (cemetery-polish task 8)", () => {
-  it("has the title text 'Sexton cemetery', a placeholder without a host name and one Legend chip per State, the Ghost, the Not-published form and the Pull request marker", () => {
-    const { container } = render(
-      <Header model={headerModel(cheapScan(1), true)} theme="dark" apiConfigured={true} onSubmit={noSubmit} />,
-    );
-    expect(container.querySelector("h1")?.textContent).toBe("Sexton cemetery");
-    // K2d fix 1, Deliberate test change 29: the wordmark is the name alone, as in the mockup; the h1 holds no mark.
-    expect(container.querySelector("h1 svg")).toBeNull();
-    const placeholder = (screen.getByLabelText("Repository URL") as HTMLInputElement).placeholder;
-    expect(placeholder).toBe("Paste a public repository URL");
-    expect(placeholder).not.toMatch(/\.(com|org|io)/);
-    const chips = container.querySelectorAll("#legend-panel .legend-chip");
-    expect(chips).toHaveLength(8);
-    expect(container.querySelectorAll("#legend-panel .legend-chip-ghost")).toHaveLength(1);
-  });
-
-  // Spec cemetery-undead, Deliberate test change 16: the form, then the Legend. Spec clean-site, task 2: the Sound
-  // toggle and Serious mode are gone (4.1).
-  it("orders the controls evidence JSON, evidence Markdown, input, Scan, Legend in the DOM", () => {
-    const { container } = render(<Header model={headerModel(cheapScan(1), true)} theme="dark" apiConfigured={true} onSubmit={noSubmit} />);
-    const controls = [...container.querySelectorAll<HTMLElement>("a[href], button, input")];
-    expect(controls.map((el) => el.getAttribute("aria-label") ?? el.getAttribute("name") ?? el.textContent?.trim())).toEqual([
-      "Download evidence pack as JSON",
-      "Download evidence pack as Markdown",
-      "repo",
-      "Scan",
-      "Legend",
-    ]);
-    expect(screen.queryByRole("button", { name: /^Sound/ })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Serious mode" })).toBeNull();
+    expect(links[0]?.previousElementSibling?.classList.contains("footer-policy")).toBe(true);
   });
 });
 
 // Fix after review of cemetery-time-fixes: a replay names itself and hides the policy line, every other scan keeps both.
-describe("replay header text", () => {
-  it("shows the replay title and no policy line for a replay, and the repository and policy line without one", () => {
+describe("replay footer text", () => {
+  it("hides the policy line for a replay and keeps it without one", () => {
     const base = cheapScan(1);
     const replay = { ...base, replay: { id: "axios" as const, title: "Replay: axios npm compromise, 31 March 2026", summary: "s", sources: [{ label: "l", url: "https://example.com/" }] } };
     const withReplay = headerModel(replay, false);
@@ -299,12 +353,11 @@ describe("replay header text", () => {
     expect(plain.repoText).not.toBe("Replay: axios npm compromise, 31 March 2026");
     expect(plain.repoText).toMatch(/^(https:\/\/github\.com\/|no scan metadata in this response$)/);
     expect(plain.showPolicy).toBe(true);
-    const shown = render(<Header model={withReplay} theme="light" apiConfigured={true} onSubmit={noSubmit} />);
-    expect(shown.container.querySelector(".header-policy")).toBeNull();
-    expect(shown.container.textContent).toContain("Replay: axios npm compromise, 31 March 2026");
+    const shown = render(<SiteFooter model={withReplay} />);
+    expect(shown.container.querySelector(".footer-policy")).toBeNull();
     shown.unmount();
-    const kept = render(<Header model={plain} theme="light" apiConfigured={true} onSubmit={noSubmit} />);
-    expect(kept.container.querySelector(".header-policy")?.textContent).toMatch(/^policy: (pass|fail), /);
+    const kept = render(<SiteFooter model={plain} />);
+    expect(kept.container.querySelector(".footer-policy")?.textContent).toMatch(/^policy: (pass|fail), /);
     kept.unmount();
   });
 });
@@ -312,7 +365,7 @@ describe("replay header text", () => {
 // Spec cemetery-undead, 10.3: the Legend names each Form in words.
 describe("Legend form words", () => {
   it("describes each Form next to its State", () => {
-    render(<Header model={headerModel(cheapScan(1), true)} theme="dark" apiConfigured={true} onSubmit={noSubmit} />);
+    render(<HeaderHarness />);
     fireEvent.click(screen.getByRole("button", { name: "Legend" }));
     const panel = document.getElementById("legend-panel")?.textContent ?? "";
     for (const words of [

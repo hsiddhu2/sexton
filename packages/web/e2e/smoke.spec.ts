@@ -48,7 +48,7 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await expect(page.locator("header")).toBeVisible();
-  await expect(page.locator("header")).toContainText("demo fixture, recorded data");
+  await expect(page.locator("header .scan-tag")).toHaveText("Sample scan");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
 
   // Spec evidence-pack, Requirement 8.4: both demo evidence links are in the header and both files download.
@@ -180,8 +180,8 @@ test("the axios replay at its Possessed stop, for the README", async ({ page, ba
   await expect(page.locator('[role="note"]')).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   // A replay names itself in the header and shows no policy line (its policy is for the replay's end time).
-  await expect(page.locator(".repo-text")).toHaveText("Replay: axios npm compromise, 31 March 2026");
-  await expect(page.locator(".header-policy")).toHaveCount(0);
+  await expect(page.locator(".headline")).toHaveText("Watch the axios attack unfold");
+  await expect(page.locator(".footer-policy")).toHaveCount(0);
   // K2d fix 1, item 4: the story is a card over the scene, the Stops are three dated cards in the Footer bar, and the
   // header keeps its normal height.
   const card = page.locator("main .replay-card");

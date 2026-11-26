@@ -111,8 +111,8 @@ describe("App wiring (9.2, 9.4)", () => {
   it("shows the button for a hosted scan with actions.remediate true", async () => {
     const fetchFn = ((url: string) => Promise.resolve(new Response(JSON.stringify(String(url).includes("/scan?") ? HOSTED : DEMO), { status: 200 }))) as unknown as typeof fetch;
     const { container } = render(<App fetchFn={fetchFn} apiBase={API} initialSearch="" pageOrigin="http://localhost" />);
-    await waitFor(() => expect(screen.getByLabelText("Repository URL")).toBeTruthy());
-    fireEvent.change(screen.getByLabelText("Repository URL"), { target: { value: "https://github.com/hsiddhu2/sexton-demo" } });
+    await waitFor(() => expect(screen.getByLabelText("GitHub repository to scan")).toBeTruthy());
+    fireEvent.change(screen.getByLabelText("GitHub repository to scan"), { target: { value: "https://github.com/hsiddhu2/sexton-demo" } });
     fireEvent.submit(container.querySelector("form") as HTMLFormElement);
     await openDrawer(container);
     expect(within(screen.getByRole("dialog")).getByRole("button", { name: OPEN_PR_TEXT })).toBeTruthy();

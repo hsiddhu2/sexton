@@ -36,6 +36,7 @@ export function probeGrave(g: ProbeGrave, nowMs: number, plan: ScenePlan = BASE_
   const s = g.scale;
   const rect: Rect = { x: 0, y: 0, w: CELL_WIDTH * s, h: CELL_HEIGHT * s };
   let grave: GravePlan = {
+    dimmed: false,
     index: 0,
     name: "probe",
     state: "Alive",
@@ -58,7 +59,7 @@ export function probeGrave(g: ProbeGrave, nowMs: number, plan: ScenePlan = BASE_
 export function probeMarks(g: ProbeGrave, nowMs: number): { box: Box; poly: [number, number][]; grow: number }[] {
   const s = g.scale;
   const rect: Rect = { x: 0, y: 0, w: CELL_WIDTH * s, h: CELL_HEIGHT * s };
-  const grave: GravePlan = { index: 0, name: "probe", state: "Alive", rect, shape: g.shape, fill: PALETTE.dark.states.Alive, ghost: null, inscription: null, pending: g.shape === "unmarked", marker: false, burial: null };
+  const grave: GravePlan = { index: 0, name: "probe", state: "Alive", rect, shape: g.shape, fill: PALETTE.dark.states.Alive, ghost: null, inscription: null, pending: g.shape === "unmarked", marker: false, burial: null, dimmed: false };
   const ctx = new BoundsContext();
   drawGrave(ctx, grave, { ...BASE_PLAN, dancers: new Set(["probe"]) }, DECO, nowMs);
   return ctx.marks
@@ -187,6 +188,7 @@ describe("cemetery-undead-2, requirement 4: the pit edge colour", () => {
   it("strokes the open grave's pit edge in costume.flower and nothing near it in the lantern gold", () => {
     const ctx = new BoundsContext();
     const grave: GravePlan = {
+      dimmed: false,
       index: 0,
       name: "probe",
       state: "Possessed",
