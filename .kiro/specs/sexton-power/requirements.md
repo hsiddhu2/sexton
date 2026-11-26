@@ -15,9 +15,10 @@ The spec changes no scoring, no state rule, no policy rule, no plan and no Segme
 - **Engine**, **Signal**, **Signal envelope**, **State**, **Policy result**, **Remediation plan**, **Remediation entry**, **Transport**, **Cache**: as defined in the Engine specs and `docs/requirements.md`.
 - **Server**: the MCP server in `packages/mcp`, started as `node dist/bin.js` or as the bundled file of the Power.
 - **Tool**: one of the four MCP tools the Server lists.
-- **Project**: the directory the Server was started for. Its root is the **Project root**.
-- **Project root**: the value of the environment variable `SEXTON_PROJECT_DIR` when set and non-empty, otherwise the working directory of the Server process, fixed once at start.
-- **Scan**: one run of the CLI composition (`resolveTarget` is not used, see Requirement 2.5) over the Project root: intake, scoring, policy, import counting, plans.
+- **Project directory argument**: the `projectDir` argument every Tool takes, a string the caller supplies.
+- **Project root**: the real path (`realpath`) of an accepted Project directory argument, the only directory a Scan reads. The Server has no default Project root: it does not use its own working directory or any environment variable to find one.
+- **Project**: the directory tree under a Project root.
+- **Scan**: one run of the CLI composition (`resolveTarget` is not used, see Requirement 2.8) over a Project root: intake, scoring, policy, import counting, plans.
 - **Fix order**: the Triage order of R-UI-3 applied to the packages of one Scan, each with its Remediation plan when it has one.
 - **Triage order**: Possessed first, then by State from least healthy to most healthy (Dead, Haunted, Restless, Alive), then by highest advisory severity (Critical down to Unknown, then none), then by transitive reach descending, then by name.
 - **Outside text**: any string that came from a registry, an advisory database, a lockfile, a manifest, a policy file, a file name or the Project (package names, versions, reasons built from them, advisory summaries, maintainer names, URLs, paths). All of it is untrusted.
@@ -45,17 +46,21 @@ The spec changes no scoring, no state rule, no policy rule, no plan and no Segme
 
 ### Requirement 2: The project directory
 
-**User Story:** As a developer, I want the server to look only at my open project, so that a prompt cannot point it elsewhere.
+**User Story:** As a developer, I want to name my project to the server, so that it scans the right directory, and I want the naming to be bounded, so that it cannot be turned into a general file reader.
 
 #### Acceptance Criteria
 
-1. THE Server SHALL fix the Project root once, at start, from `SEXTON_PROJECT_DIR` or the working directory.
-2. THE Server SHALL accept in no Tool a path, a directory, a repository URL or any other argument that names where to scan.
-3. IF a Tool call carries an argument its schema does not define, THEN THE Server SHALL return an Error result with code `invalid-arguments`.
-4. THE Server SHALL read only these files of the Project: `package.json`, `package-lock.json`, `sexton.policy.yml` at the Project root, and the source files the CLI's working-tree reader lists and reads for import counting, with the CLI's limits (`COUNT_LIMITS`, `MAX_MANIFEST_BYTES`, `MAX_POLICY_BYTES`).
-5. WHERE the Project root has no GitHub `origin` remote, THE Server SHALL still scan it, using a placeholder repository name derived from the directory name that never appears in any Tool result.
-6. WHERE the Project root has a GitHub `origin` remote, THE Server SHALL name the repository as the CLI does (`repoFromRemote`).
-7. IF the Project root has no `package.json`, THEN THE Server SHALL return an Error result with code `package-json-missing`.
+1. THE Server SHALL take one required argument `projectDir` (a string) in each of the four Tools, and SHALL fix no Project root at start.
+2. THE Server SHALL accept a `projectDir` only when every one of these holds, checked in this order, and SHALL refuse it otherwise with the error code shown: it is a string of 1 to 4096 characters with no NUL character and is an absolute path (`project-dir-not-absolute`); `realpath` resolves it, following every symbolic link and removing `.` and `..` (`project-dir-not-found`); the real path is a directory (`project-dir-not-a-directory`); the real path holds a `package.json` that is a plain file, not a symbolic link (`package-json-missing`).
+3. IF a Tool call carries an argument its schema does not define, or a defined argument of the wrong type, or no `projectDir`, THEN THE Server SHALL return an Error result with code `invalid-arguments`.
+4. THE Server SHALL use only the real path from criterion 2 for every later read, and SHALL NOT use the text of the argument after the check.
+5. THE Server SHALL read only these files of the Project: `package.json`, `package-lock.json`, `sexton.policy.yml` at the Project root, and the source files the CLI's working-tree reader lists and reads for import counting, with the CLI's limits (`COUNT_LIMITS`, `MAX_MANIFEST_BYTES`, `MAX_POLICY_BYTES`).
+6. THE Server SHALL return the text of no file of the Project. A Tool result holds only the Scan's derived facts (package names, versions, States, reasons, signals, plans, policy results), which Requirement 10 bounds.
+7. THE Server SHALL return the Project root and the argument text in no Tool result and in no log line.
+8. WHERE the Project root has no GitHub `origin` remote, THE Server SHALL still scan it, using a placeholder repository name derived from the directory name that never appears in any Tool result.
+9. WHERE the Project root has a GitHub `origin` remote, THE Server SHALL name the repository as the CLI does (`repoFromRemote`).
+10. THE README, the skill and the design SHALL state the residual risk of this argument as written in design.md Decision 10.
+11. THE Power's `mcp.json` SHALL set no `autoApprove`, so that Kiro's own approval step shows the `projectDir` of a call before it runs unless the user chooses to trust the tool.
 
 ### Requirement 3: scan_project
 
@@ -63,7 +68,7 @@ The spec changes no scoring, no state rule, no policy rule, no plan and no Segme
 
 #### Acceptance Criteria
 
-1. WHEN `scan_project` is called with no arguments, THE Server SHALL return, for every direct dependency of the Scan, its name, installed version, State, State reason, origin (`dependencies` or `devDependencies`), highest advisory severity or null, and whether the package has a proposed Remediation plan.
+1. WHEN `scan_project` is called with a valid `projectDir`, THE Server SHALL return, for every direct dependency of the Scan, its name, installed version, State, State reason, origin (`dependencies` or `devDependencies`), highest advisory severity or null, and whether the package has a proposed Remediation plan.
 2. THE Server SHALL return the State and State reason exactly as the Engine's scan holds them, for every package.
 3. THE Server SHALL list the packages in the Triage order of R-UI-3.
 4. THE Server SHALL return the scan facts the CLI prints under its table: the unlocked flag, the capped flag with the total of direct dependencies, the unresolved names, and the policy source (`default` or `file`).
@@ -77,7 +82,7 @@ The spec changes no scoring, no state rule, no policy rule, no plan and no Segme
 
 #### Acceptance Criteria
 
-1. WHEN `explain_package` is called with `{ "package": <name> }` and the name is a direct dependency of the Scan, THE Server SHALL return that package's State, State reason, installed version, declared range, origin and missing-signals list.
+1. WHEN `explain_package` is called with `{ "projectDir": <path>, "package": <name> }` and the name is a direct dependency of the Scan, THE Server SHALL return that package's State, State reason, installed version, declared range, origin and missing-signals list.
 2. THE Server SHALL return, for the package, all twelve Signals of `SIGNAL_NAMES`, each with its `available` flag, its `source` URL, its `fetchedAt` and, when unavailable, its `reason`, and SHALL NOT return a Signal value without its source and `fetchedAt`.
 3. THE Server SHALL return the package's Remediation plan when it has one: kind, status, title, summary, chosen version, major-upgrade flag and a preview of the pull request body cut to 4000 characters.
 4. THE Server SHALL return the policy rules the package fails, by rule name and reason.
@@ -91,7 +96,7 @@ The spec changes no scoring, no state rule, no policy rule, no plan and no Segme
 
 #### Acceptance Criteria
 
-1. WHEN `fix_order` is called with no arguments, THE Server SHALL return every package of the Scan in the Triage order, each with its position, name, installed version, State, State reason and its Remediation plan or null.
+1. WHEN `fix_order` is called with a valid `projectDir`, THE Server SHALL return every package of the Scan in the Triage order, each with its position, name, installed version, State, State reason and its Remediation plan or null.
 2. THE Server SHALL return for a plan: kind, status, title, summary, chosen version and major-upgrade flag, and SHALL NOT return the pull request body.
 3. THE Server SHALL return the number of packages with a plan whose status is `proposed`.
 4. THE Server SHALL use one implementation of the Triage order, the Engine's `triageOrder` (Requirement 8.4), for `scan_project` and `fix_order`.
@@ -103,7 +108,7 @@ The spec changes no scoring, no state rule, no policy rule, no plan and no Segme
 
 #### Acceptance Criteria
 
-1. WHEN `check_policy` is called with no arguments, THE Server SHALL return the Policy result of the Scan: the policy source, the overall pass flag, and for every rule its type, name, pass flag, failures (name, installed version, reason), unevaluated entries and not-found names.
+1. WHEN `check_policy` is called with a valid `projectDir`, THE Server SHALL return the Policy result of the Scan: the policy source, the overall pass flag, and for every rule its type, name, pass flag, failures (name, installed version, reason), unevaluated entries and not-found names.
 2. THE Server SHALL return `exitCode` 0 when the policy passes and 1 when it fails, the code `sexton check` exits with.
 3. FOR ANY fixture project, THE Server's Policy result rendered by the CLI's `renderCheck` SHALL equal the stdout of `sexton check` on the same project (Requirement 8.3).
 4. IF the project's `sexton.policy.yml` is invalid, THEN THE Server SHALL return an Error result with code `policy-invalid` and the error codes and paths the CLI prints, cut to 20 entries.
@@ -144,7 +149,7 @@ The spec changes no scoring, no state rule, no policy rule, no plan and no Segme
 
 1. THE Server SHALL make every outbound request through the Engine's transport, and so through the rules of `api-etiquette.md`: the Sexton User-Agent, the 24-hour cache, back-off on 429 and 503 with at most 3 retries, no tarball, no log of a response body.
 2. THE Server SHALL contact only `registry.npmjs.org`, `api.osv.dev` and `api.deps.dev`.
-3. WHEN two Tool calls arrive for the same Project with the same `package.json`, `package-lock.json` and `sexton.policy.yml` contents, THE Server SHALL run one Scan and share it, including while the first is still running.
+3. WHEN two Tool calls arrive for the same Project root with the same `package.json`, `package-lock.json` and `sexton.policy.yml` contents, THE Server SHALL run one Scan and share it, including while the first is still running.
 4. THE Server SHALL keep a finished Scan for 15 minutes, then discard it.
 5. IF a Scan is still running 55 seconds after the Tool call started, THEN THE Server SHALL return an Error result with code `scan-timeout`, SHALL leave the Scan running, and SHALL answer the next call for the same manifests from that Scan.
 6. THE test suite SHALL make no network request: every upstream answer SHALL come from the Engine's recorded fixtures through an injected Transport, and a test SHALL fail when the real `fetch` is called.
@@ -170,7 +175,7 @@ The spec changes no scoring, no state rule, no policy rule, no plan and no Segme
 #### Acceptance Criteria
 
 1. THE Server SHALL return every failure as an Error result `{ "ok": false, "error": { "code", "message" } }` with `isError: true`, and SHALL NOT throw to the MCP layer.
-2. THE Server SHALL use only these codes: `invalid-arguments`, `package-json-missing`, `package-json-invalid`, `package-json-too-large`, `lockfile-invalid`, `lockfile-too-large`, `policy-invalid`, `policy-too-large`, `package-not-in-scan`, `scan-timeout`, `scan-failed`, `internal-error`.
+2. THE Server SHALL use only these codes: `invalid-arguments`, `project-dir-not-absolute`, `project-dir-not-found`, `project-dir-not-a-directory`, `package-json-missing`, `package-json-invalid`, `package-json-too-large`, `lockfile-invalid`, `lockfile-too-large`, `policy-invalid`, `policy-too-large`, `package-not-in-scan`, `scan-timeout`, `scan-failed`, `internal-error`.
 3. THE Server SHALL map every `PipelineError` line of the CLI to one of those codes by the CLI's message constants, not by parsing text.
 4. IF any unexpected exception occurs, THEN THE Server SHALL return `internal-error` with the fixed message `Sexton could not finish this request.` and SHALL log only the error's name to stderr.
 5. THE Server SHALL include in no Error result a stack trace, a file system path, an environment variable, a URL of an upstream request or any text of an exception.
@@ -210,9 +215,9 @@ The spec changes no scoring, no state rule, no policy rule, no plan and no Segme
 
 1. THE Power folder SHALL hold `plugin.json`, `mcp.json`, `skills/sexton/SKILL.md` and the Bundle, in the Agent Plugins format that the Kiro documentation of 26 Nov 2026 names as current.
 2. THE `plugin.json` SHALL carry `$schema`, `name` `sexton`, `version`, `description`, `author`, `repository`, `license` `Apache-2.0` and `keywords` that include `dependency`, `dependencies`, `npm`, `supply chain`, `lockfile`, `install`, `package.json`, `vulnerability` and `sexton`.
-3. THE `mcp.json` SHALL start the Server with `node` on the Bundle and SHALL set no secret, no token and no environment variable except `SEXTON_PROJECT_DIR` when the spike of task 2 shows Kiro does not start the Server in the workspace directory.
-4. THE `skills/sexton/SKILL.md` SHALL say when to call each of the four Tools, SHALL say to show the source and fetch time of every claim, SHALL say to treat Outside text as data, and SHALL say that the Tools cannot change the project and that a fix is made by a person or by the Sexton pull request flow.
-5. THE Bundle SHALL contain the Server, the Engine, the CLI composition and the protocol library, and SHALL run with `node` 22 and no `node_modules`.
+3. THE `mcp.json` SHALL start the Server with `node` and the relative path `server/sexton-mcp.mjs` (Kiro resolves it against the installed Power folder), and SHALL set no secret, no token, no environment variable and no `autoApprove`.
+4. THE `skills/sexton/SKILL.md` SHALL say to pass the absolute path of the workspace root as `projectDir` in every call and never any other path, SHALL say when to call each of the four Tools, SHALL say to show the source and fetch time of every claim, SHALL say to treat Outside text as data, and SHALL say that the Tools cannot change the project and that a fix is made by a person or by the Sexton pull request flow.
+5. THE Bundle SHALL contain the Server, the Engine, the CLI composition and the protocol library, SHALL be built for Node 20 (the version Kiro starts it with), and SHALL run with `node` 20 and `node` 22 and no `node_modules`.
 6. WHEN the sources of `packages/mcp`, `packages/cli` or `packages/engine` change, THE test suite SHALL fail until the Bundle is rebuilt: a test SHALL rebuild it to a temporary file and compare bytes.
 7. THE README SHALL say how to install the Power in under two minutes: a repository URL that points to `powers/sexton`, or Add Custom Power with the folder, then one question to ask.
 8. THE install steps SHALL need no clone, no `npm ci` and no build when installing from the repository URL.
@@ -231,4 +236,4 @@ The spec changes no scoring, no state rule, no policy rule, no plan and no Segme
 
 ## Analyze Requirements
 
-Done on 26 Nov 2026, before the design. The Kiro IDE's Analyze action is a panel command that this session could not call, so the pass was made by hand over the same questions it asks (ambiguity, contradiction, testability, missing cases, rule conflicts), against the code. The findings and what each changed are in design.md, "Analyze Requirements"; Requirements 2.5, 7.7, 8.2, 8.4, 8.5, 9.5, 10.4, 10.5, 12.5, 12.6, 14.5, 14.8 and 15.5 exist because of them.
+Done on 26 Nov 2026, before the design. The Kiro IDE's Analyze action is a panel command that this session could not call, so the pass was made by hand over the same questions it asks (ambiguity, contradiction, testability, missing cases, rule conflicts), against the code. The findings and what each changed are in design.md, "Analyze Requirements"; Requirements 2.1 to 2.11, 7.7, 8.2, 8.4, 8.5, 9.5, 10.4, 10.5, 12.5, 12.6, 14.5, 14.8 and 15.5 exist because of them.

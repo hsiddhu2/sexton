@@ -15,7 +15,7 @@ Stop conditions, from the brief: if `sexton check` fails on the repository after
     - Add a one-line justification for the dependency to the PR body notes in design.md ("Notes and open items", appended at the end of the work).
     - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 13.1, 13.2_
 - [ ] 2. Spike: how Kiro starts a Power's server
-  - Settles the three unknowns in design.md Decision 10 before any server code exists. Output goes into the appendix of the proof file.
+  - Settles the unknowns of design.md Decision 10 before any server code exists. Result: the Power's server cannot learn the workspace; the owner chose a `projectDir` argument (Decision 10). Output goes into the appendix of the proof file.
   - [x] 2.1 Stub server
     - In a scratch directory outside the repository, a one-file server on `@modelcontextprotocol/server` with one tool `where` that returns `process.cwd()`, `process.argv`, `import.meta.url` and whether `SEXTON_PROJECT_DIR` is set, with a hand-written Standard Schema for no arguments. Bundle it with the esbuild already in `infra` into one `.mjs`.
     - Settles: the SDK takes hand-written Standard Schemas with no Zod (design Decision 7).
@@ -24,7 +24,7 @@ Stop conditions, from the brief: if `sexton check` fails on the repository after
     - A scratch folder with `plugin.json` (the draft from design.md), `mcp.json` with `node` and a relative path to the bundled stub, and one skill. Install it in this workspace through Powers, Add Custom Power, Import power from a folder. Ask Kiro to call `where`. Record: the working directory, whether the relative `args` path resolved, whether an environment variable set in `mcp.json` arrives, whether `${...}` expands in `args`, whether Kiro's client connects to a v2 server, the Kiro version. If it did not run, say so.
     - Choose among the three outcomes of Decision 10 and write the choice and its evidence into design.md "Notes and open items". If none reaches the project directory, or the client will not connect: stop and report.
     - _Requirements: 2.1, 14.3, 15.2, 15.3_
-  - [ ] 2.3 Remove the stub Power from this workspace
+  - [x] 2.3 Remove the stub Power from this workspace
     - Uninstall it in the Powers panel; delete the scratch directory. Nothing from the spike is committed.
     - _Requirements: 15.2_
 - [ ] 3. Engine: triageOrder
@@ -49,8 +49,11 @@ Stop conditions, from the brief: if `sexton check` fails on the repository after
     - Zero warnings from `tsc -b` and eslint on an empty package.
     - _Requirements: 13.1, 13.5_
   - [ ] 5.2 `schemas.ts` and `result.ts`
-    - The two Standard Schemas; `DATA_HEADER`, the twelve codes with their fixed messages, `ok()` and `fail()`. Example tests: each schema accepts and rejects the documented values; the codes equal Requirement 11.2; the header text is exact.
-    - _Requirements: 1.4, 2.2, 2.3, 4.6, 10.4, 11.1, 11.2, 12.6_
+    - The two Standard Schemas (`projectArguments`, `packageArguments`); `DATA_HEADER`, the fifteen codes with their fixed messages, `ok()` and `fail()`. Example tests: each schema accepts and rejects the documented values and requires `projectDir`; the codes equal Requirement 11.2; the header text is exact.
+    - _Requirements: 1.4, 2.1, 2.3, 4.6, 10.4, 11.1, 11.2, 12.6_
+  - [ ] 5.2a `project-dir.ts`
+    - `checkProjectDir` with an injected fs (`realpath`, `stat`, `lstat`). Examples for every refusal and code: not a string, empty, relative, `~`, NUL, 4097 characters, missing path, a file, a directory without `package.json`, `package.json` as a directory, `package.json` as a symbolic link, a symbolic link to a project (accepted, real path returned), `a/../b` (normalised). A test on a real temporary directory (read-only checks) with a symbolic link. Property 6 on the module alone, 1000 runs.
+    - _Requirements: 2.2, 2.4, 2.7_
   - [ ] 5.3 `bound.ts`
     - `clean(value, max)` over `safe`; `capList`; `boundValue` (depth 4, strings, numbers, booleans, null, arrays cut at 20, object keys that match the pattern, at most 30 keys); `limitResult` (100 KiB). Property 4 on the module alone, 1000 runs.
     - _Requirements: 10.1, 10.2, 10.3, 10.5, 10.6, 10.7_
@@ -61,10 +64,10 @@ Stop conditions, from the brief: if `sexton check` fails on the repository after
     - Wraps a `FilePort`; `writeText` throws. Test: throws; reads pass through.
     - _Requirements: 7.1, 7.7_
   - [ ] 5.6 `project-target.ts`
-    - Origin remote to `RepoRef` by `repoFromRemote`; the placeholder otherwise, with the directory name cleaned and cut. Examples: github https, ssh, no remote, a directory name with spaces, quotes and 300 characters.
-    - _Requirements: 2.5, 2.6_
+    - Takes the Project root. Origin remote to `RepoRef` by `repoFromRemote`; the placeholder otherwise, with the directory name cleaned and cut. Examples: github https, ssh, no remote, a directory name with spaces, quotes and 300 characters.
+    - _Requirements: 2.8, 2.9_
   - [ ] 5.7 `scan-cache.ts`
-    - Digest key, shared in-flight promise, 15 minute keep time by the injected clock, 55 second race with the scan left running, a rejected pipeline not stored. Property 9 with a counting transport and a fake clock.
+    - Key is the Project root plus the manifests digest; shared in-flight promise, 15 minute keep time by the injected clock, 55 second race with the scan left running, a rejected pipeline not stored. Property 9 with a counting transport and a fake clock.
     - _Requirements: 9.3, 9.4, 9.5_
 - [ ] 6. The views, the server and the entry
   - [ ] 6.1 `views/scan.ts` and `views/fix-order.ts`
@@ -80,12 +83,12 @@ Stop conditions, from the brief: if `sexton check` fails on the repository after
     - `createServer(deps)`: four tools, names, descriptions of at most 400 characters, annotations, handler wrapper (arguments, cache, error map, `internal-error` catch, `limitResult`, `structuredContent` and text). `package-not-in-scan` before any further work. Test `tools/list` through an in-memory client: names, order, annotations, JSON Schemas, no resources, no prompts.
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 4.5, 4.7, 11.1, 11.4, 11.5_
   - [ ] 6.5 `bin.ts`
-    - Root from `SEXTON_PROJECT_DIR` or cwd (with the fallback the spike chose), real deps with the read-only file port, stdio transport, stderr logging only, no I/O before the first call. Smoke test: spawn it, `initialize`, `tools/list`, four names, nothing on stdout but MCP.
-    - _Requirements: 1.5, 1.6, 2.1, 14.3_
+    - No root, no environment variable and no working directory used to find a project. Real deps with the read-only file port, stdio transport, stderr logging only, no I/O before the first call. Smoke test: spawn it, `initialize`, `tools/list`, four names, each schema requires `projectDir`, nothing on stdout but MCP.
+    - _Requirements: 1.5, 1.6, 2.1, 2.7_
 - [ ] 7. Properties and static tests
-  - [ ] 7.1 Properties 1, 5, 6 and 8 through `createServer` and an in-memory client
-    - 1000 runs for 1, 5 and 6. Fakes for the ports from the CLI's `test/support.ts` pattern; tree digest helper; failing-port generators.
-    - _Requirements: 2.1, 2.2, 2.3, 4.5, 4.6, 4.7, 7.1, 7.2, 7.6, 7.7, 11.1, 11.2, 11.4, 11.5, 11.6_
+  - [ ] 7.1 Properties 1, 5, 6 and 8 through `createServer` and an in-memory transport
+    - 1000 runs for 1, 5 and 6. Fakes for the ports from the CLI's `test/support.ts` pattern; tree digest helper; failing-port generators; Property 6 with a recording file port (no read outside the real path, none through a link). The SDK exports `InMemoryTransport`; a small test client sends the JSON-RPC messages.
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 4.5, 4.6, 4.7, 7.1, 7.2, 7.6, 7.7, 11.1, 11.2, 11.4, 11.5, 11.6_
   - [ ] 7.2 Properties 2 (b), (c), 3 (e), 10 and 11
     - Parity with `scanCommand`'s `scan.json`; both tools in the same order; byte-identical repeat calls; hosts and methods.
     - _Requirements: 3.2, 3.3, 5.4, 7.4, 8.3, 9.1, 9.2_
@@ -97,13 +100,13 @@ Stop conditions, from the brief: if `sexton check` fails on the repository after
     - _Requirements: 7.2, 7.5, 8.6, 9.6, 12.1, 12.5, 13.2_
 - [ ] 8. The Power
   - [ ] 8.1 `scripts/build-power.mjs` and the root script `build:power`
-    - esbuild options from Decision 8; writes `powers/sexton/server/sexton-mcp.mjs`; fails with a clear message when the build output or esbuild is missing. Run `npm run build -w @sexton/mcp` first.
+    - esbuild options from Decision 8, with `target: node20`; writes `powers/sexton/server/sexton-mcp.mjs`; fails with a clear message when the build output or esbuild is missing. Run `npm run build -w @sexton/mcp` first.
     - _Requirements: 14.5_
   - [ ] 8.2 `powers/sexton/plugin.json`, `mcp.json` and `skills/sexton/SKILL.md`
-    - As in design.md, with the wiring the spike chose. No token, no secret.
-    - _Requirements: 14.1, 14.2, 14.3, 14.4_
+    - As in design.md: `node` and `server/sexton-mcp.mjs`, no `env`, no `autoApprove`. The skill tells Kiro to pass the workspace root as `projectDir`. No token, no secret.
+    - _Requirements: 2.11, 14.1, 14.2, 14.3, 14.4_
   - [ ] 8.3 Power tests
-    - Bundle freshness (rebuild to a temp file, compare bytes); `plugin.json`, `mcp.json` and the SKILL front matter parse and carry the required fields and keywords; the Bundle runs under `node` from an empty directory with no `node_modules` (smoke test, `tools/list` only); the Bundle holds no `sk-`, token or `ghp_` strings.
+    - Bundle freshness (rebuild to a temp file, compare bytes); `plugin.json`, `mcp.json` and the SKILL front matter parse and carry the required fields and keywords; the Bundle runs under Node 20 and Node 22 (`~/.nvm/versions/node`) from an empty directory with no `node_modules` (smoke test, `tools/list` only; skipped with a message when a version is not installed); the Bundle holds no `sk-`, token or `ghp_` strings.
     - _Requirements: 14.1, 14.2, 14.3, 14.5, 14.6_
 - [ ] 9. Documentation
   - [ ] 9.1 `structure.md` and `tech.md`
@@ -112,15 +115,15 @@ Stop conditions, from the brief: if `sexton check` fails on the repository after
   - [ ] 9.2 `CREDITS.md` and `NOTICE`
     - Name the third-party code in the Bundle (the MCP library and Zod, which the library depends on, plus the Engine's runtime dependencies) with licences, as `docs/adr/0001` and the existing files do. The spike's esbuild is a development tool, already recorded.
     - _Requirements: 14.5_
-  - [ ] 9.3 `docs/requirements.md` 1.1, only if the owner approves (design.md Open item 4)
-    - One line under 4.1 and one change-log line. Skip and say so if not approved.
+  - [ ] 9.3 `docs/requirements.md` 1.1 (owner approved 26 Nov 2026)
+    - One line under 4.1 and one change-log line. Owner approved.
     - _Requirements: 13.3_
   - [ ] 9.4 README section "Ask Sexton from Kiro"
-    - Install in under two minutes: the repository URL that points to `powers/sexton` (branch URL until merged), or Add Custom Power with the folder; one question to ask; what the four tools return; the read-only guarantee; the residual risk of Decision 5 in two sentences; a link to the proof. Add the heading to `ORIGINAL_HEADINGS` in `packages/web/test/readme.test.ts` in README order.
-    - _Requirements: 14.7, 14.8, 15.4_
+    - Install in under two minutes: the repository URL that points to `powers/sexton` (branch URL until merged), or Add Custom Power with the folder; one question to ask; what the four tools return; the read-only guarantee; the residual risk of Decision 5 in two sentences; a link to the proof; the residual risk of `projectDir` in plain words (design.md Decision 10); a note that Kiro asks before a call and shows `projectDir`. Add the heading to `ORIGINAL_HEADINGS` in `packages/web/test/readme.test.ts` in README order.
+    - _Requirements: 2.10, 14.7, 14.8, 15.4_
 - [ ] 10. The proof
   - [ ] 10.1 Install the Power in this workspace
-    - From the folder or the branch URL, as the README says. Record the Kiro version, the date, the Power version and `shasum -a 256` of the Bundle.
+    - From the folder (install name `sexton`), as the README says; the branch URL goes in the proof file only. Record the Kiro version, the date, the Power version and `shasum -a 256` of the Bundle.
     - _Requirements: 15.1, 15.3_
   - [ ] 10.2 Ask one real question
     - "Which of this repository's own dependencies should I fix first, and why?" in Kiro chat, with real network. Copy the tool calls, their arguments and Kiro's answer into `build/reviews/sexton-power-proof.md`. Any step that did not run is marked "did not run".
