@@ -28,10 +28,10 @@ It has termination protection, so `cdk destroy` cannot remove it by accident.
 | Lambda `SnapshotterFunction` | Node.js 22, arm64, 1024 MB, 600 s timeout, reserved concurrency 1. Code from `packages/api/src/handlers/snapshotter.ts` |
 | 3 log groups | One per function, 30-day retention. Names are generated; find one with `aws lambda get-function-configuration --query LoggingConfig.LogGroup` |
 | S3 web bucket | Private, Block Public Access, SSL enforced, versioned, S3-managed keys, RETAIN. Filled from `packages/web/dist` |
-| CloudFront distribution | Default certificate with HSTS. The default behaviour serves the bucket through OAC (s3). `/api/*` goes to the function URL through OAC (lambda), with caching disabled, only the `repo` query string forwarded, a 60 s read timeout, a 65 s completion timeout and 1 connection attempt. 403 and 404 map to `/index.html` with 200 |
+| CloudFront distribution | Default certificate with HSTS. The default behaviour serves the bucket through OAC (s3). `/assets/*` serves the same bucket through the same origin, with CachingOptimized and redirect to HTTPS, after the API behaviours (spec fresh-site). `/api/*` goes to the function URL through OAC (lambda), with caching disabled, only the `repo` query string forwarded, a 60 s read timeout, a 65 s completion timeout and 1 connection attempt. 403 and 404 map to `/index.html` with 200 |
 | 3 origin access controls | Type `s3` and two of type `lambda` (scan, remediate), always sign, SigV4. `/api/remediate` comes before `/api/*`, all methods, no cache |
 | Origin request policies | API: forwards the `repo` and `format` query strings only, no cookies, no headers. Remediate: no query string, no cookies, the `content-type` header only (CloudFront refuses `x-amz-content-sha256` in a policy; the viewer sends it to CloudFront for the OAC signature) |
-| Response headers policy | CSP, HSTS (2 years), `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` |
+| 3 response headers policies | Each sends CSP, HSTS (2 years), `nosniff`, `X-Frame-Options: DENY` and `Referrer-Policy: no-referrer`. `SecurityHeaders` (the API behaviours) adds nothing else. `WebHeaders` (the default behaviour) adds `Cache-Control: no-cache`, and `AssetHeaders` (`/assets/*`) adds `Cache-Control: public, max-age=31536000, immutable`, both replacing any origin value (spec fresh-site) |
 | WAF web ACL (scope CLOUDFRONT) | `AWSManagedRulesCommonRuleSet`, `AWSManagedRulesKnownBadInputsRuleSet`, and a rate rule of 100 requests per 300 s per IP on paths starting `/api/`, answered with 429 and a JSON body |
 | EventBridge Scheduler schedule | `cron(17 3 * * ? *)` in UTC, no retries, invokes the snapshotter |
 | CDK BucketDeployment | A custom resource (a CDK-owned Python Lambda and a layer) that copies `packages/web/dist` to the bucket and invalidates `/*` |
@@ -42,7 +42,7 @@ It has termination protection, so `cdk destroy` cannot remove it by accident.
 | WAF rate rule `RemediateRateLimit` | 10 requests per 300 s per IP on paths starting with `/api/remediate`, 429 JSON (spec remediate) |
 | Outputs | `DistributionDomainName`, `DistributionId`, `WebBucketName`, `ScanFunctionName`, `SnapshotterFunctionName`, `RemediateFunctionName` |
 
-The last `cdk synth --strict` produced 4 resources in the Data stack and 37 in the Edge stack, with no warnings. The Edge stack has 3 Lambda functions: scan, snapshotter and the CDK BucketDeployment handler.
+The last `cdk synth --strict` (spec fresh-site, 26 Nov 2026) produced 5 resources in the Data stack and 48 in the Edge stack, with no warnings. The Edge stack has 4 Lambda functions: scan, remediate, snapshotter and the CDK BucketDeployment handler.
 
 ## IAM roles and their statements
 
@@ -242,6 +242,9 @@ DEMO_REPO="https://github.com/hsiddhu2/sexton-demo"
 19. **No GitHub path, owner, repository or token in the logs.**
     - Command: `aws logs tail "$REMEDIATE_LOGS" --region us-east-1 --since 15m | grep -E 'api.github.com' | head`, then `aws logs tail "$REMEDIATE_LOGS" --region us-east-1 --since 15m | grep -ciE 'sexton-demo|github_pat_|/pull/'`
     - Pass: the api.github.com lines have `"path":""`, and the count is 0.
+20. **Browsers get the right Cache-Control** (spec fresh-site).
+    - Command: `npx tsx "$ROOT/infra/scripts/check-cache-headers.ts" "$DOMAIN"`
+    - Pass: exit 0. `/`, `/index.html`, `/demo/scan.json` and `/replay/axios.json` are PASS with `no-cache`, and the hashed script under `/assets/` is PASS with `public, max-age=31536000, immutable`. The `/sexton-cache-check-fallback` and `/assets/sexton-cache-check-missing.js` lines are INFO and do not affect the exit status: record their headers in the deploy report.
 
 The remediate deploy moves the scan function's CloudFront origin from Origin2 to Origin3 (spec remediate, design decision 13). cdk diff shows two Lambda permissions replaced. Run checks 3 and 13 right after the deploy to confirm the scan still answers.
 
@@ -279,6 +282,7 @@ Nobody deletes `sexton-snapshots-dev` or turns off its protection as part of a r
 ## Known behaviour to remember
 
 - CloudFront maps 403 and 404 to `/index.html` with 200 for every path, including `/api/*`. A WAF managed-rule block (403) therefore reaches an API client as HTML with status 200. The web app treats a body that is not JSON as an invalid response. Recorded in docs/threat-model.md.
+- A missing file under `/assets/` also falls back to `/index.html` with 200, on the `/assets/*` behaviour. If CloudFront adds that behaviour's `Cache-Control: immutable` to the fallback, a browser keeps that HTML for a year under the missing name. Smoke check 20 prints the header as INFO (spec fresh-site, Decision 4). It matters only for a tab from an old build asking for a pruned file, or for a rollback to a build whose file names a browser already met that way.
 - Lambda throttling at the reserved concurrency of 10 reaches the viewer as 429 or 502, and the `ScanThrottles` alarm fires.
 
 ## Last dry run

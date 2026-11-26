@@ -53,7 +53,7 @@ async function readBounded(response: Response, maxBytes: number): Promise<Uint8A
   return bytes;
 }
 
-async function run(url: string, options: LoadScanOptions): Promise<LoadResult> {
+async function run(url: string, options: LoadScanOptions, cache?: RequestCache): Promise<LoadResult> {
   const { fetchFn, signal } = options;
   const maxBytes = options.maxBytes ?? MAX_SCAN_BYTES;
   const response = await fetchFn(url, {
@@ -63,6 +63,7 @@ async function run(url: string, options: LoadScanOptions): Promise<LoadResult> {
     referrerPolicy: "no-referrer",
     headers: { Accept: "application/json" },
     signal,
+    ...(cache === undefined ? {} : { cache }),
   });
   if (signal.aborted) return fail("fetch-failed");
   if (response.status < 200 || response.status > 299) {
@@ -94,10 +95,25 @@ async function run(url: string, options: LoadScanOptions): Promise<LoadResult> {
   return { ok: true, value: result.value };
 }
 
-/** Never rejects. `url` must already have passed checkScanUrl. No input string enters an error. */
+/** A static scan file, not an API answer: only these are fetched a second time. */
+function isStaticScan(url: string): boolean {
+  try {
+    return new URL(url).pathname.endsWith(".json");
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Never rejects. `url` must already have passed checkScanUrl. No input string enters an error.
+ * A static `.json` scan that fails the format check may be an old copy in the browser cache, so it is
+ * fetched once more past the cache and that result is returned (spec fresh-site, Requirements 2.4, 2.5).
+ */
 export async function loadScan(url: string, options: LoadScanOptions): Promise<LoadResult> {
   try {
-    return await run(url, options);
+    const first = await run(url, options);
+    if (first.ok || first.error.code !== "invalid-response" || !isStaticScan(url)) return first;
+    return await run(url, options, "reload");
   } catch {
     return fail("fetch-failed");
   }

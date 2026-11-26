@@ -27,6 +27,10 @@ flowchart LR
 
 There are two CloudFormation stacks. `SextonData-dev` holds the two tables and an empty Secrets Manager secret for a later spec. `SextonEdge-dev` holds everything else. Edge reads table names from Data, and Data reads nothing from Edge. So we can rebuild the edge without touching stored history.
 
+## Web files and browser caching
+
+CloudFront tells the browser how long to keep each web file, with two response headers policies (spec fresh-site). Files under `assets/` have a content hash in their names, so they get `Cache-Control: public, max-age=31536000, immutable` and the browser reuses them without asking. Every other web file (`index.html`, `demo/`, `replay/` and `fonts/`) gets `Cache-Control: no-cache`, so the browser asks CloudFront before each use and gets a 304 when nothing changed. That is why a normal reload shows a new deploy. The header changes only what the browser does. CloudFront itself keeps each file for up to 24 hours (the managed CachingOptimized policy), and every web deploy clears it by invalidating `/*`. The web loader adds one guard of its own: a static `.json` scan that fails the format check is fetched once more past the browser cache.
+
 ## The request path
 
 Here is what happens when you paste a repository URL into the cemetery. Every step is built and deployed.

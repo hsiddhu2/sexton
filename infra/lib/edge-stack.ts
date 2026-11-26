@@ -44,6 +44,7 @@ import {
   SNAPSHOTTER_RESERVED_CONCURRENCY,
   SNAPSHOTTER_TIMEOUT_SECONDS,
 } from "./config.js";
+import { ASSET_CACHE_CONTROL, ASSET_PATH_PATTERN, WEB_CACHE_CONTROL } from "./web-cache-headers.js";
 import { CONTENT_SECURITY_POLICY, HSTS_MAX_AGE_SECONDS } from "./web-security-headers.js";
 
 /** How a function gets its code: bundled from a TypeScript entry, or a placeholder until the handler exists. */
@@ -260,20 +261,33 @@ export class SextonEdgeStack extends Stack {
       removalPolicy: RemovalPolicy.RETAIN,
     });
 
+    const securityHeadersBehavior: cloudfront.ResponseSecurityHeadersBehavior = {
+      contentSecurityPolicy: { contentSecurityPolicy: CONTENT_SECURITY_POLICY, override: true },
+      contentTypeOptions: { override: true },
+      frameOptions: { frameOption: cloudfront.HeadersFrameOption.DENY, override: true },
+      referrerPolicy: { referrerPolicy: cloudfront.HeadersReferrerPolicy.NO_REFERRER, override: true },
+      strictTransportSecurity: {
+        accessControlMaxAge: Duration.seconds(HSTS_MAX_AGE_SECONDS),
+        includeSubdomains: true,
+        override: true,
+      },
+    };
+
     const headers = new cloudfront.ResponseHeadersPolicy(this, "SecurityHeaders", {
       comment: "Sexton security headers",
-      securityHeadersBehavior: {
-        contentSecurityPolicy: { contentSecurityPolicy: CONTENT_SECURITY_POLICY, override: true },
-        contentTypeOptions: { override: true },
-        frameOptions: { frameOption: cloudfront.HeadersFrameOption.DENY, override: true },
-        referrerPolicy: { referrerPolicy: cloudfront.HeadersReferrerPolicy.NO_REFERRER, override: true },
-        strictTransportSecurity: {
-          accessControlMaxAge: Duration.seconds(HSTS_MAX_AGE_SECONDS),
-          includeSubdomains: true,
-          override: true,
-        },
-      },
+      securityHeadersBehavior,
     });
+
+    // Browser caching (spec fresh-site, Decision 1): Cache-Control reaches the viewer only and does not change
+    // CloudFront's own cache. Unhashed web files revalidate on every use; hashed files under assets/ never change.
+    const cacheControlPolicy = (id: string, comment: string, value: string): cloudfront.ResponseHeadersPolicy =>
+      new cloudfront.ResponseHeadersPolicy(this, id, {
+        comment,
+        securityHeadersBehavior,
+        customHeadersBehavior: { customHeaders: [{ header: "Cache-Control", value, override: true }] },
+      });
+    const webHeaders = cacheControlPolicy("WebHeaders", "Sexton web files: security headers, Cache-Control no-cache", WEB_CACHE_CONTROL);
+    const assetHeaders = cacheControlPolicy("AssetHeaders", "Sexton hashed assets: security headers, Cache-Control immutable", ASSET_CACHE_CONTROL);
 
     const apiOriginRequestPolicy = new cloudfront.OriginRequestPolicy(this, "ApiOriginRequestPolicy", {
       // format reaches GET /api/evidence (spec evidence-pack, design decision 1). No other parameter is forwarded.
@@ -295,6 +309,9 @@ export class SextonEdgeStack extends Stack {
 
     this.webAcl = buildWebAcl(this);
 
+    // One S3 origin for the default and /assets/* behaviours, so the template keeps one S3 origin and one S3 OAC.
+    const webOrigin = origins.S3BucketOrigin.withOriginAccessControl(this.webBucket);
+
     this.distribution = new cloudfront.Distribution(this, "Distribution", {
       comment: `Sexton ${props.stage}`,
       defaultRootObject: "index.html",
@@ -303,13 +320,13 @@ export class SextonEdgeStack extends Stack {
       enableIpv6: true,
       webAclId: this.webAcl.attrArn,
       defaultBehavior: {
-        origin: origins.S3BucketOrigin.withOriginAccessControl(this.webBucket),
+        origin: webOrigin,
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
-        responseHeadersPolicy: headers,
+        responseHeadersPolicy: webHeaders,
         compress: true,
       },
-      // Insertion order is precedence: /api/remediate before /api/*.
+      // Insertion order is precedence: /api/remediate before /api/*, then /assets/*.
       additionalBehaviors: {
         [REMEDIATE_PATH]: {
           origin: origins.FunctionUrlOrigin.withOriginAccessControl(remediateUrl, {
@@ -335,6 +352,13 @@ export class SextonEdgeStack extends Stack {
           cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
           originRequestPolicy: apiOriginRequestPolicy,
           responseHeadersPolicy: headers,
+          compress: true,
+        },
+        [ASSET_PATH_PATTERN]: {
+          origin: webOrigin,
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+          responseHeadersPolicy: assetHeaders,
           compress: true,
         },
       },
