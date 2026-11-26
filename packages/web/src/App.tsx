@@ -7,6 +7,7 @@ import { TermPopover, type TermAnchor } from "./glossary/TermPopover.js";
 import { GuidePage } from "./guide/GuidePage.js";
 import { WelcomeBar } from "./guide/WelcomeBar.js";
 import { closeWelcome, welcomeClosed } from "./guide/welcome-pref.js";
+import type { ScanKind } from "./drawer/fix-view.js";
 import { Header } from "./header/Header.js";
 import { headerModel } from "./header/header-model.js";
 import { scanTag } from "./header/scan-tag.js";
@@ -178,6 +179,8 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
     if (repo === undefined) return undefined;
     return (packageName: string): Promise<RemediateView> => requestRemediation(fetchFn, apiBase, repo, packageName);
   }, [state, apiBase, fetchFn]);
+  // The fix tab's notes follow the kind of scan (7.13 to 7.15); a scan file counts as a Live scan without actions.
+  const scanKind: ScanKind = state.status !== "ready" ? "live" : state.isDemo ? "sample" : onRemediate !== undefined ? "live-remediate" : "live";
   const source = screen.view.source;
   const scanning = state.status === "loading" && state.source === "hosted" && source.kind === "repo" ? scanTag(source) : null;
   const guide = screen.owner === "guide";
@@ -216,6 +219,8 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
             scanning={scanning}
             onReplay={openReplay}
             onTerm={onTerm}
+            scanKind={scanKind}
+            onGuide={openGuide}
             {...(onRemediate !== undefined ? { onRemediate } : {})}
           />
         </main>

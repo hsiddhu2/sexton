@@ -28,15 +28,18 @@ describe("styles.css static checks", () => {
     }
   });
 
-  it("declares animation only on .loading-spinner and turns it off for reduced motion", () => {
+  // Spec clean-site, 7.1: the Drawer slides in from the right, the one other animation, also off for reduced motion.
+  it("declares animation only on .loading-spinner and .drawer and turns both off for reduced motion", () => {
     for (const rule of rules) {
       if (/(^|[^-])animation\s*:/.test(rule.body) && !/animation:\s*none/.test(rule.body)) {
-        expect(rule.selectors, rule.body).toEqual([".loading-spinner"]);
+        expect([[".loading-spinner"], [".drawer"]], rule.body).toContainEqual(rule.selectors);
       }
     }
     expect(rulesFor(".loading-spinner").some((r) => /animation:\s*sexton-spin/.test(r.body))).toBe(true);
+    expect(rulesFor(".drawer").some((r) => /animation:\s*sexton-drawer-in/.test(r.body))).toBe(true);
     const block = /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.loading-spinner\s*\{\s*animation:\s*none;?\s*\}\s*\}/;
     expect(css).toMatch(block);
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.drawer\s*\{\s*animation:\s*none;?\s*\}\s*\}/);
     expect(css.match(/transition\s*:/g)).toBeNull();
   });
 
@@ -69,8 +72,10 @@ describe("styles.css static checks", () => {
     expect(rulesFor(".scan-form input").some((r) => /min-width:\s*0/.test(r.body) && /flex:\s*1 1 auto/.test(r.body))).toBe(true);
   });
 
-  it("sizes the drawer to min(32rem, 100%)", () => {
-    expect(rulesFor(".drawer").some((r) => /width:\s*min\(32rem,\s*100%\)/.test(r.body))).toBe(true);
+  // Spec clean-site: the prototype's 680 px Drawer, full width under 700 px (15.4).
+  it("sizes the drawer to min(680px, 100%), and full width under 700 px", () => {
+    expect(rulesFor(".drawer").some((r) => /width:\s*min\(680px,\s*100%\)/.test(r.body))).toBe(true);
+    expect(css).toMatch(/@media \(max-width: 699px\)\s*\{\s*\.drawer\s*\{\s*width:\s*100%/);
   });
 
   it("has no url() outside @font-face, no @import, colour literal, scheme query or decoration variable", () => {
@@ -95,7 +100,7 @@ describe("styles.css static checks", () => {
     for (const [selector, bg, fg] of [
       [".scan-button", "--ui-accent", "--ui-accent-ink"],
       [".button-primary", "--ui-accent", "--ui-accent-ink"],
-      [".drawer-remediate-button", "--accent-bg", "--accent-text"],
+      [".drawer-remediate-button", "--ui-accent", "--ui-accent-ink"],
     ] as const) {
       const body = rulesFor(selector)[0]?.body ?? "";
       expect(body, selector).toMatch(new RegExp(`background:\\s*var\\(${bg}\\)`));

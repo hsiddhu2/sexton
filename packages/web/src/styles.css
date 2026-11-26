@@ -1406,7 +1406,7 @@ a {
   }
 }
 
-/* Drawer */
+/* The Drawer (spec clean-site, design C5): a sheet from the right over a scrim. */
 .backdrop {
   position: fixed;
   inset: 0;
@@ -1416,14 +1416,13 @@ a {
   background: none;
 }
 
-/* A scrim behind the drawer, so the open drawer reads as a layer over the page (critic round 5). It is a
-   pseudo-element: a press on it is still a press on the backdrop, so the Repository URL box rule keeps working. */
+/* The scrim is a pseudo-element: a press on it is still a press on the backdrop, so the Scan field rule keeps working. */
 .backdrop::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: var(--bg);
-  opacity: 0.55;
+  background: var(--ui-bg);
+  opacity: 0.62;
 }
 
 .backdrop > .drawer {
@@ -1435,27 +1434,107 @@ a {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  width: min(32rem, 100%);
+  width: min(680px, 100%);
   height: 100%;
-  padding: 16px;
   overflow: hidden;
-  background: var(--surface);
-  color: var(--text);
-  border-left: 2px solid var(--border);
-  box-shadow: -8px 0 24px var(--bg);
+  background: var(--ui-panel);
+  color: var(--ui-text);
+  border-left: 1px solid var(--ui-line2);
+  box-shadow: -8px 0 24px var(--ui-bg);
+  animation: sexton-drawer-in 240ms ease-out;
+}
+
+@keyframes sexton-drawer-in {
+  from {
+    transform: translateX(102%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.drawer-head {
+  flex: none;
+  padding: 22px 26px 0;
+  border-bottom: 1px solid var(--ui-line);
+}
+
+.drawer-head-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.drawer-head-text {
+  min-width: 0;
+}
+
+.drawer h2 {
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.drawer-version {
+  color: var(--ui-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.drawer-badge {
+  margin: 8px 0 0;
+}
+
+.drawer-scan-date,
+.drawer-asof {
+  margin: 8px 0 0;
+  color: var(--ui-muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
 }
 
 .drawer-close {
   flex: none;
-  align-self: flex-end;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--ui-line2);
+  border-radius: 8px;
+  background: var(--ui-panel);
+  color: var(--ui-text);
+  cursor: pointer;
 }
 
-.drawer h2 {
-  margin: 8px 0;
-  overflow-wrap: anywhere;
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-top: 18px;
+}
+
+.tab {
+  margin-bottom: -1px;
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 2px solid var(--ui-panel);
+  background: var(--ui-panel);
+  color: var(--ui-muted);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.tab[aria-selected="true"] {
+  border-bottom-color: var(--ui-accent);
+  color: var(--ui-text);
 }
 
 .drawer button:focus-visible,
+.drawer summary:focus-visible,
 .drawer-body:focus-visible,
 .pr-table-wrap:focus-visible {
   outline: 3px solid var(--focus);
@@ -1465,8 +1544,19 @@ a {
 .drawer-body {
   flex: 1 1 auto;
   min-height: 0;
+  padding: 22px 26px;
   overflow: auto;
   overflow-wrap: anywhere;
+}
+
+.drawer-body h3 {
+  margin: 0 0 10px;
+  color: var(--ui-faint);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .drawer-body p,
@@ -1475,7 +1565,7 @@ a {
 }
 
 .drawer a {
-  color: var(--focus);
+  color: var(--ui-accent);
   text-decoration: underline;
 }
 
@@ -1486,14 +1576,87 @@ a {
   overflow-wrap: anywhere;
 }
 
+.verdict {
+  margin-bottom: 22px;
+  padding: 14px 16px;
+  border: 1px solid var(--ui-line2);
+  border-radius: 10px;
+  font-size: 15px;
+}
+
+.verdict-possessed {
+  border-color: color-mix(in srgb, var(--state-possessed) 40%, var(--ui-panel));
+  background: color-mix(in srgb, var(--state-possessed) 9%, var(--ui-panel));
+}
+.history-possessed::before {
+  background: var(--state-possessed);
+}
+.verdict-dead {
+  border-color: color-mix(in srgb, var(--state-dead) 40%, var(--ui-panel));
+  background: color-mix(in srgb, var(--state-dead) 9%, var(--ui-panel));
+}
+.history-dead::before {
+  background: var(--state-dead);
+}
+.verdict-haunted {
+  border-color: color-mix(in srgb, var(--state-haunted) 40%, var(--ui-panel));
+  background: color-mix(in srgb, var(--state-haunted) 9%, var(--ui-panel));
+}
+.history-haunted::before {
+  background: var(--state-haunted);
+}
+.verdict-restless {
+  border-color: color-mix(in srgb, var(--state-restless) 40%, var(--ui-panel));
+  background: color-mix(in srgb, var(--state-restless) 9%, var(--ui-panel));
+}
+.history-restless::before {
+  background: var(--state-restless);
+}
+.verdict-alive {
+  border-color: color-mix(in srgb, var(--state-alive) 40%, var(--ui-panel));
+  background: color-mix(in srgb, var(--state-alive) 9%, var(--ui-panel));
+}
+.history-alive::before {
+  background: var(--state-alive);
+}
+
+.drawer-table-wrap {
+  overflow-x: auto;
+}
+
+.drawer-signals {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.drawer-signals th {
+  padding: 8px 10px 8px 0;
+  border-bottom: 1px solid var(--ui-line);
+  color: var(--ui-faint);
+  font-weight: 500;
+  text-align: left;
+}
+
+.drawer-signals td {
+  padding: 10px 10px 10px 0;
+  border-bottom: 1px solid var(--ui-line);
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.drawer-signal-label {
+  color: var(--ui-muted);
+}
+
 .signal-value {
   display: inline-block;
   max-width: 100%;
   padding: 1px 6px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--ui-line2);
   border-radius: 4px;
-  background: var(--field);
-  color: var(--text);
+  background: var(--ui-bg2);
+  color: var(--ui-text);
   font-size: 0.8125rem;
   overflow-wrap: anywhere;
 }
@@ -1503,47 +1666,176 @@ pre.signal-value {
   padding: 6px 8px;
 }
 
-.drawer-signals,
+.drawer-note {
+  margin: 10px 0 0;
+  color: var(--ui-muted);
+  font-size: 12.5px;
+}
+
 .drawer-missing,
 .drawer-rules {
   padding-left: 16px;
 }
 
+.fix-box {
+  margin-bottom: 20px;
+  padding: 16px;
+  border: 1px solid var(--ui-line);
+  border-radius: 10px;
+}
+
+.fix-box b {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 15px;
+}
+
+.fix-box p {
+  margin: 0;
+  color: var(--ui-muted);
+  font-size: 13px;
+}
+
+.diff {
+  margin: 0 0 20px;
+  overflow: hidden;
+  border: 1px solid var(--ui-line);
+  border-radius: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 12.5px;
+}
+
+.diff div {
+  padding: 4px 14px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.diff .diff-file {
+  border-bottom: 1px solid var(--ui-line);
+  background: var(--ui-panel2);
+  color: var(--ui-muted);
+}
+
+.diff .diff-add {
+  background: color-mix(in srgb, var(--state-alive) 12%, var(--ui-panel));
+  color: var(--ui-text);
+}
+
+.diff .diff-remove {
+  background: color-mix(in srgb, var(--state-possessed) 12%, var(--ui-panel));
+  color: var(--ui-text);
+}
+
+.pr-disclosure summary {
+  color: var(--ui-text);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.pr-disclosure .pr-preview {
+  margin-top: 10px;
+}
+
+.history {
+  margin: 0;
+  padding: 0 0 0 16px;
+  border-left: 1px solid var(--ui-line2);
+  list-style: none;
+}
+
+.history li {
+  position: relative;
+  padding: 0 0 20px 16px;
+}
+
+.history li::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: -21px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ui-muted);
+}
+
+.history time {
+  color: var(--ui-faint);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+}
+
+.history b {
+  display: block;
+  font-weight: 600;
+}
+
+.history span {
+  color: var(--ui-muted);
+  font-size: 13px;
+}
+
 .drawer-result {
   flex: none;
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 2px solid var(--border);
+  padding: 14px 26px 18px;
+  border-top: 1px solid var(--ui-line);
   overflow-wrap: anywhere;
 }
 
-.drawer-remediate {
+.drawer-actions {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
-.drawer-remediate p,
-.drawer-remediate-note {
-  margin: 0;
-  color: var(--muted);
-  overflow-wrap: anywhere;
+.drawer-result p {
+  margin: 8px 0 0;
 }
 
-.drawer-remediate-status {
-  color: var(--text);
+.drawer-remediate-status,
+.drawer-copy-status {
+  color: var(--ui-text);
+}
+
+.drawer-copy-status:empty,
+.drawer-remediate-status:empty {
+  display: none;
+}
+
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ui-accent);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
 }
 
 .drawer-remediate-button {
-  align-self: flex-start;
-  padding: 8px 18px;
+  height: 38px;
+  padding: 0 16px;
   border: 0;
-  border-radius: 999px;
-  background: var(--accent-bg);
-  color: var(--accent-text);
+  border-radius: 9px;
+  background: var(--ui-accent);
+  color: var(--ui-accent-ink);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+}
+
+/* Under 700 px the Drawer is full width (15.4). */
+@media (max-width: 699px) {
+  .drawer {
+    width: 100%;
+  }
+  .drawer-head,
+  .drawer-body,
+  .drawer-result {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
 }
 
 /* Pull request preview */
@@ -1604,6 +1896,12 @@ pre.signal-value {
 
 @media (prefers-reduced-motion: reduce) {
   .loading-spinner {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer {
     animation: none;
   }
 }
@@ -1716,11 +2014,6 @@ pre.signal-value {
   border: 0;
   white-space: nowrap;
 }
-.drawer-asof {
-  margin: 0;
-  padding: 0 16px 8px;
-  overflow-wrap: anywhere;
-}
 .legend-shape-pending {
   fill: var(--border);
 }
@@ -1754,19 +2047,8 @@ pre.signal-value {
   outline-offset: 2px;
 }
 .drawer .replay-banner {
-  margin: 0 16px 8px;
+  margin: 0 0 16px;
   width: auto;
-}
-
-.epitaph-lead {
-  font-style: normal;
-  color: var(--muted);
-}
-
-/* "Here lies" above the drawer title, in the interface face. */
-.drawer-epitaph {
-  margin: 0;
-  color: var(--accent-bg);
 }
 
 /* K2d fix 1: a replay's story in a card over the scene, top left, and its Stops as dated cards in the Footer bar. */

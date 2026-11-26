@@ -8,6 +8,7 @@ import { Cemetery } from "../Cemetery.js";
 import { LoadingCard } from "../LoadingCard.js";
 import type { Term } from "../glossary/glossary.js";
 import { dayText } from "../header/format-scan-time.js";
+import type { ScanKind } from "../drawer/fix-view.js";
 import type { RemediateView } from "../load/remediate-client.js";
 import type { ScreenEvent, ScreenState } from "../load/screen-state.js";
 import type { LoadState } from "../load/use-scan-loader.js";
@@ -48,6 +49,10 @@ export interface HomeViewProps {
   readonly onRemediate?: (packageName: string) => Promise<RemediateView>;
   readonly onReplay: (id: ReplayId) => void;
   readonly onTerm?: (term: Term, anchor: HTMLButtonElement) => void;
+  /** The kind of scan, for the Drawer's fix tab (7.13 to 7.15). */
+  readonly scanKind?: ScanKind;
+  /** Opens the Guide page (the fix tab's "How does this work?"). */
+  readonly onGuide?: () => void;
 }
 
 export function HomeView(props: HomeViewProps) {
@@ -93,7 +98,7 @@ function formOf(response: ScanResponse, pkg: PackageHealth, atMs: number | null)
   return atMs === null ? scanForm : formAt(timelineOf(response, pkg.name), atMs, scanForm);
 }
 
-function ReadyHome({ response, loadId, screen, dispatch, theme, reducedMotion, repoFieldRef, onRemediate, onReplay, onTerm }: ReadyProps) {
+function ReadyHome({ response, loadId, screen, dispatch, theme, reducedMotion, repoFieldRef, onRemediate, onReplay, onTerm, scanKind, onGuide }: ReadyProps) {
   const order = useMemo(() => triageOrder(response.report.packages), [response]);
   const indexOf = useMemo(() => new Map(order.map((p, i) => [p.name, i])), [order]);
   const isReplay = response.replay !== undefined;
@@ -295,6 +300,10 @@ function ReadyHome({ response, loadId, screen, dispatch, theme, reducedMotion, r
             onSelect={setSelected}
             onLook={onLook}
             reserve={reserve}
+            scanKind={isReplay ? "live" : (scanKind ?? "live")}
+            popoverOpen={screen.popover !== "none"}
+            {...(onTerm !== undefined ? { onTerm } : {})}
+            {...(onGuide !== undefined && !isReplay ? { onGuide } : {})}
             {...(isReplay ? {} : { open: screen.view.grave, onOpen: openDrawer, onClose: closeDrawer, filter })}
             {...(list ? { replaceScene: <ListView response={response} filter={filter} at={shownMs} indexOf={indexOf} onOpen={openFromList} /> } : {})}
             {...(onRemediate !== undefined ? { onRemediate } : {})}

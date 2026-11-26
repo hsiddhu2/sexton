@@ -80,6 +80,9 @@ test("the pull request table of lodash is visible in the drawer", async ({ page,
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await page.locator('button[data-grave-index][aria-label^="lodash"]').first().click();
+  // Spec clean-site, 7.16: the body is on the fix tab, in a closed disclosure.
+  await page.getByRole("dialog").getByRole("tab", { name: "The fix" }).click();
+  await page.getByRole("dialog").getByText("Read the pull request text").click();
   const table = page.getByRole("dialog").locator(".pr-preview table");
   await expect(table).toBeVisible();
   // Spec new-signals counts twelve signals, one row each (its design.md "Deliberate test changes"); this e2e still said

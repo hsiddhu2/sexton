@@ -21,9 +21,10 @@ fileMatchPattern: ["packages/web/**/*.ts", "packages/web/**/*.tsx", "packages/we
 - The Shadow under a grave and the Stone texture are decoration, the same for every grave of a State. They use fixed alpha bytes from scene/palette.ts. No opacity scales.
 - The PR preview parses with drawer/markdown.ts, which handles exactly what the engine's pr-body.ts emits. A link is made only for an https:// address, with target="_blank" and rel="noopener noreferrer". Output is React elements only.
 - The Result area (the outcome of opening a pull request) sits outside the scrolling drawer body, so it stays in view.
+- The drawer (drawer/Drawer.tsx, spec clean-site) slides in from the right, 680 px wide and full width under 700 px, with the breadcrumb "← Cemetery / <name>", the name, version, State badge and scan date, and the tabs Evidence, The fix and History (role tablist, arrow keys). The fix tab comes from drawer/fix-view.ts and shows at most one copy button; a copy goes through drawer/clipboard.ts. Escape closes an open Pop-over before the drawer, and every close returns focus to the grave button or List row that opened it.
 - The header is not inert while the drawer is open. The scene, the headline and chips, the Footer bar and the Panel are. A press on the Scan field closes the drawer and focuses the field.
 - The scene is full-bleed: no horizontal padding on main.
-- At 360 px there is no horizontal scroll, with the drawer closed, open or the legend open. Below 512 px the drawer is full width.
+- At 360 px there is no horizontal scroll, with the drawer closed, open or the legend open. Below 700 px the drawer is full width.
 - Every colour is a token in scene/palette.ts. A new token joins the contrast tests. styles.css holds no colour literal. The palette is night-only.
 - The scan time is shown in a <time> element with a machine-readable dateTime.
 - Grass is short seeded tufts along the row lines and one line near the bottom of the ground (scene/scenery-seed.ts, drawn by drawTufts in scene/draw.ts). Tufts depend on the scene width only.

@@ -66,13 +66,13 @@ Run-time notes:
   - [x] 4.2 Add the 300-package fixture and the e2e key-press timing check
     - _Requirements: 6.11, 6.12_
 
-- [ ] 5. The Drawer
+- [x] 5. The Drawer
   - _Requirements: 7.1 to 7.27, 11.2 to 11.5_
-  - [ ] 5.1 Rebuild the Drawer frame: breadcrumb, header, tabs, close, focus in and back, scrim
+  - [x] 5.1 Rebuild the Drawer frame: breadcrumb, header, tabs, close, focus in and back, scrim
     - _Requirements: 7.1, 7.19, 7.21, 7.22, 7.23, 7.25_
-  - [ ] 5.2 Evidence tab with Terms in running text; the Term Pop-over; History tab from `drawer/history-rows.ts`
+  - [x] 5.2 Evidence tab with Terms in running text; the Term Pop-over; History tab from `drawer/history-rows.ts`
     - _Requirements: 7.2, 7.17, 7.18, 7.24, 11.2, 11.3, 11.4, 11.5_
-  - [ ] 5.3 The fix tab from `drawer/fix-view.ts`: diff, Open pull request, one copy button, the notes, the disclosure; `drawer/clipboard.ts` and `drawer/issue-text.ts`
+  - [x] 5.3 The fix tab from `drawer/fix-view.ts`: diff, Open pull request, one copy button, the notes, the disclosure; `drawer/clipboard.ts` and `drawer/issue-text.ts`
     - _Requirements: 7.3 to 7.16, 7.20, 7.26, 7.27_
 
 - [ ] 6. The Replay as a story

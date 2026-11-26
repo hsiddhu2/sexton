@@ -99,7 +99,7 @@ function tags(root: Element): string[] {
   return [...root.querySelectorAll("*")].map((el) => el.tagName);
 }
 
-function view(response: ScanResponse): { header: string[]; overlay: string[]; drawer: string[]; preview: string[]; previewLinks: (string | null)[]; text: string } {
+function view(response: ScanResponse): { header: string[]; overlay: string[]; drawer: string[]; drawerLinks: (string | null)[]; preview: string[]; previewLinks: (string | null)[]; text: string } {
   const h = renderFooter(response, false);
   const header = tags(h.container);
   const headerText = h.container.textContent ?? "";
@@ -108,6 +108,7 @@ function view(response: ScanResponse): { header: string[]; overlay: string[]; dr
   const overlay = tags(c.container);
   const first = c.container.querySelector<HTMLButtonElement>("button[data-grave-index]");
   let drawer: string[] = [];
+  let drawerLinks: (string | null)[] = [];
   let preview: string[] = [];
   let previewLinks: (string | null)[] = [];
   let drawerText = "";
@@ -121,11 +122,13 @@ function view(response: ScanResponse): { header: string[]; overlay: string[]; dr
     }
     const clone = dialog.cloneNode(true) as Element;
     clone.querySelector(".pr-preview")?.remove();
-    drawer = tags(clone);
+    // Spec clean-site, 7.2: a signal's https source is a link; every other element is checked as before.
+    drawerLinks = [...clone.querySelectorAll("a")].map((a) => a.getAttribute("href"));
+    drawer = tags(clone).filter((t) => t !== "A");
     drawerText = dialog.textContent ?? "";
   }
   c.unmount();
-  return { header, overlay, drawer, preview, previewLinks, text: headerText + drawerText };
+  return { header, overlay, drawer, drawerLinks, preview, previewLinks, text: headerText + drawerText };
 }
 
 describe("Property 22: Untrusted strings are rendered only as text", () => {
@@ -142,7 +145,8 @@ describe("Property 22: Untrusted strings are rendered only as text", () => {
           expect(hostile.drawer.includes(bad)).toBe(false);
           if (bad !== "A") expect(hostile.preview.includes(bad)).toBe(false);
         }
-        for (const href of hostile.previewLinks) expect(href?.startsWith("https://") ?? false).toBe(true);
+        for (const href of [...hostile.previewLinks, ...hostile.drawerLinks]) expect(href?.startsWith("https://") ?? false).toBe(true);
+        expect(hostile.drawerLinks.length).toBeLessThanOrEqual(plain.drawerLinks.length);
         // The scan tag of a Live scan shows its repository as text only.
         const repo = response.report.scan?.repo.url;
         if (repo !== undefined) {

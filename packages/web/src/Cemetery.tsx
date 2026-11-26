@@ -3,6 +3,10 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { Drawer } from "./drawer/Drawer.js";
 import type { RemediateView } from "./load/remediate-client.js";
 import { drawerModel } from "./drawer/drawer-model.js";
+import { fixView, type ScanKind } from "./drawer/fix-view.js";
+import { historyRows } from "./drawer/history-rows.js";
+import type { Term } from "./glossary/glossary.js";
+import { plansByName } from "./panel/fix-order.js";
 import { useContainerWidth } from "./hooks/use-container-width.js";
 import { useFontsReady } from "./hooks/use-fonts-ready.js";
 import { fitHeight, useFreeHeight, usePinnedFooterHeight } from "./hooks/use-free-height.js";
@@ -55,6 +59,13 @@ export interface CemeteryProps {
   readonly reserve?: number;
   /** Shown in place of the Scene (the List, spec clean-site 6.1); the Drawer still opens from it. */
   readonly replaceScene?: ReactNode;
+  /** The kind of scan, for the Drawer's fix tab (spec clean-site, 7.13 to 7.15). Absent, a Cemetery with onRemediate is a Live scan with actions. */
+  readonly scanKind?: ScanKind;
+  readonly onTerm?: (term: Term, anchor: HTMLButtonElement) => void;
+  /** Opens the Guide page from the fix tab's "How does this work?". */
+  readonly onGuide?: () => void;
+  /** True while a Pop-over is open, so Escape closes it before the Drawer (10.3). */
+  readonly popoverOpen?: boolean;
 }
 
 export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFieldRef, onRemediate, ...page }: CemeteryProps) {
@@ -104,7 +115,10 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
   }, [hover, focus, onLook]);
   // The grave under the pointer or holding focus gets the Lantern glow (spec cemetery-undead, 6.4).
   const [lantern, setLantern] = useState<number | null>(null);
-  const returnFocusTo = useRef<number | null>(null);
+  // Spec clean-site, 7.22: whatever closes the Drawer (its own controls, or the screen state on Escape), focus goes
+  // back to the grave button or List row that opened it, unless the close moved focus to the Scan field.
+  const lastOpen = useRef<number | null>(null);
+  const keepFocus = useRef(false);
   const quietFocus = useRef(false);
   const width = useContainerWidth(containerRef);
   const free = useFreeHeight(containerRef, width);
@@ -251,25 +265,29 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
     [setSelectedIndex, setOpenIndex],
   );
   const onClose = useCallback((): void => {
-    returnFocusTo.current = openIndex;
     setOpenIndex(null);
-  }, [openIndex, setOpenIndex]);
+  }, [setOpenIndex]);
   useLayoutEffect(() => {
-    if (openIndex !== null || returnFocusTo.current === null) return;
-    const index = returnFocusTo.current;
-    returnFocusTo.current = null;
+    const index = lastOpen.current;
+    lastOpen.current = openIndex;
+    if (openIndex !== null || index === null) return;
+    if (keepFocus.current) {
+      keepFocus.current = false;
+      return;
+    }
     quietFocus.current = true;
     containerRef.current?.querySelector<HTMLElement>(`[data-grave-index="${String(index)}"]`)?.focus();
     quietFocus.current = false; // focus events are synchronous; never leave the flag set for a later, real focus
   }, [openIndex]);
   const openPackage = openIndex === null ? undefined : order[openIndex];
+  const plans = useMemo(() => plansByName(response.remediations), [response]);
   const onDismissToField = useCallback(
     (x: number, y: number): boolean => {
       const field = repoFieldRef?.current;
       if (field == null || field.disabled) return false;
       const r = field.getBoundingClientRect();
       if (r.width === 0 || x < r.left || x > r.right || y < r.top || y > r.bottom) return false;
-      returnFocusTo.current = null; // focus stays in the field
+      keepFocus.current = true; // focus stays in the field
       field.focus();
       setOpenIndex(null);
       return true;
@@ -323,7 +341,22 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
           </div>
         </div>
       </div>
-      {openPackage === undefined ? null : <Drawer model={drawerModel(response, openPackage, openVersion)} {...(response.replay !== undefined ? { replay: response.replay } : {})} {...(asOfLine !== undefined ? { asOfLine } : {})} onClose={onClose} onDismissToField={onDismissToField} {...(onRemediateWithBurial !== undefined ? { onRemediate: onRemediateWithBurial } : {})} />}
+      {openPackage === undefined ? null : (
+        <Drawer
+          key={openPackage.name}
+          model={drawerModel(response, openPackage, openVersion)}
+          fix={fixView(openPackage, plans.get(openPackage.name), page.scanKind ?? (onRemediate !== undefined ? "live-remediate" : "live"))}
+          history={historyRows(response, openPackage.name)}
+          {...(response.replay !== undefined ? { replay: response.replay } : {})}
+          {...(asOfLine !== undefined ? { asOfLine } : {})}
+          onClose={onClose}
+          onDismissToField={onDismissToField}
+          {...(onRemediateWithBurial !== undefined ? { onRemediate: onRemediateWithBurial } : {})}
+          {...(page.onTerm !== undefined ? { onTerm: page.onTerm } : {})}
+          {...(page.onGuide !== undefined ? { onGuide: page.onGuide } : {})}
+          popoverOpen={page.popoverOpen ?? false}
+        />
+      )}
     </>
   );
 }

@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { App } from "../src/App.js";
 import { Drawer } from "../src/drawer/Drawer.js";
 import { drawerModel } from "../src/drawer/drawer-model.js";
+import { fixView } from "../src/drawer/fix-view.js";
 import { checkScanUrl } from "../src/load/check-scan-url.js";
 import { REPLAY_BANNER_TEXT, ReplayBanner } from "../src/replay/ReplayBanner.js";
 import { REPLAY_IDS, parseReplayParam, replayAddress, type ReplayId } from "../src/replay/replay-ids.js";
@@ -326,7 +327,7 @@ describe("Property 21: The banner is on every replay screen and links only to ht
         const screens = screensOf(
           // K2d fix 1, Deliberate test change 31: the scene screen's banner is the card over the scene.
           renderToStaticMarkup(<ReplayBanner replay={replay} className="replay-card" />),
-          renderToStaticMarkup(<Drawer model={model} replay={replay} onClose={noop} />),
+          renderToStaticMarkup(<Drawer model={model} fix={fixView(pkg, undefined, "live")} history={null} replay={replay} onClose={noop} />),
         );
         expect(screens).toHaveLength(2);
         for (const doc of screens) {

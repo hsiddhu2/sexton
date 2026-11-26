@@ -73,3 +73,22 @@ Notes:
 7. A row has a hover style but no focus style of its own; the package button shows the focus ring.
 
 Gates after the fix: typecheck, lint (zero warnings) and test pass; 2233 tests across 6 workspaces. The browser check `e2e/list.spec.ts` passes locally.
+
+## Task 5
+
+The Drawer (5.1 to 5.3): the sheet from the right with the breadcrumb, name, version, State badge and scan date, the tabs Evidence, The fix and History with their keys, one close button, focus in and back, and the scrim; the Evidence tab with Terms in its labels and sentence, https source links and main's missing signals and policy rules; the Term Pop-over over the Drawer closing first on Escape; the History tab; the fix tab from `fix-view.ts` with the diff, Open pull request on a Live scan with actions, one copy button, the notes and the closed disclosure of the pull request text.
+
+Independent review before the commit. Verdict: ready. No defect found: no new I/O outside `clipboard.ts`, which takes an injected clipboard; a source becomes a link only for an https address that parses, with rel="noopener noreferrer"; the PR link and body keep their guards; every changed file in the lane.
+
+Notes:
+
+1. web.md still said the drawer is full width below 512 px. Fixed before the commit: below 700 px.
+2. A Proposed plan wins over the State, so a Restless or Alive package with one shows the plan and its copy button. A recorded decision; the wording of 7.9 and 7.10 may want a note.
+3. A Proposed plan with an empty body showed "Copy this as an issue" for any State. Fixed before the commit: only for Possessed, Dead and Haunted, else no copy button (7.6).
+4. Every close now returns focus to the grave, so a Tour opened over a Drawer leaves focus on a grave behind the Tour card. The Tour takes focus with task 7.3.
+5. A Replay's Drawer counts as a "live" scan, so a plan there would show the 7.15 note without the link. Replays carry no plans today; task 6 removes the Replay's own Drawer.
+6. An unavailable signal with no reason reads "not recorded" in both the Evidence cell and the issue text, through the model's fallback.
+7. History rows are keyed by their start; two Segments with the same start are not made by the engine.
+8. Seven e2e cases in `time.spec.ts` and `polish.spec.ts` fail the same way on the commit before this task; they wait for task 12.1. `remediate.spec.ts`, `polish.spec.ts`'s drawer cases, `judge.spec.ts` and `list.spec.ts` pass.
+
+Gates after the fixes: typecheck, lint (zero warnings) and test pass; 2253 tests across 6 workspaces.

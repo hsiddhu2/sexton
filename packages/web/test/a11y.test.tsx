@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import axe from "axe-core";
 import { readFileSync } from "node:fs";
@@ -95,6 +95,9 @@ describe("axe-core, wcag2a/aa and wcag21a/aa, color-contrast off (Requirement 10
     let found = false;
     for (const b of buttons) {
       fireEvent.click(b);
+      fireEvent.click(within(screen.getByRole("dialog")).getByRole("tab", { name: "The fix" }));
+      const disclosure = screen.getByRole("dialog").querySelector<HTMLDetailsElement>("details.pr-disclosure");
+      if (disclosure !== null) disclosure.open = true;
       if (screen.getByRole("dialog").querySelector(".pr-table-wrap") !== null) {
         found = true;
         break;
@@ -103,6 +106,11 @@ describe("axe-core, wcag2a/aa and wcag21a/aa, color-contrast off (Requirement 10
     }
     expect(found).toBe(true);
     expect(await violations()).toEqual([]);
+    // Spec clean-site: and on the other two tabs.
+    for (const name of ["Evidence", "History"]) {
+      fireEvent.click(within(screen.getByRole("dialog")).getByRole("tab", { name }));
+      expect(await violations(), name).toEqual([]);
+    }
   });
 
   it("has no violations with the repository field disabled", async () => {
@@ -147,7 +155,8 @@ describe("landmarks, labels and text alternatives (Requirements 10.1, 10.2, 10.6
     expect(container.querySelector("header .scan-tag")?.textContent).toBe("Sample scan");
     expect(container.querySelector(".headline")?.textContent).toBe("1 of 12 dependencies needs you now.");
     fireEvent.click(container.querySelector("button[data-grave-index]") as HTMLElement);
-    expect(screen.getByRole("dialog").textContent).toMatch(/State: (Possessed|Dead|Haunted|Restless|Alive)/);
+    expect(screen.getByRole("dialog").querySelector(".drawer-badge")?.textContent).toMatch(/^(Possessed|Dead|Haunted|Restless|Alive)$/);
+    expect(screen.getByRole("dialog").querySelector(".verdict")?.textContent).toMatch(/^(Possessed|Dead|Haunted|Restless|Alive)\. /);
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
     fireEvent.click(screen.getByRole("button", { name: "Legend" }));
     const legend = container.querySelector(".legend-panel")?.textContent ?? "";

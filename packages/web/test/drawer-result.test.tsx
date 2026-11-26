@@ -7,9 +7,11 @@ import { afterEach, describe, expect, it } from "vitest";
 import { Cemetery } from "../src/Cemetery.js";
 import { Drawer, OPEN_PR_TEXT } from "../src/drawer/Drawer.js";
 import { drawerModel } from "../src/drawer/drawer-model.js";
+import { fixView } from "../src/drawer/fix-view.js";
 import { displayValue } from "../src/drawer/format-value.js";
 import { cheapScan } from "./arbitraries.js";
 import { readDemoScan } from "./support/demo-scan.js";
+import { drawerProps } from "./support/drawer-props.js";
 
 afterEach(cleanup);
 
@@ -34,9 +36,15 @@ describe("displayValue", () => {
 });
 
 describe("Drawer Result area", () => {
+  const live = (): ReturnType<typeof drawerProps> => drawerProps(DEMO, PKG, "live-remediate");
+  const toFix = (dialog: HTMLElement): void => {
+    fireEvent.click(within(dialog).getByRole("tab", { name: "The fix" }));
+  };
+
   it("keeps the button, status and link outside the scrolling body, with the status before any request", () => {
-    render(<Drawer model={drawerModel(DEMO, PKG)} onClose={() => undefined} onRemediate={never} />);
+    render(<Drawer {...live()} onClose={() => undefined} onRemediate={never} />);
     const dialog = screen.getByRole("dialog");
+    toFix(dialog);
     const body = dialog.querySelector(".drawer-body") as HTMLElement;
     const result = dialog.querySelector(".drawer-result") as HTMLElement;
     expect(result).not.toBeNull();
@@ -49,14 +57,17 @@ describe("Drawer Result area", () => {
     expect(body.contains(status)).toBe(false);
   });
 
-  it("tabs from Close to the body and then to the Result area", () => {
-    render(<Drawer model={drawerModel(DEMO, PKG)} onClose={() => undefined} onRemediate={never} />);
+  it("tabs from Close to the tabs, the body and then to the Result area", () => {
+    render(<Drawer {...live()} onClose={() => undefined} onRemediate={never} />);
     const dialog = screen.getByRole("dialog");
+    toFix(dialog);
     const close = within(dialog).getByRole("button", { name: "Close" });
+    close.focus();
     const body = dialog.querySelector(".drawer-body") as HTMLElement;
     const button = within(dialog).getByRole("button", { name: OPEN_PR_TEXT });
-    expect(document.activeElement).toBe(close);
     fireEvent.keyDown(close, { key: "Tab" });
+    expect(document.activeElement).toBe(within(dialog).getByRole("tab", { name: "The fix" }));
+    fireEvent.keyDown(document.activeElement as HTMLElement, { key: "Tab" });
     expect(document.activeElement).toBe(body);
     let guard = 0;
     while (document.activeElement !== button && guard < 100) {
@@ -68,7 +79,7 @@ describe("Drawer Result area", () => {
   });
 
   it("shows fetchedAt in a time element and 'not recorded' as plain text", () => {
-    render(<Drawer model={drawerModel(DEMO, PKG)} onClose={() => undefined} />);
+    render(<Drawer {...drawerProps(DEMO, PKG)} onClose={() => undefined} />);
     const dialog = screen.getByRole("dialog");
     const times = [...dialog.querySelectorAll("time")];
     expect(times.length).toBeGreaterThan(0);
@@ -78,7 +89,14 @@ describe("Drawer Result area", () => {
     if (pkg === undefined) throw new Error("no package");
     const model = drawerModel(base, pkg);
     cleanup();
-    render(<Drawer model={{ ...model, signals: model.signals.map((s, i) => (i === 0 ? { ...s, fetchedAt: "not recorded" } : s)) }} onClose={() => undefined} />);
+    render(
+      <Drawer
+        model={{ ...model, signals: model.signals.map((s, i) => (i === 0 ? { ...s, fetchedAt: "not recorded" } : s)) }}
+        fix={fixView(pkg, undefined, "live")}
+        history={null}
+        onClose={() => undefined}
+      />,
+    );
     const els = screen.getAllByText("12 Nov 2026, 00:00 UTC");
     expect(els.every((e) => e.tagName === "TIME" && e.getAttribute("datetime") === "2026-11-12T00:00:00.000Z")).toBe(true);
     const plain = screen.getAllByText("not recorded");

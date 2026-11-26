@@ -28,6 +28,11 @@ export interface FailingRuleRow {
 
 export interface DrawerModel {
   readonly title: string;
+  readonly name: string;
+  /** The installed version, or the Segment's version of a replay. */
+  readonly version: string;
+  /** The scan date, ISO (7.19). */
+  readonly scanDate: string;
   readonly state: State;
   readonly stateReason: string;
   readonly signals: readonly SignalRow[];
@@ -81,6 +86,9 @@ export function drawerModel(response: ScanResponse, pkg: PackageHealth, version?
 
   return {
     title: `${pkg.name} ${version ?? pkg.installedVersion}`,
+    name: pkg.name,
+    version: version ?? pkg.installedVersion,
+    scanDate: response.report.generatedAt,
     state: pkg.state,
     stateReason: pkg.stateReason,
     signals,
