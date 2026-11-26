@@ -10,7 +10,7 @@ Sound is off by default. The Sound button turns it on, and every sound is made i
 
 Status: pre-release. Release 0.1 is due on 4 December 2026. Each feature below says whether it is on `main` today, in progress, or planned.
 
-The hosted site, https://de1giv8lj8sfh.cloudfront.net, is deployed by hand, so it can lag `main`. It was last deployed on 22 November 2026.
+The hosted site, https://de1giv8lj8sfh.cloudfront.net, is deployed by hand, so it can lag `main`. It was last deployed on 26 November 2026.
 
 ## Try it in two minutes
 
@@ -135,7 +135,7 @@ Keep Dependabot on and run Sexton beside it.
 
 ## Replay
 
-The cemetery has a history scrubber. It shows each package as it stood on an earlier date. Two replays play real incidents through it. Open the hosted page with [?replay=axios](https://de1giv8lj8sfh.cloudfront.net/?replay=axios) or [?replay=keyv](https://de1giv8lj8sfh.cloudfront.net/?replay=keyv). Replays are on `main`. The hosted site shows them from its next deploy. You can also press "axios, Mar 2026" or "keyv, Aug 2026" in the "Replay an attack" group in the footer.
+The cemetery has a history scrubber. It shows each package as it stood on an earlier date. Two replays play real incidents through it. Open the hosted page with [?replay=axios](https://de1giv8lj8sfh.cloudfront.net/?replay=axios) or [?replay=keyv](https://de1giv8lj8sfh.cloudfront.net/?replay=keyv). You can also press "axios, Mar 2026" or "keyv, Aug 2026" in the "Replay an attack" group in the footer.
 
 A replay opens one hour before the attack, so the grave starts Alive. Press Play to step through the history one stop at a time, or move the slider yourself.
 

@@ -124,7 +124,7 @@ aws lambda get-account-settings --region us-east-1 \
 cd "$ROOT/infra"
 npx cdk synth --strict -q -o "$OUT"                          # must succeed with no warnings
 for f in "$OUT"/asset.*/index.mjs; do
-  CACHE_TABLE=c SNAPSHOTS_TABLE=s SEEN_INDEX=i AWS_REGION=us-east-1 \
+  CACHE_TABLE=c SNAPSHOTS_TABLE=s SEEN_INDEX=i REMEDIATION_LOG_TABLE=r AWS_REGION=us-east-1 \
     node -e "import('$f').then(m => console.log(typeof m.handler === 'function' ? 'ok' : 'no handler', '$f'), e => { console.error('init failed', e.message); process.exit(1); })"
 done                                                         # every line must say ok
 npx cdk diff --method template -a "$OUT" SextonData-dev SextonEdge-dev

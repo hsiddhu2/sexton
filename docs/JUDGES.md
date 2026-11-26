@@ -1,11 +1,11 @@
 # Sexton: a guide for judges
 
-One page. Everything named here is on `main`. The hosted site is deployed by hand, so it can lag `main`. It was last deployed on 22 November 2026.
+One page. Everything named here is on `main`. The hosted site is deployed by hand, so it can lag `main`. It was last deployed on 26 November 2026.
 
 ## Open
 
 - The cemetery: https://de1giv8lj8sfh.cloudfront.net
-- The two replays, after the next deploy of the hosted site: https://de1giv8lj8sfh.cloudfront.net/?replay=axios and https://de1giv8lj8sfh.cloudfront.net/?replay=keyv
+- The two replays: https://de1giv8lj8sfh.cloudfront.net/?replay=axios and https://de1giv8lj8sfh.cloudfront.net/?replay=keyv
 
 ## Click
 
