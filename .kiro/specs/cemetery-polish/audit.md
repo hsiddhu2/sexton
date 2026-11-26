@@ -56,7 +56,7 @@ Paths are under `packages/web` unless stated.
 
 - File: `src/scene/draw.ts` lines 52 to 85 (`drawScenery`) and 87 to 138 (`drawGrave`). The sky is one linear gradient, a moon with a halo, a ground gradient, a horizon line and a fog band. A grave is one flat fill, a plinth, an optional crack and the inscription. In the screenshot the stones are solid colour blocks on a flat green-black ground.
 - What is wrong: nothing separates a stone from the ground. The ground band has no ground cover. The sky has no depth.
-- Why it hurts: the brief for the product is a churchyard at night. The scene reads as a diagram, not as a place.
+- Why it hurts: the owner's instructions for the product ask for a churchyard at night. The scene reads as a diagram, not as a place.
 
 ### 9. Small screens, keyboard path and contrast have not been checked since the theme
 

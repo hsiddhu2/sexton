@@ -157,7 +157,7 @@ If the build finds another test that pins a value this fix changes on purpose, i
 
 ### Validation Approach
 
-Exploration first: each bug gets a test that fails on the unfixed code, run before the fix and recorded. Then preservation tests on the unfixed code, which must pass before and after. Then the fix, the same tests passing, every gate, the visual critic against the mockup PNGs, and an independent review.
+Exploration first: each bug gets a test that fails on the unfixed code, run before the fix and recorded. Then preservation tests on the unfixed code, which must pass before and after. Then the fix, the same tests passing, every gate, the visual critic against the approved design pictures, and an independent review.
 
 ### Exploratory Bug Condition Checking
 

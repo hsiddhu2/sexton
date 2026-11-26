@@ -5,7 +5,7 @@
 Adds the remediation planner to packages/engine: shared types, the candidate orderer and bump selector, range style, the batched OSV query and the bump data fetch, kind choice and pre-check, branch-name encoding, the planner, the PR body and its escaper, the PR intent, the append-only log, `attachRemediations`, the contract move, the web validator, recorded fixtures with hand-checked expected plans, and remediations in the demo scan. All paths are under packages/engine unless stated. Pure leaf modules come first, then the modules that compose them, then the I/O edge, then the consumers. Existing helpers (`isValidPackageName`, `isResolvableRange`, `readFullPackument`, `fetchAdvisory`, `mapWithConcurrency`, `ENGINE_VERSION`) are reused, never duplicated.
 
 - [x] 1. Spec
-  - Apply the 14 owner decisions of the owner's handoff for spec 05 to requirements.md and design.md, relabel the review-findings heading, give .kiro/specs/cemetery-ui/.config.kiro a fresh UUID, and commit the spec.
+  - Apply the 14 owner decisions for spec 05 to requirements.md and design.md, relabel the review-findings heading, give .kiro/specs/cemetery-ui/.config.kiro a fresh UUID, and commit the spec.
   - _Requirements: 1.1, 2.2, 2.3, 2.13, 2.15, 3.1, 4.13, 5.5, 5.6, 5.13, 5.14, 5.15, 5.17, 7.13_
 
 - [x] 2. Types and the contract move

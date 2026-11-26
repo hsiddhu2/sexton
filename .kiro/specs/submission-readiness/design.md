@@ -178,7 +178,7 @@ Every control name is checked against packages/web/src and the e2e tests; every 
 
 `pretest:e2e` runs `demo:generate`, whose `predemo:generate` builds the engine with `tsc -b`, so no extra build step is planned; task 7 confirms that by running the job's commands in a clean clone. The suite writes the docs pictures during its run, which is harmless in CI: nothing is committed.
 
-After this job, .kiro/steering/structure.md ("ci.yml runs the gates, the self-scan and the infra synth") is out of date. Steering is lane 3's, so the report lists it for lane 3.
+After this job, .kiro/steering/structure.md ("ci.yml runs the gates, the self-scan and the infra synth") is out of date. Steering is lane 3's, so it is listed for lane 3.
 
 ## Data Models
 
@@ -187,14 +187,14 @@ No data model changes. The evidence summary and the pull request body show "unkn
 ## Error Handling
 
 - A claim that cannot be checked against code or a source is not written. The sentence is cut instead, and the cut recorded.
-- A link that does not resolve is fixed or removed. A link that resolves only for a signed-in GitHub user (the repository while it is private) is checked again by the owner after 2 December 2026, and listed in the report.
+- A link that does not resolve is fixed or removed. A link that resolves only for a signed-in GitHub user (the repository while it is private) is checked again by the owner after 2 December 2026, and listed for the owner.
 - If `npm run scan:self` fails with Haunted forbidden, the advisory is recorded, the dependency is moved to a fixed version if one exists without a new dependency, or Haunted is left out and the reason written here.
-- If the `e2e` job fails on Ubuntu for a reason inside packages/web/e2e or packages/web/src, the finding goes to lane 1 in the report; this spec does not edit those paths.
+- If the `e2e` job fails on Ubuntu for a reason inside packages/web/e2e or packages/web/src, the finding is listed for lane 1; this spec does not edit those paths.
 
 ## Decisions
 
 1. **One pass over claims, not a rewrite.** Each sentence that holds a claim is replaced; the surrounding text stays.
-2. **The comparison names three partial overlaps** (Socket, npq, Renovate) as the handoff asks, and keeps Dependabot and OSV-Scanner when their lines check out.
+2. **The comparison names three partial overlaps** (Socket, npq, Renovate), and keeps Dependabot and OSV-Scanner when their lines check out.
 3. **The README describes main.** The hosted site lags main between deploys; one dated sentence says so.
 4. **"Pre-existing code" lists files and packages**, not who or what wrote the code.
 5. **docs/requirements.md takes 0.9** for the section 2 rewrite, renumbered if another lane merges first.
@@ -203,7 +203,7 @@ No data model changes. The evidence summary and the pull request body show "unkn
 8. **The recorder imports from the built engine.** It is run by hand with network, after a build.
 9. **Haunted is forbidden** in Sexton's own policy, and the rule name changes to match: a High or Critical advisory in a dependency of Sexton should fail its own CI. The self-scan of 17 November 2026 rated vitest 2.1.8 Haunted with two Critical advisories, and the policy let it pass (build/reviews/03-policy.md:18 and :26). If `npm run scan:self` fails with Haunted and no fixed version exists without a new dependency, Haunted is left out and the reason recorded here (Requirement 5.6).
 10. **Task Dependency Graph: owner decision at go**, applied to the 22 tasks.md files on main a01fcce and this one; specs merged in later from other lanes are theirs. Recommended: remove the section from the nine files. Every task in them is done, the order and the requirement IDs are in the task list itself, and writing a graph by hand for the other thirteen would describe an analysis that was never run. The other choice is to keep the nine and add one to each of the thirteen, derived from the task order.
-11. **Private-path mentions in finished spec text are reworded** (the review-record part is replaced by owner decision 4) to plain words, such as "the owner's mockups, kept outside the repository". Guards that name private/ to protect it stay. Dated review records in build/reviews are left as written, apart from 05-remediation.md:3, which the brief names; any other finding there is listed in the report for lane 3, which owns build/reviews.
+11. **Private-path mentions in finished spec text are reworded** (the review-record part is replaced by owner decision 4) to plain words, such as "the approved design". The guards in .gitignore, the security hook and the eslint ignore list stay. Dated review records in build/reviews are left as written, apart from 05-remediation.md:3, which the instructions name; any other finding there is listed for lane 3, which owns build/reviews.
 12. **No engine version bump.** No signal, field or rule changes; the only output change is one word in two text rows, and only for a record with no publisher name.
 
 ## Correctness Properties
@@ -234,7 +234,7 @@ For any publisherChange value in which a publish record has a null publisher, th
 - Property 3's state-reason part is reached through the test arbitraries only, since `publisherChangeValue` never returns "changed" with a null name.
 - Docs are checked by commands, not tests: each check is recorded under "Checks" below.
 - CI: the `e2e` job's commands run in a clean clone on the Mac before commit; the job itself is proved by the first CI run on push.
-- Gates before every commit, a fresh clone with `npx npm@11 ci` before the report.
+- Gates before every commit, a fresh clone with `npx npm@11 ci` before the work is handed over.
 
 ## Owner decisions at go (25 November 2026)
 
@@ -246,7 +246,7 @@ For any publisherChange value in which a publish record has a null publisher, th
 
 ## Review notes, spec
 
-Spec review on 25 November 2026, before the spec commit: not ready, six defects, all fixed in the spec. (1) Property 1 was false for an owner holding `/` (`a/b/tree` with repo `x` parses as ok): narrowed to owners without `/`, with that case as an example. (2) The recorder plan imported `attestationsUrl` and `dependenciesUrl` from index.js, which does not export them: now from their client files. (3) packages/web/test/readme.test.ts pins the README headings and replay links, and packages/engine/package.json holds the record scripts: both added to the paths. (4) Deploy dates corrected: deploy 1 on 21 November, remediate live in deploy 3 on 22 November, the deploy 2 evidence fact checked on the hosted site. (5) The vitest Haunted finding was 17 November 2026 and passed the policy: Decision 9 corrected. (6) The 05-remediation.md private file name listed as a sweep finding. Notes acted on: Decision 6 states the reversal of new-signals Decision 21; the pr-body case is new; "Built with Kiro" excluded; 5.7 scoped to the files on a01fcce; review records left as written except 05; structure.md listed for lane 3; docs/requirements.md:36 added; the policy rule name changes; 5.6 made conditional; the api and cli import path; no extra build step in the e2e job. Notes left: some criteria hold more than one behaviour, kept for brevity; 4.1's 60 lines is a guide, the test is one printed page.
+Spec review on 25 November 2026, before the spec commit: not ready, six defects, all fixed in the spec. (1) Property 1 was false for an owner holding `/` (`a/b/tree` with repo `x` parses as ok): narrowed to owners without `/`, with that case as an example. (2) The recorder plan imported `attestationsUrl` and `dependenciesUrl` from index.js, which does not export them: now from their client files. (3) packages/web/test/readme.test.ts pins the README headings and replay links, and packages/engine/package.json holds the record scripts: both added to the paths. (4) Deploy dates corrected: deploy 1 on 21 November, remediate live in deploy 3 on 22 November, the deploy 2 evidence fact checked on the hosted site. (5) The vitest Haunted finding was 17 November 2026 and passed the policy: Decision 9 corrected. (6) The earlier wording in 05-remediation.md listed as a sweep finding. Notes acted on: Decision 6 states the reversal of new-signals Decision 21; the pr-body case is new; "Built with Kiro" excluded; 5.7 scoped to the files on a01fcce; review records left as written except 05; structure.md listed for lane 3; docs/requirements.md:36 added; the policy rule name changes; 5.6 made conditional; the api and cli import path; no extra build step in the e2e job. Notes left: some criteria hold more than one behaviour, kept for brevity; 4.1's 60 lines is a guide, the test is one printed page.
 
 ## Checks
 
@@ -319,7 +319,7 @@ A full search of tracked files (`git grep` for "no API", "no registry", "only da
 
 ## Review notes, build
 
-Whole-branch review on 25 November 2026, before the build commit: not ready, three defects, all fixed. The code changes were found correct (engine 86 files, 1,119 tests; no path outside the lane changed; no graph line changed; fixtures unchanged). (1) README Replay paragraph said the replay buttons are in the header; they are in the footer (App.tsx renders ReplayButtons in footer.night-footer): fixed. (2) docs/JUDGES.md told judges to press "Replay an attack", which is a group label, not a button: now "In the 'Replay an attack' group in the footer, press …". (3) This spec's own files named private paths: reworded like the others; the generic mention of the guard folder in Requirement 6.1 and Decision 11 stays. Notes acted on: docs/requirements.md now says Sexton reads the publisher of the installed and the earlier version, not of each version; the recorder design line no longer lists `encodePackageName`; the first-pass and final private-path counts are labelled; Decision 11 points to owner decision 4. Notes left: Property 3's summary check is trivially met for status "unknown" but meaningful for "changed" and "same"; "subagent" in older review and spec text names no tool and is listed in the report for lane 3; "opens the fix" in the problem statement is a product statement, and the Remediation bullet says opening a pull request is limited to the demo repository.
+Whole-branch review on 25 November 2026, before the build commit: not ready, three defects, all fixed. The code changes were found correct (engine 86 files, 1,119 tests; no path outside the lane changed; no graph line changed; fixtures unchanged). (1) README Replay paragraph said the replay buttons are in the header; they are in the footer (App.tsx renders ReplayButtons in footer.night-footer): fixed. (2) docs/JUDGES.md told judges to press "Replay an attack", which is a group label, not a button: now "In the 'Replay an attack' group in the footer, press …". (3) This spec's own files named private paths: reworded like the others; the generic mention of the guard folder in Requirement 6.1 and Decision 11 stays. Notes acted on: docs/requirements.md now says Sexton reads the publisher of the installed and the earlier version, not of each version; the recorder design line no longer lists `encodePackageName`; the first-pass and final private-path counts are labelled; Decision 11 points to owner decision 4. Notes left: Property 3's summary check is trivially met for status "unknown" but meaningful for "changed" and "same"; "subagent" in older review and spec text names no tool and is listed for lane 3; "opens the fix" in the problem statement is a product statement, and the Remediation bullet says opening a pull request is limited to the demo repository.
 
 ## Decisions made during implementation
 

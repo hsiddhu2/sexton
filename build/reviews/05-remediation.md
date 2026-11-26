@@ -12,7 +12,7 @@ Verdict: NOT READY, 5 defects, all fixed before the commit.
 4. design.md escapeField said its order differs from 5.6. Parenthetical corrected.
 5. requirements.md glossary "Escaped field" listed truncation before escaping. Rewritten to escape then truncate.
 
-Notes taken: "Five changes" corrected to six; R-RM-2 departures listed in the introduction; stale "please confirm" prompts marked resolved; uuid reasoning now says Major upgrade. Notes left: the handoff's decision 13 wording ("demo scan unchanged") against its task 4 (demo shows a plan), resolved in favour of task 4 and recorded as HP decision 13 in design.md; EARS bundling in 4.13, 5.5, 5.6; 5.11 wording. Fixture claims checked true against the recorded data. UUID unique.
+Notes taken: "Five changes" corrected to six; R-RM-2 departures listed in the introduction; stale "please confirm" prompts marked resolved; uuid reasoning now says Major upgrade. Notes left: the decision 13 wording ("demo scan unchanged") against the owner's task 4 (demo shows a plan), resolved in favour of task 4 and recorded as HP decision 13 in design.md; EARS bundling in 4.13, 5.5, 5.6; 5.11 wording. Fixture claims checked true against the recorded data. UUID unique.
 
 ## Review 2: engine (types, remediation module, OSV batch, fixtures, recorder), before the engine commit
 

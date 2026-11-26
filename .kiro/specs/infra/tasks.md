@@ -9,17 +9,17 @@ No test touches the network or real AWS. DynamoDB properties run against `packag
 Ordering constraints, recorded here:
 
 - `packages/api/package.json`, `tsconfig.json` and `vitest.config.ts` are created by Kiro's cemetery-ui spec. Tasks 2 to 7 start with `git merge main` after cemetery-ui is merged, and are blocked until then. Task 1 and tasks 8 to 10 (infra) do not depend on it, except that the stacks reference the handler entry files by path; until the handlers exist, `bin/sexton.ts` and the stack tests use the placeholder handler code.
-- HP approved adding `"infra"` to the root `workspaces` array (that one line only). Task 1.1 does it and records it in build/handoffs/to-kiro.md as done. The root `tsconfig.json` is not changed; infra type-checks itself in its `pretest` script.
+- HP approved adding `"infra"` to the root `workspaces` array (that one line only). Task 1.1 does it and records it as done for Kiro. The root `tsconfig.json` is not changed; infra type-checks itself in its `pretest` script.
 - HP set the order: task 1 with the infra stacks and the IAM-shape and cdk-nag tests (tasks 1, 8, 9 and 10 here), then the documents (task 12), then CI (task 11), then stop and report. Tasks 2 to 7 wait for cemetery-ui. Gates and an independent review run before each commit.
 - Until the handlers and the web build exist, `bin/sexton.ts` uses a placeholder handler and skips the BucketDeployment, each with a CDK warning (design.md, Decisions). Task 14 refuses to deploy while either warning is present.
 - `contract.ts` is Kiro's. The API imports `ScanResponse` from `contract-pending.ts` until `contract.ts` is on main, then switches (task 6.6).
 
-- [x] 1. Infra workspace skeleton, config and handoff to Kiro
+- [x] 1. Infra workspace skeleton, config and the request to Kiro
   - Sets up `infra/` as its own package and records what is needed from Kiro.
   - _Requirements: 1.1, 1.2, 1.3_
-  - [x] 1.1 Add the infra workspace and write build/handoffs/to-kiro.md
-    - Add `"infra"` to the `workspaces` array of the root package.json, that one line only (approved by HP). Record it in build/handoffs/to-kiro.md as done (in the main checkout, where Kiro works; build/handoffs is gitignored).
-    - Agreed with HP: Kiro relaxes `parseApiBase` to accept the same-origin path `/api`; the web app is built with `VITE_SEXTON_API=/api`. Recorded in the handoff for Kiro.
+  - [x] 1.1 Add the infra workspace and tell Kiro
+    - Add `"infra"` to the `workspaces` array of the root package.json, that one line only (approved by HP). Record it as done for Kiro.
+    - Agreed with HP: Kiro relaxes `parseApiBase` to accept the same-origin path `/api`; the web app is built with `VITE_SEXTON_API=/api`. Recorded for Kiro.
     - Optional request: `{ "path": "infra" }` in the root tsconfig.json references.
     - Note for Kiro: the API returns 422 (not 404) for `missing-package-json`, and the response headers policy adds a header CSP that allows everything the meta CSP allows.
     - _Requirements: 1.3_
@@ -148,7 +148,7 @@ Ordering constraints, recorded here:
 - [x] 10. IAM and cdk-nag checks with properties 13 and 14
   - _Requirements: 8.1, 8.2, 8.3, 9.4, 9.6, 10.3, 10.4_
   - [x] 10.1 Implement infra/lib/nag-suppressions.ts and apply it in bin/sexton.ts
-    - The table from design.md "cdk-nag suppressions", applied with cdk-nag 3's `Validations.of(construct).acknowledge`, one acknowledgement per finding ID. Run a real `cdk synth` with cdk-nag once; any rule that fires and is not in the table is fixed, or written into the owner's progress notes under "Waiting on HP" if it cannot be fixed.
+    - The table from design.md "cdk-nag suppressions", applied with cdk-nag 3's `Validations.of(construct).acknowledge`, one acknowledgement per finding ID. Run a real `cdk synth` with cdk-nag once; any rule that fires and is not in the table is fixed, or left for HP to decide if it cannot be fixed.
     - _Requirements: 10.3, 10.4_
   - [x] 10.2 Write infra/test/iam.test.ts
     - Property 13 (IAM policy shape) as an example test over every policy-bearing resource in both templates, with the BucketDeployment invalidation statement and the log group `Arn` attributes (which end in `:*`) as the only allow-listed wildcards, each rendered and checked to hold exactly one `:*`, never `:*:`, and to cover a Lambda stream ARN, matched on exact action sets. Also asserts no role reads the GitHub token secret and no managed policy ARN is attached to the scan or snapshotter role.
@@ -186,7 +186,7 @@ Ordering constraints, recorded here:
   - [ ] 13.2 Independent review
     - A reviewer that has not seen the implementation gets this spec folder, the diff against main, docs/requirements.md and the steering files. Fix every defect it reports (secret, I/O outside the seams, injection, IAM wider than least privilege, a correctness bug, a test asserting the opposite of its requirement, a file outside ownership). Record notes in build/reviews/10-infra.md.
     - _Requirements: 8.2, 8.3, 9.4, 10.3_
-  - [ ] 13.3 Commit on spec/infra and update the owner's progress notes
+  - [ ] 13.3 Commit on spec/infra
     - Commit under the configured identity with no trailers. No push. Record hashes, open items and anything waiting on HP.
     - _Requirements: 11.1_
 
@@ -199,7 +199,7 @@ Ordering constraints, recorded here:
     - Build web with `VITE_SEXTON_API=/api`. Confirm `cdk synth` shows neither placeholder warning. Deploy `SextonData-dev`, then `SextonEdge-dev` with `--parameters AlarmEmail=<from HP>`. One pass.
     - _Requirements: 4.6, 5.1_
   - [ ] 14.3 Verify and record
-    - The CloudFront URL serves the demo. A direct unsigned call to the function URL returns 403. `GET {url}/api/scan?repo=https://github.com/expressjs/express` returns a ScanResponse under 60 seconds cold and under 20 seconds warm, measured with `curl -w` and recorded in build/reviews/10-infra.md. 101 rapid requests from one IP get blocked within about a minute. A manual invoke of the snapshotter appends snapshots (checked with a Query on one `snap#` partition). The three snapshotter metrics appear in the `Sexton` namespace after the manual invoke. The bundled handlers load (no `Cannot find module` at init). The confirmed or corrected `X-Amz-Cf-Id` behaviour is written into design.md; any doc and behaviour mismatch is filed with the owner's notes, outside the repository.
+    - The CloudFront URL serves the demo. A direct unsigned call to the function URL returns 403. `GET {url}/api/scan?repo=https://github.com/expressjs/express` returns a ScanResponse under 60 seconds cold and under 20 seconds warm, measured with `curl -w` and recorded in build/reviews/10-infra.md. 101 rapid requests from one IP get blocked within about a minute. A manual invoke of the snapshotter appends snapshots (checked with a Query on one `snap#` partition). The three snapshotter metrics appear in the `Sexton` namespace after the manual invoke. The bundled handlers load (no `Cannot find module` at init). The confirmed or corrected `X-Amz-Cf-Id` behaviour is written into design.md; any doc and behaviour mismatch is filed for the owner.
     - _Requirements: 4.6, 5.1, 5.5, 7.3, 10.2_
 
 ## Task Dependency Graph

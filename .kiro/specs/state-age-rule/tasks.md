@@ -209,15 +209,15 @@ Run the exploration test on the UNFIXED `state.ts` before any fix. All paths are
       - infra 51/51/0
       - Overall 1636 total, 1636 passed, 0 failed.
       - No gate failed, so nothing was fixed in this task. Not predicted: none.
-- [x] 8. Run the built CLI against express and write the report
+- [x] 8. Run the built CLI against express and write down the results
   - Orchestrator-run: this needs the network.
   - _Requirements: 1.2, 2.1, 2.3_
   - [x] 8.1 Build and scan
     - Run `npm run build`, then the cli's scan against https://github.com/expressjs/express with the built CLI.
     - _Requirements: 2.1, 2.3_
     - Notes: npm run build exit 0 (build/sar-build.txt). Built CLI scan of expressjs/express, exit 0, 44 packages (build/sar-express/).
-  - [x] 8.2 Write build/kiro-reports/13-state-age-rule.md
+  - [x] 8.2 Write the run results to a git-ignored file under build/
     - Record the state counts, every Dead package with its reason, the count of packages Restless with "no release in 24 months", and the number of remediation plans. Compare with the 21 Nov figure of 16 Dead of 44.
-    - List every fixture whose state changed, with old and new state and reason. `build/*` is git-ignored, so the report is not committed.
+    - List every fixture whose state changed, with old and new state and reason. `build/*` is git-ignored, so the file is not committed.
     - _Requirements: 1.2, 2.1, 2.3, 2.6_
     - Notes: Report written. Dead 16 -> 2 of 44, both deprecated. Restless 15, of which 14 are 'no release in 24 months'. Alive 27. 2 plans.

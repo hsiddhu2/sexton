@@ -158,7 +158,7 @@ R-AG-3. The agent SHALL NOT open PRs on its own. It proposes. A human requests.
 
 ## 6. Non-functional requirements
 
-N-1. Security. No secrets in the repository. GitHub credentials held in AWS Secrets Manager. Least-privilege IAM. Public endpoints behind WAF. Private folder gitignored and verified by a pre-commit hook.
+N-1. Security. No secrets in the repository. GitHub credentials held in AWS Secrets Manager. Least-privilege IAM. Public endpoints behind WAF. Local working files are gitignored.
 N-2. Privacy. Sexton reads only public repositories in release 0.1. It stores package metadata, never source code.
 N-3. Performance. A scan of 50 direct dependencies completes in under 20 seconds with a warm cache and under 60 seconds cold.
 N-4. Reliability. An upstream outage degrades one signal, never the whole scan.

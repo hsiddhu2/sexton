@@ -2,7 +2,7 @@
 
 ## Introduction
 
-cemetery-undead is Phase 1 of the "Night of the Living Deps" art pass, approved by the owner on 24 Nov 2026 at 03:41 from the mockups mockup-night.html (the cemetery) and mockup-nightreplay.html (the axios replay moment), kept with the owner's notes outside the repository. It changes how the cemetery looks. It does not change what any grave means.
+cemetery-undead is Phase 1 of the "Night of the Living Deps" art pass, approved by the owner on 24 Nov 2026 at 03:41 from two approved designs: the cemetery and the axios replay moment. It changes how the cemetery looks. It does not change what any grave means.
 
 - **U1.** A Halloween night palette, with state colours chosen to stay apart for viewers with colour vision deficiency.
 - **U2.** Self-hosted display and interface fonts.
@@ -10,9 +10,9 @@ cemetery-undead is Phase 1 of the "Night of the Living Deps" art pass, approved 
 - **U4.** A deeper scene: graves recede in three depth tiers by urgency, with church and fence silhouettes, bats, fog, a lantern glow, a vignette and grain.
 - **U5.** Epitaphs: "Here lies" and a short punchline that is true of the State's reason.
 - **U6.** Serious mode, which hides the punchlines.
-- **U7.** A header and a footer bar in the mockup's layout.
+- **U7.** A header and a footer bar in the approved design's layout.
 
-Phase 2 (sound, speech bubbles, the replay burst choreography and the burial priest) is a separate spec. The mockups show some Phase 2 items (speech bubbles, the replay stop cards). This spec does not build them.
+Phase 2 (sound, speech bubbles, the replay burst choreography and the burial priest) is a separate spec. The approved design shows some Phase 2 items (speech bubbles, the replay stop cards). This spec does not build them.
 
 This spec traces to R-UI-1 to R-UI-7 of docs/requirements.md section 5.8, to N-7 and N-9 of section 6, and to the cemetery-polish, cemetery-time and cemetery-time-fixes specs. It changes no state rule, no policy rule, no API field and no evidence field. The demo evidence digest stays c8fb6cab465d46ca92cf83dbc10022b6a662c8fad68ec8f64d827ef16f43344d.
 
@@ -32,7 +32,7 @@ Paths: this spec changes `packages/web`, the root `package-lock.json` (dev-only 
 - **Pose**: one frame of a Clip.
 - **Atlas**: a PNG image under `packages/web/public/sprites` that holds the Poses of one Clip, with a JSON frame table.
 - **Bake**: the dev-only script `packages/web/scripts/bake-sprites.mjs`, which renders CC0 models into Atlases.
-- **Vector fallback**: Characters drawn as blocky vector shapes on the canvas in the mockup's style, used when the Bake does not work within its budget.
+- **Vector fallback**: Characters drawn as blocky vector shapes on the canvas in the approved design's style, used when the Bake does not work within its budget.
 - **Frame rate**: 12 Poses a second for every Character.
 - **Dancer**: a Dead grave whose skeleton breaks into the dance Clip on a seeded schedule.
 - **Tier**: a depth band of the Scene. Front holds Possessed and Dead, middle holds Haunted and Restless, back holds Alive.
@@ -49,7 +49,7 @@ Paths: this spec changes `packages/web`, the root `package-lock.json` (dev-only 
 - **Footer bar**: the bar at the bottom of the page that holds Play, the History date slider and "Replay an attack".
 - **Canvas top**: the y of the top edge of the scene canvas in CSS pixels, from the top of the viewport.
 - **Reduced motion**: the `prefers-reduced-motion: reduce` media query.
-- **Visual critic**: a review subagent that sees only screenshots, the mockup screenshots and the design guidance, never the code.
+- **Visual critic**: a review subagent that sees only screenshots, the approved design screenshots and the design guidance, never the code.
 - **Deliberate test change**: a change to an existing test that design.md lists because the test pins a value this spec changes on purpose.
 
 ## Requirements
@@ -131,11 +131,11 @@ Paths: this spec changes `packages/web`, the root `package-lock.json` (dev-only 
 5. THE grave buttons SHALL keep triage order in the DOM and in the keyboard order, and their accessible names SHALL not change.
 6. FOR ALL package lists of up to 300 packages and ALL widths (a width below the minimum Scene width of 224 is laid out at 224), THE grave rectangles SHALL not overlap, SHALL lie inside the Scene, and SHALL keep the Tier of their scan-date State whatever date the scrubber shows.
 7. THE Not-published form SHALL keep the position of the package's scan-date Tier.
-8. WHEN a replay is shown, THE Scene SHALL draw the replay's one grave full size, at the Replay scale of 1.8, or smaller only so that it fits the Scene width and the fit height. Amended by the owner on 24 Nov 2026 (K2d fix 1, docs/requirements.md 0.6).
+8. WHEN a replay is shown, THE Scene SHALL draw the replay's one grave full size, at the Replay scale of 1.8, or smaller only so that it fits the Scene width and the fit height. Amended by the owner on 24 Nov 2026 (docs/requirements.md 0.6).
 
 ### Requirement 6: The night backdrop
 
-**User Story:** As a viewer, I want a churchyard at night, so that the scene feels like the mockup.
+**User Story:** As a viewer, I want a churchyard at night, so that the scene feels like the approved design.
 
 **Traces to:** U4; web.md scenery rules
 
@@ -188,7 +188,7 @@ Paths: this spec changes `packages/web`, the root `package-lock.json` (dev-only 
 1. THE header SHALL hold, in this DOM order: the wordmark, the repository and scan line with the as-of line and Back to now when shown, the evidence links, the Repository URL form, the Sound button, the Serious mode toggle, and the Legend.
 2. THE Sound button SHALL be a native button named "Sound off", disabled, with the description "Sound arrives in the next release" reachable by assistive technology.
 3. THE Footer bar SHALL hold, in this DOM order: Play, the History date label, the date text and slider, and the "Replay an attack" group. THE Footer bar SHALL come after the Scene in the DOM.
-4. WHILE the viewport is 960 CSS pixels wide or wider, THE Footer bar SHALL stay in view at the bottom of the viewport, and THE graves SHALL end above it while the ground runs under it to the viewport bottom. Below 960 px THE Footer bar SHALL scroll with the page, because the wrapped controls would otherwise leave almost no cemetery on screen. Amended by the owner on 24 Nov 2026 (K2d fix 1, docs/requirements.md 0.6).
+4. WHILE the viewport is 960 CSS pixels wide or wider, THE Footer bar SHALL stay in view at the bottom of the viewport, and THE graves SHALL end above it while the ground runs under it to the viewport bottom. Below 960 px THE Footer bar SHALL scroll with the page, because the wrapped controls would otherwise leave almost no cemetery on screen. Amended by the owner on 24 Nov 2026 (docs/requirements.md 0.6).
 5. WHEN the demo scan is shown at the Scan date at a viewport of 1440 by 900, THE Canvas top SHALL be at 190 or less.
 6. WHILE the viewport is 390 CSS pixels wide, and also at 360, THE Web app SHALL cause no horizontal scroll with the demo and with the axios replay.
 7. THE keyboard order SHALL follow the DOM: Back to now when shown, the evidence links, Repository URL, Scan, Serious mode, Legend, the banner links of a replay, the roving grave, Play, History date, then the two Replay buttons.
@@ -245,13 +245,13 @@ Paths: this spec changes `packages/web`, the root `package-lock.json` (dev-only 
 
 ### Requirement 14: The screenshot loop
 
-**User Story:** As the owner, I want the result to match the mockup, so that the approved art direction is what ships.
+**User Story:** As the owner, I want the result to match the approved design, so that the approved art direction is what ships.
 
-**Traces to:** U1 to U7; the handoff "How to build it: the screenshot loop"
+**Traces to:** U1 to U7; the decided build method (the screenshot loop)
 
 #### Acceptance Criteria
 
-1. AFTER every visual change, THE Orchestrator SHALL take screenshots of the demo and of the axios replay at 1440 by 900 and at 390 by 844, and compare them with the mockup screenshots kept with the owner's notes.
+1. AFTER every visual change, THE Orchestrator SHALL take screenshots of the demo and of the axios replay at 1440 by 900 and at 390 by 844, and compare them with the approved design pictures.
 2. THE Visual critic SHALL answer READY or list what is off. THE Orchestrator SHALL fix and repeat until the Visual critic answers READY at both sizes.
 3. THE Orchestrator SHALL record the findings of each round in tasks.md notes in plain words.
 

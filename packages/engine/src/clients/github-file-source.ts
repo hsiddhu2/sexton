@@ -77,7 +77,7 @@ export class GithubFileSource implements FileSource {
 
   /**
    * Rejects when the tree cannot be read, so the Capped source reports the files as not scanned. A capped tree answers
-   * the paths of its first 20000 raw entries and counts() reports it capped (handoff decision 8).
+   * the paths of its first 20000 raw entries and counts() reports it capped (decision 8).
    */
   listFiles(): Promise<readonly string[]> {
     if (this.#listing === undefined) {

@@ -10,16 +10,16 @@ Implements requirements 1 to 9 of this spec, which cover R-PO-2, R-PO-3, R-PO-4 
 
 Out of scope: file reading, GitHub access, exit codes, the CLI `check` command, the evidence pack, a fifth rule type, policy merging, remote schemas.
 
-### Names in the source that differ from the brief
+### Names in the source that differ from the instructions
 
-The names in the brief all match the source. These details of the existing code shape the design:
+The names in the instructions all match the source. These details of the existing code shape the design:
 
 - `HealthReport` and `PackageHealth` are in `src/types.ts`. A `PackageHealth` carries `name`, `installedVersion`, `state`, `stateReason` and `signals`. The signals this module reads are `signals.hasInstallScript` (`Signal<boolean>`), `signals.lastPublish` (`Signal<string | null>`) and `signals.provenance` (`Signal<ProvenanceValue>`).
 - `monthsBefore(now, months)` is exported from `src/state.ts`. It mutates a copy with `setUTCMonth`, so it returns an Invalid Date when `months` is large enough to leave the Date range.
 - `fromIso(iso)` in `src/signal.ts` is `new Date(iso)`. It never throws. It returns an Invalid Date for unparseable text. This module treats `Number.isFinite(date.getTime())` as "parses as a date".
 - `State` and `STATE_ORDER` are in `src/types.ts`. The schema's `states` enum is built from `STATE_ORDER` so the two cannot drift.
 - `packages/engine/package.json` has no `dependencies` key yet. The existing script folder is `packages/engine/scripts/` (it holds `record-fixtures.mjs`), so `write-schema.mjs` goes there. A repository-root `scripts/` folder also exists, but it is not where the engine's own scripts live.
-- The new shared types go into the existing `src/types.ts` under a policy heading, as history-signals did. This keeps the file list to the files named in the brief.
+- The new shared types go into the existing `src/types.ts` under a policy heading, as history-signals did. This keeps the file list to the files named in the instructions.
 - `schemas/` does not exist at the repository root yet. `write-schema.mjs` creates it.
 
 ### Research findings that shape the design

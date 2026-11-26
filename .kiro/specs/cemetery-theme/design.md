@@ -10,7 +10,7 @@ Out of scope: a light theme, a theme switch, new dependencies, web fonts, image 
 
 ### Decisions
 
-Each is a choice the brief left open. All are recorded here and in the Notes.
+Each is a choice the instructions left open. All are recorded here and in the Notes.
 
 1. **Night-only app.** The scene, header and drawer use one Night palette under both values of `prefers-color-scheme`. `PALETTE.light` and `PALETTE.dark` are the same object, so the `Theme` type, the `theme` props and every existing test that passes `"light"` or `"dark"` compile and run unchanged. `App` stops reading the `prefers-color-scheme` query and always passes `"dark"`. A real light theme is roadmap, not this spec. Reason: a dark sky behind graves cannot be a light theme by changing a palette, the contrast budget (below) would double, and aliasing keeps the diff small.
 2. **Palette stays the single colour source.** Every colour, including the sky, moon, fog and horizon, is a token in `palette.ts`. `draw.ts` and `styles.css` hold no colour literal. Transparency is made by appending an alpha byte to a token (`fog + "34"`), which keeps the table to six-digit hex and needs no `globalAlpha`.

@@ -159,6 +159,6 @@ Paths: this spec changes `packages/web`, the README section "Try it in two minut
 
 1. THE smoke test SHALL retake `docs/cemetery.png` and `docs/replay-axios.png`.
 2. THE `.kiro/steering/web.md` file SHALL describe the Guide, the Fix-first line and the Ring casing, and SHALL rewrite the Halo rule this spec changes (no cut along the ring and the focus outline).
-3. THE Visual critic SHALL answer READY at 1440 by 900 and 390 by 844, with the Guide open and closed, before the report.
+3. THE Visual critic SHALL answer READY at 1440 by 900 and 390 by 844, with the Guide open and closed, before the work is handed over.
 4. THE root typecheck, lint, tests and `npm run test:e2e -w @sexton/web` SHALL exit 0.
-5. THE independent review SHALL report no open defect before the report.
+5. THE independent review SHALL report no open defect before the work is handed over.
