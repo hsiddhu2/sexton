@@ -119,7 +119,7 @@ Run-time notes:
   - _Requirements: 16.1, 16.2, 16.8 to 16.11, 16.13, 16.14, 18.1 to 18.7_
   - [x] 12.1 Write `e2e/clean.spec.ts` for every prototype flow at 1440 by 900 and 390 by 844; update the other e2e specs; axe on every view; repaint at 300 graves
     - _Requirements: 16.1, 16.2, 16.8 to 16.11, 16.13, 16.14_
-  - [ ] 12.2 Retake the two README pictures; update README.md, CREDITS.md and docs/JUDGES.md; rewrite `.kiro/steering/web.md`; docs/requirements.md 1.1
+  - [x] 12.2 Retake the two README pictures; update README.md, CREDITS.md and docs/JUDGES.md; rewrite `.kiro/steering/web.md`; docs/requirements.md 1.1
     - _Requirements: 18.1 to 18.5, 18.7_
   - [ ] 12.3 Review the built site against the prototype in a fresh profile at both sizes; list every difference with its reason; write the report, kept outside the repository, with the frame time at 300 graves and what was removed
     - _Requirements: 18.6_

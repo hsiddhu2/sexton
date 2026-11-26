@@ -6,7 +6,7 @@ Sexton finds the dependencies that will hurt you, proves it, and opens the pull 
 
 Characters are original vector art. The ghost is original art.
 
-Sound is off by default. The Sound button turns it on, and every sound is made in code.
+The site plays no sound. It has a slot for one recorded music track, and the slot is empty today.
 
 Status: pre-release. Release 0.1 is due on 4 December 2026. Each feature below says whether it is on `main` today, in progress, or planned.
 
@@ -14,12 +14,12 @@ The hosted site, https://de1giv8lj8sfh.cloudfront.net, is deployed by hand, so i
 
 ## Try it in two minutes
 
-Open the hosted demo at [https://de1giv8lj8sfh.cloudfront.net](https://de1giv8lj8sfh.cloudfront.net). On your first visit a short guide walks through these four steps. The Guide button in the header shows it again.
+Open the hosted demo at [https://de1giv8lj8sfh.cloudfront.net](https://de1giv8lj8sfh.cloudfront.net). On your first visit a bar under the header offers a two-minute guide. "What is Sexton?" in the header opens it at any time, and Tour points out the three main parts of the page.
 
-1. Hover a grave. Each grave is one dependency. Its shape and colour show its state. The line under the header names the grave to fix first and why. Press it to go to that grave.
-2. Open its drawer. Press the grave, or press Enter on it.
-3. Read the evidence and the pull request preview. The drawer shows every signal with its source and date, and the pull request Sexton would open, with its body.
-4. Replay an attack. Press "axios, Mar 2026" at the foot of the page, or open [the axios replay](https://de1giv8lj8sfh.cloudfront.net/?replay=axios) directly. [The keyv replay](https://de1giv8lj8sfh.cloudfront.net/?replay=keyv) shows a second attack.
+1. Hover a grave. Each grave is one dependency. Its shape and colour show its state. The details panel shows the grave you point at, and "Fix in this order" lists the packages to fix first.
+2. Open its drawer. Click the grave, or press Enter on it. "List" shows the same packages as a table you can search and sort.
+3. Read the evidence and the fix. The drawer's Evidence tab shows every signal with its source and date. The fix tab shows the change Sexton proposes, when there is one, with the text of its pull request. History shows how the package's state changed over time.
+4. Replay an attack. Press "Watch a real attack" under the cemetery and pick axios, or open [the axios replay](https://de1giv8lj8sfh.cloudfront.net/?replay=axios) directly. [The keyv replay](https://de1giv8lj8sfh.cloudfront.net/?replay=keyv) shows a second attack. Press "Next step" to follow it.
 
 ## The problem
 
@@ -31,7 +31,7 @@ Supply-chain attacks arrive through packages that looked fine in the lockfile. T
 - **History.** It keeps a dated snapshot of each package's maintainers, install scripts and attestations. The npm packument lists each version's maintainers, publisher (`_npmUser`) and attestations, but it shows the maintainer list only as it is today and as it was at each publish, so a change between two releases leaves no trace there. A maintainer change or lost provenance is computed from the history, not from one read. The snapshot engine is on `main`, and the hosted site runs it every day.
 - **Policy.** You commit a `sexton.policy.yml` with four rule types and package matchers. Sexton evaluates it and fails CI when a rule breaks. The policy engine, `sexton check` and the GitHub Action are on `main`.
 - **Remediation pull requests.** For each dangerous package it proposes one fix: a version bump, a removal, or a migration such as node-sass to sass. The pull request carries its evidence. The plans are on `main` in the engine and the CLI. Hosted scans carry the plans too, without removals, and name the commit they read. Opening the pull request is on `main` and on the hosted site, for the demo repository `hsiddhu2/sexton-demo` only. Every other repository shows the plan and the pull request body, with no button. The hosted site needs no sign-in and never asks for a GitHub password. Sexton proposes a bump only to a version that passes its checks; otherwise it proposes no change.
-- **Evidence pack.** It writes a CycloneDX 1.5 SBOM, every signal with its source, the policy results and the remediation plans and log as one JSON file, and a Markdown report rendered from it. A SHA-256 digest over the canonical JSON body lets a reviewer check it against a digest they got separately. The digest is not a signature. On `main` today: the engine, `GET /api/evidence?repo=<url>&format=json|md`, and the demo download links in the cemetery header. Each hosted download runs its own scan. The hosted site serves the evidence endpoint and the header links.
+- **Evidence pack.** It writes a CycloneDX 1.5 SBOM, every signal with its source, the policy results and the remediation plans and log as one JSON file, and a Markdown report rendered from it. A SHA-256 digest over the canonical JSON body lets a reviewer check it against a digest they got separately. The digest is not a signature. On `main` today: the engine, `GET /api/evidence?repo=<url>&format=json|md`, and the demo download links in the site footer. Each hosted download runs its own scan. The hosted site serves the evidence endpoint and the footer links.
 
 ## The five states
 
@@ -135,11 +135,11 @@ Keep Dependabot on and run Sexton beside it.
 
 ## Replay
 
-The cemetery has a history scrubber. It shows each package as it stood on an earlier date. Two replays play real incidents through it. Open the hosted page with [?replay=axios](https://de1giv8lj8sfh.cloudfront.net/?replay=axios) or [?replay=keyv](https://de1giv8lj8sfh.cloudfront.net/?replay=keyv). You can also press "axios, Mar 2026" or "keyv, Aug 2026" in the "Replay an attack" group in the footer.
+The cemetery has a history scrubber under it. It shows each package as it stood on an earlier date. Two replays tell real incidents step by step. Open the hosted page with [?replay=axios](https://de1giv8lj8sfh.cloudfront.net/?replay=axios) or [?replay=keyv](https://de1giv8lj8sfh.cloudfront.net/?replay=keyv). You can also press "Watch a real attack" under the cemetery and pick axios or keyv.
 
-A replay opens one hour before the attack, so the grave starts Alive. Press Play to step through the history one stop at a time, or move the slider yourself.
+A replay opens at Step 1, before the attack, so the grave starts Alive. Each step says what happened and what Sexton shows. Press "Next step" to move on, or "Play all" to move one step every five seconds.
 
-![The axios replay at its Possessed stop. The banner says it is reconstructed from public reports.](docs/replay-axios.png)
+![The axios replay at Step 2, when the grave turns Possessed.](docs/replay-axios.png)
 
 A replay is reconstructed from public reports. It is not a live scan.
 
@@ -204,6 +204,7 @@ Specs, each with its requirements (or bugfix), design and tasks, in `.kiro/specs
 - `cemetery-ui`, `cemetery-theme`, `cemetery-polish`, `cemetery-time`, `cemetery-time-fixes`, `cemetery-undead`: the web cemetery, its history scrubber and replays, and the night art.
 - `cemetery-undead-2`: sound, speech bubbles, the replay burst and the burial priest.
 - `cemetery-undead-fixes`: bugfix, defects in the web app and CI found after cemetery-undead-2.
+- `clean-site`: the site rebuilt around the cemetery: the header, Home with its panel and list, the drawer's tabs, the replay story, the guide, the tour, failure cards and a music slot. It removed sound, speech bubbles and the tooltip.
 
 Steering in `.kiro/steering/`:
 
@@ -248,7 +249,7 @@ The first commit, 8bfc8cb, was made on 7 November 2026, after the hackathon star
 These files were not written for Sexton:
 
 - The CycloneDX 1.5, JSF 0.82 and SPDX JSON schemas in `packages/engine/test/fixtures/cyclonedx`, from the [CycloneDX specification](https://github.com/CycloneDX/specification), Apache-2.0. Tests validate the SBOM against them.
-- The four font families in `packages/web/public/fonts`, SIL Open Font License 1.1. See CREDITS.md.
+- The two font families in `packages/web/public/fonts`, Inter and Cormorant Garamond, SIL Open Font License 1.1. See CREDITS.md.
 - The recorded registry responses under `packages/engine/test/fixtures`: public data from the npm registry, OSV, deps.dev and GitHub, trimmed to the fields the engine reads.
 
 Open-source packages are used as dependencies at the exact versions in `package-lock.json`, each under its own licence. Runtime dependencies are permissively licensed (docs/requirements.md N-7, docs/adr/0001).

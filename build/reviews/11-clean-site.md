@@ -204,3 +204,25 @@ Notes:
 7. `smoke.spec.ts` "the axios replay at its Possessed stop, for the README" still fails (the README picture's canvas top); task 12.2 retakes that picture.
 
 Gates after the fixes: typecheck, lint (zero warnings) and test pass; 2362 tests across 6 workspaces. Playwright, from packages/web on its own port: 41 passed, 1 failed (the README replay picture above). Repaint medians at 300 graves: 0.60 to 6.70 ms against the 16 ms budget.
+
+## Task 12
+
+Checks, pictures and documents (12.1 and 12.2): `e2e/clean.spec.ts` runs every flow of the prototype at 1440 by 900 and 390 by 844, each case in a fresh browser context with the API answered in the page, and samples one View owner and one Pop-over at most, nothing over a grave's Art box but the allowed elements, no request off the page origin and the API base, and no AudioContext or audio element; axe runs on every view; 300 graves repaint inside the budget. The two README pictures are retaken; README.md, CREDITS.md, docs/JUDGES.md, docs/requirements.md (version 1.1) and the steering files describe the site as built. The check found one defect in the site, fixed: at 390 px the Legend ran 32 px past the left edge of the viewport.
+
+Independent review before the commit. Verdict: not ready, for one defect, fixed before the commit:
+
+1. web.md said the browser check samples the graves for covering elements "during every flow", while the check ran in only some of them. Fixed: the check now also runs with the example list open, with a Term open from the Inspector, with the Welcome bar and after the way back, and web.md and design.md name where it runs. A failure card replaces the graves, so nothing is sampled under it.
+
+Notes:
+
+1. The spec's header comment made the same "every flow" claim. Fixed with the change above. The axe case now ends with the same probe check as the others.
+2. The way-back case's "no reload" check passed whenever the address was "/", after several page loads had reset its mark. Fixed: the mark is set after each address the case opens and checked before the next, with no fallback.
+3. The 16.8 check counts one roving tab stop and does not press Tab to it; the arrows reach the rest. Left as it is; the unit Tab walk covers the press.
+4. product.md said "a one-row header" with no qualifier. Fixed: one row from 700 px up.
+5. JUDGES.md said the chips "show one state at a time"; in the graveyard a chip dims the rest. Fixed to say so.
+6. The web.md rewrite had dropped four rules that still hold: readable without the legend, one glow per grave with the Glow stops, the colour-vision test file, and the replay's window end in the site footer. Restored.
+7. The sticky header was always allowed over a grave in the cover check. Fixed: only while the page is scrolled.
+
+Gates after the fixes: typecheck, lint (zero warnings) and test pass; 2362 tests across 6 workspaces. Playwright, from packages/web on its own port: 66 passed. Repaint medians at 300 graves at 1440 by 900: 1.20 ms at rest, 0.90 ms with a filter, 0.90 ms with the hover ring.
+
+Open for the owner: README.md still has no sentence on the order of the graves, so two site sentences rest on README's "Each grave is one dependency. Its shape and colour show its state." alone: the Tour's first step, "Its shape tells you its health. The worst ones stand in the front row.", and the Legend's line, "Fix order: Possessed first, then Dead, Haunted, Restless. Then by advisory severity and reach." (design.md, Task 7, item 9).
