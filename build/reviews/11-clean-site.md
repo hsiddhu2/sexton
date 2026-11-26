@@ -186,3 +186,21 @@ Notes:
 10. Every fetch still passes checkScanUrl; a held response is shown with no fetch.
 
 Gates after the fixes: typecheck, lint (zero warnings) and test pass; 2357 tests across 6 workspaces. Playwright, before the fix (no change to the paths it covers since): 34 passed, 8 failed, the same eight that failed before this task (the four demo-label cases and the canvas top in `time.spec.ts`, the 360 px full-bleed case in `polish.spec.ts`, and the evidence link names and the README replay picture in `smoke.spec.ts`).
+
+## Task 11
+
+Layouts and phone (11.1): the breakpoints at 1300, 1100 and 700 px checked in the browser, with the phone header's buttons tightened so the wordmark and the four buttons share the first row at 390 px; `frontFirst` in `planScene` for the Narrow layout (front Tier on top, two front graves to a row); and one fit scale for all three Tiers, so the demo's graves fit the Scene at 1440 by 900 with the header, Welcome bar, headline, chips, Footer bar and Panel in view, no grave overlapping and the Characters unchanged.
+
+Independent review before the commit. Verdict: ready. No defect found: a plan that is said to fit is never taller than the fit height, rows stay inside the width and never overlap, the frontFirst scale leaves two front columns, bad inputs through `planScene` give scale 1, a Replay's grave keeps its own cell, nothing in `scene/characters` changed and every file is in the lane.
+
+Notes:
+
+1. `fitScale` called directly with a NaN width returned NaN (`planScene` clamps the width first, so the page never did). Fixed before the commit: a width that is not finite gives 1, with a test.
+2. A test title claimed "the largest scale that fits" while checking only a scale under 1 that fits. Fixed before the commit: the title and comment now say what is checked.
+3. In the Narrow layout the fit height is not used; the phone scrolls, as in the prototype, and the scale comes from two front graves to a row.
+4. The scale follows the count of graves per Tier, so a package changing Tier could resize every grave between frames. Tiers follow the scan-date State, which a burial does not change; a new scan re-plans anyway.
+5. The replaced e2e cases keep their intent or follow the steering change from full-bleed to a card; none asserts the opposite of a requirement. The 390 by 844 case leaves the order of the middle and back Tiers to the unit test.
+6. The no-overlap loop of `fit-layout.test.ts` compares the first 61 graves with all others, as the older Tier property does; the pitch argument covers the rest.
+7. `smoke.spec.ts` "the axios replay at its Possessed stop, for the README" still fails (the README picture's canvas top); task 12.2 retakes that picture.
+
+Gates after the fixes: typecheck, lint (zero warnings) and test pass; 2362 tests across 6 workspaces. Playwright, from packages/web on its own port: 41 passed, 1 failed (the README replay picture above). Repaint medians at 300 graves: 0.60 to 6.70 ms against the 16 ms budget.

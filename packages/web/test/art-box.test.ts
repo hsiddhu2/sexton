@@ -87,8 +87,10 @@ describe("Feature: cemetery-undead-2, Property 1: No grave covers another grave'
         arbSceneWidth,
         fc.oneof(fc.integer({ min: -100, max: 3000 }), fc.constant(Number.NaN)),
         fc.boolean(),
-        (packages, width, fit, replay) => {
-          const plan = planScene({ packages, width, theme: "dark", selectedIndex: null, ghostPhase: 0, fitHeight: fit, replay });
+        fc.boolean(),
+        (packages, width, fit, replay, frontFirst) => {
+          // Spec clean-site, task 11: the fit scale and the front-first Narrow layout keep every name clear too.
+          const plan = planScene({ packages, width, theme: "dark", selectedIndex: null, ghostPhase: 0, fitHeight: fit, replay, frontFirst });
           const n = plan.graves.length;
           for (const g of plan.graves) {
             const art = artRect(g);

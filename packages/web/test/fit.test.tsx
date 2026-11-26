@@ -42,7 +42,14 @@ describe("Feature: cemetery-undead, Property 7: The sky fills the fit height and
           expect(sky).toBeLessThanOrEqual(MAX_SKY_HEIGHT);
           expect(plan.scenery.horizonY).toBe(sky);
           const lone = n === 1 && replay;
-          if (!lone) {
+          // Spec clean-site, task 11: when the graves do not fit at full size but fit at a smaller fit scale, all of
+          // them shrink together and the plan fits the fit height; otherwise the sky only moves them down.
+          const scaled = !lone && plan.graves.some((g, i) => g.rect.w !== at(plain.graves, i).rect.w);
+          if (scaled) {
+            expect(plan.height).toBeLessThanOrEqual(Math.floor(fit));
+            for (const [i, g] of plan.graves.entries()) expect(g.rect.w).toBeLessThan(at(plain.graves, i).rect.w);
+          }
+          if (!lone && !scaled) {
             // The sky only moves the graves down: every rectangle keeps its size and its x.
             const shift = sky - SKY_HEIGHT;
             plan.graves.forEach((g, i) => {

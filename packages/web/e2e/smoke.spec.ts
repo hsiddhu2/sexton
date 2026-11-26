@@ -51,10 +51,11 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
   await expect(page.locator("header .scan-tag")).toHaveText("Sample scan");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
 
-  // Spec evidence-pack, Requirement 8.4: both demo evidence links are in the header and both files download.
+  // Spec evidence-pack, Requirement 8.4: both demo evidence links download. Spec clean-site moved them to the site
+  // footer as "Evidence JSON" and "Evidence Markdown" (16.12).
   for (const [name, path, file] of [
-    ["Download evidence pack as JSON", "/demo/evidence.json", "evidence.json"],
-    ["Download evidence pack as Markdown", "/demo/evidence.md", "evidence.md"],
+    ["Evidence JSON", "/demo/evidence.json", "evidence.json"],
+    ["Evidence Markdown", "/demo/evidence.md", "evidence.md"],
   ] as const) {
     const link = page.getByRole("link", { name });
     await expect(link).toHaveAttribute("href", path);

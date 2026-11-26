@@ -1562,7 +1562,12 @@ a {
     max-width: none;
   }
   .header-buttons {
+    gap: 4px;
     margin-left: auto;
+  }
+  /* The wordmark and the four buttons share the first row at 390 px, as in the prototype (15.1). */
+  .ib {
+    padding: 0 10px;
   }
   .home {
     padding: 14px;

@@ -9,6 +9,7 @@ import { historyRows } from "./drawer/history-rows.js";
 import type { Term } from "./glossary/glossary.js";
 import { plansByName } from "./panel/fix-order.js";
 import { useContainerWidth } from "./hooks/use-container-width.js";
+import { useMediaQuery } from "./hooks/use-media-query.js";
 import { useFontsReady } from "./hooks/use-fonts-ready.js";
 import { fitHeight, useFreeHeight, usePinnedFooterHeight } from "./hooks/use-free-height.js";
 import { useGhostPhase } from "./hooks/use-ghost-phase.js";
@@ -26,6 +27,8 @@ import { claimLoadMoment } from "./scene/load-moment.js";
 
 /** The shortest Scene with a reserve below it (spec clean-site): room for the sky band and one Tier. */
 export const MIN_SCENE_HEIGHT = 420;
+/** The Narrow layout of spec clean-site: under 700 px, the breakpoint of styles.css. */
+export const NARROW_QUERY = "(max-width: 699px)";
 
 export interface CemeteryProps {
   readonly response: ScanResponse;
@@ -123,6 +126,8 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
   const keepFocus = useRef(false);
   const quietFocus = useRef(false);
   const width = useContainerWidth(containerRef);
+  // The Narrow layout stacks the Tiers front first, so the worst graves come first from the top (15.3).
+  const frontFirst = useMediaQuery(NARROW_QUERY);
   const free = useFreeHeight(containerRef, width);
   const footerHeight = usePinnedFooterHeight(width, response);
   const reserve = page.reserve ?? 0;
@@ -244,9 +249,10 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
         ...(rising && riseStart !== null ? { rise: { startMs: riseStart } } : {}),
         ...(dimmedNames !== undefined ? { dimmed: dimmedNames } : {}),
         hover: drawerOpen ? null : hover,
+        frontFirst,
         ...(beat != null ? { beat } : {}),
       }),
-    [order, width, theme, selectedIndex, phase, minHeight, fit, views, marks, burial.burial, burialIndex, vigilIndex, fontsReady, reducedMotion, lantern, atBurst, burstDone, burstStart, rising, riseStart, dimmedNames, hover, drawerOpen, beat],
+    [order, width, theme, selectedIndex, phase, minHeight, fit, views, marks, burial.burial, burialIndex, vigilIndex, fontsReady, reducedMotion, lantern, atBurst, burstDone, burstStart, rising, riseStart, dimmedNames, hover, drawerOpen, beat, frontFirst],
   );
   const request = burial.request;
   const onRemediateWithBurial = useMemo(

@@ -18,7 +18,9 @@ function originOf(baseURL: string | undefined): string {
   return new URL(baseURL ?? "http://localhost:4173").origin;
 }
 const scrollWidth = (page: Page): Promise<number> => page.evaluate(() => document.documentElement.scrollWidth);
-test("at 360 px the page does not scroll sideways and the canvas is full-bleed", async ({ page, baseURL }) => {
+// Spec clean-site, task 11: the prototype the owner approved keeps a 14 px gutter around the Scene card on a phone, so
+// the canvas is no longer full-bleed; it spans the content width inside that gutter.
+test("at 360 px the page does not scroll sideways and the canvas spans the content width", async ({ page, baseURL }) => {
   await blockForeignOrigins(page, originOf(baseURL));
   await page.setViewportSize(NARROW);
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -26,7 +28,13 @@ test("at 360 px the page does not scroll sideways and the canvas is full-bleed",
   await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
   const closed = await scrollWidth(page);
   const canvas = await page.locator("canvas").first().boundingBox();
-  expect(canvas?.x).toBe(0);
+  expect(canvas?.x ?? 99).toBeLessThanOrEqual(16);
+  // The canvas takes its width once the Scene card is measured, so its right edge is read until it has.
+  const right = async (): Promise<number> => {
+    const b = await page.locator("canvas").first().boundingBox();
+    return b === null ? 0 : b.x + b.width;
+  };
+  await expect.poll(right, { timeout: 2000 }).toBeGreaterThanOrEqual(NARROW.width - 16);
   await page.getByRole("button", { name: "Legend" }).click();
   await expect(page.locator("#legend-panel")).toBeVisible();
   const legend = await scrollWidth(page);

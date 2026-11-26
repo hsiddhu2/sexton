@@ -110,9 +110,9 @@ Run-time notes:
   - [x] 10.1 Add `music/track.ts` with `TRACK = null`, `music/use-music.ts`, the beat in `scene/motion.ts` with its tests, the button rendered only with a track, the credit slot and the conditional `media-src 'self'` with its vite-csp test
     - _Requirements: 14.1 to 14.8_
 
-- [ ] 11. Layouts and phone
+- [x] 11. Layouts and phone
   - _Requirements: 1.2, 1.3, 1.4, 3.1, 3.2, 15.1 to 15.5_
-  - [ ] 11.1 The breakpoints at 1300, 1100 and 700 px; `frontFirst` in `planScene` with layout tests
+  - [x] 11.1 The breakpoints at 1300, 1100 and 700 px; `frontFirst` in `planScene` with layout tests
     - _Requirements: 1.2, 1.3, 1.4, 3.1, 3.2, 15.1 to 15.5_
 
 - [ ] 12. Checks, pictures, documents and the review

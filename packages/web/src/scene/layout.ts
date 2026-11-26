@@ -5,7 +5,7 @@ import { unitClusters, unitStars } from "./scenery-seed.js";
 import { SHAPE_BY_STATE, type ShapeId } from "./shapes.js";
 import { dancers, type Beat } from "./motion.js";
 import { OVERLAY_BAND } from "./overlay-band.js";
-import { TIER_DRAW_ORDER, TIER_GAP, TIER_OF, TIER_SCALE, type TierId } from "./tiers.js";
+import { TIER_DRAW_ORDER, TIER_FRONT_FIRST_ORDER, TIER_GAP, TIER_OF, TIER_SCALE, type TierId } from "./tiers.js";
 
 export type { Theme } from "./palette.js";
 export type { ShapeId } from "./shapes.js";
@@ -114,7 +114,7 @@ export interface Scenery {
 export interface ScenePlan {
   readonly width: number;
   readonly height: number;
-  /** Columns of the front Tier (cell width 192), or 0 with no packages. */
+  /** Columns of the front Tier (cell width 192 at fit scale 1), or 0 with no packages. */
   readonly columns: number;
   /** Rows over all Tiers. */
   readonly rows: number;
@@ -183,6 +183,8 @@ export interface SceneInput {
   readonly hover?: number | null;
   /** Spec clean-site, 14.3: the music beat, while Music is on. */
   readonly beat?: Beat | null;
+  /** Spec clean-site, 15.3: the Narrow layout stacks the Tiers front first, two front graves to a row where they fit. */
+  readonly frontFirst?: boolean;
 }
 
 const round2 = (value: number): number => Math.round(value * 100) / 100;
@@ -274,10 +276,59 @@ export function inscriptionFor(name: string, packageCount: number): string | nul
   return `${cut}…`;
 }
 
-/** Pure. The cell size of a Tier: the front cell scaled, rounded to whole pixels. */
-export function tierCell(tier: TierId): { readonly w: number; readonly h: number } {
-  const s = TIER_SCALE[tier];
+/** Pure. The cell size of a Tier: the front cell scaled, rounded to whole pixels; `fit` scales all three alike. */
+export function tierCell(tier: TierId, fit = 1): { readonly w: number; readonly h: number } {
+  const s = TIER_SCALE[tier] * fit;
   return { w: Math.round(CELL_WIDTH * s), h: Math.round(CELL_HEIGHT * s) };
+}
+
+/**
+ * The smallest fit scale (spec clean-site, task 11): every Tier keeps its own scale, and all three shrink together so a
+ * scan fits the Scene's height (Wide and Middle layouts) or stands two front graves to a row (Narrow layout).
+ */
+export const MIN_FIT_SCALE = 0.6;
+/** The fit scales tried, largest first. */
+const FIT_STEP = 0.02;
+/** The front graves the Narrow layout stands in one row, as in the prototype. */
+export const NARROW_FRONT_COLUMNS = 2;
+
+/** Pure. The height the graves of `counts` need at a fit scale: the Tiers' rows, the padding and the smallest sky. */
+function neededHeight(counts: Readonly<Record<TierId, number>>, inner: number, fit: number): number {
+  let h = 2 * PADDING + Math.max(SKY_HEIGHT, OVERLAY_BAND);
+  let tiers = 0;
+  for (const tier of TIER_DRAW_ORDER) {
+    const count = counts[tier];
+    if (count === 0) continue;
+    const cell = tierCell(tier, fit);
+    const cols = Math.max(1, Math.floor(inner / cell.w));
+    h += Math.ceil(count / cols) * cell.h;
+    tiers += 1;
+  }
+  return h + Math.max(0, tiers - 1) * TIER_GAP;
+}
+
+/**
+ * Pure. The fit scale of a layout (spec clean-site, task 11). The Narrow layout (`frontFirst`) takes the largest scale
+ * that stands NARROW_FRONT_COLUMNS front graves in a row, never under MIN_FIT_SCALE. Otherwise, with a fit height, the
+ * largest scale from 1 down to MIN_FIT_SCALE whose graves fit in it; 1 when none does (a large scan scrolls as before)
+ * or with no fit height.
+ */
+export function fitScale(counts: Readonly<Record<TierId, number>>, width: number, fitHeight: number, frontFirst: boolean): number {
+  // The same inner width the rows are planned in: the columns of a Tier are floor(inner / cell width).
+  const inner = width - 2 * PADDING;
+  if (!Number.isFinite(inner)) return 1;
+  if (frontFirst) {
+    // Half a pixel short of the half width, so the rounded front cell still leaves two columns.
+    const two = (inner / NARROW_FRONT_COLUMNS - 0.5) / CELL_WIDTH;
+    return Math.max(MIN_FIT_SCALE, Math.min(1, Math.floor(two * 1000) / 1000));
+  }
+  if (!(fitHeight > 0)) return 1;
+  const steps = Math.round((1 - MIN_FIT_SCALE) / FIT_STEP);
+  for (let k = 0; k <= steps; k += 1) {
+    const fit = Math.round((1 - k * FIT_STEP) * 100) / 100;
+    if (neededHeight(counts, inner, fit) <= fitHeight) return fit;
+  }
+  return 1;
 }
 
 /** Pure. The cell of a replay's one grave: REPLAY_SCALE, or less so it fits the width and the fit height. */
@@ -309,12 +360,18 @@ export function planScene(input: SceneInput): ScenePlan {
   let y = PADDING;
   let first = true;
   const span = Math.min(width, MAX_BACKING) - 2 * PADDING;
-  for (const tier of TIER_DRAW_ORDER) {
+  const replayOne = n === 1 && input.replay === true;
+  const frontFirst = input.frontFirst === true;
+  const fitIn = typeof input.fitHeight === "number" && Number.isFinite(input.fitHeight) ? Math.floor(input.fitHeight) : 0;
+  const counts = { front: byTier.front.length, middle: byTier.middle.length, back: byTier.back.length };
+  const fit = replayOne ? 1 : fitScale(counts, width, fitIn, frontFirst);
+  // The Narrow layout stacks the Tiers front first, so the worst graves come first from the top (15.3).
+  for (const tier of frontFirst ? TIER_FRONT_FIRST_ORDER : TIER_DRAW_ORDER) {
     const members = byTier[tier];
     if (members.length === 0) continue;
     if (!first) y += TIER_GAP;
     first = false;
-    const cell = n === 1 && input.replay === true ? replayCell(width, input.fitHeight) : tierCell(tier);
+    const cell = replayOne ? replayCell(width, input.fitHeight) : tierCell(tier, fit);
     const cols = Math.max(1, Math.floor((width - 2 * PADDING) / cell.w));
     const tierRows = Math.ceil(members.length / cols);
     members.forEach((index, k) => {
@@ -333,14 +390,13 @@ export function planScene(input: SceneInput): ScenePlan {
   }
   const field = y + PADDING;
   // The sky grows to fill the fit height, so the graves stand at the bottom above the Footer bar (K2d fix 1).
-  const fit = typeof input.fitHeight === "number" && Number.isFinite(input.fitHeight) ? Math.floor(input.fitHeight) : 0;
   // At least OVERLAY_BAND of sky stays above the graves for the help line and the date badge (spec clean-site, 2.12).
-  const sky = Math.min(MAX_SKY_HEIGHT, Math.max(SKY_HEIGHT, OVERLAY_BAND, fit - field));
+  const sky = Math.min(MAX_SKY_HEIGHT, Math.max(SKY_HEIGHT, OVERLAY_BAND, fitIn - field));
   const scenery = sceneryFor(width, sky);
   const rects: Rect[] = local.map((r) => ({ x: r.x, y: r.y + sky, w: r.w, h: r.h }));
   const rowLines = localLines.map((line) => line + sky);
   y = field - PADDING + sky;
-  const columns = Math.max(1, Math.floor((width - 2 * PADDING) / CELL_WIDTH));
+  const columns = Math.max(1, Math.floor((width - 2 * PADDING) / tierCell("front", fit).w));
   const rows = rowLines.length;
   const height = y + PADDING;
   const free = typeof input.minHeight === "number" && Number.isFinite(input.minHeight) ? Math.max(0, Math.floor(input.minHeight)) : 0;

@@ -10,13 +10,12 @@ import { formAt, timelineOf } from "../src/time/form-at.js";
 import { cheapScan } from "./arbitraries.js";
 import { readReplay } from "./support/replay-fixture.js";
 
-// The first half of Property 8; the Tour card half lands with tour/place-card.ts (task 7.3), and frontFirst with
-// task 11.
+// The first half of Property 8, with frontFirst true and false (task 11); the Tour card half is in guide-tour.test.tsx.
 describe("Feature: clean-site, Property 8: Overlays clear the graves, and the Tour card fits", () => {
-  it("keeps the help line and the date badge clear of every Art box for 1 to 300 packages at 320 to 1600 px", () => {
+  it("keeps the help line and the date badge clear of every Art box for 1 to 300 packages at 320 to 1600 px, front first or not", () => {
     fc.assert(
-      fc.property(fc.integer({ min: 1, max: 300 }), fc.integer({ min: 320, max: 1600 }), fc.integer({ min: 0, max: 1200 }), (n, width, fit) => {
-        const plan = planScene({ packages: cheapScan(n).report.packages, width, theme: "dark", selectedIndex: 0, ghostPhase: 0, fitHeight: fit });
+      fc.property(fc.integer({ min: 1, max: 300 }), fc.integer({ min: 320, max: 1600 }), fc.integer({ min: 0, max: 1200 }), fc.boolean(), (n, width, fit, frontFirst) => {
+        const plan = planScene({ packages: cheapScan(n).report.packages, width, theme: "dark", selectedIndex: 0, ghostPhase: 0, fitHeight: fit, frontFirst });
         const { help, badge } = overlayRects(plan.width);
         for (const g of plan.graves) {
           expect(intersects(help, artRect(g))).toBe(false);
