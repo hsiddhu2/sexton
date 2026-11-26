@@ -22,7 +22,6 @@ import {
   type FixView,
 } from "./fix-view.js";
 import { trapStep } from "./focus-trap.js";
-import { displayValue } from "./format-value.js";
 import { NO_HISTORY_TEXT, type HistoryRow } from "./history-rows.js";
 import { issueText } from "./issue-text.js";
 import { PrPreview } from "./PrPreview.js";
@@ -74,11 +73,6 @@ function focusables(root: HTMLElement): HTMLElement[] {
 
 const labelOf = (name: string): string => (Object.hasOwn(SIGNAL_LABELS, name) ? SIGNAL_LABELS[name as keyof typeof SIGNAL_LABELS] : name);
 
-function SignalValue({ valueText }: { readonly valueText: string }) {
-  const v = displayValue(valueText);
-  return v.kind === "block" ? <pre className="signal-value">{v.text}</pre> : <code className="signal-value">{v.text}</code>;
-}
-
 /** A source is a link only for an https:// address, shown by its host; anything else is plain text. */
 function SourceCell({ source }: { readonly source: string }) {
   if (!source.startsWith("https://")) return <>{source}</>;
@@ -104,12 +98,12 @@ function SignalCells({ signal, onTerm }: { readonly signal: SignalRow } & TermPr
       <td className="drawer-signal-label">
         <TermText text={labelOf(signal.name)} {...termProp(onTerm)} />
       </td>
-      <td>{signal.available && signal.valueText !== null ? <SignalValue valueText={signal.valueText} /> : <span>unavailable: {signal.reason}</span>}</td>
-      <td>
+      <td>{signal.available && signal.words !== null ? <span className="signal-value">{signal.words}</span> : <span>unavailable: {signal.reason}</span>}</td>
+      <td className="drawer-signal-source">
         <SourceCell source={signal.source} />
-      </td>
-      <td>
-        <ScanTime iso={signal.fetchedAt} />
+        <span className="drawer-fetched">
+          Fetched <ScanTime iso={signal.fetchedAt} />
+        </span>
       </td>
     </tr>
   );
@@ -129,7 +123,6 @@ function EvidenceTab({ model, onTerm }: { readonly model: DrawerModel } & TermPr
               <th scope="col">Signal</th>
               <th scope="col">Value</th>
               <th scope="col">Source</th>
-              <th scope="col">Fetched</th>
             </tr>
           </thead>
           <tbody>

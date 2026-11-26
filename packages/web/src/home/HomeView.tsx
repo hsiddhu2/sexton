@@ -2,9 +2,9 @@
 // switch; the Scene card with the help line and date badge; the Footer bar; and the Panel. A Replay has its own view
 // (replay/ReplayView.tsx). Components only render and route events; the rules are in the pure modules they call.
 import type { PackageHealth, ScanResponse, State } from "@sexton/api";
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Cemetery } from "../Cemetery.js";
-import { LoadingCard } from "../LoadingCard.js";
+import { LoadingCard, LoadingStatus } from "../LoadingCard.js";
 import { DRY_LINES } from "../copy/mischief.js";
 import { LOAD_FAILED_CARD, liveFailureCard, NO_SUCH_REPLAY_TEXT } from "../load/scan-failure.js";
 import { BACK_TO_CEMETERY, BACK_TO_SAMPLE, FailureCard, TRY_AGAIN, TRY_DEMO_REPO } from "./FailureCard.js";
@@ -69,23 +69,50 @@ export interface HomeViewProps {
   readonly onRetry?: () => void;
   /** The music beat while Music is on (14.3). */
   readonly beat?: Beat | null;
+  /**
+   * The Home scan shown before this load, or null. While a load runs or after it fails, its page stays under the
+   * scanning or failure card, over a dimmed Scene, as in the prototype (review against the prototype).
+   */
+  readonly previous?: PreviousScan | null;
+}
+
+/** A scan Home showed before the current load. */
+export interface PreviousScan {
+  readonly response: ScanResponse;
+  readonly loadId: number;
 }
 
 const none = (): void => undefined;
 
 export function HomeView(props: HomeViewProps) {
-  const { load } = props;
+  const { load, previous = null } = props;
   if (load.status === "ready") return <ReadyHome {...props} response={load.response} loadId={load.loadId} />;
+  const card =
+    load.status === "loading" ? (
+      props.scanning !== null ? (
+        <ScanningCard label={props.scanning} />
+      ) : (
+        <LoadingCard />
+      )
+    ) : (
+      <LoadFailure {...props} error={load.error} />
+    );
+  // The page of the scan shown before stays, inert, under the card; the card sits over its dimmed Scene.
+  if (previous !== null) {
+    const veil =
+      load.status === "loading" && props.scanning === null ? (
+        <div className="scene-card-overlay">
+          <LoadingStatus />
+        </div>
+      ) : (
+        card
+      );
+    return <ReadyHome {...props} response={previous.response} loadId={previous.loadId} current={false} veil={veil} />;
+  }
   return (
     <div className="home">
       <section className="home-left">
-        <div className="scene-card scene-card-waiting">
-          {load.status === "loading" ? (
-            props.scanning !== null ? <ScanningCard label={props.scanning} /> : <LoadingCard />
-          ) : (
-            <LoadFailure {...props} error={load.error} />
-          )}
-        </div>
+        <div className="scene-card scene-card-waiting">{card}</div>
       </section>
     </div>
   );
@@ -110,6 +137,8 @@ function LoadFailure({ screen, live, error, onDemoRepo, onSample, onRetry }: Hom
 interface ReadyProps extends HomeViewProps {
   readonly response: ScanResponse;
   readonly loadId: number;
+  /** The scanning or failure card over the dimmed Scene of the scan shown before; the page under it is inert. */
+  readonly veil?: ReactNode;
 }
 
 /** The scan Form of a package and its Form at an instant, from its Segments; never a state rule. */
@@ -118,7 +147,8 @@ function formOf(response: ScanResponse, pkg: PackageHealth, atMs: number | null)
   return atMs === null ? scanForm : formAt(timelineOf(response, pkg.name), atMs, scanForm);
 }
 
-function ReadyHome({ response, loadId, screen, current = true, dispatch, theme, reducedMotion, repoFieldRef, onRemediate, onReplay, onTerm, scanKind, onGuide, beat }: ReadyProps) {
+function ReadyHome({ response, loadId, screen, current = true, dispatch, theme, reducedMotion, repoFieldRef, onRemediate, onReplay, onTerm, scanKind, onGuide, beat, veil }: ReadyProps) {
+  const veiled = veil !== undefined;
   const order = useMemo(() => triageOrder(response.report.packages), [response]);
   const indexOf = useMemo(() => new Map(order.map((p, i) => [p.name, i])), [order]);
   // The date, from the screen state (view.at).
@@ -170,7 +200,8 @@ function ReadyHome({ response, loadId, screen, current = true, dispatch, theme, 
   const looked = hover ?? focus ?? selected;
   const lookedPkg = looked === null ? undefined : order[looked];
 
-  const drawerOpen = screen.owner === "drawer" && !badGrave;
+  const drawerOpen = !veiled && screen.owner === "drawer" && !badGrave;
+  const still = drawerOpen || veiled;
   const openDrawer = useCallback(
     (name: string): void => {
       if (indexOf.has(name)) dispatch({ kind: "open-drawer", grave: name });
@@ -198,7 +229,7 @@ function ReadyHome({ response, loadId, screen, current = true, dispatch, theme, 
 
   // Left, Right and Enter (3.23, 3.24): only with focus on the body, a grave button or a Fix order row, and with no
   // View owner or Pop-over open, so the scrubber, the fields and the Drawer keep their own keys.
-  const keysActive = screen.owner === "none" && screen.popover === "none";
+  const keysActive = !veiled && screen.owner === "none" && screen.popover === "none";
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
   useEffect(() => {
@@ -245,7 +276,7 @@ function ReadyHome({ response, loadId, screen, current = true, dispatch, theme, 
   return (
     <div className="home">
       <section className="home-left">
-        <div className="hero" inert={drawerOpen}>
+        <div className="hero" inert={still}>
           <h1 className="headline">
             {head.count === null ? null : <em className="headline-count">{head.count}</em>}
             {head.text}
@@ -306,6 +337,7 @@ function ReadyHome({ response, loadId, screen, current = true, dispatch, theme, 
               Viewing {date}
             </p>
           ) : null}
+          <div className="scene-body" inert={veiled}>
           <Cemetery
             response={response}
             theme={theme}
@@ -320,7 +352,7 @@ function ReadyHome({ response, loadId, screen, current = true, dispatch, theme, 
             popoverOpen={screen.popover !== "none"}
             {...(onTerm !== undefined ? { onTerm } : {})}
             {...(onGuide !== undefined ? { onGuide } : {})}
-            open={badGrave ? null : grave}
+            open={veiled || badGrave ? null : grave}
             onOpen={openDrawer}
             onClose={closeDrawer}
             filter={filter}
@@ -328,8 +360,10 @@ function ReadyHome({ response, loadId, screen, current = true, dispatch, theme, 
             {...(list ? { replaceScene: <ListView response={response} filter={filter} at={shownMs} indexOf={indexOf} onOpen={openFromList} /> } : {})}
             {...(onRemediate !== undefined ? { onRemediate } : {})}
           />
+          </div>
+          {veil === undefined ? null : <div className="scene-veil">{veil}</div>}
         </div>
-        <footer className="night-footer foot-bar" inert={drawerOpen}>
+        <footer className="night-footer foot-bar" inert={still}>
           {showScrubber ? (
             <Scrubber stops={stops} index={index} onChange={onDate} inputRef={scrubberRef} />
           ) : response.timelinesOmitted === "too-large" ? (
@@ -350,7 +384,7 @@ function ReadyHome({ response, loadId, screen, current = true, dispatch, theme, 
         </footer>
       </section>
       {lookedPkg === undefined || looked === null ? null : (
-        <aside className="panel" aria-label="Details" inert={drawerOpen}>
+        <aside className="panel" aria-label="Details" inert={still}>
           <Inspector
             pkg={lookedPkg}
             state={lookedForm?.state ?? null}

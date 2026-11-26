@@ -62,7 +62,7 @@ export function ScanField({ apiConfigured, fieldRef, prompt = null, examplesOpen
           name="repo"
           autoComplete="off"
           spellCheck={false}
-          placeholder={SCAN_PLACEHOLDER}
+          placeholder={apiConfigured ? SCAN_PLACEHOLDER : ""}
           aria-label={SCAN_FIELD_NAME}
           aria-invalid={refused}
           {...(describedBy !== undefined ? { "aria-describedby": describedBy } : {})}
@@ -81,7 +81,7 @@ export function ScanField({ apiConfigured, fieldRef, prompt = null, examplesOpen
         </button>
       </form>
       {apiConfigured ? null : (
-        <p id="scan-off" className="scan-note">
+        <p id="scan-off" className="scan-note scan-off">
           {HOSTED_UNAVAILABLE_TEXT}
         </p>
       )}

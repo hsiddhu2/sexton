@@ -414,6 +414,14 @@ for (const size of SIZES) {
       await expect(card.locator(".scanning-lines li")).toHaveText(["Reading package.json and the lockfile", "Asking npm, OSV and deps.dev", "Reading each headstone"]);
       await expect(page.getByRole("progressbar")).toHaveCount(0);
       await expect(field).toHaveValue("hsiddhu2/sexton-demo");
+      // Review against the prototype: the card sits over the dimmed Scene of the scan shown before, whose headline,
+      // chips, Panel and footers stay; the tag keeps "Sample scan" until the new scan is in (D6).
+      await expect(page.locator(".scene-veil .scanning")).toBeVisible();
+      await expect(page.locator("h1.headline")).toHaveText("1 of 12 dependencies needs you now.");
+      await expect(page.locator(".chip")).toHaveCount(5);
+      await expect(page.locator(".panel .inspector")).toHaveCount(1);
+      await expect(page.locator(".foot-bar")).toHaveCount(1);
+      if (size.width >= 1300) await expect(page.locator(".scan-tag")).toHaveText("Sample scan");
       release();
       await expect(card).toHaveCount(0);
       // 1.6 and 10.5: the Live scan names its repository in the tag and the address.
@@ -1085,6 +1093,10 @@ for (const size of SIZES) {
       await expect(page.locator("body")).not.toContainText("SECRET-DETAIL");
       expect(consoleText.join("\n")).not.toContain("SECRET-DETAIL");
       await expectInViewport(page, ".failure-card");
+      // Review against the prototype: the page of the Sample scan stays under the card, and so does its tag (D6).
+      await expect(page.locator(".scene-veil .failure-card")).toBeVisible();
+      await expect(page.locator("h1.headline")).toHaveText("1 of 12 dependencies needs you now.");
+      if (size.width >= 1300) await expect(page.locator(".scan-tag")).toHaveText("Sample scan");
       // 12.5: Try the demo repo scans hsiddhu2/sexton-demo.
       await card.getByRole("button", { name: "Try the demo repo" }).click();
       await expect(card).toHaveCount(0);
@@ -1251,6 +1263,100 @@ for (const size of SIZES) {
       await checkProbe(page, origin, g);
       await context.close();
     });
+  });
+}
+
+/** The texts of the matched elements that take more than one line, from the tops of their line boxes. */
+async function multiLine(locator: Locator): Promise<string[]> {
+  return locator.evaluateAll((els) =>
+    els
+      .filter((el) => {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        // Boxes on one line differ in top by a few pixels at most (a Term's border box against its text).
+        const tops = [...range.getClientRects()].filter((r) => r.width > 0).map((r) => r.top);
+        return tops.length > 0 && Math.max(...tops) - Math.min(...tops) > 8;
+      })
+      .map((el) => (el as HTMLElement).innerText),
+  );
+}
+
+for (const size of SIZES) {
+  test(`review against the prototype at ${size.name}: an earlier date keeps the fit, and words stay whole`, async ({ browser, baseURL }) => {
+    const origin = new URL(baseURL ?? "http://localhost:4173").origin;
+    const context = await browser.newContext();
+    const page = await freshPage(context, size);
+    const g = await guard(page, origin);
+    await page.goto("/");
+    await expect(grave(page, "left-padder")).toHaveCount(1);
+    await scenePainted(page);
+    await page.evaluate(() => document.fonts.ready.then(() => undefined));
+
+    // D1: the Scene, its fit scale and every grave stay put at an earlier date, and at 1440 by 900 the Footer bar with
+    // the slider stays above the fold.
+    const sample = async (): Promise<string> =>
+      page.evaluate(() => {
+        const canvas = document.querySelector("canvas.scene-canvas")?.getBoundingClientRect();
+        const boxes = window.__sextonTiming?.artBoxes() ?? [];
+        return JSON.stringify({ h: Math.round(canvas?.height ?? 0), boxes: boxes.map((b) => [Math.round(b.x), Math.round(b.y), Math.round(b.w), Math.round(b.h)]) });
+      });
+    let before = "";
+    await expect
+      .poll(async () => {
+        const now = await sample();
+        const same = now === before;
+        before = now;
+        return same;
+      }, { intervals: [400, 400, 400, 400, 400, 400, 400, 400] })
+      .toBe(true);
+    const range = page.getByLabel("History date");
+    await range.focus();
+    await page.keyboard.press("Home");
+    await expect(page.getByRole("button", { name: "Back to now" })).toBeVisible();
+    await page.waitForTimeout(400);
+    expect(await sample()).toBe(before);
+    if (!size.narrow) {
+      const foot = await page.locator(".foot-bar").boundingBox();
+      expect((foot?.y ?? 0) + (foot?.height ?? 999), "the Footer bar's bottom").toBeLessThanOrEqual(size.height);
+      await expectInViewport(page, "#history-date");
+    }
+    await page.getByRole("button", { name: "Back to now" }).click();
+    await page.waitForTimeout(400);
+    expect(await sample()).toBe(before);
+
+    // D5: from a grave straight onto the Inspector's first Term: the Term that opens is one the Panel shows.
+    if (!size.narrow) {
+      await grave(page, "lodash").hover();
+      await expect(page.locator(".inspector-name")).toHaveText("lodash");
+      await page.locator(".inspector .term").first().click();
+      await expect(page.locator(".term-pop")).toBeVisible();
+      const shown = await page.locator(".inspector .term").evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset["term"]));
+      expect(shown).toContain(await page.locator(".term-pop-name").textContent());
+      await page.keyboard.press("Escape");
+    }
+
+    // D3: no Evidence label, value or source host breaks inside a word.
+    await page.goto("/?grave=event-stream");
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.locator("table.drawer-signals tbody tr").first()).toBeVisible();
+    const broken = await multiLine(dialog.locator("table.drawer-signals td.drawer-signal-label, table.drawer-signals td.drawer-signal-source a"));
+    expect(broken, "labels or source hosts on more than one line").toEqual([]);
+    await expect(dialog.locator("table.drawer-signals tbody tr").first().locator("td").nth(1)).toHaveText(/^\d{1,2} [A-Z][a-z]{2} \d{4}$/);
+    if (size.narrow) await expectNoSidewaysScroll(page);
+    await page.keyboard.press("Escape");
+
+    // D4: the List keeps whole words in its badges and names, and scrolls sideways inside its own box on a phone.
+    await page.goto("/?view=list");
+    await expect(page.locator(".list-table tbody tr").first()).toBeVisible();
+    const split = await multiLine(page.locator(".list-table .badge, .list-open"));
+    expect(split, "badges or names on more than one line").toEqual([]);
+    if (size.narrow) {
+      const scrolls = await page.locator(".list-view").evaluate((el) => el.scrollWidth > el.clientWidth);
+      expect(scrolls, "the List scrolls sideways inside its box").toBe(true);
+      await expectNoSidewaysScroll(page);
+    }
+    await checkProbe(page, origin, g);
+    await context.close();
   });
 }
 

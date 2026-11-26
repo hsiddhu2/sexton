@@ -59,8 +59,11 @@ export function Scrubber({ stops, index, onChange, inputRef }: ScrubberProps) {
         <span>{dayText(stops[0] ?? 0)}</span>
         <span>Today, {dayText(stops[last] ?? 0)}</span>
       </p>
-      {index < last ? <p className="scrub-note">{SCRUB_NOTE_TEXT}</p> : null}
-      {index < last ? <p className="scrub-note">{DRAWER_SCAN_DATE_TEXT}</p> : null}
+      {index < last ? (
+        <p className="scrub-note">
+          <span>{SCRUB_NOTE_TEXT}</span> <span>{DRAWER_SCAN_DATE_TEXT}</span>
+        </p>
+      ) : null}
     </section>
   );
 }

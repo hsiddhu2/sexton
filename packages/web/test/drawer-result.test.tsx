@@ -8,7 +8,7 @@ import { Cemetery } from "../src/Cemetery.js";
 import { Drawer, OPEN_PR_TEXT } from "../src/drawer/Drawer.js";
 import { drawerModel } from "../src/drawer/drawer-model.js";
 import { fixView } from "../src/drawer/fix-view.js";
-import { displayValue } from "../src/drawer/format-value.js";
+import { evidenceWords } from "../src/panel/pick-signals.js";
 import { cheapScan } from "./arbitraries.js";
 import { readDemoScan } from "./support/demo-scan.js";
 import { drawerProps } from "./support/drawer-props.js";
@@ -23,15 +23,33 @@ if (PKG === undefined) throw new Error("demo package missing");
 
 const never = (): Promise<never> => new Promise(() => undefined);
 
-describe("displayValue", () => {
-  it("reads single values inline and unquoted, objects and arrays as blocks, broken text as it is", () => {
-    expect(displayValue('"abc"')).toEqual({ kind: "inline", text: "abc" });
-    expect(displayValue("42")).toEqual({ kind: "inline", text: "42" });
-    expect(displayValue("true")).toEqual({ kind: "inline", text: "true" });
-    expect(displayValue("null")).toEqual({ kind: "inline", text: "null" });
-    expect(displayValue('{\n  "a": 1\n}')).toEqual({ kind: "block", text: '{\n  "a": 1\n}' });
-    expect(displayValue("[1]")).toEqual({ kind: "block", text: "[1]" });
-    expect(displayValue("value cannot be displayed")).toEqual({ kind: "inline", text: "value cannot be displayed" });
+// Review against the prototype (D2): the Evidence values in the Inspector's plain words, with each source and fetch time.
+describe("the Evidence values in plain words", () => {
+  it("writes dates as a day, yes and no with a capital, advisories as a count with the worst severity and lists as names", () => {
+    expect(evidenceWords("lastPublish", "2018-09-29T06:55:49.107Z")).toBe("29 Sep 2018");
+    expect(evidenceWords("deprecated", true)).toBe("Yes");
+    expect(evidenceWords("deprecated", false)).toBe("No");
+    expect(evidenceWords("hasInstallScript", false)).toBe("None");
+    expect(evidenceWords("advisories", [{ id: "A", severity: "Critical" }])).toBe("1 open, worst Critical");
+    expect(evidenceWords("advisories", [])).toBe("None");
+    expect(evidenceWords("maintainers", ["npm", "alice"])).toBe("npm, alice");
+    expect(evidenceWords("provenance", { present: true })).toBe("Present");
+  });
+
+  it("shows no raw engine value in the Evidence table, and keeps the source and fetch time of every signal", () => {
+    const pkg = DEMO.report.packages.find((p) => p.name === "event-stream");
+    if (pkg === undefined) throw new Error("demo package missing");
+    render(<Drawer {...drawerProps(DEMO, pkg)} onClose={() => undefined} />);
+    const dialog = screen.getByRole("dialog");
+    expect([...dialog.querySelectorAll(".drawer-signals thead th")].map((th) => th.textContent)).toEqual(["Signal", "Value", "Source"]);
+    const rows = [...dialog.querySelectorAll(".drawer-signals tbody tr")];
+    expect(rows.length).toBeGreaterThan(4);
+    for (const row of rows) {
+      const value = row.querySelector("td:nth-child(2)")?.textContent ?? "";
+      expect(value).not.toMatch(/[[\]{}"]|\d{4}-\d{2}-\d{2}T|^(true|false|null)$/);
+      expect(row.querySelector("td:nth-child(3)")?.textContent).toMatch(/Fetched /);
+    }
+    expect(rows[0]?.querySelector("td:nth-child(2)")?.textContent).toBe("29 Sep 2018");
   });
 });
 

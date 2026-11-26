@@ -37,6 +37,13 @@ export interface AppProps {
   readonly pageOrigin: string;
 }
 
+/** The tag and the Home scan the page showed last; `home` is null until a scan (not a replay) has shown. */
+interface ShownScan {
+  readonly loadId: number;
+  readonly tag: string | null;
+  readonly home: { readonly response: ScanResponse; readonly loadId: number; readonly isDemo: boolean; readonly hosted: boolean; readonly tag: string | null } | null;
+}
+
 /** Pure. One key per thing a Source loads. */
 function sourceKey(source: ViewSource): string {
   switch (source.kind) {
@@ -262,10 +269,31 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
   const source = screen.view.source;
   const scanning = state.status === "loading" && state.source === "hosted" && source.kind === "repo" ? scanTag(source) : null;
   const guide = screen.owner === "guide";
+  // What the page showed last (review against the prototype): the tag and the Home scan of the last load that
+  // finished for the Source on screen. While a load runs or after it fails, the tag keeps the old text (a Live scan's
+  // name shows only once its scan is in) and Home keeps the old page under the card.
+  const tagNow = scanTag(prompt === null ? source : { kind: "demo" });
+  const shownLast = useRef<ShownScan | null>(null);
+  if (state.status === "ready" && (prompt !== null || loadedKey === sourceKey(source))) {
+    const before = shownLast.current;
+    if (before?.loadId !== state.loadId || before.tag !== tagNow) {
+      const home = state.source === "replay" ? (before?.home ?? null) : { response: state.response, loadId: state.loadId, isDemo: state.isDemo, hosted: state.source === "hosted", tag: tagNow };
+      shownLast.current = { loadId: state.loadId, tag: tagNow, home };
+    }
+  }
+  const last = state.status === "ready" ? null : shownLast.current;
+  const previous = last?.home ?? null;
+  // The tag goes with the page under the card: a Replay names itself, and Home keeps the tag of the scan it still
+  // shows, not of a Replay seen in between.
+  const tag = last === null || source.kind === "replay" ? tagNow : (previous?.tag ?? tagNow);
+  const footerModel = useMemo(
+    () => model ?? (previous === null ? null : headerModel(previous.response, previous.isDemo, previous.hosted ? apiBase : null)),
+    [model, previous, apiBase],
+  );
   return (
     <>
       <Header
-        tag={scanTag(prompt === null ? source : { kind: "demo" })}
+        tag={tag}
         prompt={prompt}
         theme={theme}
         apiConfigured={apiBase !== null}
@@ -314,6 +342,7 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
             reducedMotion={reducedMotion}
             repoFieldRef={repoFieldRef}
             scanning={scanning}
+            previous={previous}
             live={source.kind === "repo" && prompt === null}
             current={loadedKey === sourceKey(source)}
             onReplay={openReplay}
@@ -328,7 +357,7 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
           />
         </main>
       )}
-      {model !== null && !guide ? <SiteFooter model={model} track={TRACK} /> : null}
+      {footerModel !== null && !guide && !(source.kind === "replay" && screen.owner === "replay" && model === null) ? <SiteFooter model={footerModel} track={TRACK} /> : null}
       {screen.tourStep === null ? null : (
         <Tour
           step={screen.tourStep}

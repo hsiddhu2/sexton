@@ -117,4 +117,33 @@ describe("styles.css static checks", () => {
     }
     for (const r of rulesFor(".visually-hidden")) expect(r.body).not.toMatch(/color|background|#[0-9a-fA-F]{3,8}\b|rgba?\(/);
   });
+
+  // Review against the prototype (D3, D4, D7 and the History dots).
+  it("keeps whole words in the Evidence labels and the List, and lets the List scroll sideways inside its own box", () => {
+    const has = (selector: string, pattern: RegExp): boolean => rulesFor(selector).some((r) => pattern.test(r.body));
+    expect(has(".drawer-signal-label", /white-space:\s*nowrap/)).toBe(true);
+    expect(has(".drawer-signals td", /overflow-wrap:\s*anywhere/)).toBe(false);
+    expect(has(".list-table td", /overflow-wrap:\s*anywhere/)).toBe(false);
+    for (const selector of [".list-table .badge", ".list-open", ".list-version"]) expect(has(selector, /white-space:\s*nowrap/), selector).toBe(true);
+    expect(has(".list-table", /min-width:\s*\d+px/)).toBe(true);
+    expect(has(".list-view", /overflow:\s*auto/)).toBe(true);
+  });
+
+  it("puts Scanning is off in this build. inside the field and dims a disabled Scan button", () => {
+    const off = rulesFor(".scan-note.scan-off").map((r) => r.body).join("");
+    expect(off).toMatch(/top:\s*0/);
+    expect(off).toMatch(/height:\s*40px/);
+    expect(off).toMatch(/pointer-events:\s*none/);
+    const disabled = rulesFor(".scan-button:disabled").map((r) => r.body).join("");
+    expect(disabled).toMatch(/background:\s*var\(--ui-panel2\)/);
+    expect(disabled).toMatch(/color:\s*var\(--ui-faint\)/);
+  });
+
+  it("colours each History dot by its State, above the plain dot rule", () => {
+    const plain = css.indexOf(".history li::before");
+    expect(plain).toBeGreaterThan(-1);
+    for (const state of ["possessed", "dead", "haunted", "restless", "alive"]) {
+      expect(rulesFor(`.history li.history-${state}::before`).some((r) => r.body.includes(`var(--state-${state})`)), state).toBe(true);
+    }
+  });
 });

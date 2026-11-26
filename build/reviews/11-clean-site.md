@@ -243,3 +243,21 @@ Notes:
 6. The Legend case's settle check in `e2e/clean.spec.ts` compared its first sample with itself; it now needs two equal samples. It failed once in six repeat runs on the previous build too.
 
 Gates: typecheck, lint (zero warnings) and test pass; 2372 tests across 6 workspaces. Playwright, from packages/web on its own port: 66 passed. Repaint medians at 300 graves at 1440 by 900: 1.30 ms at rest, 1.00 ms with a filter, 0.90 ms with the hover ring.
+
+## Review against the prototype
+
+The built site was walked against the prototype the owner approved at 1440 by 900 and 390 by 844, in a fresh profile. These were fixed: an earlier date made the Scene full size and pushed the Footer bar below the fold; the Drawer showed raw engine values; Evidence labels and List badges broke inside words; a fast move from a grave to a Term opened the old package's Term; the scan tag named a repository before its scan was in, and kept it after a failure; the page emptied while a scan loaded or failed; "Scanning is off in this build." covered the Welcome bar and the disabled Scan button looked pressable; the History dots were one grey. Four differences are kept, each with its reason, in design.md ("Review against the prototype").
+
+Independent review before the commit. First verdict: not ready, one defect. The tag shown during a load or a failure came from the last finished load of any kind, so after a Replay, a failed Live scan showed "Replay" over the Sample scan's page. Fixed: the tag is kept with the Home scan it belongs to, and a Replay always reads "Replay". A new unit test covers Replay, then a failed scan, and fails on the first version.
+
+Notes:
+
+1. The last shown scan is recorded in a ref during render. The write is idempotent, so a render React drops does no harm. Left as it is.
+2. A non-Live load (the Sample scan again, a scan file) shows the loading card over the dimmed old Scene for the time of that load. It is recorded in design.md with the cards that 3.15 allows over a grave.
+3. The reserve takes the notes' height off the Footer bar. That holds while the scrubber is the tallest item in the bar's row, which it is at every size the checks use.
+4. The Evidence words are short, like the Inspector's: more than three maintainers read "and N more", and advisories read as a count with the worst severity. The full values stay in Evidence JSON and in the copied issue text. Recorded in design.md.
+5. design.md had named "call 17" with no anchor. Reworded to name the list it is in.
+6. tasks.md had no task for this work. Added task 14 with its requirements.
+7. The review checked the lane, secrets, network in tests and the CSS weights, and found nothing.
+
+Gates: typecheck, lint (zero warnings) and test pass. 2381 tests across 6 workspaces. Playwright, from packages/web on its own port: 68 passed. Repaint medians at 300 graves at 1440 by 900: 1.40 ms at rest, 0.90 ms with the Dead filter, 0.90 ms with the hover ring.

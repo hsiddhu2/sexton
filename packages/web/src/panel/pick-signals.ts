@@ -3,6 +3,7 @@
 // the network and only some are shape-checked, so every read here is guarded and nothing throws. Pure.
 import type { PackageHealth, SignalName } from "@sexton/api";
 import { SIGNAL_LABELS } from "../drawer/signal-labels.js";
+import { dayText } from "../header/format-scan-time.js";
 import { reasonFamily, type Family } from "./reason-family.js";
 
 export type Tone = "bad" | "warn" | "ok";
@@ -40,15 +41,15 @@ function list(names: readonly string[]): string {
   return names.length > MAX_LISTED ? `${shown} and ${String(names.length - MAX_LISTED)} more` : shown;
 }
 
+/** "29 Sep 2018": the site's one day format, the same in every browser locale (review against the prototype, D2). */
 function day(iso: string): string {
-  const ms = Date.parse(iso);
-  if (!Number.isFinite(ms)) return "unknown";
-  return new Date(ms).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+  return dayText(Date.parse(iso));
 }
 
 const SEVERITY_ORDER = ["Critical", "High", "Moderate", "Low", "Unknown"] as const;
 
-function describe(key: SignalName, value: unknown): { readonly value: string; readonly tone: Tone } {
+/** Pure. A signal value in short plain words with its tone, as the Inspector shows it; the Drawer uses the same words. */
+export function describe(key: SignalName, value: unknown): { readonly value: string; readonly tone: Tone } {
   switch (key) {
     case "lastPublish": {
       const iso = str(value);
@@ -136,4 +137,28 @@ export function pickKeys(pkg: PackageHealth): readonly [SignalName, SignalName, 
 export function pickSignals(pkg: PackageHealth): readonly [SignalPick, SignalPick, SignalPick] {
   const [a, b, c] = pickKeys(pkg);
   return [signalPick(pkg, a), signalPick(pkg, b), signalPick(pkg, c)];
+}
+
+/** The fixed words of `describe`, which start with a capital in the Drawer's Evidence table ("Yes", "No", "None"). */
+const FIXED_WORDS: ReadonlySet<string> = new Set([
+  "yes",
+  "no",
+  "none",
+  "present",
+  "missing",
+  "unknown",
+  "not enough history",
+  "no recent change",
+  "same publisher",
+  "no earlier version",
+]);
+
+/**
+ * Pure. A signal value for the Drawer's Evidence table (review against the prototype, D2): the Inspector's words, a
+ * fixed word with a capital first letter, and names, versions and dates as they are.
+ */
+export function evidenceWords(key: SignalName, value: unknown): string {
+  const words = describe(key, value).value;
+  if (FIXED_WORDS.has(words) || words.startsWith("added in ")) return words.charAt(0).toUpperCase() + words.slice(1);
+  return words;
 }

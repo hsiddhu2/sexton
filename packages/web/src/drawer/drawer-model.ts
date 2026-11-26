@@ -1,5 +1,6 @@
 import type { PackageHealth, RemediationEntry, ScanResponse, State } from "@sexton/api";
 import { SIGNAL_NAMES } from "../load/lists.js";
+import { evidenceWords } from "../panel/pick-signals.js";
 import { formatSignalValue } from "./format-value.js";
 
 export const NOT_RECORDED = "not recorded";
@@ -10,6 +11,8 @@ export interface SignalRow {
   readonly fetchedAt: string;
   readonly available: boolean;
   readonly valueText: string | null;
+  /** The value in plain words, as the Inspector writes it (review against the prototype, D2); null when unavailable. */
+  readonly words: string | null;
   readonly reason: string | null;
 }
 
@@ -62,6 +65,7 @@ export function drawerModel(response: ScanResponse, pkg: PackageHealth, version?
       fetchedAt: text(env.fetchedAt, NOT_RECORDED),
       available,
       valueText: available ? formatSignalValue(env.value) : null,
+      words: available ? evidenceWords(name, env.value) : null,
       reason: available ? null : text(env.reason, NOT_RECORDED),
     };
   });

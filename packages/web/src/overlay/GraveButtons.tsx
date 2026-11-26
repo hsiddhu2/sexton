@@ -1,5 +1,6 @@
 import type { PackageHealth } from "@sexton/api";
 import { useEffect, useRef, useState, type KeyboardEvent, type MutableRefObject } from "react";
+import { flushSync } from "react-dom";
 import type { FormView } from "../time/form-at.js";
 import type { ScenePlan } from "../scene/layout.js";
 import { reduceSelection } from "../selection/selection.js";
@@ -43,11 +44,10 @@ export function GraveButtons({ plan, selectedIndex, packages, onSelect, onOpen, 
   useEffect(() => {
     onLantern?.(lit);
   }, [lit, onLantern]);
-  const [pointer, setPointer] = useState<number | null>(null);
+  // The grave under the pointer is told in the pointer event itself, not in an effect after it, so the Inspector
+  // shows the right package before the next press lands on it (review against the prototype, D5).
+  const pointer = useRef<number | null>(null);
   const [holder, setHolder] = useState<number | null>(null);
-  useEffect(() => {
-    onHover?.(pointer);
-  }, [pointer, onHover]);
   useEffect(() => {
     onFocusGrave?.(holder);
   }, [holder, onFocusGrave]);
@@ -111,11 +111,20 @@ export function GraveButtons({ plan, selectedIndex, packages, onSelect, onOpen, 
             }}
             onPointerEnter={() => {
               setHovered(i);
-              setPointer(i);
+              pointer.current = i;
+              flushSync(() => {
+                onHover?.(i);
+              });
             }}
             onPointerLeave={() => {
               setHovered((h) => (h === i ? null : h));
-              setPointer((h) => (h === i ? null : h));
+              if (pointer.current !== i) return;
+              pointer.current = null;
+              // A pointer event is not a discrete event in React, so its update could land after the press that
+              // follows it; flushSync shows the Selected grave in the Panel before that press is hit-tested.
+              flushSync(() => {
+                onHover?.(null);
+              });
             }}
             onClick={() => {
               onOpen(i);

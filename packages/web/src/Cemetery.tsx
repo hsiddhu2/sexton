@@ -113,11 +113,25 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
   );
   // The grave under the pointer, for the hover ring (spec clean-site, 3.13).
   const [hover, setHover] = useState<number | null>(null);
-  const [focus, setFocus] = useState<number | null>(null);
+  // The Inspector is told in the same event as the hover ring, so a press on the Panel right after the pointer
+  // leaves a grave lands on the package the Panel now shows (review against the prototype, D5).
+  const look = useRef<{ hover: number | null; focus: number | null }>({ hover: null, focus: null });
   const onLook = page.onLook;
-  useEffect(() => {
-    onLook?.(hover, focus);
-  }, [hover, focus, onLook]);
+  const onHover = useCallback(
+    (index: number | null): void => {
+      look.current = { ...look.current, hover: index };
+      setHover(index);
+      onLook?.(index, look.current.focus);
+    },
+    [onLook],
+  );
+  const onFocusGrave = useCallback(
+    (index: number | null): void => {
+      look.current = { ...look.current, focus: index };
+      onLook?.(look.current.hover, index);
+    },
+    [onLook],
+  );
   // The grave under the pointer or holding focus gets the Lantern glow (spec cemetery-undead, 6.4).
   const [lantern, setLantern] = useState<number | null>(null);
   // Spec clean-site, 7.22: whatever closes the Drawer (its own controls, or the screen state on Escape), focus goes
@@ -330,8 +344,8 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
                   suppressLantern={drawerOpen}
                   quietFocus={quietFocus}
                   onLantern={setLantern}
-                  onHover={setHover}
-                  onFocusGrave={setFocus}
+                  onHover={onHover}
+                  onFocusGrave={onFocusGrave}
                   tabStop={tabStop}
                   {...(dimmedNames !== undefined ? { dimmed: dimmedNames } : {})}
                   {...(views !== undefined ? { views } : {})}

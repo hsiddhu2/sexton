@@ -280,6 +280,31 @@ a {
   cursor: not-allowed;
 }
 
+/* With no API base the Scan button looks as off as it is (review against the prototype, D7). */
+.scan-button:disabled {
+  background: var(--ui-panel2);
+  color: var(--ui-faint);
+}
+
+/* "Scanning is off in this build." reads inside the field where the placeholder would be, so it covers nothing under
+   the header (review against the prototype, D7). */
+.scan-note.scan-off {
+  top: 0;
+  right: 96px;
+  left: 30px;
+  display: flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  color: var(--ui-faint);
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .scan-note {
   position: absolute;
   top: 44px;
@@ -738,8 +763,10 @@ a {
   overflow: auto;
 }
 
+/* The table keeps whole words: on a narrow screen it scrolls sideways inside the List, as in the prototype (D4). */
 .list-table {
   width: 100%;
+  min-width: 640px;
   border-collapse: collapse;
   font-size: 13px;
 }
@@ -802,7 +829,13 @@ a {
   padding: 10px 10px 10px 0;
   border-bottom: 1px solid var(--ui-line);
   vertical-align: top;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+}
+
+.list-table .badge,
+.list-open,
+.list-version {
+  white-space: nowrap;
 }
 
 .list-open {
@@ -1941,35 +1974,35 @@ a {
   border-color: color-mix(in srgb, var(--state-possessed) 40%, var(--ui-panel));
   background: color-mix(in srgb, var(--state-possessed) 9%, var(--ui-panel));
 }
-.history-possessed::before {
+.history li.history-possessed::before {
   background: var(--state-possessed);
 }
 .verdict-dead {
   border-color: color-mix(in srgb, var(--state-dead) 40%, var(--ui-panel));
   background: color-mix(in srgb, var(--state-dead) 9%, var(--ui-panel));
 }
-.history-dead::before {
+.history li.history-dead::before {
   background: var(--state-dead);
 }
 .verdict-haunted {
   border-color: color-mix(in srgb, var(--state-haunted) 40%, var(--ui-panel));
   background: color-mix(in srgb, var(--state-haunted) 9%, var(--ui-panel));
 }
-.history-haunted::before {
+.history li.history-haunted::before {
   background: var(--state-haunted);
 }
 .verdict-restless {
   border-color: color-mix(in srgb, var(--state-restless) 40%, var(--ui-panel));
   background: color-mix(in srgb, var(--state-restless) 9%, var(--ui-panel));
 }
-.history-restless::before {
+.history li.history-restless::before {
   background: var(--state-restless);
 }
 .verdict-alive {
   border-color: color-mix(in srgb, var(--state-alive) 40%, var(--ui-panel));
   background: color-mix(in srgb, var(--state-alive) 9%, var(--ui-panel));
 }
-.history-alive::before {
+.history li.history-alive::before {
   background: var(--state-alive);
 }
 
@@ -1991,32 +2024,34 @@ a {
   text-align: left;
 }
 
+/* Words break only between words; a long name breaks only when it cannot fit alone (review against the prototype, D3). */
 .drawer-signals td {
   padding: 10px 10px 10px 0;
   border-bottom: 1px solid var(--ui-line);
   vertical-align: top;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
+/* The label column never breaks inside a word. */
 .drawer-signal-label {
   color: var(--ui-muted);
+  white-space: nowrap;
 }
 
+/* A value in plain words, as in the Inspector (D2). */
 .signal-value {
-  display: inline-block;
-  max-width: 100%;
-  padding: 1px 6px;
-  border: 1px solid var(--ui-line2);
-  border-radius: 4px;
-  background: var(--ui-bg2);
   color: var(--ui-text);
-  font-size: 0.8125rem;
-  overflow-wrap: anywhere;
 }
 
-pre.signal-value {
+.drawer-signal-source a {
+  white-space: nowrap;
+}
+
+.drawer-fetched {
   display: block;
-  padding: 6px 8px;
+  margin-top: 2px;
+  color: var(--ui-faint);
+  font-size: 12px;
 }
 
 .drawer-note {
@@ -2345,11 +2380,13 @@ pre.signal-value {
 .scrub-ticks path {
   vector-effect: non-scaling-stroke;
 }
+/* The notes at an earlier date: one short paragraph, so the Footer bar stays in view at 1440 by 900 (D1). */
 .scrub-note {
   flex-basis: 100%;
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   color: var(--ui-muted);
-  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.4;
 }
 /* Read by assistive technology, not shown. */
 .visually-hidden {
@@ -2366,4 +2403,27 @@ pre.signal-value {
 }
 .scene-main {
   position: relative;
+}
+
+/* Review against the prototype: while a scan loads or after it fails, the scan shown before stays under the card, and
+   its Scene is dimmed, as in the prototype. The card keeps its own colours over the dim layer. */
+.scene-veil .scene-card-overlay {
+  background: none;
+}
+.scene-veil .scene-card-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--ui-bg);
+  opacity: 0.9;
+}
+.scene-veil .scene-card-overlay > * {
+  position: relative;
+}
+/* On a phone the Scene is taller than the screen, so the card sits near its top, where the visitor is. */
+@media (max-width: 699px) {
+  .scene-veil .scene-card-overlay {
+    align-items: flex-start;
+    padding-top: 24px;
+  }
 }

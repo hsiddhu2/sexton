@@ -134,3 +134,14 @@ Run-time notes:
     - _Requirements: 19.5, 19.6, 19.7, 19.9_
   - [x] 13.4 Update web.md (Inspector, failure cards, scanning card, the ghost exception) and structure.md (`copy/mischief.ts`); update `e2e/clean.spec.ts` and run the whole e2e suite; retake docs/cemetery.png
     - _Requirements: 18.1, 18.4, 19.9_
+
+- [x] 14. Fixes from the review against the prototype
+  - _Requirements: 1.5, 1.6, 1.13, 1.14, 3.15, 6.1, 7.2, 7.17, 11.4, 12.1, 15.2, 15.5, 16.3_
+  - [x] 14.1 Keep the fit scale and the Scene the same at every date, with the Footer bar in view at 1440 by 900; e2e check
+    - _Requirements: 15.2, 16.3_
+  - [x] 14.2 Show Evidence values in plain words with each source and fetch time, labels and the List in whole words, and the History dots in State colours
+    - _Requirements: 6.1, 7.2, 7.17, 15.5_
+  - [x] 14.3 Change the Inspector within the pointer event that leaves a grave, so a Term press opens the Term it shows
+    - _Requirements: 11.4_
+  - [x] 14.4 Keep the scan tag and the page of the scan shown before under the scanning and failure cards; put "Scanning is off in this build." inside the field and dim a disabled Scan button
+    - _Requirements: 1.5, 1.6, 1.13, 1.14, 3.15, 12.1_

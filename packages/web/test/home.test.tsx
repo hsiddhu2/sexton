@@ -318,6 +318,13 @@ describe("the Footer bar and the site footer (16.3 to 16.16)", () => {
     expect(reserveFor([57.2, 30])).toBe(58 + 30 + RESERVE_GAPS);
     expect(reserveFor([Number.NaN, 40])).toBe(40 + RESERVE_GAPS);
   });
+
+  it("leaves the earlier date's notes out of the reserve, so the Scene and its fit scale are the same at every date (D1)", () => {
+    // The Footer bar at the scan date, and at an earlier date with a 39.6 px note row inside it.
+    expect(reserveFor([114.2, 35], 39.6)).toBe(reserveFor([74.6, 35]));
+    expect(reserveFor([74.6, 35], 0)).toBe(reserveFor([74.6, 35]));
+    expect(reserveFor([74.6, 35], Number.NaN)).toBe(reserveFor([74.6, 35]));
+  });
 });
 
 describe("the Welcome bar (9.5 to 9.9, 9.11)", () => {
@@ -442,6 +449,105 @@ describe("the scanning card (1.14)", () => {
       "Reading each headstone",
     ]);
     expect(card.querySelector('[role="progressbar"], progress, .bar')).toBeNull();
-    expect(container.querySelector("header .scan-tag")?.textContent).toBe("expressjs/express");
+    // Review against the prototype (D6): the tag names the repository only once its scan is in.
+    expect(container.querySelector("header .scan-tag")?.textContent).toBe("Sample scan");
+  });
+});
+
+describe("review against the prototype: the page around a scan that loads or fails, and the scan tag (D5, D6)", () => {
+  function mountScan(answer: "pending" | "missing" | "ok") {
+    const fetchFn = ((input: RequestInfo | URL): Promise<Response> => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      if (url.includes("/scan?")) {
+        if (answer === "pending") return new Promise<Response>(() => undefined);
+        if (answer === "missing") return Promise.resolve(new Response(JSON.stringify({ code: "missing-package-json" }), { status: 404 }));
+      }
+      return Promise.resolve(new Response(readDemoScanText(), { status: 200 }));
+    }) as typeof fetch;
+    return render(<App fetchFn={fetchFn} apiBase={API} initialSearch="" pageOrigin={ORIGIN} />);
+  }
+  const submit = (container: HTMLElement, repo: string): void => {
+    fireEvent.change(screen.getByLabelText("GitHub repository to scan"), { target: { value: repo } });
+    fireEvent.submit(container.querySelector("form") as HTMLFormElement);
+  };
+  const tag = (container: HTMLElement): string | null | undefined => container.querySelector("header .scan-tag")?.textContent;
+
+  it("keeps the headline, chips, Panel and footers of the scan shown before under the scanning card, over the dimmed Scene", async () => {
+    const { container } = mountScan("pending");
+    await ready();
+    submit(container, "expressjs/express");
+    const card = await screen.findByRole("status");
+    expect(card.closest(".scene-veil")).not.toBeNull();
+    expect(container.querySelector("h1.headline")?.textContent).toBe("1 of 12 dependencies needs you now.");
+    expect(container.querySelectorAll(".chip")).toHaveLength(5);
+    expect(looked()).toBe("left-padder");
+    expect(container.querySelector(".foot-bar")).not.toBeNull();
+    expect(container.querySelector(".site-footer")).not.toBeNull();
+    // The page under the card is still: nothing of the old scan takes a press or a key.
+    for (const part of [".hero", ".panel", ".foot-bar", ".scene-body"]) expect(container.querySelector(part)?.hasAttribute("inert"), part).toBe(true);
+    expect(tag(container)).toBe("Sample scan");
+  });
+
+  it("keeps the page and the old tag under a failure card, and names the repository after a good scan", async () => {
+    const failed = mountScan("missing");
+    await ready();
+    submit(failed.container, "acme/private-app");
+    const alert = await screen.findByRole("alert");
+    expect(alert.closest(".scene-veil")).not.toBeNull();
+    expect(alert.textContent).toContain("We could not read that repo.");
+    expect(failed.container.querySelector("h1.headline")?.textContent).toBe("1 of 12 dependencies needs you now.");
+    expect(tag(failed.container)).toBe("Sample scan");
+    failed.unmount();
+
+    const good = mountScan("ok");
+    await ready();
+    submit(good.container, "expressjs/express");
+    await waitFor(() => {
+      expect(tag(good.container)).toBe("expressjs/express");
+    });
+    expect(good.container.querySelector(".scene-veil")).toBeNull();
+  });
+
+  it("keeps the Sample scan's tag with its page under a failure card after a Replay was seen in between", async () => {
+    const fetchFn = ((input: RequestInfo | URL): Promise<Response> => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      if (url.includes("/scan?")) return Promise.resolve(new Response(JSON.stringify({ code: "missing-package-json" }), { status: 404 }));
+      return Promise.resolve(new Response(url.endsWith("/replay/axios.json") ? readReplayText("axios") : readDemoScanText(), { status: 200 }));
+    }) as typeof fetch;
+    const { container } = render(<App fetchFn={fetchFn} apiBase={API} initialSearch="" pageOrigin={ORIGIN} />);
+    await ready();
+    fireEvent.click(screen.getByRole("button", { name: "Watch a real attack" }));
+    fireEvent.click(await screen.findByRole("button", { name: /axios/ }));
+    await waitFor(() => {
+      expect(container.querySelector("h1")?.textContent).toBe("Watch the axios attack unfold");
+    });
+    expect(tag(container)).toBe("Replay");
+    submit(container, "acme/app");
+    const alert = await screen.findByRole("alert");
+    expect(alert.closest(".scene-veil")).not.toBeNull();
+    expect(container.querySelector("h1.headline")?.textContent).toBe("1 of 12 dependencies needs you now.");
+    expect(tag(container)).toBe("Sample scan");
+  });
+
+  it("shows the Selected grave in the Panel within the pointer event that leaves a grave, so a Term press lands on its own Term (D5)", async () => {
+    mount();
+    await ready();
+    fireEvent.pointerEnter(grave("lodash"));
+    expect(looked()).toBe("lodash");
+    // The leave is dispatched outside act, as a browser does: the Panel must change before the press that follows.
+    const env = globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean | undefined };
+    const before = env.IS_REACT_ACT_ENVIRONMENT;
+    env.IS_REACT_ACT_ENVIRONMENT = false;
+    try {
+      grave("lodash").dispatchEvent(new MouseEvent("pointerout", { bubbles: true, relatedTarget: inspector() }));
+      expect(looked()).toBe("left-padder");
+    } finally {
+      env.IS_REACT_ACT_ENVIRONMENT = before;
+    }
+    const term = inspector().querySelector<HTMLButtonElement>(".term") as HTMLButtonElement;
+    fireEvent.click(term);
+    const pop = await waitFor(() => document.querySelector(".term-pop") as HTMLElement);
+    expect(looked()).toBe("left-padder");
+    expect(pop.querySelector(".term-pop-name")?.textContent).toBe(term.dataset["term"]);
   });
 });
