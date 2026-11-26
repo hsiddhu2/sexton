@@ -159,6 +159,14 @@ function ReadyHome({ response, loadId, screen, dispatch, theme, reducedMotion, r
     },
     [indexOf],
   );
+  // A List row opens its Drawer and becomes the Selected grave, as a grave press does (6.9, 6.10, 6.13).
+  const openFromList = useCallback(
+    (name: string): void => {
+      pick(name);
+      openDrawer(name);
+    },
+    [pick, openDrawer],
+  );
 
   // Left, Right and Enter (3.23, 3.24): only with focus on the body, a grave button or a Fix order row, and with no
   // View owner or Pop-over open, so the scrubber, the fields and the Drawer keep their own keys.
@@ -288,7 +296,7 @@ function ReadyHome({ response, loadId, screen, dispatch, theme, reducedMotion, r
             onLook={onLook}
             reserve={reserve}
             {...(isReplay ? {} : { open: screen.view.grave, onOpen: openDrawer, onClose: closeDrawer, filter })}
-            {...(list ? { replaceScene: <ListView response={response} filter={filter} at={shownMs} indexOf={indexOf} onOpen={openDrawer} /> } : {})}
+            {...(list ? { replaceScene: <ListView response={response} filter={filter} at={shownMs} indexOf={indexOf} onOpen={openFromList} /> } : {})}
             {...(onRemediate !== undefined ? { onRemediate } : {})}
           />
         </div>

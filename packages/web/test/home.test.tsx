@@ -111,7 +111,7 @@ describe("Home: headline, notices, chips and the view switch (2.1 to 2.15)", () 
     expect(container.querySelector("canvas")).toBeNull();
     expect(container.querySelector(".scene-help")).toBeNull();
     const table = container.querySelector("table.list-table") as HTMLElement;
-    expect([...table.querySelectorAll("th")].map((th) => th.textContent)).toEqual(["Package", "Version", "State", "Why", "Fix"]);
+    expect([...table.querySelectorAll("th")].map((th) => th.textContent)).toEqual(["Package", "Version", "State ↑ worst first", "Why", "Fix"]);
     expect(table.querySelectorAll("tbody tr")).toHaveLength(12);
     expect(table.querySelector("tbody tr td")?.textContent).toBe("left-padder");
     const row = within(table).getByRole("button", { name: "event-stream" });

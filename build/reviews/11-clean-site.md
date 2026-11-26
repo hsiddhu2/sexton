@@ -55,3 +55,21 @@ Notes:
 9. The Inspector heading holds the Selected mark; the Fixture-name check skips the Drawer; the 300-grave repaint with half dimmed waits for the e2e work of task 12.
 
 Gates after the fixes: typecheck, lint (zero warnings) and test pass; 2226 tests across 6 workspaces.
+
+## Task 4
+
+The List view (4.1 and 4.2): "Find a package", the Package and State sort buttons with aria-sort, the chip filter, the empty row, a row opening its Drawer by a press or by Enter on its package button, and a 300-package fixture with the browser check that each Find key shows its rows within 100 ms.
+
+Independent review before the commit. Verdict: ready. No defect found: no I/O outside the seams, no network in tests (the browser check aborts every other origin and serves the fixture itself), every changed file in the lane.
+
+Notes:
+
+1. The timing stopped at the last change of the table body, before the paint. Fixed before the commit: the sample now ends at the frame after the change, and the check waits two frames between keys. Locally the keys took at most 15.5 ms.
+2. Keys that leave the rows as they were ("e" and "f" in "left-pad-1") count as 0 ms, so fewer than ten keys are real samples. Recorded in design.md.
+3. The browser check compares counts after each key; which names a Find keeps is covered by the unit test.
+4. Hover or focus on a List row does not change the Inspector; opening a row makes it the Selected grave. 6.13 is met through Selected.
+5. There is no descending order: a press on the sorted column keeps it. Enough for 6.4 and 6.5.
+6. The 300-package unit case has no Find text or filter; Property 5 covers filtered lists.
+7. A row has a hover style but no focus style of its own; the package button shows the focus ring.
+
+Gates after the fix: typecheck, lint (zero warnings) and test pass; 2233 tests across 6 workspaces. The browser check `e2e/list.spec.ts` passes locally.

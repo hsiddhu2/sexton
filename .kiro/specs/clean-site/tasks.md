@@ -59,11 +59,11 @@ Run-time notes:
   - [x] 3.5 Add the Welcome bar with `guide/welcome-pref.ts`
     - _Requirements: 9.5 to 9.9, 9.11_
 
-- [ ] 4. The List view
+- [x] 4. The List view
   - _Requirements: 6.1 to 6.15_
-  - [ ] 4.1 Build `home/ListView.tsx` with Find, the sort buttons and aria-sort, the chip filter, the empty row and row open by press and Enter
+  - [x] 4.1 Build `home/ListView.tsx` with Find, the sort buttons and aria-sort, the chip filter, the empty row and row open by press and Enter
     - _Requirements: 6.1 to 6.10, 6.13, 6.14, 6.15_
-  - [ ] 4.2 Add the 300-package fixture and the e2e key-press timing check
+  - [x] 4.2 Add the 300-package fixture and the e2e key-press timing check
     - _Requirements: 6.11, 6.12_
 
 - [ ] 5. The Drawer

@@ -1,12 +1,13 @@
 // The List (spec clean-site, design C4, requirement 6): the packages as a table with the columns Package, Version,
-// State, Why and Fix, worst first, following the chip filter and the shown date. A row's package button opens its
-// Drawer. Find, the sort buttons and aria-sort join in task 4.
-import type { ScanResponse } from "@sexton/api";
-import { useMemo } from "react";
-import { listRows } from "./list-rows.js";
-import type { State } from "@sexton/api";
+// State, Why and Fix, worst first, following the chip filter and the shown date. "Find a package" keeps only the names
+// that hold its trimmed text; the Package and State heading buttons sort, and the sorted column carries aria-sort.
+// A press on a row, or Enter on its package button, opens its Drawer. The Find text lives here, not in the address.
+import type { ScanResponse, State } from "@sexton/api";
+import { useMemo, useState } from "react";
+import { listRows, type ListSort } from "./list-rows.js";
 
 export const NO_MATCH_TEXT = "No package matches.";
+export const FIND_LABEL = "Find a package";
 
 export interface ListViewProps {
   readonly response: ScanResponse;
@@ -18,16 +19,57 @@ export interface ListViewProps {
   readonly onOpen: (name: string) => void;
 }
 
+interface SortHeadingProps {
+  readonly sort: ListSort;
+  readonly current: ListSort;
+  readonly label: string;
+  /** The mark after the label while this column is sorted; hidden from assistive technology, which reads aria-sort. */
+  readonly mark: string;
+  readonly onSort: (sort: ListSort) => void;
+}
+
+function SortHeading({ sort, current, label, mark, onSort }: SortHeadingProps) {
+  const on = sort === current;
+  return (
+    <th scope="col" {...(on ? { "aria-sort": "ascending" as const } : {})}>
+      <button
+        type="button"
+        className="list-sort"
+        onClick={() => {
+          onSort(sort);
+        }}
+      >
+        {label}
+        {on ? <span aria-hidden="true">{` ${mark}`}</span> : null}
+      </button>
+    </th>
+  );
+}
+
 export function ListView({ response, filter, at, indexOf, onOpen }: ListViewProps) {
-  const rows = useMemo(() => listRows(response, { query: "", sort: "state", filter, at }), [response, filter, at]);
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<ListSort>("state");
+  const rows = useMemo(() => listRows(response, { query, sort, filter, at }), [response, query, sort, filter, at]);
   return (
     <div className="list-view">
+      <input
+        type="search"
+        className="list-find"
+        placeholder={FIND_LABEL}
+        aria-label={FIND_LABEL}
+        autoComplete="off"
+        spellCheck={false}
+        value={query}
+        onChange={(event) => {
+          setQuery(event.target.value);
+        }}
+      />
       <table className="list-table">
         <thead>
           <tr>
-            <th scope="col">Package</th>
+            <SortHeading sort="name" current={sort} label="Package" mark="↑" onSort={setSort} />
             <th scope="col">Version</th>
-            <th scope="col">State</th>
+            <SortHeading sort="state" current={sort} label="State" mark="↑ worst first" onSort={setSort} />
             <th scope="col">Why</th>
             <th scope="col">Fix</th>
           </tr>
@@ -41,16 +83,15 @@ export function ListView({ response, filter, at, indexOf, onOpen }: ListViewProp
             </tr>
           ) : (
             rows.map((row) => (
-              <tr key={row.name}>
+              <tr
+                key={row.name}
+                className="list-row"
+                onClick={() => {
+                  onOpen(row.name);
+                }}
+              >
                 <td>
-                  <button
-                    type="button"
-                    className="list-open"
-                    data-grave-index={indexOf.get(row.name)}
-                    onClick={() => {
-                      onOpen(row.name);
-                    }}
-                  >
+                  <button type="button" className="list-open" data-grave-index={indexOf.get(row.name)}>
                     {row.name}
                   </button>
                 </td>
