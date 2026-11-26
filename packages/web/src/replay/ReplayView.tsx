@@ -14,6 +14,7 @@ import { useReserve } from "../home/use-reserve.js";
 import { LOAD_FAILED_CARD } from "../load/scan-failure.js";
 import type { LoadState } from "../load/use-scan-loader.js";
 import type { Theme } from "../scene/layout.js";
+import type { Beat } from "../scene/motion.js";
 import { overlayRects } from "../scene/overlay-band.js";
 import { usePlay } from "../time/use-play.js";
 import { REPLAY_CARD, type ReplayId } from "./replay-ids.js";
@@ -42,6 +43,8 @@ export interface ReplayViewProps {
   /** The failure card's buttons (12.7): load this Replay again, or show the Sample scan. */
   readonly onRetry?: () => void;
   readonly onSample?: () => void;
+  /** The music beat while Music is on (14.3). */
+  readonly beat?: Beat | null;
 }
 
 const noop = (): void => undefined;
@@ -100,7 +103,7 @@ interface StoryProps extends Omit<ReplayViewProps, "id" | "load"> {
 }
 
 /** The page of a loaded Replay: the hero, the stage and the Footer bar on the left, the Panel on the right. */
-function Story({ hero, response, loadId, steps, theme, reducedMotion, repoFieldRef, onHome, onTerm }: StoryProps) {
+function Story({ hero, response, loadId, steps, theme, reducedMotion, repoFieldRef, onHome, onTerm, beat }: StoryProps) {
   const stops = useMemo(() => steps.map((s) => s.ms), [steps]);
   // The Play model opens a Replay at Step 1 and moves only on a press (8.2, 8.3, 8.9 to 8.11).
   const player = usePlay(stops, loadId, true);
@@ -124,6 +127,7 @@ function Story({ hero, response, loadId, steps, theme, reducedMotion, repoFieldR
             response={response}
             theme={theme}
             reducedMotion={reducedMotion}
+            beat={beat ?? null}
             asOfMs={step.ms}
             repoFieldRef={repoFieldRef}
             reserve={reserve}

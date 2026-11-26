@@ -1,4 +1,5 @@
 import type { ScanResponse, State } from "@sexton/api";
+import type { Beat } from "./scene/motion.js";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Drawer } from "./drawer/Drawer.js";
 import type { RemediateView } from "./load/remediate-client.js";
@@ -52,6 +53,8 @@ export interface CemeteryProps {
   readonly onClose?: () => void;
   /** Spec clean-site, 2.7 and 2.8: graves of another State at the shown date are dimmed and leave the tab order. */
   readonly filter?: State | null;
+  /** Spec clean-site, 14.3: the music beat the Characters follow while Music is on. */
+  readonly beat?: Beat | null;
   /** Told the grave under the pointer and the grave whose button has focus, for the Inspector (3.3 to 3.5). */
   readonly onLook?: (hover: number | null, focus: number | null) => void;
   /** Height kept free under the Scene for the Footer bar and the site footer (spec clean-site). */
@@ -144,6 +147,7 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
   }, [order, response, asOfMs]);
   // Spec clean-site, 2.7: every grave of another State at the shown date, and every Not-published mound, is dimmed.
   const filter = page.filter ?? null;
+  const beat = page.beat ?? null;
   const dimmedNames = useMemo((): ReadonlySet<string> | undefined => {
     if (filter === null) return undefined;
     const out = new Set<string>();
@@ -240,8 +244,9 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
         ...(rising && riseStart !== null ? { rise: { startMs: riseStart } } : {}),
         ...(dimmedNames !== undefined ? { dimmed: dimmedNames } : {}),
         hover: drawerOpen ? null : hover,
+        ...(beat != null ? { beat } : {}),
       }),
-    [order, width, theme, selectedIndex, phase, minHeight, fit, views, marks, burial.burial, burialIndex, vigilIndex, fontsReady, reducedMotion, lantern, atBurst, burstDone, burstStart, rising, riseStart, dimmedNames, hover, drawerOpen],
+    [order, width, theme, selectedIndex, phase, minHeight, fit, views, marks, burial.burial, burialIndex, vigilIndex, fontsReady, reducedMotion, lantern, atBurst, burstDone, burstStart, rising, riseStart, dimmedNames, hover, drawerOpen, beat],
   );
   const request = burial.request;
   const onRemediateWithBurial = useMemo(

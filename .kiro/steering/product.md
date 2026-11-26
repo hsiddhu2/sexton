@@ -31,7 +31,7 @@ A sexton keeps the churchyard: buries the dead, keeps the grounds, tolls the bel
 - Two replays, axios (March 2026) and keyv (August 2026), are scan responses built offline from public reports and told step by step: each Step has a title, what happened and what Sexton shows, written only from the sources the replay cites. They are fixtures at /replay/axios.json and /replay/keyv.json on the web origin, not live scans. Only ?replay=axios or ?replay=keyv loads one; any other value loads nothing. A replay opens at Step 1, moves only on a press, and always shows "Reconstructed from public reports. Not a live scan." once.
 - The cemetery is night-only. Every colour is a token in packages/web/src/scene/palette.ts; styles.css holds no colour literal. State colours: Alive #8fe3d0, Restless #e69f00, Haunted #56b4e9, Dead #bfb8ad, Possessed #cc79a7.
 - Fonts are self-hosted in packages/web/public/fonts with their OFL files: Inter and Cormorant Garamond. No font request leaves the page origin.
-- The site makes no sound and creates no AudioContext.
+- The site makes no generated sound and creates no AudioContext. Its one sound is the recorded track of the Track slot, played only after the visitor turns Music on; the slot is empty today, so the site plays nothing.
 
 ## Rules that never change
 - Every signal carries its source URL and fetch timestamp.

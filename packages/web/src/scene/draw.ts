@@ -377,7 +377,7 @@ function clipAndPose(grave: GravePlan, plan: ScenePlan, clips: readonly ClipId[]
   const own = clips[0] ?? "dance";
   const clip: ClipId = own === "lounge" && plan.dancers.has(grave.name) && !plan.reducedMotion && inDanceWindow(grave.name, nowMs) ? "dance" : own;
   const count = POSE_COUNT[clip];
-  return { clip, pose: poseAt(nowMs, count, plan.reducedMotion, seedOf(grave.name) % count) };
+  return { clip, pose: poseAt(nowMs, count, plan.reducedMotion, seedOf(grave.name) % count, plan.beat ?? null) };
 }
 
 /**

@@ -147,3 +147,19 @@ Notes:
 5. Tests compare the alert's whole text, including the decorative "!" mark; brittle to markup but exact.
 
 Gates after the fixes: typecheck, lint (zero warnings) and test pass; 2305 tests across 6 workspaces.
+
+## Task 10
+
+The Music slot (10.1): `music/track.ts` with `TRACK = null` and its credit line and beat, `music/use-music.ts`, the Pose clock in `scene/motion.ts` (one step per half beat with a beat, 12 a second without, still under Reduced motion), the beat carried through the plan and the Scene's repaint timer, the Music button rendered only with a track, the credit in the site footer, and `media-src 'self'` in the CSP only with a track. No audio file ships; the candidate track is not touched.
+
+Independent review before the commit. Verdict: ready. No defect found: with the slot empty there is no button, audio element, AudioContext or media-src; plans without music are unchanged, so the repaint path is as before; nothing in `scene/characters` changed and no dependency was added.
+
+Notes:
+
+1. product.md said the site makes no sound, which stops being true once a track is set. Fixed before the commit: it says no generated sound, and that the one sound is the slot's track after the visitor turns Music on.
+2. `useMusic` built a new beat object on each render while on, so the Scene was planned again on every page render. Fixed before the commit: the beat is memoised; a test checks it keeps its identity across renders.
+3. `vite-csp.test.ts` keeps its two older 1000-run properties (spec cemetery-theme); this change does not touch them.
+4. A track source that is not https shows no link, by the same rule as other links; the owner's track must give an https source.
+5. With `TRACK` a constant, the App wiring of the button and the beat is checked through a Header harness and the hook, and fully once a track is set; the README credit test becomes a real check then too.
+
+Gates after the fixes: typecheck, lint (zero warnings) and test pass; 2317 tests across 6 workspaces.

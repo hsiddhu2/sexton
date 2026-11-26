@@ -3,7 +3,7 @@ import type { FormView } from "../time/form-at.js";
 import { colourFor, PALETTE, type Theme } from "./palette.js";
 import { unitClusters, unitStars } from "./scenery-seed.js";
 import { SHAPE_BY_STATE, type ShapeId } from "./shapes.js";
-import { dancers } from "./motion.js";
+import { dancers, type Beat } from "./motion.js";
 import { OVERLAY_BAND } from "./overlay-band.js";
 import { TIER_DRAW_ORDER, TIER_GAP, TIER_OF, TIER_SCALE, type TierId } from "./tiers.js";
 
@@ -143,6 +143,8 @@ export interface ScenePlan {
   readonly priest: { readonly index: number; readonly phase: number | null } | null;
   /** The start of the Load moment on the page clock, or null (B5). */
   readonly riseStartMs: number | null;
+  /** The music track's beat the Characters' Pose clock follows while Music is on, else null or absent (14.3). */
+  readonly beat?: Beat | null;
 }
 
 export interface SceneInput {
@@ -179,6 +181,8 @@ export interface SceneInput {
   readonly dimmed?: ReadonlySet<string>;
   /** Spec clean-site, 3.13: the grave under the pointer, which gets the hover ring unless it is the Selected one. */
   readonly hover?: number | null;
+  /** Spec clean-site, 14.3: the music beat, while Music is on. */
+  readonly beat?: Beat | null;
 }
 
 const round2 = (value: number): number => Math.round(value * 100) / 100;
@@ -397,6 +401,7 @@ export function planScene(input: SceneInput): ScenePlan {
     burst,
     priest,
     riseStartMs,
+    ...(input.beat != null && !reducedMotion ? { beat: input.beat } : {}),
   };
 }
 

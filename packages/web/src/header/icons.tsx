@@ -69,6 +69,16 @@ export function TourGlyph(): ReactElement {
   );
 }
 
+export function MusicGlyph(): ReactElement {
+  return (
+    <Glyph>
+      <path d="M9 18V5l11-2v13" />
+      <circle cx="6" cy="18" r="3" />
+      <circle cx="17" cy="16" r="3" />
+    </Glyph>
+  );
+}
+
 export function PlayGlyph(): ReactElement {
   return (
     <svg className="glyph" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" focusable="false">

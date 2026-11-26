@@ -10,6 +10,7 @@ import { BACK_TO_SAMPLE, FailureCard, TRY_AGAIN, TRY_DEMO_REPO } from "./Failure
 import type { Term } from "../glossary/glossary.js";
 import { dayText } from "../header/format-scan-time.js";
 import type { ScanKind } from "../drawer/fix-view.js";
+import type { Beat } from "../scene/motion.js";
 import type { LoadError } from "../load/load-error.js";
 import type { RemediateView } from "../load/remediate-client.js";
 import type { ScreenEvent, ScreenState } from "../load/screen-state.js";
@@ -57,6 +58,8 @@ export interface HomeViewProps {
   readonly onDemoRepo?: () => void;
   readonly onSample?: () => void;
   readonly onRetry?: () => void;
+  /** The music beat while Music is on (14.3). */
+  readonly beat?: Beat | null;
 }
 
 const none = (): void => undefined;
@@ -104,7 +107,7 @@ function formOf(response: ScanResponse, pkg: PackageHealth, atMs: number | null)
   return atMs === null ? scanForm : formAt(timelineOf(response, pkg.name), atMs, scanForm);
 }
 
-function ReadyHome({ response, loadId, screen, dispatch, theme, reducedMotion, repoFieldRef, onRemediate, onReplay, onTerm, scanKind, onGuide }: ReadyProps) {
+function ReadyHome({ response, loadId, screen, dispatch, theme, reducedMotion, repoFieldRef, onRemediate, onReplay, onTerm, scanKind, onGuide, beat }: ReadyProps) {
   const order = useMemo(() => triageOrder(response.report.packages), [response]);
   const indexOf = useMemo(() => new Map(order.map((p, i) => [p.name, i])), [order]);
   // The date, from the screen state (view.at).
@@ -301,6 +304,7 @@ function ReadyHome({ response, loadId, screen, dispatch, theme, reducedMotion, r
             onOpen={openDrawer}
             onClose={closeDrawer}
             filter={filter}
+            beat={beat ?? null}
             {...(list ? { replaceScene: <ListView response={response} filter={filter} at={shownMs} indexOf={indexOf} onOpen={openFromList} /> } : {})}
             {...(onRemediate !== undefined ? { onRemediate } : {})}
           />

@@ -3,11 +3,18 @@
 import type { HeaderModel } from "../header/header-model.js";
 import { failingRulesText } from "../header/failing-rules-text.js";
 import { ScanTime } from "../header/ScanTime.js";
+import { creditLine, type Track } from "../music/track.js";
 
 export const EVIDENCE_JSON_TEXT = "Evidence JSON";
 export const EVIDENCE_MARKDOWN_TEXT = "Evidence Markdown";
 
-export function SiteFooter({ model }: { readonly model: HeaderModel }) {
+export interface SiteFooterProps {
+  readonly model: HeaderModel;
+  /** The track in the Track slot, whose credit shows here (14.6), or null. */
+  readonly track?: Track | null;
+}
+
+export function SiteFooter({ model, track = null }: SiteFooterProps) {
   return (
     <footer className="site-footer">
       <p className="site-footer-line">
@@ -29,7 +36,16 @@ export function SiteFooter({ model }: { readonly model: HeaderModel }) {
             </a>
           </>
         )}
-        {/* The track credit shows here once a track is set in the Track slot (14.6, task 10). */}
+        {track === null ? null : (
+          <span className="footer-credit">
+            {creditLine(track)}{" "}
+            {track.source.startsWith("https://") ? (
+              <a href={track.source} target="_blank" rel="noopener noreferrer">
+                Source
+              </a>
+            ) : null}
+          </span>
+        )}
       </p>
     </footer>
   );

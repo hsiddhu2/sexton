@@ -25,6 +25,8 @@ import { replayAddress, type ReplayId } from "./replay/replay-ids.js";
 import { ReplayView } from "./replay/ReplayView.js";
 import { applyPalette, type Theme } from "./scene/palette.js";
 import { Tour } from "./tour/Tour.js";
+import { TRACK } from "./music/track.js";
+import { useMusic } from "./music/use-music.js";
 
 export interface AppProps {
   readonly fetchFn: typeof fetch;
@@ -129,6 +131,8 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
   const retry = useCallback((): void => {
     loadSource(shown);
   }, [loadSource, shown]);
+  // The Track slot (14): no track, no button, no audio element and the normal idle motion.
+  const music = useMusic(TRACK);
   const [welcome, setWelcome] = useState(() => !welcomeClosed());
   const hideWelcome = useCallback((): void => {
     closeWelcome();
@@ -215,6 +219,7 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
         onHome={goHome}
         onGuide={openGuide}
         onTour={openTour}
+        {...(TRACK !== null ? { music: { on: music.on, onToggle: music.toggle } } : {})}
       />
       {welcome && !guide ? <WelcomeBar onGuide={openGuide} onClose={hideWelcome} /> : null}
       {guide ? (
@@ -238,6 +243,7 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
             onTerm={onTerm}
             onRetry={retry}
             onSample={sample}
+            beat={music.beat}
           />
         </main>
       ) : (
@@ -258,11 +264,12 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
             onDemoRepo={demoRepo}
             onSample={sample}
             onRetry={retry}
+            beat={music.beat}
             {...(onRemediate !== undefined ? { onRemediate } : {})}
           />
         </main>
       )}
-      {model !== null && !guide ? <SiteFooter model={model} /> : null}
+      {model !== null && !guide ? <SiteFooter model={model} track={TRACK} /> : null}
       {screen.tourStep === null ? null : (
         <Tour
           step={screen.tourStep}

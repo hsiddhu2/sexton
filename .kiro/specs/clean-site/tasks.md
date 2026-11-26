@@ -105,9 +105,9 @@ Run-time notes:
   - [x] 9.1 Show the failure card with its two buttons from `load-scan`'s status and code
     - _Requirements: 12.1 to 12.7_
 
-- [ ] 10. The Music slot
+- [x] 10. The Music slot
   - _Requirements: 14.1 to 14.8_
-  - [ ] 10.1 Add `music/track.ts` with `TRACK = null`, `music/use-music.ts`, the beat in `scene/motion.ts` with its tests, the button rendered only with a track, the credit slot and the conditional `media-src 'self'` with its vite-csp test
+  - [x] 10.1 Add `music/track.ts` with `TRACK = null`, `music/use-music.ts`, the beat in `scene/motion.ts` with its tests, the button rendered only with a track, the credit slot and the conditional `media-src 'self'` with its vite-csp test
     - _Requirements: 14.1 to 14.8_
 
 - [ ] 11. Layouts and phone
