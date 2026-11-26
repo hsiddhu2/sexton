@@ -1,0 +1,178 @@
+# Implementation Plan
+
+Run the exploration tests on the UNFIXED code (kiro/depth at 58b157d) before any fix. All paths are under packages/engine unless stated. No network in tests, and no fixture is re-recorded. No dependency is added. Paths a task may change: `src/remediation`, `test/remediation` and its goldens, `docs/requirements.md` (one change-log line) and this spec folder. In `src/remediation/pr-body.ts`, change only the lines that design.md names, because another branch edits the signal rows of that file.
+
+Every top-level task ends with a review sub-task. It runs the gravedigger agent over `packages/engine/src/remediation` and the security-reviewer agent over the task's diff, and records both verdict lines in that sub-task's notes. The spec is done only when gravedigger's last line is "safe" or "safe with notes".
+
+- [x] 1. Write the bug condition exploration tests
+  - **Property 1: Bug Condition D1** - A Non-registry range is never overwritten
+  - **Property 2: Bug Condition D2** - An Incomplete scan is never reported as "none"
+  - **Property 3: Bug Condition D3** - No remove for an Implicit-use name
+  - **CRITICAL**: These tests MUST FAIL on the unfixed code. A failure confirms the bug.
+  - **DO NOT attempt to fix the test or the code when it fails**
+  - _Bug_Condition: isBugConditionD1, isBugConditionD2, isBugConditionD3 from design.md_
+  - _Expected_Behavior: bugfix 2.1 to 2.5_
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.1, 2.2, 2.3, 2.4, 2.5_
+  - [x] 1.1 Write Property 1 in test/remediation/remediation-safety.test.ts
+    - Cases, each its own `it`: installed `1.0.0`, Haunted, origin `dependencies`, bump data `{ ok: true, published: ["1.0.0", "1.0.1"], deprecated: new Set(), advisories: new Map([["1.0.1", []]]) }`, declared range one of `file:../foo`, `link:../foo`, `git+https://github.com/o/foo.git`, `github:o/foo`, `https://example.com/foo-1.0.0.tgz`, `npm:@fork/foo@^1.2.0`, `workspace:*`, `latest`, and `^` followed by `"1".repeat(256)`.
+    - Assert `status` `unavailable` and the reason. Import `REASON_RANGE_NOT_REGISTRY` from `src/remediation/precheck.js`; until it exists, use the literal string from design.md so the test compiles. Also assert no `edit`, no `chosenVersion`, `buildPrIntent` null and `bumpTargets` empty.
+    - Property over `fc.string({ maxLength: 40 })` filtered to `!isResolvableRange`, plus `arbBumpData` filtered to `ok`. numRuns 1000.
+    - _Requirements: 1.1, 1.2, 2.1, 2.2, 2.3_
+  - [x] 1.2 Write Property 2 in the same file
+    - Build plans with `runMigrations` and an `InMemoryFileSource`, the way `test/remediation/migration-plan.test.ts:107-119` does.
+    - Cases: 201 `.scss` files named `s000.scss` to `s200.scss` with `/deep/` only in `s200.scss`; one `big.scss` of `.a /deep/ .b {}\n` plus 262144 `x`; one listed path `../escape.scss` next to a clean `a.scss`.
+    - Assert the "## Review before merging" section has the incomplete line and no line equal to `none`.
+    - Property: an arbitrary Complete-scan file set plus one injected cause of incompleteness. numRuns 1000.
+    - _Requirements: 1.3, 1.4, 2.4_
+  - [x] 1.3 Write Property 3 in the same file
+    - Cases `@types/node`, `@types/express` and `tslib`, each Possessed in `dependencies` with `importSites` 0 and no Recipe. Assert `kind` is not `remove` and there is no `remove-dependency` Edit.
+    - Property: `fc.constantFrom("tslib", "@babel/runtime", "@swc/helpers", "core-js", "regenerator-runtime")`, or `@types/` plus a valid name part, with either origin. numRuns 1000.
+    - _Requirements: 1.5, 2.5_
+  - [x] 1.4 Run on the unfixed code and record the counterexamples
+    - Run `npx vitest run test/remediation/remediation-safety.test.ts` from packages/engine. **EXPECTED OUTCOME**: Properties 1, 2 and 3 FAIL.
+    - Record each shrunk counterexample here. The expected ones are plan `proposed` with set-range `^1.0.1` for `file:../foo`; the body section `## Review before merging`, blank line, `none` for the 201-file set; and kind `remove` for `@types/node`.
+    - If any case passes on the unfixed code, stop and re-check the root cause in design.md before going on.
+    - _Requirements: 1.1, 1.3, 1.5_
+    - Notes: Ran on the unfixed code (7c84f45), `vitest run test/remediation/remediation-safety.test.ts` from packages/engine. 18 tests, 0 passed, 18 failed, each on its intended assertion. No case passed, so the root causes stand.
+      - D1, 9 cases: each returns `{ kind: "bump", status: "proposed" }` with a set-range Edit where `{ status: "unavailable", reason: REASON_RANGE_NOT_REGISTRY }` is expected. Property 1 shrunk counterexample: `["file:../foo", { ok: true, published: [], deprecated: new Set([]), advisories: new Map([]) }]`. With no candidate at all the plan is `no-safe-version`, not `unavailable`, so even an empty registry answer is planned over a `file:` range.
+      - D2, 3 cases: each section is `## Review before merging\n\nnone\n`. Property 2 shrunk counterexample: `[{}, "unsafe"]`, an empty clean set plus one unsafe listed path `../escape.scss`; the section is `none`.
+      - D3, 3 cases: each gives `kind "remove"`. Property 3 shrunk counterexample: `["tslib", "dependencies", "Possessed"]`.
+  - [x] 1.5 Review: gravedigger and security-reviewer
+    - Run gravedigger over `packages/engine/src/remediation` and security-reviewer over `git diff` of this task. Record both verdict lines here. Expected: gravedigger still "unsafe", because nothing is fixed yet; security-reviewer ready, because only a test file was added.
+    - _Requirements: 1.1, 1.3, 1.5_
+    - Notes: 7c84f45 changes no file under `src/` relative to 58b157d (it adds only the spec), so it is the same unfixed code.
+      - gravedigger (wf_4e3af43f8e2aeb10) at fff60f8: "unsafe". D1, D2 and D3 stand at precheck.ts:17-26 and plan.ts:82, pr-body.ts:163, and choose-kind.ts:15. New defect D4: a non-registry sass-loader is raised with a caret range (migration-candidates.ts:63-69, node-sass-recipe.ts:72-77). D4 was added to bugfix.md and design.md, and task 5b was added. Its note about `capped` staying false at exactly 200 reads was checked and does not apply: `readRelevant` (node-sass-recipe.ts:45-51) attempts a read for every style and script file, so any unread file means a refused read, and that sets `capped`.
+      - security-reviewer (wf_7683f4d10cf7e2aa) on 7c84f45..fff60f8: "ready with notes: no listed defect, the tests assert the spec's expected behaviour, and the failures recorded in `tasks.md` match the unfixed code described in design.md."
+
+- [x] 2. Write the preservation property tests and run them on the unfixed code
+  - **Property 4 to 9: Preservation** - Everything outside the three bug conditions is unchanged
+  - **IMPORTANT**: Write them observation-first and run them on the UNFIXED code. They MUST PASS there. If one fails, narrow its domain to exclude the bug conditions and run again. Never change source code to make one pass.
+  - _Preservation: Properties 4 to 9 from design.md_
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.11_
+  - [x] 2.1 Write Properties 4 to 9 in test/remediation/remediation-safety.test.ts
+    - P4 never downgrade, over `arbReportAndOptions`.
+    - P5 planner equals `selectBump` on Registry ranges, over `arbSelectInput`.
+    - P6 range style on Registry ranges.
+    - P7 branch names over `arbReportAndOptions`.
+    - P8 body escaping with `arbHostileHealth`, plus Complete-scan and not-performed migrate bodies.
+    - P9 kind and status outside the bug conditions.
+    - numRuns 1000 for each.
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.11_
+  - [x] 2.2 Run Properties 4 to 9 on the unfixed code and record the results
+    - **EXPECTED OUTCOME**: P4 to P9 PASS, and P1 to P3 still FAIL.
+    - Record every domain narrowing here, with its reason.
+    - _Requirements: 3.1 to 3.9, 3.11_
+    - Notes: Ran on the unfixed source (fff60f8 plus this task's test additions), `vitest run test/remediation/remediation-safety.test.ts -t "Property [4-9]"`, numRuns 1000 each. All 7 pass: P4, P5, P6, P7, P8a, P8b and P9. In the full file, the 18 exploration tests still fail and these 7 pass.
+      - Domain narrowings, each written into the generator and none added after a failure. P5 and P6 use `arbSelectInput` filtered to a valid installed version and a Registry range, which excludes D1. P9 maps every Non-registry intake range to `^1.0.0`, which excludes D1. It skips Implicit-use names, which `arbPlanName` never draws anyway, and that excludes D3. P8b uses only clean `src/*.scss` sets, so every scan is Complete, which excludes D2. P4, P7 and P8a cover the full `arbReportAndOptions` and `arbHostileHealth` domains.
+  - [x] 2.3 Record the golden baseline
+    - Run `npm test -w @sexton/engine` and `npm test -w @sexton/web`, then `git diff --exit-code -- test/fixtures packages/web/public/replay`. Record that the goldens of bugfix 3.10 are unchanged.
+    - _Requirements: 3.10_
+    - Notes: engine 85 files, 1136 tests: 1118 passed, 18 failed, all 18 the exploration tests. web 57 files, 525 tests: 524 passed, 1 failed. The failure is `test/readme.test.ts > keeps the other section headings unchanged`. It predates this spec: the README's "Kiro project files" section, added on kiro/depth in abcc396, is a new `##` heading. It is outside this spec's paths and is left for the owner. `git diff --exit-code` on the goldens: exit 0.
+  - [x] 2.4 Review: gravedigger and security-reviewer
+    - Record both verdict lines here.
+    - _Requirements: 3.1 to 3.11_
+    - Notes:
+      - gravedigger (wf_a3bcd144032c50a6) at e278940: "Unsafe: D1 to D4 each turn a concrete input into a worse repository or a false "none", and none is fixed in e278940." It found no new defect. It made two notes: the recipe removes a non-registry node-sass without saying so (design Decision 2), and the order of the incomplete line against the notes should be pinned by a test (taken up in 4.2).
+      - security-reviewer (wf_4e33f67324b031c7) on fff60f8..e278940: "Verdict: ready with notes." It found no defects and called P4 to P9 non-vacuous. Its note that P9 checks only the kind rule and the absence of the D1 reason, not every status, is accepted; P5 covers the bump status on Registry ranges.
+
+- [x] 3. Fix D1: no bump over a Non-registry range
+  - [x] 3.1 Add the range check to src/remediation/precheck.ts
+    - Add `REASON_RANGE_NOT_REGISTRY` and the check after the intake-entry check, for kind `bump` only, as design.md "Changes required" says. Import `isResolvableRange` from `../intake/resolve.js`. Change no other file in src for this task.
+    - In test/remediation/remediation-safety.test.ts, replace the literal string with the import from 1.1.
+    - _Bug_Condition: isBugConditionD1_
+    - _Expected_Behavior: bugfix 2.1, 2.2, 2.3_
+    - _Requirements: 2.1, 2.2, 2.3, 3.11_
+  - [x] 3.2 Add the precheck unit tests from design.md "Unit tests"
+    - _Requirements: 2.1, 3.2, 3.11_
+  - [x] 3.3 Verify that Property 1 now passes
+    - Re-run the same test file without editing Property 1. **EXPECTED OUTCOME**: Property 1 PASSES, and P4 to P9 still PASS.
+    - _Requirements: 2.1, 2.2, 2.3_
+  - [x] 3.4 Run the gates
+    - `npx tsc -b` and `npx eslint . --max-warnings=0` from the root. `npm test -w @sexton/engine`, `-w @sexton/cli`, `-w @sexton/api` and `-w @sexton/web`. The golden diff from 2.3 must be empty.
+    - _Requirements: 3.1 to 3.10_
+    - Notes: tsc -b exit 0 and eslint exit 0. engine: 1144 passed and 8 failed, all 8 the D2 and D3 exploration tests. All 18 D1 tests pass: 10 exploration and 8 precheck units. cli: 61 passed. api: 300 passed. web: 524 passed and 1 failed, the pre-existing `readme.test.ts` heading test (see 2.3). Golden diff exit 0. No existing test changed or failed.
+  - [x] 3.5 Review: gravedigger and security-reviewer
+    - Record both verdict lines. Expected: gravedigger reports D1 fixed.
+    - _Requirements: 2.1, 2.2, 2.3_
+    - Notes:
+      - gravedigger (wf_c69ae45f6753ac50) at d1a4f91: "Verdict: unsafe. D1 is fixed with no regression. D2, D3 and D4 each have a concrete input that leaves a repository worse or hides unread files, and all three still stand at d1a4f91."
+      - security-reviewer (wf_731d933fbb2e2202) on e278940..d1a4f91: "Verdict: ready with notes. I found no defects in `e278940..d1a4f91`, and the D1 fix matches bugfix 2.1 to 2.3, 3.11 and design.md "Changes required"." Both of its notes were applied in task 4's commit: the header comment of precheck.ts now names this spec, and the test file's imports are one sorted block.
+
+- [x] 4. Fix D2: an Incomplete scan says so
+  - [x] 4.1 Change migrationSections in src/remediation/pr-body.ts
+    - Add `INCOMPLETE_SCAN_LINE` next to `NOT_SCANNED_LINE`, and replace line 163 with the three lines in design.md. Touch no other line of the file, so the other branch's signal-row change merges cleanly.
+    - _Bug_Condition: isBugConditionD2_
+    - _Expected_Behavior: bugfix 2.4_
+    - _Requirements: 2.4, 3.6, 3.7_
+  - [x] 4.2 Add the body unit test from design.md "Unit tests": two sites, a capped scan, then the line
+    - _Requirements: 2.4_
+  - [x] 4.3 Verify that Property 2 now passes
+    - **EXPECTED OUTCOME**: Property 2 PASSES, and P4 to P9 still PASS. `migration-plan.test.ts` and `migration-fixtures.test.ts` pass unchanged.
+    - _Requirements: 2.4, 3.6, 3.7, 3.10_
+  - [x] 4.4 Run the gates, as in 3.4
+    - _Requirements: 3.1 to 3.10_
+    - Notes: Property 2 and its three cases pass with no edit to the test. P4 to P9 still pass. The new unit test pins the order: sites, a blank line, the incomplete line, then the notes. Gates: tsc -b exit 0 and eslint exit 0. engine: 1149 passed and 4 failed, all 4 the D3 exploration tests. cli: 61 passed. api: 300 passed. web: 524 passed and 1 failed, the pre-existing `readme.test.ts` (see 2.3). Golden diff exit 0. `migration-plan.test.ts` and `migration-fixtures.test.ts` pass unchanged. The only lines of pr-body.ts that changed are the new constant next to `NOT_SCANNED_LINE` and the old line 163.
+  - [x] 4.5 Review: gravedigger and security-reviewer
+    - Record both verdict lines. Expected: gravedigger reports D2 fixed.
+    - _Requirements: 2.4_
+    - Notes:
+      - gravedigger (wf_fefea10ee182f04c) at def3208: "Verdict: unsafe. D3 (`choose-kind.ts:15`) and D4 (`migration-candidates.ts:49,63-68`, `node-sass-recipe.ts:72-82`) are still open defects, even though D2 is fixed cleanly." Its note was that a skipped unsafe path that is not a style or script file also makes the body say "incomplete". Accepted, as design Decision 7 says.
+      - security-reviewer (wf_c70c064666d14385) on d1a4f91..def3208: "Verdict: ready with notes. The D2 fix matches design.md and bugfix 2.4 and 3.5 to 3.7, and the only notes concern the test's coverage of `skipped`." Applied in task 5's commit: a unit case for `skipped: 1` with no sites.
+
+- [x] 5. Fix D3: no remove for an Implicit-use name
+  - [x] 5.1 Change src/remediation/choose-kind.ts
+    - Add `IMPLICIT_USE_NAMES`, `IMPLICIT_USE_PREFIX` and `isImplicitUse`, and guard the remove branch, as design.md says. No change in packages/cli.
+    - _Bug_Condition: isBugConditionD3_
+    - _Expected_Behavior: bugfix 2.5_
+    - _Requirements: 2.5, 3.8_
+  - [x] 5.2 Add the chooseKind unit tests from design.md "Unit tests", including the near-miss names
+    - _Requirements: 2.5, 3.8_
+  - [x] 5.3 Verify that Property 3 now passes
+    - **EXPECTED OUTCOME**: Property 3 PASSES, and P4 to P9 still PASS. Property 9 "Remove needs import sites" in `plan.test.ts` passes unchanged.
+    - _Requirements: 2.5, 3.8_
+    - Notes: Before the fix, Property 3 and its three cases failed at fff60f8 (task 1.4, counterexample `["tslib", "dependencies", "Possessed"]`) and again in the def3208 gates (4 failed). After the fix in choose-kind.ts, the file passes 53 of 53 with no edit to Property 3. The chooseKind units cover six Implicit-use names that become bumps, four near-miss names that stay removes (`types-node`, `@typesx/a`, `tslib-extra`, `left-pad`), and the recipe case, which is a migrate.
+  - [x] 5.4 Run the gates, as in 3.4
+    - _Requirements: 3.1 to 3.10_
+    - Notes: tsc -b exit 0 and eslint exit 0. engine: 85 files, 1165 of 1165 passed, the first fully green engine run of this spec. cli: 61 passed. api: 300 passed. web: 524 passed and 1 failed, the pre-existing `readme.test.ts` (see 2.3). Golden diff exit 0. `plan.test.ts` Property 9 "Remove needs import sites" passes unchanged.
+  - [x] 5.5 Review: gravedigger and security-reviewer
+    - Record both verdict lines. Expected: gravedigger reports D3 fixed.
+    - _Requirements: 2.5_
+    - Notes: At d459983 the D4 exploration test (5b.1) is red on purpose. It is fixed in 5b.2.
+      - gravedigger (wf_4337fedc6894c9fb) at d459983: "Verdict: unsafe. D3 is fixed, but D4 remains a concrete defect at `migration-candidates.ts:49,68`." It found that the remove kind has one source, `chooseKind`, so no other path can reach a remove.
+      - security-reviewer (wf_5010ba4ab7e4d7a6) on def3208..d459983: "Verdict: ready with notes. The D3 fix and its tests are correct, and the D4 exploration test is intentionally red until the next task." Its notes were that choose-kind.ts now exports several names and has a long first comment. Kept as they are: they are one concept, the kind choice, and its own constants.
+
+- [x] 5b. Fix D4: no sass-loader raise over a Non-registry range (added after the task 1 review)
+  - [x] 5b.1 Write Property 10 in test/remediation/remediation-safety.test.ts and run it on the code before this fix
+    - **EXPECTED OUTCOME**: Property 10 FAILS. Record the counterexample here. If it passes, stop.
+    - _Bug_Condition: isBugConditionD4_
+    - _Requirements: 1.6_
+    - Notes: Ran on the code before the D4 fix (working tree after the D3 fix), `vitest run test/remediation/remediation-safety.test.ts -t "D4"`. 4 failed and 1 passed. The three cases (`file:../loader`, `github:o/sass-loader`, `workspace:*` at 7.0.0) and Property 10 fail on `expected 'raise' to be 'unknown'`. Property 10 shrunk counterexample: `["7.0.0", "file:../foo"]`. The Registry-range control `~7.1.0` at 7.1.0 is still `raise` and passes.
+  - [x] 5b.2 Change sassLoaderNeed in src/remediation/migration-candidates.ts as design.md "D4" says, then verify that Property 10 passes and P4 to P9 still pass
+    - _Expected_Behavior: bugfix 2.7_
+    - _Requirements: 2.7, 3.11, 3.12_
+    - Notes: One guard in `sassLoaderNeed`, after the `absent` check. It uses `isUsableRange`, which is `isResolvableRange` on a string and is already imported in that file, so no import was added. Property 10 and its three cases pass with no edit to the test. The Registry-range control still gives `raise`. P4 to P9 pass. `node-sass-recipe.test.ts`, `migration-plan.test.ts`, `gather-migration-data.test.ts` and `migration-fixtures.test.ts` pass unchanged, 77 of 77 with the safety file. `arbRangeFor`'s `latest` draws now give `unknown`, and Properties 21, 22, 28 and 29 still hold. No deliberate test change.
+  - [x] 5b.3 Run the gates, as in 3.4
+    - _Requirements: 3.1 to 3.12_
+    - Notes: tsc -b exit 0 and eslint exit 0. engine: 85 files, 1170 of 1170 passed. cli: 61 passed. api: 300 passed. web: 57 files, 525 of 525 passed. That run included the owner's one-line fix to `packages/web/test/readme.test.ts`, which adds "## Kiro project files" to the pinned headings and is committed on its own. Golden diff exit 0.
+  - [x] 5b.4 Review: gravedigger and security-reviewer
+    - Record both verdict lines. Expected: gravedigger reports D4 fixed.
+    - _Requirements: 1.6, 2.7_
+    - Notes:
+      - gravedigger (wf_7b9813cc8c46af7a) at 9cb4514: "**safe**: D4 is fixed, D1 to D3 still hold, and no new defect or note was found."
+      - security-reviewer (wf_d081b7d3ed41ba64) on d459983..9cb4514: ready with notes, no defects. Its note was that design.md names `isResolvableRange` while the code uses `isUsableRange`. That helper is the same predicate plus a string check, so an undefined range also gives `unknown`, which is the safer side. 5b.2's notes record it.
+
+- [x] 6. Change log and final checkpoint
+  - [x] 6.1 Add the 0.9 change-log line to docs/requirements.md, worded as design.md "Changes required" gives it, with the date of the change. Edit no requirement text.
+    - _Requirements: 2.6_
+    - Notes: main took 0.9 in submission-readiness, merged at 6da99d9, so this spec's line is 1.0, the next free number. Its wording adds the D4 clause. No requirement text was edited.
+  - [x] 6.2 Final gates
+    - `npx tsc -b`, `npx eslint . --max-warnings=0`, and `npm test` for engine, cli, api, web and sexton-infra. The golden diff from 2.3 must be empty. `git diff --stat` must touch only the allowed paths at the top of this file.
+    - _Requirements: 3.1 to 3.11_
+    - Notes: These ran after main (8b15923) was merged at 6da99d9. README.md and `packages/web/test/readme.test.ts` conflicted, and both were resolved by keeping every side's lines: "## Kiro project files" then "## Limits". pr-body.ts auto-merged: main's change was the one word "unknown" in the signal rows. Main does not untrack `.githooks` at 8b15923, even after `git fetch`, so there was no deletion to accept. Results: tsc -b exit 0 and eslint exit 0. engine: 87 files, 1178 of 1178. cli: 61 of 61. api: 33 files, 300 of 300. web: 57 files, 525 of 525. sexton-infra: 6 files, 51 of 51. Golden diff exit 0. Paths this spec changed: packages/engine/src/remediation (precheck.ts, pr-body.ts, choose-kind.ts, migration-candidates.ts), packages/engine/test/remediation/remediation-safety.test.ts, one line in packages/web/test/readme.test.ts, the 1.0 line in docs/requirements.md, and this spec folder.
+  - [x] 6.3 Review: gravedigger and security-reviewer
+    - Run gravedigger over `packages/engine/src/remediation` and security-reviewer over the whole spec's diff. Record both verdict lines here.
+    - **The spec is done only when gravedigger's last line is "safe" or "safe with notes".** If it is "unsafe", list its defects here and stop; do not mark this task done.
+    - _Requirements: 2.1 to 2.6, 3.1 to 3.11_
+    - Notes:
+      - gravedigger (wf_fb48dbe3181b24b9) at b441f73: "Verdict: safe with notes. No input gives a worse repository, D1 to D4 are fixed, the merge from main added nothing risky, and the remaining items are defence-in-depth gaps." Its notes are left for a later change. `buildPrIntent` could re-check `isValidBranchName` (pr-intent.ts:35). The closed-enum values severity, publish method and review-site rule could also go through `escapeField` (pr-body.ts:51, 61, 97, 150).
+      - security-reviewer (wf_784484846f5c527f) over the spec's diff against main: "Ready with notes: no listed defect in code or tests, and the merge kept both sides' lines." Its notes, the `isUsableRange` wording and the uncommitted working-tree files, are resolved by this commit.

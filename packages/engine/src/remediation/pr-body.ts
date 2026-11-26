@@ -31,6 +31,8 @@ export const MIGRATE_LINE = "A migration is proposed. Its changes come from the 
 export const NO_RULE_LINE = "No policy rule fails for this package.";
 export const NONE_LINE = "none";
 export const NOT_SCANNED_LINE = "Stylesheets and scripts: not scanned.";
+/** Spec remediation-safety, D2: the scan was capped or skipped a file. */
+export const INCOMPLETE_SCAN_LINE = "Stylesheets and scripts: scan incomplete, some files were not read. Check them by hand.";
 
 export const LOCKFILE_NOTE =
   "`package-lock.json` is not changed on this branch. Run `npm install` on this branch before `npm ci` works.";
@@ -161,7 +163,9 @@ function migrationSections(plan: RemediationPlan, limit: number): string[] {
     lines.push(`- ${F(where)} ${site.rule}: ${F(site.excerpt)}`);
   }
   if (m.reviewSites.length > shown.length) lines.push("", `and ${String(m.reviewSites.length - shown.length)} more`);
-  if (m.reviewSites.length === 0 && m.scan.performed) lines.push(NONE_LINE);
+  const incomplete = m.scan.performed && (m.scan.capped || m.scan.skipped > 0);
+  if (m.reviewSites.length === 0 && m.scan.performed && !incomplete) lines.push(NONE_LINE);
+  if (incomplete) lines.push(...(shown.length > 0 ? [""] : []), INCOMPLETE_SCAN_LINE);
   if (!m.scan.performed) lines.push(...(shown.length > 0 ? [""] : []), NOT_SCANNED_LINE);
   const notes = m.notes.filter((n) => RECIPE_NOTES.has(n));
   for (const note of notes) lines.push("", `${note}.`);

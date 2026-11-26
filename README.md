@@ -183,6 +183,46 @@ Releases are sequenced, not promised by date. Release 0.1 lists each item's stat
 - Signed evidence packs
 - Evidence pack export for SOC 2, DORA and CRA reporting
 
+## Kiro project files
+
+Specs, each with its requirements (or bugfix), design and tasks, in `.kiro/specs/`:
+
+- `health-scoring`: the pure scoring core, signals and the state function.
+- `history-signals`: maintainers, provenance, transitive reach and the snapshot history.
+- `policy`: `sexton.policy.yml`, its schema and the four rule types.
+- `repo-intake`: a GitHub repository URL to direct dependencies with installed versions.
+- `remediation`: one plan per unhealthy package, PR intents, PR bodies and the log contract.
+- `migration-node-sass`: the node-sass to sass recipe.
+- `evidence-pack`: the evidence pack, its CycloneDX SBOM and its digest.
+- `cli-and-action`: the `sexton` CLI and the GitHub Action.
+- `infra`: the CDK app, the hosted scan API and the snapshotter on AWS.
+- `hosted-plans`: remediation plans on `GET /api/scan`.
+- `remediate`: `POST /api/remediate`, which opens the pull request.
+- `engine-version`: bugfix, the engine version when bundled into Lambda.
+- `state-age-rule`: bugfix, age alone gives Restless and Dead needs an advisory or deprecation.
+- `new-signals`: the publisherChange and newDependency signals and their two Possessed rules.
+- `cemetery-ui`, `cemetery-theme`, `cemetery-polish`, `cemetery-time`, `cemetery-time-fixes`, `cemetery-undead`: the web cemetery, its history scrubber and replays, and the night art.
+- `cemetery-undead-2`: sound, speech bubbles, the replay burst and the burial priest.
+- `cemetery-undead-fixes`: bugfix, defects in the web app and CI found after cemetery-undead-2.
+
+Steering in `.kiro/steering/`:
+
+- `product.md`, `tech.md`, `structure.md`: always included; what Sexton is, how it is built, where things go.
+- `engine.md`, `web.md`, `api-etiquette.md`, `pr-safety.md`, `security-rules.md`: included when matching files are open; engine, cemetery, upstream, pull request and security rules.
+- `ears-authoring.md`: included on demand when writing acceptance criteria.
+
+Hooks in `.kiro/hooks/`:
+
+- `quality.json`: typecheck before a spec task, engine tests on save, property tests after a task.
+- `security.json`: blocks agent writes to secrets, private files and the MCP config (`scripts/deny-secret-writes.mjs`).
+- `supply-chain.json`: before an npm install, runs `sexton check` on the repository and blocks the install when the policy fails (`scripts/install-gate.mjs`).
+
+Agents in `.kiro/agents/`:
+
+- `impl.md`: the implementer for spec tasks; it runs tests, typecheck, lint and read-only commands without asking, and asks before anything else.
+- `security-reviewer.md`: read-only reviewer against the spec and the security steering.
+- `gravedigger.md`: read-only reviewer that checks a remediation plan can never make a repository worse.
+
 ## Limits
 
 - Sexton sees what the npm registry, OSV, deps.dev and GitHub publish. It does not run or read the code inside a package. A compromise that leaves no trace in that data is not seen.

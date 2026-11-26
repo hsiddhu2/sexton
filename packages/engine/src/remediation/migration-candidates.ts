@@ -63,6 +63,8 @@ export type SassLoaderNeed =
 export function sassLoaderNeed(packages: readonly IntakePackage[]): SassLoaderNeed {
   const pkg = packages.find((p) => p.name === "sass-loader");
   if (pkg === undefined) return { kind: "absent" };
+  // Spec remediation-safety, D4: a raise would replace a file:, git, URL, npm: alias, workspace: or dist-tag source.
+  if (!isUsableRange(pkg.declaredRange)) return { kind: "unknown", pkg };
   const effective = effectiveVersion(pkg);
   if (effective === null) return { kind: "unknown", pkg };
   return semver.gte(effective, SASS_LOADER_MINIMUM) ? { kind: "compatible", pkg } : { kind: "raise", pkg, effective };

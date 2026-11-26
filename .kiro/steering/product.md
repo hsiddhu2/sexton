@@ -13,7 +13,7 @@ A sexton keeps the churchyard: buries the dead, keeps the grounds, tolls the bel
 - Reviewers who have three minutes and a hosted demo.
 
 ## States, assigned in this order, first match wins
-- Possessed: maintainer changed in 90 days, or provenance regressed, or a new install script appeared.
+- Possessed: maintainer changed in 90 days, or provenance regressed, or a new install script appeared, or a new dependency has an install script or was published within 7 days of the parent, or the publisher changed from a trusted publisher to a token.
 - Dead: deprecated, or last publish more than 24 months ago and at least one advisory of any severity.
 - Haunted: any High or Critical advisory.
 - Restless: last publish more than 24 months ago, or any Low or Moderate advisory.
@@ -27,9 +27,11 @@ A sexton keeps the churchyard: buries the dead, keeps the grounds, tolls the bel
 - POST /api/remediate takes only { repo, package }. A repository outside the allowlist gets 422 repository-not-allowed before any scan or GitHub request. The allowlist today is hsiddhu2/sexton-demo.
 - Remediation log: append-only. Each entry holds repository, branch, prUrl, package, kind and timestamp.
 - GitHub Action: a composite action. It runs sexton check on pull requests, writes the job summary, posts or updates one comment and fails the job with the CLI exit code.
-- Cemetery time: a history scrubber that shows each package as of an earlier date, a pennant beside a grave whose pull request was opened, and a burial animation when Sexton opens one. The Engine writes the timeline of each package into GET /api/scan. The evidence pack and the policy result describe the scan date only.
-- Two replays, axios (March 2026) and keyv (August 2026), are scan responses built offline from public reports and played through the scrubber. They are fixtures on the web origin, not live scans. The address ?replay=axios or ?replay=keyv loads one.
-- Publisher-changed and new-dependency signals come in a later spec.
+- Cemetery time: a history scrubber that shows each package as of an earlier date, a pennant beside a grave whose pull request was opened, and a burial animation when Sexton opens one. The Engine computes each package's Segments and the scan response carries them in timelines. Over 5 MiB the hosted scan drops timelines and sets timelinesOmitted: "too-large". The web app holds no state rule. The evidence pack and the policy result describe the scan date only.
+- Two replays, axios (March 2026) and keyv (August 2026), are scan responses built offline from public reports and played through the scrubber. They are fixtures at /replay/axios.json and /replay/keyv.json on the web origin, not live scans. Only ?replay=axios or ?replay=keyv loads one; any other value loads nothing. A replay opens at its first Stop and always shows the banner "Reconstructed from public reports. Not a live scan."
+- The cemetery is night-only. Every colour is a token in packages/web/src/scene/palette.ts; styles.css holds no colour literal. State colours: Alive #8fe3d0, Restless #e69f00, Haunted #56b4e9, Dead #bfb8ad, Possessed #cc79a7.
+- Fonts are self-hosted in packages/web/public/fonts with their OFL files: Pirata One, IM Fell English SC, IM Fell English italic, Instrument Sans. No font request leaves the page origin.
+- Sound and speech bubbles (R-UI-8): sound is generated in code, off by default, remembered per browser, and no AudioContext exists before the user turns it on. Speech bubbles are hidden in Serious mode and never placed over a grave's name.
 
 ## Rules that never change
 - Every signal carries its source URL and fetch timestamp.
