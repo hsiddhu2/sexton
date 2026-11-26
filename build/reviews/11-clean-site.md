@@ -92,3 +92,21 @@ Notes:
 8. Seven e2e cases in `time.spec.ts` and `polish.spec.ts` fail the same way on the commit before this task; they wait for task 12.1. `remediate.spec.ts`, `polish.spec.ts`'s drawer cases, `judge.spec.ts` and `list.spec.ts` pass.
 
 Gates after the fixes: typecheck, lint (zero warnings) and test pass; 2253 tests across 6 workspaces.
+
+## Task 6
+
+The Replay as a story (6.1 to 6.3): `steps` and `why` in `ReplayInfo`, in `replay-facts.mjs` with a source key after every sentence, and in the generator, with both replay files regenerated; the validator's checks of the Step texts and of their count against `stopsFor`; and `replay/ReplayView.tsx`, which takes the screen as the one View owner with the breadcrumb, headline and sub-line, the stage with the date badge and the Burst, the Step panel with Back and "Next step", the Why card, and the Footer bar with "Play all", the Step cards and "Exit replay". The old banner, the scrubber's Play and Stop cards, and the Replay's own Drawer went with their tests.
+
+Independent review before the commit, with the instruction to check Step sentences against their cited sources. Verdict: ready. No defect found: every changed file is in the lane, no new I/O, source links only for https addresses, and no text rendered as HTML. Thirteen sentences were checked against the Trend Micro report (through its redirect), the CSA advisory, the Snyk report and the cacheable issue, and each was supported.
+
+Notes:
+
+1. Snyk credits the keyv second stage's targets to the incident reports it cites and did not decrypt the payload itself. Fixed before the commit: the sentence now begins "Reports say".
+2. "A fresh install gets 1.14.0 again." comes from the registry time map and CSA's downgrade advice, not a direct sentence. Kept and recorded with its sources in design.md.
+3. Trend Micro says npm removed every compromised version (0.30.4 too); the Step names only 1.14.1, the one this replay shows. Kept.
+4. A loaded file of the Replay with no story would have shown the waiting card for ever. Fixed before the commit: it shows an alert; a test renders the view with such a response, and another checks that the validator refuses it first.
+5. Over-cap Step and why texts are reported as WRONG_TYPE, as the other capped strings are.
+6. The source-comment test finds each sentence on one line of the facts file; a sentence wrapped over two lines would fail the test rather than pass.
+7. design.md speaks of "the prototype" in words only, as the spec does throughout; no path or private document is named.
+
+Gates after the fixes: typecheck, lint (zero warnings) and test pass; 2268 tests across 6 workspaces. The changed e2e specs pass locally but for five cases in `time.spec.ts` and two in `smoke.spec.ts` that fail the same way before this task and wait for task 12.

@@ -2,14 +2,10 @@ import type { PackageTimeline, ScanResponse } from "@sexton/api";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import axe from "axe-core";
-import { act } from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { App } from "../src/App.js";
 import { cheapScan } from "./arbitraries.js";
 import { readDemoScanText } from "./support/demo-scan.js";
-import { readReplayText } from "./support/replay-fixture.js";
-import { setMedia } from "./setup.js";
-import { PLAY_STEP_MS } from "../src/time/play.js";
 afterEach(cleanup);
 beforeEach(() => {
   document.documentElement.lang = "en";
@@ -29,10 +25,6 @@ function mount(text: string = readDemoScanText(), options: { apiBase?: string | 
   return render(
     <App fetchFn={fetchOf(text, options.calls)} apiBase={options.apiBase ?? null} initialSearch="" pageOrigin="http://localhost" />,
   );
-}
-/** Spec clean-site, 4.1: Home has no Play control; a Replay keeps it until its own view lands (task 6). */
-function mountReplay() {
-  return render(<App fetchFn={fetchOf(readReplayText("axios"))} apiBase={null} initialSearch="?replay=axios" pageOrigin="http://localhost" />);
 }
 async function ready(): Promise<void> {
   await waitFor(() => {
@@ -204,7 +196,7 @@ describe("versioned Segments (requirement 12.9)", () => {
 });
 
 // Spec cemetery-time-fixes, task 3.5: the Play control (requirement 4). Spec clean-site, 4.1: Home has no Play
-// control any more, so these cases run on a Replay, which keeps it until task 6 rebuilds it as "Play all".
+// control; the Replay's "Play all" and its cases are in replay-view.test.tsx (task 6.3).
 describe("the Play control", () => {
   it("is not on Home", async () => {
     mount();
@@ -212,119 +204,6 @@ describe("the Play control", () => {
     expect(slider()).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Play" })).toBeNull();
     expect(document.querySelector("button.scrub-play")).toBeNull();
-  });
-
-  const play = (): HTMLButtonElement => document.querySelector<HTMLButtonElement>("button.scrub-play") as HTMLButtonElement;
-  const live = (): string => document.querySelector(".scrub-live")?.textContent ?? "";
-  const step = (ms: number): void => {
-    act(() => {
-      vi.advanceTimersByTime(ms);
-    });
-  };
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  // Spec cemetery-undead, Deliberate test change 20: in the Footer bar, Play comes first, then the label, date and slider.
-  it("is a native button named Play before the History date label and the slider, inside a polite live section", async () => {
-    mountReplay();
-    await ready();
-    const button = screen.getByRole("button", { name: "Play" });
-    expect(button).toBe(play());
-    expect(button.tagName).toBe("BUTTON");
-    expect(button.getAttribute("type")).toBe("button");
-    expect(button.hasAttribute("aria-pressed")).toBe(false);
-    const date = document.querySelector(".scrub-date") as Element;
-    const label = document.querySelector('label[for="history-date"]') as Element;
-    expect(button.compareDocumentPosition(label) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(label.compareDocumentPosition(date) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(date.compareDocumentPosition(slider()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(button.closest("footer.night-footer")).not.toBeNull();
-    const line = document.querySelector(".scrub-live") as HTMLElement;
-    expect(line.tagName).toBe("P");
-    expect(line.getAttribute("aria-live")).toBe("polite");
-    expect(line.closest(".scrub")).not.toBeNull();
-    expect(line.textContent).toBe("");
-  });
-
-  it("starts with Enter and with Space, and its name becomes Pause", async () => {
-    const user = userEvent.setup();
-    mountReplay();
-    await ready();
-    play().focus();
-    await user.keyboard("{Enter}");
-    expect(play().textContent).toBe("Pause");
-    expect(screen.getByRole("button", { name: "Pause" })).toBe(play());
-    await user.keyboard("{Enter}");
-    expect(play().textContent).toBe("Play");
-    await user.keyboard(" ");
-    expect(screen.getByRole("button", { name: "Pause" })).toBe(play());
-    await user.keyboard(" ");
-    expect(screen.getByRole("button", { name: "Play" })).toBe(play());
-  });
-
-  it("at the last Stop moves to Stop 0, steps every 1,500 ms, announces each step and stops at the last", async () => {
-    mountReplay();
-    await ready();
-    const max = Number(slider().max);
-    move(max);
-    expect(slider().value).toBe(String(max));
-    vi.useFakeTimers();
-    fireEvent.click(play());
-    expect(slider().value).toBe("0");
-    expect(live()).toBe(`Playing from ${slider().getAttribute("aria-valuetext") ?? ""}`);
-    expect(screen.queryByRole("status")).toBeNull();
-    step(PLAY_STEP_MS - 1);
-    expect(slider().value).toBe("0");
-    step(1);
-    expect(slider().value).toBe("1");
-    expect(live()).toBe(slider().getAttribute("aria-valuetext"));
-    expect(screen.queryByRole("status")).toBeNull();
-    for (let i = 2; i <= max; i += 1) step(PLAY_STEP_MS);
-    expect(slider().value).toBe(String(max));
-    expect(play().textContent).toBe("Play");
-    expect(live()).toBe(`End of history at ${slider().getAttribute("aria-valuetext") ?? ""}`);
-    step(5 * PLAY_STEP_MS);
-    expect(slider().value).toBe(String(max));
-  });
-
-  it("pauses on Pause and keeps the Stop", async () => {
-    mountReplay();
-    await ready();
-    vi.useFakeTimers();
-    fireEvent.click(play());
-    step(PLAY_STEP_MS);
-    fireEvent.click(play());
-    expect(slider().value).toBe("1");
-    expect(play().textContent).toBe("Play");
-    expect(live()).toBe(`Paused at ${slider().getAttribute("aria-valuetext") ?? ""}`);
-    step(5 * PLAY_STEP_MS);
-    expect(slider().value).toBe("1");
-  });
-
-  it("pauses on a slider move", async () => {
-    mountReplay();
-    await ready();
-    vi.useFakeTimers();
-    fireEvent.click(play());
-    move(2);
-    expect(play().textContent).toBe("Play");
-    step(5 * PLAY_STEP_MS);
-    expect(slider().value).toBe("2");
-  });
-
-  it("makes the same steps at the same times under Reduced motion", async () => {
-    setMedia("(prefers-reduced-motion: reduce)", true);
-    mountReplay();
-    await ready();
-    vi.useFakeTimers();
-    fireEvent.click(play());
-    step(PLAY_STEP_MS - 1);
-    expect(slider().value).toBe("0");
-    step(1);
-    expect(slider().value).toBe("1");
-    step(PLAY_STEP_MS);
-    expect(slider().value).toBe("2");
   });
 
   it("is not rendered with one Stop", async () => {
@@ -336,19 +215,5 @@ describe("the Play control", () => {
     // A versioned Segment at the Scan date: the start and the Scan date are one Stop.
     expect(Number(slider().max)).toBe(0);
     expect(document.querySelector("button.scrub-play")).toBeNull();
-  });
-
-  it("has no axe violations while playing", async () => {
-    mountReplay();
-    await ready();
-    vi.useFakeTimers();
-    fireEvent.click(play());
-    expect(play().textContent).toBe("Pause");
-    // Fake timers hold the next step, so no tick lands while axe runs.
-    vi.useRealTimers();
-    const result = await axe.run(document, AXE_OPTIONS);
-    expect(result.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.html).join(" | ")}`)).toEqual([]);
-    expect(play().textContent).toBe("Pause");
-    fireEvent.click(play());
   });
 });

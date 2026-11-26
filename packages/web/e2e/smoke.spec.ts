@@ -173,28 +173,28 @@ test("the axios replay at its Possessed stop, for the README", async ({ page, ba
   await page.goto("/?replay=axios");
   const grave = page.locator("button[data-grave-index]").first();
   await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
-  const scrubber = page.getByRole("slider", { name: "History date" });
-  await scrubber.focus();
-  await scrubber.press("ArrowRight");
+  // Spec clean-site, task 6.3: the Replay moves by "Next step" and its Why card holds the sources (8.12).
+  const next = page.getByRole("button", { name: "Next step" });
+  await next.click();
   await expect(grave).toHaveAttribute("aria-label", "axios 1.14.1, Possessed");
-  await expect(page.locator('[role="note"]')).toBeVisible();
+  await expect(page.locator(".why-card")).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   // A replay names itself in the header and shows no policy line (its policy is for the replay's end time).
   await expect(page.locator(".headline")).toHaveText("Watch the axios attack unfold");
   await expect(page.locator(".footer-policy")).toHaveCount(0);
-  // K2d fix 1, item 4: the story is a card over the scene, the Stops are three dated cards in the Footer bar, and the
-  // header keeps its normal height.
-  const card = page.locator("main .replay-card");
+  // Spec clean-site, task 6.3: the Step panel and the Why card in the Panel, three Step cards in the Footer bar, and
+  // the header keeps its normal height.
+  const card = page.locator("main .why-card");
   await expect(card).toBeVisible();
   await expect(card).toContainText("Reconstructed from public reports. Not a live scan.");
   await expect(card.locator("a")).toHaveCount(4);
-  await expect(page.locator("footer .stop-card")).toHaveCount(3);
-  await expect(page.locator('footer .stop-card[aria-current="step"]')).toContainText("axios 1.14.1");
+  await expect(page.locator("footer .step-card")).toHaveCount(3);
+  await expect(page.locator('footer .step-card[aria-current="step"]')).toContainText("A poisoned release appears");
   const canvasBox = await page.locator("canvas").boundingBox();
   console.log(`axios replay canvas top ${String(canvasBox?.y)}`);
   expect(canvasBox?.y ?? 999).toBeLessThanOrEqual(120);
-  // Move focus off the slider so no focus ring is in the picture, then wait two frames for the repaint.
-  await scrubber.blur();
+  // Move focus off the button so no focus ring is in the picture, then wait two frames for the repaint.
+  await next.blur();
   await waitForFirstPaint(page);
   // Spec cemetery-undead-2, Deliberate test change 10: the picture is taken at the 00:21 UTC Stop with nothing
   // hovered (K2d fix 1, item 8 opened the axios tooltip here), so the grave shows its Halo.

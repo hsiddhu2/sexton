@@ -2,14 +2,12 @@
 // "← Cemetery / <name>", the name, version and State badge, the scan date, the tabs Evidence, The fix and History, and
 // one close button. Focus moves to the close button and stays inside; a press on the scrim closes it. The tab is the
 // Drawer's own state, so it never touches the address (10.16).
-import type { ReplayInfo } from "@sexton/api";
 import { useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import type { Term } from "../glossary/glossary.js";
 import { TermText } from "../glossary/TermText.js";
 import { ScanTime } from "../header/ScanTime.js";
 import { hasPrPrefix, type RemediateView } from "../load/remediate-client.js";
 import { reasonSentence } from "../panel/reason-family.js";
-import { ReplayBanner } from "../replay/ReplayBanner.js";
 import { copyText, type CopyResult } from "./clipboard.js";
 import type { DrawerModel, SignalRow } from "./drawer-model.js";
 import {
@@ -49,8 +47,6 @@ export interface DrawerProps {
   readonly history: readonly HistoryRow[] | null;
   /** One line "State on <date>: <State>. <reason>" for a versioned Segment (spec cemetery-time, 12.9). */
   readonly asOfLine?: string;
-  /** Set for a replay: the banner shows at the top of the Evidence tab (spec cemetery-time, 19.1). */
-  readonly replay?: ReplayInfo;
   readonly onClose: () => void;
   /** Present only for a hosted scan with actions.remediate true (spec remediate, Requirement 9.2). */
   readonly onRemediate?: (packageName: string) => Promise<RemediateView>;
@@ -118,10 +114,9 @@ function SignalCells({ signal, onTerm }: { readonly signal: SignalRow } & TermPr
   );
 }
 
-function EvidenceTab({ model, replay, onTerm }: { readonly model: DrawerModel; readonly replay: ReplayInfo | undefined } & TermProp) {
+function EvidenceTab({ model, onTerm }: { readonly model: DrawerModel } & TermProp) {
   return (
     <>
-      {replay === undefined ? null : <ReplayBanner replay={replay} />}
       <div className={`verdict verdict-${model.state.toLowerCase()}`}>
         <b>{model.state}.</b> <TermText text={reasonSentence(model.stateReason)} {...termProp(onTerm)} />
       </div>
@@ -235,7 +230,7 @@ function HistoryTab({ rows, onTerm }: { readonly rows: readonly HistoryRow[] | n
   );
 }
 
-export function Drawer({ model, fix, history, asOfLine, replay, onClose, onRemediate, onDismissToField, onTerm, onGuide, popoverOpen = false }: DrawerProps) {
+export function Drawer({ model, fix, history, asOfLine, onClose, onRemediate, onDismissToField, onTerm, onGuide, popoverOpen = false }: DrawerProps) {
   const dialogRef = useRef<HTMLElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -357,7 +352,7 @@ export function Drawer({ model, fix, history, asOfLine, replay, onClose, onRemed
         </div>
         <div id="drawer-panel" className="drawer-body" role="tabpanel" aria-labelledby={`drawer-tab-${tab}`} tabIndex={0}>
           {tab === "evidence" ? (
-            <EvidenceTab model={model} replay={replay} {...termProp(onTerm)} />
+            <EvidenceTab model={model} {...termProp(onTerm)} />
           ) : tab === "fix" ? (
             <FixTab fix={fix} {...termProp(onTerm)} />
           ) : (

@@ -109,9 +109,10 @@ const SOURCE_HREFS = {
 } as const;
 
 for (const id of ["axios", "keyv"] as const) {
-  test(`?replay=${id} loads under the CSP with the banner and its links, and no external request`, async ({ page, baseURL }) => {
+  // Spec clean-site, task 6.3: the banner is the Why card in the Panel (8.12).
+  test(`?replay=${id} loads under the CSP with the Why card and its links, and no external request`, async ({ page, baseURL }) => {
     const { violations, requests } = await openReplay(page, baseURL, `?replay=${id}`);
-    const banner = page.locator('[role="note"]');
+    const banner = page.locator(".why-card");
     await expect(banner).toHaveCount(1);
     await expect(banner).toContainText("Reconstructed from public reports. Not a live scan.");
     const links = banner.locator("a");
@@ -126,64 +127,54 @@ for (const id of ["axios", "keyv"] as const) {
   });
 }
 
+// Spec clean-site, task 6.3: the Replay moves by Next step and its Step cards; its grave opens nothing (8.19), so
+// the reason is read from "What Sexton shows".
 test("the axios replay shows Alive 1.14.0, then Possessed 1.14.1, then Alive 1.14.0 again, with no Not-published mound", async ({ page, baseURL }) => {
   await openReplay(page, baseURL, "?replay=axios");
   const grave = page.locator("button[data-grave-index]").first();
-  const scrubber = page.getByRole("slider", { name: "History date" });
-  await expect(scrubber).toHaveValue("0");
-  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
-  await scrubber.focus();
-  await scrubber.press("Home");
-  await expect(scrubber).toHaveValue("0");
+  await expect(page.locator(".step-panel h2")).toContainText("Step 1 of 3");
   await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
   await expect(grave).not.toHaveAttribute("aria-label", /not yet published/);
-  await scrubber.press("ArrowRight");
+  await page.getByRole("button", { name: "Next step" }).click();
   await expect(grave).toHaveAttribute("aria-label", "axios 1.14.1, Possessed");
-  // Spec clean-site, task 2.1: the reason is read from the drawer's State line now that the tooltip is gone (4.1).
+  await expect(page.locator(".step-panel")).toContainText("1.14.1 has none");
   await grave.click();
-  await expect(page.locator(".drawer-asof")).toContainText("provenance regression");
-  await page.keyboard.press("Escape");
-  await scrubber.press("ArrowRight");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.getByRole("button", { name: "Next step" }).click();
   await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
+  await expect(page.getByRole("button", { name: "Back to the cemetery" })).toBeVisible();
 });
 
-test("the keyv replay shows Alive 5.6.0, then Possessed 6.0.0 at its end, and a second replay opens from the header", async ({ page, baseURL }) => {
+test("the keyv replay shows Alive 5.6.0, then Possessed 6.0.0 at its end, and a second replay opens after Exit replay", async ({ page, baseURL }) => {
   await openReplay(page, baseURL, "?replay=keyv");
   const grave = page.locator("button[data-grave-index]").first();
-  const scrubber = page.getByRole("slider", { name: "History date" });
-  await expect(scrubber).toHaveValue("0");
-  await expect(grave).toHaveAttribute("aria-label", "keyv 5.6.0, Alive");
-  await scrubber.focus();
-  await scrubber.press("Home");
   await expect(grave).toHaveAttribute("aria-label", "keyv 5.6.0, Alive");
   await expect(grave).not.toHaveAttribute("aria-label", /not yet published/);
-  await scrubber.press("End");
-  await grave.click();
-  await expect(page.locator(".drawer-asof")).toContainText("install script added in 6.0.0");
-  await page.keyboard.press("Escape");
+  await page.locator("footer .step-card").nth(1).click();
+  await expect(grave).toHaveAttribute("aria-label", "keyv 6.0.0, Possessed");
+  await expect(page.locator(".step-panel")).toContainText("An install script appeared");
+  await page.getByRole("button", { name: "Exit replay" }).click();
   await page.getByRole("button", { name: "Watch a real attack" }).click();
   await page.getByRole("button", { name: /^axios/ }).click();
-  await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
-  await expect(page.locator('[role="note"]')).toContainText("axios");
+  await expect(page.locator("button[data-grave-index]").first()).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
+  await expect(page.locator(".why-card")).toContainText("axios");
 });
 
-// Spec cemetery-time-fixes, task 3.6: Play steps one Stop every 1,500 ms (requirements 3.1, 4.2, 4.4).
-test("Play on the axios replay reaches the Possessed Stop after 1,500 ms and the last Stop after 3,000 ms", async ({ page, baseURL }) => {
+// Spec cemetery-time-fixes, task 3.6; spec clean-site, 8.9: Play all steps one Step every 5,000 ms.
+test("Play all on the axios replay reaches the Possessed Step after 5,000 ms and the last Step after 10,000 ms", async ({ page, baseURL }) => {
   await page.clock.install();
   await openReplay(page, baseURL, "?replay=axios");
   const grave = page.locator("button[data-grave-index]").first();
-  const scrubber = page.getByRole("slider", { name: "History date" });
-  await expect(scrubber).toHaveValue("0");
-  const play = page.getByRole("button", { name: "Play" });
+  const play = page.getByRole("button", { name: "Play all" });
   await play.focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("button", { name: "Pause" })).toBeVisible();
-  await page.clock.runFor(1500);
+  await page.clock.runFor(5000);
   await expect(grave).toHaveAttribute("aria-label", "axios 1.14.1, Possessed");
-  await page.clock.runFor(1500);
-  await expect(scrubber).toHaveValue("2");
+  await page.clock.runFor(5000);
+  await expect(page.locator('footer .step-card[aria-current="step"]')).toContainText("Step 3");
   await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
-  await expect(page.getByRole("button", { name: "Play" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Play all" })).toBeVisible();
 });
 
 // Spec cemetery-time-fixes, task 5.4: a compact header (requirements 7.1, 7.2, 7.3).
@@ -214,7 +205,7 @@ test("at 1440 by 900 on the demo the canvas top is at most 190, with the header 
   const middle = (b: { y: number; height: number }) => b.y + b.height / 2;
   const controls = await Promise.all([".repo-form", ".legend-toggle"].map(box));
   for (const c of controls) expect(Math.abs(middle(c) - middle(controls[0] ?? c))).toBeLessThan(12);
-  const parts = await Promise.all(["button.scrub-play", "label[for=history-date]", ".scrub-date", "#history-date"].map(box));
+  const parts = await Promise.all(["label[for=history-date]", ".scrub-date"].map(box));
   for (const p of parts) expect(Math.abs(middle(p) - middle(parts[0] ?? p))).toBeLessThan(12);
   // Every grave of the demo fits between the header and the footer.
   for (const g of await page.locator("button[data-grave-index]").all()) {

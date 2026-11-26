@@ -109,9 +109,8 @@ test("no AudioContext is made by hover, focus, a key press or a replay", async (
   await page.getByRole("button", { name: "Watch a real attack" }).click();
   await page.getByRole("button", { name: /^axios/ }).click();
   await expect(page.locator("button[data-grave-index]")).toHaveCount(1);
-  const slider = page.getByRole("slider", { name: "History date" });
-  await slider.focus();
-  await slider.press("ArrowRight");
+  // Spec clean-site, task 6.3: a Replay moves by "Next step"; it has no scrubber.
+  await page.getByRole("button", { name: "Next step" }).click();
   expect(await audioContexts(page)).toBe(0);
   expect(await page.locator("audio").count()).toBe(0);
 });
@@ -151,9 +150,8 @@ test("under Reduced motion the axios replay shows the Burst's final pose at once
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/?replay=axios");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(1);
-  const slider = page.getByRole("slider", { name: "History date" });
-  await slider.focus();
-  await slider.press("ArrowRight");
+  // Spec clean-site, task 6.3: a Replay moves by "Next step"; it has no scrubber.
+  await page.getByRole("button", { name: "Next step" }).click();
   await expect(page.locator(".burst-caption")).toHaveCount(0);
   // The final pose is the still open grave: the zombie stands, so its skin shows inside the grave's box.
   const box = await page.locator("button[data-grave-index]").boundingBox();

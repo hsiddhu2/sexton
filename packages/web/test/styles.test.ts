@@ -108,8 +108,9 @@ describe("styles.css static checks", () => {
     }
   });
 
-  it("gives .scrub-play and .visually-hidden no transition and no animation, and .visually-hidden no colour (spec cemetery-time-fixes, 4.8)", () => {
-    for (const selector of [".scrub-play", ".visually-hidden"]) {
+  // Spec clean-site, task 6.3: Play is the Replay's "Play all" button now, so the Step cards take the old .scrub-play check.
+  it("gives .step-card and .visually-hidden no transition and no animation, and .visually-hidden no colour (spec cemetery-time-fixes, 4.8)", () => {
+    for (const selector of [".step-card", ".visually-hidden"]) {
       const found = rulesFor(selector);
       expect(found.length, selector).toBeGreaterThan(0);
       for (const r of found) expect(r.body, selector).not.toMatch(/transition|animation/);

@@ -110,7 +110,8 @@ function mount(search: string): void {
   }) as typeof fetch;
   render(<App fetchFn={fetchFn} apiBase={null} initialSearch={search} pageOrigin="http://localhost" />);
 }
-const slider = (): HTMLInputElement => screen.getByRole("slider", { name: "History date" }) as HTMLInputElement;
+// Spec clean-site, task 6.3: a Replay moves by its Step cards; it has no scrubber.
+const stepCard = (i: number): HTMLButtonElement => document.querySelectorAll<HTMLButtonElement>("footer .step-card")[i] as HTMLButtonElement;
 const replay = (id: "axios" | "keyv"): ScanResponse => {
   const r = validateScanResponse(JSON.parse(readReplayText(id)) as unknown);
   if (!r.ok) throw new Error(`${id} does not validate`);
@@ -141,9 +142,8 @@ describe("the Burst Stop (requirement 9.4)", () => {
     await waitFor(() => {
       expect(screen.queryByRole("status")).toBeNull();
     });
-    const min = Number(slider().min);
     for (const step of [0, 1, 2, 1]) {
-      fireEvent.change(slider(), { target: { value: String(min + step) } });
+      fireEvent.click(stepCard(step));
       expect(document.querySelector(".burst-caption")).toBeNull();
       expect(document.body.textContent).not.toContain("The wind stops");
     }
@@ -156,7 +156,7 @@ describe("the Burst Stop (requirement 9.4)", () => {
       await waitFor(() => {
         expect(screen.queryByRole("status")).toBeNull();
       });
-      fireEvent.change(slider(), { target: { value: String(Number(slider().min) + 1) } });
+      fireEvent.click(stepCard(1));
       expect(document.querySelector(".burst-caption")).toBeNull();
     } finally {
       setMedia("(prefers-reduced-motion: reduce)", false);

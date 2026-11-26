@@ -1,7 +1,6 @@
 // Home (spec clean-site, design C3 and the Architecture): the headline, notices, chips and the Graveyard / List
-// switch; the Scene card with the help line and date badge; the Footer bar; and the Panel. A Replay still shows
-// through this shell until its own view lands (task 6). Components only render and route events; the rules are in
-// the pure modules they call.
+// switch; the Scene card with the help line and date badge; the Footer bar; and the Panel. A Replay has its own view
+// (replay/ReplayView.tsx). Components only render and route events; the rules are in the pure modules they call.
 import type { PackageHealth, ScanResponse, State } from "@sexton/api";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Cemetery } from "../Cemetery.js";
@@ -16,15 +15,13 @@ import { STATES } from "../load/lists.js";
 import { FixOrder } from "../panel/FixOrder.js";
 import { fixOrder, plansByName } from "../panel/fix-order.js";
 import { Inspector } from "../panel/Inspector.js";
-import { REPLAY_CARD, type ReplayId } from "../replay/replay-ids.js";
-import { stopCards } from "../replay/stop-cards.js";
+import type { ReplayId } from "../replay/replay-ids.js";
 import { hasGhost, type Theme } from "../scene/layout.js";
 import { overlayRects } from "../scene/overlay-band.js";
 import { stepWrap } from "../selection/selection.js";
 import { HISTORY_OMITTED_TEXT, Scrubber } from "../time/Scrubber.js";
 import { formAt, timelineOf, type FormView } from "../time/form-at.js";
 import { stopsFor } from "../time/stops.js";
-import { usePlay } from "../time/use-play.js";
 import { triageOrder } from "../triage/triage.js";
 import { AttackPicker } from "./AttackPicker.js";
 import { countsAt, headline } from "./headline.js";
@@ -101,19 +98,17 @@ function formOf(response: ScanResponse, pkg: PackageHealth, atMs: number | null)
 function ReadyHome({ response, loadId, screen, dispatch, theme, reducedMotion, repoFieldRef, onRemediate, onReplay, onTerm, scanKind, onGuide }: ReadyProps) {
   const order = useMemo(() => triageOrder(response.report.packages), [response]);
   const indexOf = useMemo(() => new Map(order.map((p, i) => [p.name, i])), [order]);
-  const isReplay = response.replay !== undefined;
-  // The date. Home reads it from the screen state (view.at); a Replay keeps its Stop in the Play model (task 6).
+  // The date, from the screen state (view.at).
   const stopInfo = useMemo(() => stopsFor(response), [response]);
   const stops = stopInfo.hasTimelines ? stopInfo.stops : NO_STOPS;
   const last = stops.length - 1;
-  const player = usePlay(stops, loadId, isReplay);
   const atIso = screen.view.at;
   const homeIndex = useMemo(() => {
     if (atIso === null) return last;
     const i = stops.indexOf(Date.parse(atIso));
     return i === -1 ? last : i;
   }, [atIso, stops, last]);
-  const index = isReplay ? player.index : homeIndex;
+  const index = homeIndex;
   const showScrubber = stopInfo.hasTimelines;
   const asOfMs = showScrubber ? (stops[index] ?? null) : null;
   const earlier = showScrubber && index < last && asOfMs !== null;
@@ -122,14 +117,10 @@ function ReadyHome({ response, loadId, screen, dispatch, theme, reducedMotion, r
   const scrubberRef = useRef<HTMLInputElement | null>(null);
   const onDate = useCallback(
     (i: number): void => {
-      if (isReplay) {
-        player.seek(i);
-        return;
-      }
       const ms = stops[i];
       dispatch({ kind: "date", at: i >= last || ms === undefined ? null : new Date(ms).toISOString() });
     },
-    [isReplay, player, stops, last, dispatch],
+    [stops, last, dispatch],
   );
   const onBackToNow = (): void => {
     onDate(last);
@@ -175,7 +166,7 @@ function ReadyHome({ response, loadId, screen, dispatch, theme, reducedMotion, r
 
   // Left, Right and Enter (3.23, 3.24): only with focus on the body, a grave button or a Fix order row, and with no
   // View owner or Pop-over open, so the scrubber, the fields and the Drawer keep their own keys.
-  const keysActive = !isReplay && screen.owner === "none" && screen.popover === "none";
+  const keysActive = screen.owner === "none" && screen.popover === "none";
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
   useEffect(() => {
@@ -213,10 +204,9 @@ function ReadyHome({ response, loadId, screen, dispatch, theme, reducedMotion, r
   const notes = useMemo(() => notices(response), [response]);
   const fixRows = useMemo(() => fixOrder(response.report.packages, response.remediations), [response]);
   const plans = useMemo(() => plansByName(response.remediations), [response]);
-  const filter = isReplay ? null : screen.filter;
-  const list = !isReplay && screen.view.list;
+  const filter = screen.filter;
+  const list = screen.view.list;
   const reserve = useReserve(loadId);
-  const cards = useMemo(() => (isReplay ? stopCards(response, stops) : null), [isReplay, response, stops]);
   const lookedForm = lookedPkg === undefined ? undefined : formOf(response, lookedPkg, shownMs);
   const overlays = overlayRects(0);
 
@@ -224,68 +214,62 @@ function ReadyHome({ response, loadId, screen, dispatch, theme, reducedMotion, r
     <div className="home">
       <section className="home-left">
         <div className="hero" inert={drawerOpen}>
-          {isReplay ? (
-            <ReplayHero response={response} />
-          ) : (
-            <>
-              <h1 className="headline">
-                {head.count === null ? null : <em className="headline-count">{head.count}</em>}
-                {head.text}
-              </h1>
-              {notes.map((note) => (
-                <p key={note} className="notice">
-                  {note}
-                </p>
+          <h1 className="headline">
+            {head.count === null ? null : <em className="headline-count">{head.count}</em>}
+            {head.text}
+          </h1>
+          {notes.map((note) => (
+            <p key={note} className="notice">
+              {note}
+            </p>
+          ))}
+          <div className="chip-row">
+            <div className="chips" role="group" aria-label="Show one state">
+              {STATES.map((state: State) => (
+                <button
+                  key={state}
+                  type="button"
+                  className={`chip chip-${state.toLowerCase()}`}
+                  aria-pressed={filter === state}
+                  onClick={() => {
+                    dispatch({ kind: "filter", state: filter === state ? null : state });
+                  }}
+                >
+                  <span className="chip-dot" aria-hidden="true" />
+                  {state} <b>{counts.counts[state]}</b>
+                </button>
               ))}
-              <div className="chip-row">
-                <div className="chips" role="group" aria-label="Show one state">
-                  {STATES.map((state: State) => (
-                    <button
-                      key={state}
-                      type="button"
-                      className={`chip chip-${state.toLowerCase()}`}
-                      aria-pressed={filter === state}
-                      onClick={() => {
-                        dispatch({ kind: "filter", state: filter === state ? null : state });
-                      }}
-                    >
-                      <span className="chip-dot" aria-hidden="true" />
-                      {state} <b>{counts.counts[state]}</b>
-                    </button>
-                  ))}
-                </div>
-                <div className="view-switch" role="group" aria-label="View">
-                  <button
-                    type="button"
-                    aria-pressed={!list}
-                    onClick={() => {
-                      if (list) dispatch({ kind: "list", on: false });
-                    }}
-                  >
-                    Graveyard
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={list}
-                    onClick={() => {
-                      if (!list) dispatch({ kind: "list", on: true });
-                    }}
-                  >
-                    List
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
+            </div>
+            <div className="view-switch" role="group" aria-label="View">
+              <button
+                type="button"
+                aria-pressed={!list}
+                onClick={() => {
+                  if (list) dispatch({ kind: "list", on: false });
+                }}
+              >
+                Graveyard
+              </button>
+              <button
+                type="button"
+                aria-pressed={list}
+                onClick={() => {
+                  if (!list) dispatch({ kind: "list", on: true });
+                }}
+              >
+                List
+              </button>
+            </div>
+          </div>
         </div>
         <div className="scene-card" data-tour="scene">
           {/* The help line gives way to the date badge, so the two never overlap in a narrow Scene. */}
-          {isReplay || list || date !== null ? null : (
+          {list || date !== null ? null : (
             <p className="scene-help" style={{ left: overlays.help.x, top: overlays.help.y }}>
               {HELP_LINE}
             </p>
           )}
-          {!isReplay && date !== null && !list ? (
+          {date !== null && !list ? (
             <p className="date-badge" style={{ top: overlays.badge.y }}>
               Viewing {date}
             </p>
@@ -300,29 +284,25 @@ function ReadyHome({ response, loadId, screen, dispatch, theme, reducedMotion, r
             onSelect={setSelected}
             onLook={onLook}
             reserve={reserve}
-            scanKind={isReplay ? "live" : (scanKind ?? "live")}
+            scanKind={scanKind ?? "live"}
             popoverOpen={screen.popover !== "none"}
             {...(onTerm !== undefined ? { onTerm } : {})}
-            {...(onGuide !== undefined && !isReplay ? { onGuide } : {})}
-            {...(isReplay ? {} : { open: screen.view.grave, onOpen: openDrawer, onClose: closeDrawer, filter })}
+            {...(onGuide !== undefined ? { onGuide } : {})}
+            open={screen.view.grave}
+            onOpen={openDrawer}
+            onClose={closeDrawer}
+            filter={filter}
             {...(list ? { replaceScene: <ListView response={response} filter={filter} at={shownMs} indexOf={indexOf} onOpen={openFromList} /> } : {})}
             {...(onRemediate !== undefined ? { onRemediate } : {})}
           />
         </div>
         <footer className="night-footer foot-bar" inert={drawerOpen}>
           {showScrubber ? (
-            <Scrubber
-              stops={stops}
-              index={index}
-              onChange={onDate}
-              inputRef={scrubberRef}
-              cards={cards}
-              {...(isReplay ? { playing: player.playing, onPlay: player.play, onPause: player.pause, announce: player.announce } : {})}
-            />
+            <Scrubber stops={stops} index={index} onChange={onDate} inputRef={scrubberRef} />
           ) : response.timelinesOmitted === "too-large" ? (
             <p className="history-omitted">{HISTORY_OMITTED_TEXT}</p>
           ) : null}
-          {earlier && !isReplay ? (
+          {earlier ? (
             <button type="button" className="button" onClick={onBackToNow}>
               {BACK_TO_NOW}
             </button>
@@ -345,25 +325,12 @@ function ReadyHome({ response, loadId, screen, dispatch, theme, reducedMotion, r
             date={date}
             selected={hover === null && focus === null}
             proposed={plans.get(lookedPkg.name)?.status === "proposed"}
-            {...(isReplay ? {} : { onOpen: openDrawer })}
+            onOpen={openDrawer}
             {...(onTerm !== undefined ? { onTerm } : {})}
           />
-          {isReplay ? null : <FixOrder rows={fixRows} current={lookedPkg.name} onPick={pick} />}
+          <FixOrder rows={fixRows} current={lookedPkg.name} onPick={pick} />
         </aside>
       )}
     </div>
-  );
-}
-
-/** A Replay's headline and sub-line (spec clean-site, 8.1); its breadcrumb and Step panel come with task 6. */
-function ReplayHero({ response }: { readonly response: ScanResponse }) {
-  const id = response.replay?.id;
-  const card = id === undefined ? undefined : REPLAY_CARD[id];
-  if (card === undefined) return null;
-  return (
-    <>
-      <h1 className="headline">Watch the {card.package} attack unfold</h1>
-      <p className="hero-line">{card.date}. A real attack on one package, step by step. Watch the grave change.</p>
-    </>
   );
 }

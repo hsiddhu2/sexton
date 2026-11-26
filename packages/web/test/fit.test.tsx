@@ -130,30 +130,24 @@ describe("the replay Stop cards in the Footer bar", () => {
     expect(stopCards(scan, [0])).toBeNull();
   });
 
-  it("shows three dated cards, marks the current one and moves the History date when one is pressed", async () => {
+  // Spec clean-site, task 6.3: the Footer bar of a Replay shows Step cards (number and title) and the Step panel and
+  // date badge follow the pressed card; the scrubber, its captions and the card over the scene went (8.8, 8.22).
+  it("shows three Step cards, marks the current one and moves the Step panel and date badge when one is pressed", async () => {
     const fetchFn = ((): Promise<Response> => Promise.resolve(new Response(readReplayText("axios"), { status: 200 }))) as unknown as typeof fetch;
     const { container } = render(<App fetchFn={fetchFn} apiBase={null} initialSearch="?replay=axios" pageOrigin="http://localhost" />);
     await waitFor(() => {
       expect(screen.queryByRole("status")).toBeNull();
     });
-    const footer = container.querySelector("footer") as HTMLElement;
-    const cards = [...footer.querySelectorAll<HTMLButtonElement>(".stop-card")];
-    expect(cards.map((c) => c.textContent)).toEqual([
-      "30 Mar 2026, 23:21 UTCaxios 1.14.0Alive",
-      "31 Mar 2026, 00:21 UTCaxios 1.14.1Possessed",
-      "31 Mar 2026, 03:29 UTCaxios 1.14.0Alive",
-    ]);
+    const footer = container.querySelector("footer.replay-foot") as HTMLElement;
+    const cards = [...footer.querySelectorAll<HTMLButtonElement>(".step-card")];
+    expect(cards.map((c) => c.textContent)).toEqual(["Step 1A normal day", "Step 2A poisoned release appears", "Step 3npm removes the bad release"]);
     expect(cards.map((c) => c.getAttribute("aria-current"))).toEqual(["step", null, null]);
     fireEvent.click(cards[1] as HTMLButtonElement);
-    const slider = screen.getByRole("slider", { name: "History date" });
-    expect(slider.getAttribute("aria-valuetext")).toBe("31 Mar 2026, 00:21 UTC");
-    expect([...footer.querySelectorAll(".stop-card")].map((c) => c.getAttribute("aria-current"))).toEqual([null, "step", null]);
-    // The replay card over the scene shows the chosen Stop's date and the banner text.
-    const card = container.querySelector("main .replay-card") as HTMLElement;
-    expect(card.querySelector(".replay-date")?.textContent).toBe("31 Mar 2026, 00:21 UTC");
-    expect(card.textContent).toContain("Reconstructed from public reports. Not a live scan.");
-    // The scrubber captions sit in the card, not in the Footer bar, while the Stop cards show.
-    expect(card.querySelectorAll(".scrub-note")).toHaveLength(2);
-    expect(footer.querySelectorAll(".scrub-note")).toHaveLength(0);
+    expect(container.querySelector(".scene-card .date-badge")?.textContent).toBe("31 Mar 2026, 00:21 UTC");
+    expect([...footer.querySelectorAll(".step-card")].map((c) => c.getAttribute("aria-current"))).toEqual([null, "step", null]);
+    expect(container.querySelector(".step-panel .badge")?.textContent).toBe("axios 1.14.1 is Possessed");
+    expect(screen.queryByRole("slider")).toBeNull();
+    expect(container.querySelector(".replay-card")).toBeNull();
+    expect(container.querySelectorAll(".scrub-note")).toHaveLength(0);
   });
 });

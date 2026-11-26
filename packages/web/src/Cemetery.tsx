@@ -15,8 +15,6 @@ import { scanTimeView } from "./header/format-scan-time.js";
 import { GraveButtons } from "./overlay/GraveButtons.js";
 import { hasGhost, planScene, type Theme } from "./scene/layout.js";
 import { Scene } from "./scene/Scene.js";
-import { ReplayBanner } from "./replay/ReplayBanner.js";
-import { DRAWER_SCAN_DATE_TEXT, SCRUB_NOTE_TEXT } from "./time/Scrubber.js";
 import { formAt, timelineOf, type FormView } from "./time/form-at.js";
 import { useBurial } from "./time/use-burial.js";
 import { triageOrder } from "./triage/triage.js";
@@ -46,7 +44,8 @@ export interface CemeteryProps {
   readonly onSelect?: (index: number) => void;
   /**
    * Spec clean-site, design C1: the package whose Drawer is open when the screen state owns it (null for none), with
-   * the open and close requests. Absent, the Cemetery keeps its own Drawer state, as a replay still does.
+   * the open and close requests. Absent, the Cemetery keeps its own Drawer state (the Cemetery-only tests use that).
+   * A Replay passes null and no-op requests, so its grave opens nothing (8.19).
    */
   readonly open?: string | null;
   readonly onOpen?: (name: string) => void;
@@ -143,7 +142,6 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
       return asOfMs < scanMs || view.version !== undefined ? view : undefined;
     });
   }, [order, response, asOfMs]);
-  const beforeScan = asOfMs !== null && asOfMs < Date.parse(response.report.generatedAt);
   // Spec clean-site, 2.7: every grave of another State at the shown date, and every Not-published mound, is dimmed.
   const filter = page.filter ?? null;
   const dimmedNames = useMemo((): ReadonlySet<string> | undefined => {
@@ -304,15 +302,6 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
     <>
       <div inert={openPackage !== undefined}>
         <div className="scene-main">
-          {/* A replay's story sits in a card over the scene, top left, as in the mockup (K2d fix 1). */}
-          {response.replay === undefined ? null : (
-            <ReplayBanner
-              replay={response.replay}
-              className="replay-card"
-              {...(asOfMs !== null ? { date: scanTimeView(new Date(asOfMs).toISOString()).text } : {})}
-              notes={beforeScan ? [SCRUB_NOTE_TEXT, DRAWER_SCAN_DATE_TEXT] : []}
-            />
-          )}
           <div ref={containerRef} className="scene-container">
             {page.replaceScene !== undefined ? (
               page.replaceScene
@@ -347,7 +336,6 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
           model={drawerModel(response, openPackage, openVersion)}
           fix={fixView(openPackage, plans.get(openPackage.name), page.scanKind ?? (onRemediate !== undefined ? "live-remediate" : "live"))}
           history={historyRows(response, openPackage.name)}
-          {...(response.replay !== undefined ? { replay: response.replay } : {})}
           {...(asOfLine !== undefined ? { asOfLine } : {})}
           onClose={onClose}
           onDismissToField={onDismissToField}

@@ -79,9 +79,20 @@ export interface PullRequestMark {
   readonly timestamp: string;
 }
 
+/** Spec clean-site, 8.13: one Step of a Replay, told in plain words. */
+export interface ReplayStep {
+  readonly title: string;
+  readonly happened: string;
+  readonly shows: string;
+}
+
 export interface ReplayInfo {
   readonly id: "axios" | "keyv";
   readonly title: string;
   readonly summary: string;
   readonly sources: readonly { readonly label: string; readonly url: string }[];
+  /** Spec clean-site, 8.13 and 8.15: one per Stop, in order, each different from every other. */
+  readonly steps: readonly ReplayStep[];
+  /** Spec clean-site, 8.12: the "Why attackers do this" text. */
+  readonly why: string;
 }

@@ -75,13 +75,13 @@ Run-time notes:
   - [x] 5.3 The fix tab from `drawer/fix-view.ts`: diff, Open pull request, one copy button, the notes, the disclosure; `drawer/clipboard.ts` and `drawer/issue-text.ts`
     - _Requirements: 7.3 to 7.16, 7.20, 7.26, 7.27_
 
-- [ ] 6. The Replay as a story
+- [x] 6. The Replay as a story
   - _Requirements: 8.1 to 8.22, 11.2_
-  - [ ] 6.1 Add `steps` and `why` to `ReplayInfo`, to `replay-facts.mjs` with the source key beside every sentence, and to the generator; regenerate both replay files; check each sentence against its source
+  - [x] 6.1 Add `steps` and `why` to `ReplayInfo`, to `replay-facts.mjs` with the source key beside every sentence, and to the generator; regenerate both replay files; check each sentence against its source
     - _Requirements: 8.12, 8.13, 8.14_
-  - [ ] 6.2 Validate the Step texts and their count against `stopsFor` in `validate-scan-response.ts`
+  - [x] 6.2 Validate the Step texts and their count against `stopsFor` in `validate-scan-response.ts`
     - _Requirements: 8.13, 8.15_
-  - [ ] 6.3 Build `replay/ReplayView.tsx`: breadcrumb, headline and sub-line, stage with the date badge and Burst, Step panel, Back and Next step, Why card, Footer bar with Play all, Step cards and Exit replay
+  - [x] 6.3 Build `replay/ReplayView.tsx`: breadcrumb, headline and sub-line, stage with the date badge and Burst, Step panel, Back and Next step, Why card, Footer bar with Play all, Step cards and Exit replay
     - _Requirements: 8.1 to 8.12, 8.16 to 8.22, 11.2_
 
 - [ ] 7. The Guide page, the Legend and the Tour

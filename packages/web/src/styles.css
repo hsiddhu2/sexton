@@ -856,6 +856,146 @@ a {
   font-size: 12.5px;
 }
 
+/* The Replay (spec clean-site, design C6): the Footer bar's Step cards, the Step panel and the Why card. The left
+   column keeps its own height, so the Footer bar sits under the stage however tall the Panel is. */
+.replay-view {
+  align-items: start;
+}
+
+.replay-foot {
+  flex-wrap: nowrap;
+}
+
+.step-cards {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step-cards li {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.step-card {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--ui-line);
+  border-radius: 9px;
+  background: var(--ui-panel);
+  color: var(--ui-text);
+  text-align: left;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.step-card:hover {
+  border-color: var(--ui-muted);
+}
+
+.step-card-number {
+  display: block;
+  color: var(--ui-faint);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 11px;
+}
+
+.step-card-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.step-card[aria-current="step"] {
+  border-color: var(--ui-accent);
+}
+
+.step-card-possessed[aria-current="step"] {
+  border-color: var(--state-possessed);
+}
+
+.step-card-possessed[aria-current="step"] .step-card-title {
+  color: var(--state-possessed);
+}
+
+.step-card-alive[aria-current="step"] {
+  border-color: var(--state-alive);
+}
+
+.step-card-alive[aria-current="step"] .step-card-title {
+  color: var(--state-alive);
+}
+
+.step-title {
+  margin: 10px 0 2px;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.eyebrow-time {
+  color: var(--ui-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.eyebrow.step-label {
+  margin-top: 18px;
+}
+
+.step-text,
+.why-text {
+  margin: 6px 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.why-text {
+  color: var(--ui-muted);
+  font-size: 13.5px;
+}
+
+.step-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.step-next {
+  flex: 1 1 auto;
+}
+
+.step-buttons .button:disabled {
+  color: var(--ui-faint);
+  cursor: default;
+}
+
+.replay-sources {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.replay-sources a {
+  color: var(--ui-accent);
+}
+
+.replay-not-live {
+  margin: 12px 0 0;
+  color: var(--ui-faint);
+  font-size: 12.5px;
+}
+
 /* The Panel: the Inspector and the Fix order. */
 .panel {
   display: flex;
@@ -1838,6 +1978,20 @@ pre.signal-value {
   }
 }
 
+/* A Replay's Footer bar wraps on a phone, one Step card a row, as in the prototype. */
+@media (max-width: 699px) {
+  .replay-foot,
+  .step-cards {
+    flex-wrap: wrap;
+  }
+  .step-cards {
+    flex-basis: 100%;
+  }
+  .step-cards li {
+    flex-basis: 100%;
+  }
+}
+
 /* Pull request preview */
 .pr-preview {
   padding: 8px 12px;
@@ -1984,23 +2138,6 @@ pre.signal-value {
   color: var(--ui-muted);
   overflow-wrap: anywhere;
 }
-.scrub-play {
-  padding: 2px 12px;
-  border: 2px solid var(--border);
-  border-radius: 999px;
-  background: var(--field);
-  color: var(--text);
-  font: inherit;
-  font-size: 0.875rem;
-  cursor: pointer;
-}
-.scrub-play:hover {
-  border-color: var(--focus);
-}
-.scrub-play:focus-visible {
-  outline: 3px solid var(--focus);
-  outline-offset: 2px;
-}
 /* Read by assistive technology, not shown. */
 .visually-hidden {
   position: absolute;
@@ -2021,189 +2158,11 @@ pre.signal-value {
   flex: none;
   fill: var(--marker);
 }
-.replay-banner {
-  box-sizing: border-box;
-  flex: 1 1 100%;
-  min-width: 0;
-  padding: 8px 12px;
-  border: 2px solid var(--border);
-  border-radius: 8px;
-  background: var(--field);
-  color: var(--text);
-  font-size: 0.875rem;
-  overflow-wrap: anywhere;
-}
-.replay-banner p {
-  margin: 0 0 4px;
-}
-.replay-sources {
-  margin: 0;
-}
-.replay-banner a {
-  color: var(--text);
-}
-.replay-banner a:focus-visible {
-  outline: 3px solid var(--focus);
-  outline-offset: 2px;
-}
-.drawer .replay-banner {
-  margin: 0 0 16px;
-  width: auto;
-}
-
-/* K2d fix 1: a replay's story in a card over the scene, top left, and its Stops as dated cards in the Footer bar. */
 .scene-main {
   position: relative;
-}
-.replay-card {
-  margin: 8px 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  font-size: 0.875rem;
-}
-.replay-card .replay-date {
-  color: var(--muted);
-}
-.replay-card .replay-title {
-  font-size: 1rem;
-}
-
-.replay-card a {
-  color: var(--wordmark);
-}
-.stop-cards {
-  display: flex;
-  gap: 12px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.stop-cards li {
-  flex: 1 1 0;
-  min-width: 0;
-}
-.stop-card {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--field);
-  color: var(--text);
-  font: inherit;
-  font-size: 0.8125rem;
-  text-align: left;
-  cursor: pointer;
-  overflow-wrap: anywhere;
-}
-.stop-card[aria-current="step"] {
-  border-color: var(--state-possessed);
-  box-shadow: 0 0 0 1px var(--state-possessed);
-}
-.stop-card:hover {
-  border-color: var(--focus);
-}
-.stop-card-date {
-  color: var(--muted);
-}
-.stop-card-name {
-  font-weight: 600;
-}
-.stop-card-state-alive {
-  color: var(--state-alive);
-}
-.stop-card-state-restless {
-  color: var(--state-restless);
-}
-.stop-card-state-haunted {
-  color: var(--state-haunted);
-}
-.stop-card-state-dead {
-  color: var(--state-dead);
-}
-.stop-card-state-possessed {
-  color: var(--state-possessed);
-}
-/* With Stop cards, the slider stays for the keyboard but out of sight; the current card shows its focus. */
-.scrub-cards .scrub-label,
-.scrub-cards .scrub-date,
-.scrub-cards .scrub-track {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-.scrub-cards:has(#history-date:focus-visible) .stop-card[aria-current="step"] {
-  outline: 3px solid var(--focus);
-  outline-offset: 2px;
-}
-.scrub-play {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.scrub-play-glyph {
-  fill: var(--focus);
-}
-@media (min-width: 960px) {
-  .replay-card {
-    position: absolute;
-    top: 24px;
-    left: 32px;
-    z-index: 2;
-    width: 34rem;
-    margin: 0;
-    padding: 14px 20px;
-  }
-  .night-footer .scrub-cards {
-    flex-wrap: nowrap;
-    gap: 16px;
-  }
-  /* A round Play button, as in the mockup; its name stays the text. */
-  .scrub-play {
-    justify-content: center;
-    width: 38px;
-    height: 38px;
-    padding: 0;
-    border-color: var(--focus);
-    border-radius: 50%;
-    background: var(--field);
-  }
-  .scrub-play-text {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-}
-@media (max-width: 600px) {
-  .stop-cards {
-    gap: 6px;
-  }
-  .stop-card {
-    padding: 6px 8px;
-    font-size: 0.75rem;
-  }
 }
 /* The open grave's lid lies off to the left of its box, as in the scene (K2d fix 1). */
 .legend-shape-possessed {
   overflow: visible;
   margin-left: 12px;
-}
-.replay-card .scrub-note {
-  font-size: 0.75rem;
-}
-.replay-card .replay-summary {
-  margin-bottom: 6px;
 }

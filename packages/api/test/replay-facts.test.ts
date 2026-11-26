@@ -16,6 +16,7 @@ import {
 // @ts-expect-error plain JavaScript module without declarations
 import { NOT_IN_PUBLIC_REPORTS, REPLAYS, REPLAY_IDS, SOURCE_URLS } from "../scripts/lib/replay-facts.mjs";
 import { validateScanResponse } from "../../web/src/load/validate-scan-response.js";
+import { stopsFor } from "../../web/src/time/stops.js";
 import type { ScanResponse } from "../src/contract.js";
 
 const ids = REPLAY_IDS as readonly ("axios" | "keyv")[];
@@ -97,6 +98,8 @@ describe("replay fixtures", () => {
         title: facts.title,
         summary: facts.summary,
         sources: facts.sources.map((s: { label: string; url: string }) => ({ label: s.label, url: s.url })),
+        steps: facts.steps,
+        why: facts.why,
       });
       const health = response.report.packages[0];
       const installed = facts.versions.find((v: { version: string }) => v.version === EXPECTED[id].installed);
@@ -345,5 +348,55 @@ describe("the new signals in the replays (spec new-signals, Requirement 5)", () 
     // True of the facts: 2026-03-30T23:59:12.278Z to 2026-03-31T00:21:58.168Z is 22 minutes and 46 seconds.
     const minutes = (Date.parse("2026-03-31T00:21:58.168Z") - Date.parse("2026-03-30T23:59:12.278Z")) / 60_000;
     expect(Math.floor(minutes)).toBe(22);
+  });
+});
+
+// Spec clean-site, task 6.1: the Step texts and the why text (8.12 to 8.14).
+describe("the Replay story (spec clean-site, 8.12 to 8.14)", () => {
+  const FACTS_SOURCE = readFileSync(new URL("../scripts/lib/replay-facts.mjs", import.meta.url), "utf8");
+  const KEYS = Object.keys(SOURCE_URLS as Record<string, string>);
+  type Step = { title: string; happened: string; shows: string };
+  const sentences = (text: string): string[] => text.split(/(?<=\.) /);
+  /** The lines of one replay's entry in the facts file. */
+  const block = (id: "axios" | "keyv"): string[] => {
+    const start = FACTS_SOURCE.indexOf(`  ${id}: {`);
+    const end = id === "axios" ? FACTS_SOURCE.indexOf("  keyv: {") : FACTS_SOURCE.indexOf("export const REPLAY_IDS");
+    return FACTS_SOURCE.slice(start, end).split("\n");
+  };
+
+  it("has one Step per Stop, with a title, what happened and what Sexton shows, all different within a replay", () => {
+    for (const id of ids) {
+      const steps = REPLAYS[id].steps as readonly Step[];
+      expect(steps).toHaveLength(stopsFor(fixture(id)).stops.length);
+      for (const field of ["title", "happened", "shows"] as const) {
+        const texts = steps.map((s) => s[field]);
+        expect(texts.every((t) => t.length > 0)).toBe(true);
+        expect(new Set(texts).size).toBe(texts.length);
+      }
+      expect((REPLAYS[id].why as string).length).toBeGreaterThan(0);
+    }
+  });
+
+  it("follows every sentence with a comment naming the SOURCE_URLS key it rests on, a key the replay cites", () => {
+    for (const id of ids) {
+      const cited = new Set((REPLAYS[id].sources as { url: string }[]).map((s) => s.url));
+      const texts = [...(REPLAYS[id].steps as readonly Step[]).flatMap((s) => [s.happened, s.shows]), REPLAYS[id].why as string];
+      for (const sentence of texts.flatMap(sentences)) {
+        const line = block(id).find((l) => l.includes(JSON.stringify(sentence)));
+        expect(line, sentence).toBeDefined();
+        const comment = /",\s*\/\/\s*(.+)$/.exec(line ?? "")?.[1] ?? "";
+        const named = KEYS.filter((k) => new RegExp(`\\b${k}\\b`).test(comment));
+        expect(named.length, sentence).toBeGreaterThan(0);
+        for (const k of named) expect(cited.has((SOURCE_URLS as Record<string, string>)[k] ?? ""), `${sentence} names ${k}`).toBe(true);
+      }
+    }
+  });
+
+  it("states that the Replay is reconstructed nowhere in its Step or why texts (the Why card says it once)", () => {
+    for (const id of ids) {
+      const all = JSON.stringify([REPLAYS[id].steps, REPLAYS[id].why]);
+      expect(all).not.toContain("Not a live scan");
+      expect(/https?:\/\//.test(all)).toBe(false);
+    }
   });
 });

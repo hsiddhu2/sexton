@@ -349,7 +349,7 @@ describe("evidence links", () => {
 describe("replay footer text", () => {
   it("hides the policy line for a replay and keeps it without one", () => {
     const base = cheapScan(1);
-    const replay = { ...base, replay: { id: "axios" as const, title: "Replay: axios npm compromise, 31 March 2026", summary: "s", sources: [{ label: "l", url: "https://example.com/" }] } };
+    const replay = { ...base, replay: { id: "axios" as const, title: "Replay: axios npm compromise, 31 March 2026", summary: "s", sources: [{ label: "l", url: "https://example.com/" }], steps: [], why: "w" } };
     const withReplay = headerModel(replay, false);
     expect(withReplay.repoText).toBe("Replay: axios npm compromise, 31 March 2026");
     expect(withReplay.showPolicy).toBe(false);

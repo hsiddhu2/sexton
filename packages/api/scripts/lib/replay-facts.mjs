@@ -31,6 +31,10 @@ export const NOT_IN_PUBLIC_REPORTS = "not in public reports";
  *   `newDependencies`: per added dependency name, the version its range resolved to at the parent's publish time, that
  *   version's publish time and its install script flag. The name of the account that published axios 1.14.1 is sourced
  *   but left out (design.md Decisions 12), so that publisher is { name: null, method: "token" }.
+ * - Spec clean-site, 8.12 to 8.14: `steps`, one per Stop in order (a title, "What happened" and "What Sexton shows"),
+ *   and `why`, the "Why attackers do this" text. Each sentence is followed by a comment naming the SOURCE_URLS key it
+ *   rests on; a "What Sexton shows" sentence about the grave also rests on the Segment the generator derives for that
+ *   Stop. No sentence states a fact that its source does not give.
  */
 export const REPLAYS = Object.freeze({
   axios: {
@@ -80,6 +84,48 @@ export const REPLAYS = Object.freeze({
       publisherChange: SOURCE_URLS.trendmicro,
       newDependency: SOURCE_URLS.trendmicro,
     },
+    steps: [
+      {
+        title: "A normal day",
+        happened: [
+          "axios 1.14.0 is the current release.", // registryAxios: the newest 1.x version in the time map before 1.14.1
+          "It was published by GitHub Actions through npm's trusted publishing, so it carries provenance.", // trendmicro, npmTrusted, registryAxios
+        ].join(" "),
+        shows: [
+          "Nothing to flag.", // registryAxios: the facts of 1.14.0; the Segment is Alive, "no rule matched"
+          "The grave is Alive.", // registryAxios: the Segment's State
+        ].join(" "),
+      },
+      {
+        title: "A poisoned release appears",
+        happened: [
+          "An attacker publishes axios 1.14.1 by hand from the lead maintainer's npm account, with a stolen access token.", // trendmicro
+          "It adds a new dependency, plain-crypto-js 4.2.1, whose postinstall script installs a remote access trojan.", // trendmicro, csa
+        ].join(" "),
+        shows: [
+          "The grave turns Possessed.", // trendmicro: the Segment is Possessed by "provenance regression"
+          "1.14.0 had provenance and 1.14.1 has none.", // registryAxios, trendmicro ("no OIDC binding"), npmTrusted
+          "That drop is the warning.", // npmTrusted: provenance comes with trusted publishing, which 1.14.1 skipped
+        ].join(" "),
+      },
+      {
+        title: "npm removes the bad release",
+        happened: [
+          "About three hours after it appeared, npm removes 1.14.1.", // trendmicro: published 00:21 UTC, removed about 03:30 UTC
+          "A fresh install gets 1.14.0 again.", // registryAxios: no 1.x version between 1.14.0 and 1.15.0 but 1.14.1; csa
+        ].join(" "),
+        shows: [
+          "The grave is Alive again.", // registryAxios: the Segment's State at the removal
+          "A machine that installed 1.14.1 in those hours should still be treated as compromised.", // csa, trendmicro
+        ].join(" "),
+      },
+    ],
+    why: [
+      "axios is a JavaScript HTTP client with over 100 million downloads a week on npm.", // trendmicro
+      "An attacker who took over its lead maintainer's npm account published a version that exists only on npm, with no matching code on GitHub.", // trendmicro
+      "The new dependency's install script left a remote access trojan on macOS, Windows and Linux machines, then erased its own traces.", // trendmicro
+      "Anyone who installed it is told to assume compromise and rotate every credential.", // csa, trendmicro
+    ].join(" "),
   },
   keyv: {
     id: "keyv",
@@ -131,6 +177,37 @@ export const REPLAYS = Object.freeze({
       publisherChange: SOURCE_URLS.snyk,
       newDependency: SOURCE_URLS.snyk,
     },
+    steps: [
+      {
+        title: "A normal day",
+        happened: [
+          "keyv 5.6.0 is the latest stable release.", // snyk ("the latest clean stable 5.x version"), registryKeyv
+          "It has no install script, so installing it runs nothing.", // registryKeyv: no preinstall, install or postinstall in 5.6.0
+        ].join(" "),
+        shows: [
+          "Nothing to flag.", // registryKeyv: the facts of 5.6.0; the Segment is Alive, "no rule matched"
+          "The grave is Alive.", // registryKeyv: the Segment's State
+        ].join(" "),
+      },
+      {
+        title: "A poisoned release appears",
+        happened: [
+          "keyv 6.0.0 is published at 09:35 UTC with a new preinstall script, node setup.mjs.", // snyk, ghIssue
+          "It still carries valid provenance from GitHub Actions, the trusted publisher.", // snyk, ghIssue ("a valid SLSA attestation")
+        ].join(" "),
+        shows: [
+          "The grave turns Possessed.", // snyk: the Segment is Possessed by "install script added in 6.0.0"
+          "An install script appeared that earlier versions did not have.", // ghIssue: "absent from the version immediately preceding it"
+          "Provenance alone would not have flagged it.", // ghIssue ("proves only that poisoned source was built by the real pipeline"), snyk
+        ].join(" "),
+      },
+    ],
+    why: [
+      "npm recorded 619,682,667 downloads of keyv from 5 July to 3 August.", // snyk
+      "npm runs a preinstall script by itself during install, so no one has to import keyv or start an app for the code to run.", // snyk
+      "Reports say its hidden second stage goes after GitHub and npm tokens, cloud credentials and private keys.", // snyk (from the incident reports it cites)
+      "Developer laptops and CI runners are prized targets because they often hold those credentials.", // snyk
+    ].join(" "),
   },
 });
 

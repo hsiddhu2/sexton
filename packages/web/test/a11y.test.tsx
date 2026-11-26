@@ -278,15 +278,14 @@ describe("focus indicator (Requirement 10.7)", () => {
     }));
 
   it("gives every DOM control a focus-visible outline of at least 2px", () => {
-    // Spec clean-site, task 3: one rule gives every control the accent outline; the grave buttons, the Drawer, the
-    // scrubber and the replay keep their own.
+    // Spec clean-site, task 3: one rule gives every control the accent outline; the grave buttons, the Drawer and the
+    // scrubber keep their own. The Replay's buttons take the global rule (task 6.3).
     for (const selector of [
       ":focus-visible",
       ".grave-button:focus-visible",
       ".drawer button:focus-visible",
       ".drawer-body:focus-visible",
       ".scrub input:focus-visible",
-      ".scrub-play:focus-visible",
       ".pr-table-wrap:focus-visible",
     ]) {
       const rule = focusRules.find((r) => r.selectors.includes(selector));

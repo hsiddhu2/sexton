@@ -1,4 +1,4 @@
-// The site shell (spec clean-site, Architecture): the header, the Welcome bar, Home (or the Guide page), the site
+// The site shell (spec clean-site, Architecture): the header, the Welcome bar, Home (or a Replay, or the Guide page), the site
 // footer, the Tour and the Term Pop-over. The screen state of load/screen-state.ts, held by load/use-view.ts, is the
 // one owner of what is open; every overlay renders from it. The loader follows the Source it names.
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -20,6 +20,7 @@ import { DEMO_ADDRESS, useScanLoader } from "./load/use-scan-loader.js";
 import { useView } from "./load/use-view.js";
 import { HOME_VIEW, parseView, type View, type ViewSource } from "./load/view-address.js";
 import { replayAddress, type ReplayId } from "./replay/replay-ids.js";
+import { ReplayView } from "./replay/ReplayView.js";
 import { applyPalette, type Theme } from "./scene/palette.js";
 import { Tour } from "./tour/Tour.js";
 
@@ -206,6 +207,10 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
             openReplay("axios");
           }}
         />
+      ) : source.kind === "replay" && screen.owner === "replay" ? (
+        <main className="home-main">
+          <ReplayView id={source.id} load={state} theme={theme} reducedMotion={reducedMotion} repoFieldRef={repoFieldRef} onHome={goHome} onTerm={onTerm} />
+        </main>
       ) : (
         <main className="home-main">
           <HomeView

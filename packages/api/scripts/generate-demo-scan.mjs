@@ -315,7 +315,15 @@ export function buildReplay(id) {
     remediations: [],
     actions: { remediate: false },
     timelines: { [replay.package]: { installed: installedVersion, coveredFrom: null, segments } },
-    replay: { id: replay.id, title: replay.title, summary: replay.summary, sources: replay.sources.map((s) => ({ label: s.label, url: s.url })) },
+    replay: {
+      id: replay.id,
+      title: replay.title,
+      summary: replay.summary,
+      sources: replay.sources.map((s) => ({ label: s.label, url: s.url })),
+      // Spec clean-site, 8.12 to 8.14: copied from the facts, never derived.
+      steps: replay.steps.map((s) => ({ title: s.title, happened: s.happened, shows: s.shows })),
+      why: replay.why,
+    },
   };
 }
 

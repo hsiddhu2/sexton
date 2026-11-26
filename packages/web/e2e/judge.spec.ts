@@ -66,10 +66,8 @@ test("requirement 4.7: after the axios Burst the Halo round the ring reads at le
   await page.goto("/?replay=axios");
   const grave = page.locator("button[data-grave-index]").first();
   await expect(grave).toHaveCount(1);
-  const slider = page.getByRole("slider", { name: "History date" });
-  await slider.focus();
-  await slider.press("ArrowRight");
-  await slider.blur();
+  // Spec clean-site, task 6.3: a Replay moves by "Next step"; it has no scrubber.
+  await page.getByRole("button", { name: "Next step" }).click();
   await page.mouse.move(1, 899);
   await expect(grave).toHaveAttribute("aria-label", "axios 1.14.1, Possessed");
   await page.waitForFunction(() => (window as unknown as HookWindow).__sextonTiming !== undefined);

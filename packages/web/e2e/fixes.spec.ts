@@ -30,10 +30,8 @@ test("bug 1: the Halo is not cut in the empty corners of the selected replay gra
   await page.goto("/?replay=axios");
   const grave = page.locator("button[data-grave-index]").first();
   await expect(grave).toHaveCount(1);
-  const slider = page.getByRole("slider", { name: "History date" });
-  await slider.focus();
-  await slider.press("ArrowRight");
-  await slider.blur();
+  // Spec clean-site, task 6.3: a Replay moves by "Next step"; it has no scrubber.
+  await page.getByRole("button", { name: "Next step" }).click();
   await page.mouse.move(1, 899);
   // Spec clean-site, task 2.2: the Burst Stop is known by the grave's name now that the caption is gone (4.5).
   await expect(grave).toHaveAttribute("aria-label", "axios 1.14.1, Possessed");
@@ -45,10 +43,12 @@ test("bug 1: the Halo is not cut in the empty corners of the selected replay gra
     const canvas = document.querySelector("canvas") as HTMLCanvasElement;
     const r = canvas.getBoundingClientRect();
     hook?.paintVariant({});
-    // The cell's two top corners, 45 px in: no stone, Character, Ghost, ring or name there.
+    // The cell's two top corners, 45 px in at the 305 px cell this was written for: no stone, Character, Ghost, ring or
+    // name there. Spec clean-site, task 6.3: the inset scales with the cell, which the Replay's breadcrumb makes smaller.
     const x0 = b.x - r.left;
     const y0 = b.y - r.top;
-    return [hook?.haloAlpha(x0 + 45, y0 + 45) ?? -1, hook?.haloAlpha(x0 + b.width - 45, y0 + 45) ?? -1];
+    const inset = (45 * b.width) / 305;
+    return [hook?.haloAlpha(x0 + inset, y0 + inset) ?? -1, hook?.haloAlpha(x0 + b.width - inset, y0 + inset) ?? -1];
   }, box ?? { x: 0, y: 0, width: 0, height: 0 });
   console.log(`bug 1: Halo alpha at the replay cell's top corners: ${alphas.join(", ")}`);
   for (const a of alphas) expect(a).toBeGreaterThan(0);
