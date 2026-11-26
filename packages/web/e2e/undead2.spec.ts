@@ -148,7 +148,7 @@ test("300 graves repaint within budget during a Burst", async ({ page, baseURL }
   expect(times).toHaveLength(30);
   const sorted = [...times].sort((a, b) => a - b);
   const median = ((sorted[14] ?? 0) + (sorted[15] ?? 0)) / 2;
-  console.log(`median redraw of 300 graves during a Burst over 30 paints: ${median.toFixed(2)} ms`);
+  console.log(`median redraw of 300 graves during a Burst over 30 paints: ${median.toFixed(2)} ms (budget ${String(BUDGET_MS)} ms)`);
   expect(median).toBeLessThanOrEqual(BUDGET_MS);
 });
 

@@ -113,7 +113,7 @@ for (const [label, mix] of [
     expect(times).toHaveLength(30);
     const sorted = [...times].sort((a, b) => a - b);
     const median = ((sorted[14] ?? 0) + (sorted[15] ?? 0)) / 2;
-    console.log(`median repaint with a fresh Halo layer, ${label}: ${median.toFixed(2)} ms`);
+    console.log(`median repaint with a fresh Halo layer, ${label}: ${median.toFixed(2)} ms (budget ${String(BUDGET_MS)} ms)`);
     expect(median).toBeLessThanOrEqual(BUDGET_MS);
   });
 }
@@ -136,7 +136,7 @@ test("judge-path 5.1: a cold Halo repaint with 300 front-row graves stays inside
   expect(cold).toHaveLength(30);
   const sorted = [...cold].sort((a, b) => a - b);
   const median = ((sorted[14] ?? 0) + (sorted[15] ?? 0)) / 2;
-  console.log(`median repaint with a cold Halo layer and sources, 300 front-row graves: ${median.toFixed(2)} ms`);
+  console.log(`median repaint with a cold Halo layer and sources, 300 front-row graves: ${median.toFixed(2)} ms (budget ${String(BUDGET_MS)} ms)`);
   expect(median).toBeLessThanOrEqual(BUDGET_MS);
 });
 
