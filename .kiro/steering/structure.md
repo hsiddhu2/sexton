@@ -5,7 +5,7 @@ inclusion: always
 
 - packages/engine: pure core. Signals, states, policy, remediation planning. No AWS, no UI, no filesystem writes.
   - src/publisher.ts and src/new-dependency.ts derive the publisherChange and newDependency signals; src/clients/new-dependency.ts reads the added dependencies.
-- packages/cli: thin wrapper over engine. Commands scan, check, evidence.
+- packages/cli: thin wrapper over engine. Commands scan, check, evidence. src/index.ts exports the scan composition (runScanPipeline, createRealDeps and others) for packages/mcp.
 - packages/api: Lambda handlers. Calls engine. Owns the DynamoDB cache and the snapshotter.
   - src/handlers: three Lambda entries, scan.ts, remediate.ts and snapshotter.ts.
   - The scan handler serves GET /api/scan and GET /api/evidence.
@@ -20,11 +20,17 @@ inclusion: always
   - src/sound: the sound engine, voices made in code and the stored Sound choice. src/speech: speech bubbles, their schedule and placement.
   - public/fonts: the self-hosted fonts. public/replay: the replay fixtures.
 - packages/action: GitHub Action wrapping cli. action.yml is the composite action. src/post-comment.ts posts the comment.
+- packages/mcp: the read-only MCP server (@sexton/mcp). Four tools, scan_project, explain_package, fix_order and check_policy, each taking projectDir, over the CLI's scan.
+  - src/server.ts registers the tools. src/project-dir.ts holds the bounds on projectDir. src/scan-cache.ts shares one scan per project root and manifests digest. src/views: pure projections. src/bound.ts: Outside text bounds. src/result.ts: results and error codes. src/schemas.ts: hand-written Standard Schemas, no schema library.
+  - It holds no scoring, state, policy or plan logic. It imports @sexton/engine and @sexton/cli only, never @sexton/api, and writes nothing.
+- powers/sexton: the Kiro Power (Agent Plugins format): plugin.json, mcp.json, skills/sexton/SKILL.md and server/sexton-mcp.mjs, the committed Bundle built by scripts/build-power.mjs (npm run build:power). A test fails when the Bundle is stale.
 - infra: CDK app. bin/sexton.ts is the entry. lib/app.ts builds two stacks.
+  - scripts/check-cache-headers.ts: checks the cache headers of the deployed site.
   - SextonData: cache table, snapshots table, remediation log table and an empty GitHub token secret.
   - SextonEdge: scan, remediate and snapshotter functions, function URLs, CloudFront, WAF, the web bucket, the daily schedule and alarms.
   - Deployed only to us-east-1. Stack and table names end in the stage, which is dev.
 - scripts/self-scan.mjs: Sexton scans its own dependencies. CI runs it as npm run scan:self.
+- scripts/build-power.mjs: bundles packages/mcp, the Engine, the CLI composition and the MCP library into powers/sexton/server/sexton-mcp.mjs for Node 20.
 - .github/workflows: ci.yml runs the gates, the self-scan and the infra synth. sexton.yml runs the Action on pull requests.
 - CI runs the browser tests in an e2e job on Ubuntu after the gates: it installs Chromium (cached by Playwright version) and runs npm run test:e2e -w @sexton/web.
 - docs: ADRs, threat model, architecture. docs/requirements.md is the product requirements.
@@ -39,6 +45,7 @@ inclusion: always
 ## Dependencies between packages
 - engine depends on nothing internal.
 - cli and api depend on engine (their package.json files list @sexton/engine).
+- mcp depends on engine and cli (@sexton/engine, @sexton/cli) and on one third-party package, @modelcontextprotocol/server.
 - action has no internal package dependency in package.json. At run time action.yml builds and runs the cli.
 - web depends on api's response types only (a devDependency on @sexton/api).
 - infra depends on no internal package. It bundles the api handler files by path.

@@ -301,7 +301,7 @@ For any Scan whose package names, versions, reasons, advisory summaries, maintai
 
 ### Property 5: Errors are data
 
-For any JSON value as arguments to any Tool and any combination of failing ports (file reads that return missing, too-large, invalid, or throw; a git port that returns null or throws; a transport that rejects or answers anything), the Tool resolves to a Tool result. When it is an Error result, its code is in the closed set of Requirement 11.2, its message is the fixed message of that code, and its text contains no `at ` stack line, no path separator sequence from the Project root, and no upstream URL.
+For any JSON value as arguments to any Tool (a value that is not an object is refused by the protocol layer with JSON-RPC error -32602 before the Tool runs, and the property checks that code and a message with no stack) and any combination of failing ports (file reads that return missing, too-large, invalid, or throw; a git port that returns null or throws; a transport that rejects or answers anything), the Tool resolves to a Tool result. When it is an Error result, its code is in the closed set of Requirement 11.2, its message is the fixed message of that code, and its text contains no `at ` stack line, no path separator sequence from the Project root, and no upstream URL.
 
 **Validates: Requirements 2.3, 4.6, 11.1, 11.2, 11.4, 11.5, 11.6**
 
@@ -368,3 +368,14 @@ Full evidence in `build/reviews/sexton-power-proof.md`.
 - **Dependency (task 1.2).** `@modelcontextprotocol/server` 2.4.0 added; install gate and `sexton check` passed. Justification line for the PR body: the MCP protocol library, the one new runtime dependency (Apache-2.0, two direct dependencies, no install script, provenance present).
 - **Settled by the spike.** Kiro's client connects to a v2 server. Hand-written Standard Schemas work with no zod. A Power's relative `args` resolve against the installed Power folder; `env` arrives; only `${PLUGIN_ROOT}` and `${HOME}` expand. The install name is the folder name. The server runs on Node 20.19.5.
 - **Blocking finding, resolved by the owner.** A Power's server cannot learn the workspace (working directory is the installed Power folder, no workspace variable, no `roots`, nothing in the environment or call context). A server declared in the workspace's `.kiro/settings/mcp.json` does start in the workspace. The owner chose option 2 on 26 Nov 2026: each Tool takes `projectDir`. Requirement 2, Decision 10, Property 6, the tool contracts, Requirement 14 and the tasks were changed in the same commit.
+
+## Differences found while building (26 Nov 2026)
+
+- **Arguments that are not an object** never reach a handler: the SDK answers with a JSON-RPC error `-32602`. Requirement 11.6 and Property 5 now say so.
+- **Validation is done in the handler, not by the SDK.** The SDK validates arguments itself and answers with its own text when a call is bad. To return our Error result with the code `invalid-arguments` (Requirement 2.3), each schema object hands the SDK a pass-through `validate` and a strict JSON Schema, and carries a `parse` method the handler calls first. `tools/list` still advertises the strict schema.
+- **`safe()` of the CLI can return max + 1 code points** (it cuts to max and appends an ellipsis). `clean` in `bound.ts` cuts again so no string passes its field maximum; found by Property 4 on the module.
+- **Property 4 end to end** builds a `PipelineResult` of hostile strings and runs the four views and `ok()`, instead of editing the recorded fixtures: the views are pure, and the fixtures cannot hold a 1 MiB name.
+- **Property 11** no longer asserts a `User-Agent` header at the server: the Engine's `createFetchTransport` adds it, and the tests inject their own transport. The test still checks hosts, methods and the absence of `Authorization`.
+- **Property 3 (b)** imports the web app's `triage.ts` directly; it pulls no `@sexton/api` code at run time, so the fallback of Decision 2 was not needed.
+- **The Bundle is 1.6 MB** and runs under Node 20.19.5 and 22.23.4 from an empty directory. Third-party code in it is listed in `CREDITS.md`, including `fast-uri`, `fast-deep-equal` and `json-schema-traverse`, which `ajv` brings.
+- **`readOnlyFiles` replaces the CLI file port's `writeText` with a function that throws.** The scan pipeline never calls it.

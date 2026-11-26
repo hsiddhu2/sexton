@@ -1,6 +1,6 @@
 # Sexton: Product Requirements
 
-Version 0.9, 25 November 2026. Owner: Harpreet Singh Siddhu. This document is the single source of truth for what Sexton is and is not. Every spec, every design decision and every line of the write-up traces back to a numbered requirement here. If something is not in this document, it is not in scope. Changes to this document are versioned and dated.
+Version 1.1, 26 November 2026. Owner: Harpreet Singh Siddhu. This document is the single source of truth for what Sexton is and is not. Every spec, every design decision and every line of the write-up traces back to a numbered requirement here. If something is not in this document, it is not in scope. Changes to this document are versioned and dated.
 
 ## 1. Product statement
 
@@ -44,6 +44,7 @@ In scope:
 - CLI with scan, check and evidence commands.
 - GitHub Action wrapping the CLI.
 - Kiro Crew app that re-scans on a cron and judges whether a change crosses a policy line.
+- A read-only MCP server (`packages/mcp`) and a Kiro Power (`powers/sexton`) that let Kiro ask Sexton about a project's direct dependencies: four tools over the same scan the CLI runs. Spec sexton-power.
 
 Out of scope for 0.1, on the public roadmap:
 - Other ecosystems (PyPI, Maven, Go, Cargo).
@@ -209,3 +210,4 @@ Every Kiro spec names the requirements it implements. Every PR names the spec. T
 0.8, 25 Nov 2026. R-SG-10 publisher change and R-SG-11 new dependency signals. R-ST-2: two Possessed conditions added after the existing three.
 0.9, 25 November 2026. Section 2: the packument fields Sexton reads are named, and Socket, npq and Renovate are named as partial overlaps in place of the claim that no tool combines these parts. Release 0.1 lists seven signals.
 1.0, 25 November 2026. R-RM-2: a bump is never proposed over a declared range that is not a registry semver range, and the node-sass migration never raises sass-loader over one. R-RM-3: no remove for @types/* or compiler helper runtimes. R-RM-6: a migration body says when its scan was incomplete. Spec remediation-safety.
+1.1, 26 November 2026. Section 4.1: the MCP server and the Kiro Power. Spec sexton-power.

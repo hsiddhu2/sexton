@@ -179,7 +179,7 @@ The spec changes no scoring, no state rule, no policy rule, no plan and no Segme
 3. THE Server SHALL map every `PipelineError` line of the CLI to one of those codes by the CLI's message constants, not by parsing text.
 4. IF any unexpected exception occurs, THEN THE Server SHALL return `internal-error` with the fixed message `Sexton could not finish this request.` and SHALL log only the error's name to stderr.
 5. THE Server SHALL include in no Error result a stack trace, a file system path, an environment variable, a URL of an upstream request or any text of an exception.
-6. FOR ANY JSON arguments and ANY failing port, EVERY Tool SHALL resolve to a Tool result.
+6. FOR ANY JSON object as arguments and ANY failing port, EVERY Tool SHALL resolve to a Tool result. A call whose arguments are not a JSON object is refused by the protocol layer with a JSON-RPC error (code -32602, no stack) before the Tool runs; the SDK does that, and the Server cannot return a Tool result for it.
 
 ### Requirement 12: The one new dependency
 

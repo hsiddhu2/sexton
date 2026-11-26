@@ -1,0 +1,14 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "sexton",
+  "version": "0.1.0",
+  "description": "Ask Sexton which npm dependencies of the open project are dead, haunted or possessed, why, and what to fix first.",
+  "author": {
+    "name": "Harpreet Singh Siddhu",
+    "url": "https://github.com/hsiddhu2"
+  },
+  "keywords": ["dependency", "dependencies", "npm", "supply chain", "lockfile", "install", "package.json", "vulnerability", "advisory", "sexton"],
+  "homepage": "https://github.com/hsiddhu2/sexton",
+  "repository": "https://github.com/hsiddhu2/sexton",
+  "license": "Apache-2.0"
+}
