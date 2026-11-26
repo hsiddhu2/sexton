@@ -351,3 +351,13 @@ For any fixture project, every URL the transport sees has host `registry.npmjs.o
 3. **Skill instead of steering file; plugin format instead of POWER.md.** Decision 9. Say if a literal steering file under the legacy format is wanted.
 4. **A requirements version bump.** Requirement 15's companion: `docs/requirements.md` 1.1 gains one line under 4.1 (an MCP server and a Power), and one change-log line. Task 9.3. Without approval the task is skipped and the spec is the only record.
 5. **The Power installs from `main` by default.** Until this branch merges, a judge installs from the branch URL or the folder. The README gives both.
+
+## Notes and open items (26 Nov 2026, task 2 spike)
+
+Full evidence in `build/reviews/sexton-power-proof.md`.
+
+- **Dependency (task 1.2).** `@modelcontextprotocol/server` 2.4.0 added; install gate and `sexton check` passed. Justification line for the PR body: the MCP protocol library, the one new runtime dependency (Apache-2.0, two direct dependencies, no install script, provenance present).
+- **Settled by the spike.** Kiro's client connects to a v2 server. Hand-written Standard Schemas work with no zod, so Open item 2 (zod) is closed: not needed. A Power's relative `args` resolve against the installed Power folder; `env` arrives; `${PLUGIN_ROOT}` and `${HOME}` expand.
+- **Not settled, and blocking.** A Power's server starts with its working directory in `~/.kiro/powers/installed/<folder>`. Kiro expands no workspace variable, declares no `roots` capability, and puts no workspace path in the environment or the call context. Decision 10's outcomes (a), (b) and (c) do not describe this: the Power's own `mcp.json` cannot reach the project. A server declared in the workspace's `.kiro/settings/mcp.json` does start in the workspace. The work stopped here by the rule in the brief.
+- **Also found.** Kiro runs the server with Node 20.19.5, so the Bundle must target Node 20 (the repository targets 22). The installed name of a Power is its folder name, so the folder `powers/sexton` installs as `sexton`.
+- **Options for the owner** (none taken): (1) the Power carries the skill and the Bundle, and the README adds a one-time workspace entry in `.kiro/settings/mcp.json` that starts the Bundle from the installed Power path with `${HOME}`; (2) a Tool argument names the project directory, which reverses Requirement 2.2 and needs a stronger bound (the directory must be inside a root the user confirmed); (3) both a Power `mcp.json` and a workspace entry, the workspace entry being the working path.

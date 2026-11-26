@@ -6,21 +6,21 @@ Adds `@sexton/mcp`, a read-only MCP server over the CLI's scan, and the Kiro Pow
 
 Stop conditions, from the brief: if `sexton check` fails on the repository after the dependency is added (task 1.2), if the SDK or Kiro's client cannot work with the chosen library and schemas (task 2), or if the working directory problem cannot be solved (task 2), stop and report.
 
-- [ ] 1. Baseline and the one new dependency
-  - [ ] 1.1 Confirm the starting point
+- [x] 1. Baseline and the one new dependency
+  - [x] 1.1 Confirm the starting point
     - Branch `kiro/power` from origin/main 8952877. Root gates green before any change; record the test count. `.kiro/agents/impl.md` byte-identical to `build/impl.md.bak` before every commit.
     - _Requirements: 12.3, 13.5_
-  - [ ] 1.2 Create `packages/mcp/package.json` and add `@modelcontextprotocol/server` 2.4.0
+  - [x] 1.2 Create `packages/mcp/package.json` and add `@modelcontextprotocol/server` 2.4.0
     - Package `@sexton/mcp` 0.1.0, `type: module`, Apache-2.0, `engines.node >=22`, scripts `build` (`tsc -b`), `pretest` (`tsc -b`), `test` (`vitest run`), dependencies `@sexton/engine`, `@sexton/cli` (the versions in their package.json) and `@modelcontextprotocol/server` pinned to `2.4.0`, no range, no other dependency. Run the install through the install gate. Record the gate's output and `sexton check` on the repository (exit 0 expected). Commit the lockfile change. If the gate or `sexton check` fails: stop and report, do not edit `sexton.policy.yml`.
     - Add a one-line justification for the dependency to the PR body notes in design.md ("Notes and open items", appended at the end of the work).
     - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 13.1, 13.2_
 - [ ] 2. Spike: how Kiro starts a Power's server
   - Settles the three unknowns in design.md Decision 10 before any server code exists. Output goes into the appendix of the proof file.
-  - [ ] 2.1 Stub server
+  - [x] 2.1 Stub server
     - In a scratch directory outside the repository, a one-file server on `@modelcontextprotocol/server` with one tool `where` that returns `process.cwd()`, `process.argv`, `import.meta.url` and whether `SEXTON_PROJECT_DIR` is set, with a hand-written Standard Schema for no arguments. Bundle it with the esbuild already in `infra` into one `.mjs`.
     - Settles: the SDK takes hand-written Standard Schemas with no Zod (design Decision 7).
     - _Requirements: 12.5, 12.6_
-  - [ ] 2.2 Stub Power
+  - [x] 2.2 Stub Power
     - A scratch folder with `plugin.json` (the draft from design.md), `mcp.json` with `node` and a relative path to the bundled stub, and one skill. Install it in this workspace through Powers, Add Custom Power, Import power from a folder. Ask Kiro to call `where`. Record: the working directory, whether the relative `args` path resolved, whether an environment variable set in `mcp.json` arrives, whether `${...}` expands in `args`, whether Kiro's client connects to a v2 server, the Kiro version. If it did not run, say so.
     - Choose among the three outcomes of Decision 10 and write the choice and its evidence into design.md "Notes and open items". If none reaches the project directory, or the client will not connect: stop and report.
     - _Requirements: 2.1, 14.3, 15.2, 15.3_
