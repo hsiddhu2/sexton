@@ -40,7 +40,7 @@ test("bug 1: the Halo is not cut in the empty corners of the selected replay gra
   expect(box).not.toBeNull();
   const alphas = await page.evaluate((b) => {
     const hook = (window as unknown as HookWindow).__sextonTiming;
-    const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+    const canvas = document.querySelector<HTMLCanvasElement>("canvas.scene-canvas") as HTMLCanvasElement;
     const r = canvas.getBoundingClientRect();
     hook?.paintVariant({});
     // The cell's two top corners, 45 px in at the 305 px cell this was written for: no stone, Character, Ghost, ring or
@@ -66,7 +66,7 @@ test("bug 2: across a Pose boundary the sprite comparison differs far more than 
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
   const shares = await page.evaluate(() => {
     const hook = (window as unknown as HookWindow).__sextonTiming;
-    const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+    const canvas = document.querySelector<HTMLCanvasElement>("canvas.scene-canvas") as HTMLCanvasElement;
     const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
     const share = (a: Uint8ClampedArray, b: Uint8ClampedArray): number => {
       let far = 0;

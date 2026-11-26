@@ -450,6 +450,21 @@ a {
   margin: 0;
 }
 
+/* The Guide ghost before the text (design C16, 19.6): in the flow, so it covers nothing. */
+.welcome-lead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* The Guide ghost (19.7): a still picture that takes no input. */
+.ghost-picture {
+  display: block;
+  flex: none;
+  pointer-events: none;
+}
+
 .welcome-text b {
   color: var(--ui-accent);
 }
@@ -695,7 +710,13 @@ a {
 }
 
 .scanning-note {
-  margin: 0 0 18px;
+  margin: 0;
+  color: var(--ui-muted);
+}
+
+/* The Scanning line (design C16, 19.8): one more line under the note. */
+.scanning-mischief {
+  margin: 4px 0 18px;
   color: var(--ui-muted);
 }
 
@@ -1035,6 +1056,16 @@ a {
   font-weight: 600;
   line-height: 1.2;
   overflow-wrap: anywhere;
+}
+
+/* The Epitaph line (design C16, 19.1): plain Inter in the muted colour, never italic or a script face. */
+.inspector-epitaph {
+  margin: 0 0 6px;
+  color: var(--ui-muted);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 13.5px;
+  font-style: normal;
+  line-height: 1.4;
 }
 
 .inspector-version {
@@ -1445,8 +1476,16 @@ a {
   pointer-events: none;
 }
 
-.tour-title {
+/* The Guide ghost beside the step title (design C16, 19.5). */
+.tour-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin: 4px 0 6px;
+}
+
+.tour-title {
+  margin: 0;
   font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
   font-size: 16px;
 }
@@ -1674,6 +1713,12 @@ a {
   color: var(--state-possessed);
   font-size: 22px;
   font-weight: 700;
+}
+
+/* The Dry line (design C16, 19.3, 19.4): at the top of the card in the muted colour, hidden from assistive technology. */
+.failure-dry {
+  margin: 0 0 12px;
+  color: var(--ui-muted);
 }
 
 .failure-sentence {

@@ -226,3 +226,20 @@ Notes:
 Gates after the fixes: typecheck, lint (zero warnings) and test pass; 2362 tests across 6 workspaces. Playwright, from packages/web on its own port: 66 passed. Repaint medians at 300 graves at 1440 by 900: 1.20 ms at rest, 0.90 ms with a filter, 0.90 ms with the hover ring.
 
 Open for the owner: README.md still has no sentence on the order of the graves, so two site sentences rest on README's "Each grave is one dependency. Its shape and colour show its state." alone: the Tour's first step, "Its shape tells you its health. The worst ones stand in the front row.", and the Legend's line, "Fix order: Possessed first, then Dead, Haunted, Restless. Then by advisory severity and reach." (design.md, Task 7, item 9).
+
+## Task 13
+
+A little mischief (13.1 to 13.4): `copy/mischief.ts` with the twelve Epitaph lines, the eleven Dry lines and the Scanning line of design C16; the Epitaph line under the name in the Inspector at the scan date; the Dry line at the top of every failure card and the unknown-replay card, hidden from assistive technology; the Scanning line under the scanning card's note; `drawGhost` lifted from drawGrave with the Scene's calls unchanged; `scene/GhostPicture.tsx`, the still Guide ghost in the Welcome bar and beside the Tour's step title; web.md and structure.md; the e2e checks; docs/cemetery.png retaken.
+
+Independent review before the commit. Verdict: ready. No defect found: every line matches C16 character for character under the right key; the Guide ghost draws once with no timer or loop and sits in the page flow; no plain sentence, next step or button changed; drawGhost makes the same calls with the same sprite key and resolution; no existing draw case was edited and nothing in `scene/characters` changed; every changed test is listed with its reason; every path is in the lane.
+
+Notes:
+
+1. drawGhost reads the sprite resolution from the canvas transform. It equals the old product today; a caller that adds a non-uniform scale before drawGrave would cache the ghost at another resolution. Left as it is.
+2. The Guide ghost reads the device pixel ratio when it renders; moved to a screen with another ratio without a re-render, it stays at the old resolution. Cosmetic.
+3. `test/mischief.test.tsx` reads C16's tables from design.md, so a reformatted table fails the test even with the code right. Intended: 19.10 asks the shown lines to be C16's.
+4. The 10-word check splits on single spaces; enough for the lines as written.
+5. No unit test reads the alert's accessible name directly; the `aria-hidden` check on the Dry line covers it, and the Tour dialog is still named by its title alone.
+6. The Legend case's settle check in `e2e/clean.spec.ts` compared its first sample with itself; it now needs two equal samples. It failed once in six repeat runs on the previous build too.
+
+Gates: typecheck, lint (zero warnings) and test pass; 2372 tests across 6 workspaces. Playwright, from packages/web on its own port: 66 passed. Repaint medians at 300 graves at 1440 by 900: 1.30 ms at rest, 1.00 ms with a filter, 0.90 ms with the hover ring.

@@ -3,6 +3,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App.js";
+import { DRY_LINES } from "../src/copy/mischief.js";
 import { resetWelcomeForTests } from "../src/guide/welcome-pref.js";
 import { makeLoadError } from "../src/load/load-error.js";
 import { FAILURE_CARDS, LOAD_FAILED_CARD, liveFailureCard } from "../src/load/scan-failure.js";
@@ -85,6 +86,9 @@ describe("the failure card of a Live scan (12.1 to 12.5)", () => {
         expect(card().querySelector("h2")?.textContent).toBe(FAILURE_CARDS[c.id].sentence);
       });
       expect(card().querySelector(".failure-next")?.textContent).toBe(FAILURE_CARDS[c.id].next);
+      // Spec clean-site, task 13.2: the card opens with its Dry line, hidden from assistive technology (19.3, 19.4).
+      expect(card().firstElementChild?.textContent).toBe(DRY_LINES[c.id]);
+      expect(card().firstElementChild?.getAttribute("aria-hidden")).toBe("true");
       expect(within(card()).getAllByRole("button").map((b) => b.textContent)).toEqual(["Try the demo repo", "Back to the sample"]);
       expect(container.closest("body")?.querySelector(".scene-card")?.contains(card())).toBe(true);
       expect(document.body.textContent).not.toContain("ghp_secret");

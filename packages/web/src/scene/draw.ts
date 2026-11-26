@@ -12,7 +12,7 @@ import {
   SHADOW_ALPHA_BYTE,
   STONE_ALPHA_BYTE,
 } from "./palette.js";
-import { GRAVE_GEOMETRY, BOTTOM_LINE_MIN_GAP, BOTTOM_LINE_OFFSET, CELL_WIDTH, MAX_BACKING, PADDING, type GravePlan, type Rect, type ScenePlan, type Star, type Tuft } from "./layout.js";
+import { GRAVE_GEOMETRY, BOTTOM_LINE_MIN_GAP, BOTTOM_LINE_OFFSET, CELL_WIDTH, ghostOffset, MAX_BACKING, PADDING, type GravePlan, type Rect, type ScenePlan, type Star, type Tuft } from "./layout.js";
 import { inDanceWindow, poseAt, seedOf } from "./motion.js";
 import { CHURCH_PATH, TREE_PATH, batWing, churchPath, treePath } from "./silhouettes.js";
 import { POSE_COUNT, type ClipId } from "./characters/vector.js";
@@ -844,6 +844,47 @@ let paintBacking = 1;
 /** True while a grave is drawn rising in the Load moment: it is drawn directly, never from a sprite (review note). */
 let paintDirect = false;
 
+/** The ghost's own size in ghost units (scene/shapes.ts, GHOST_PATH). */
+const GHOST_W = 24;
+const GHOST_H = 28;
+
+/**
+ * The ghost of a grave with an advisory (spec clean-site, design C16), lifted from drawGrave: at its planned point
+ * (x, y) in the caller's units, `size` caller units per ghost unit, moved by the drift offset of `phase`. drawGrave
+ * calls it with the planned point, which holds the drift already, at phase 0; scene/GhostPicture.tsx calls it once,
+ * still, for the Guide ghost. A still ghost is drawn from a sprite on a real canvas, at the transform's own scale.
+ * Both themes share one palette, so the ghost takes the dark one's colours.
+ */
+export function drawGhost(ctx: PaintContext2D, x: number, y: number, size: number, phase: number): void {
+  const colours = PALETTE.dark;
+  ctx.save();
+  ctx.translate(x, y + ghostOffset(phase));
+  // Drawn larger and higher than its planned point, floating over the top of its stone, as in the mockup.
+  ctx.translate(GHOST_SHIFT_X, GHOST_SHIFT_Y);
+  ctx.scale(size, size);
+  const paintGhost = (c: PaintContext2D): void => {
+    c.fillStyle = colours.ghost;
+    c.fill(ghostPath());
+    drawOvals(c, GHOST_EYES, colours.ink);
+    drawOvals(c, GHOST_BLUSH, colours.costume.blush);
+  };
+  if (canSprite(ctx)) {
+    // The device pixels per ghost unit: in the Scene, the backing scale times the Tier scale times the ghost's size.
+    const m = ctx.getTransform();
+    const gk = Math.hypot(m.a, m.b);
+    const image = sprite(`ghost|${colours.ghost}`, GHOST_SPRITE_BOX, gk, paintGhost);
+    if (image !== null) drawSprite(ctx, image, GHOST_SPRITE_BOX, gk);
+    else paintGhost(ctx);
+  } else paintGhost(ctx);
+  ctx.restore();
+}
+
+/** Pure. The drawGhost arguments that fit the whole ghost, still, into a square of `side` caller units (19.7). */
+export function ghostPictureArgs(side: number): { readonly x: number; readonly y: number; readonly size: number } {
+  const size = side / GHOST_H;
+  return { x: (side - GHOST_W * size) / 2 - GHOST_SHIFT_X, y: -GHOST_SHIFT_Y, size };
+}
+
 /** One grave, drawn in its cell frame at its Tier scale: every number below is cell-relative. */
 export function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan, deco: DecorationColours, nowMs: number): void {
   const colours = PALETTE[plan.theme];
@@ -885,23 +926,8 @@ export function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan
   ctx.fill(plinthPath());
 
   if (grave.ghost !== null && grave.burial === null) {
-    ctx.save();
-    // The ghost position is planned in scene pixels; its drift is not scaled.
-    ctx.translate((grave.ghost.x - grave.rect.x) / scale, (grave.ghost.y - grave.rect.y) / scale);
-    // Drawn twice as large and higher, floating over the top of its stone, as in the mockup.
-    ctx.translate(GHOST_SHIFT_X, GHOST_SHIFT_Y);
-    ctx.scale(GHOST_DRAW_SCALE, GHOST_DRAW_SCALE);
-    const paintGhost = (c: PaintContext2D): void => {
-      c.fillStyle = colours.ghost;
-      c.fill(ghostPath());
-      drawOvals(c, GHOST_EYES, colours.ink);
-      drawOvals(c, GHOST_BLUSH, colours.costume.blush);
-    };
-    const gk = k * GHOST_DRAW_SCALE;
-    const image = canSprite(ctx) ? sprite(`ghost|${colours.ghost}`, GHOST_SPRITE_BOX, gk, paintGhost) : null;
-    if (image !== null && canSprite(ctx)) drawSprite(ctx, image, GHOST_SPRITE_BOX, gk);
-    else paintGhost(ctx);
-    ctx.restore();
+    // The ghost position is planned in scene pixels with its drift in it; the drift is not scaled, so phase 0 here.
+    drawGhost(ctx, (grave.ghost.x - grave.rect.x) / scale, (grave.ghost.y - grave.rect.y) / scale, GHOST_DRAW_SCALE, 0);
   }
 
   if (grave.marker) {

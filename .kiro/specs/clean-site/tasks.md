@@ -124,13 +124,13 @@ Run-time notes:
   - [ ] 12.3 After task 13, review the built site against the prototype in a fresh profile at both sizes; list every difference with its reason; write the report, kept outside the repository, with the frame time at 300 graves and what was removed
     - _Requirements: 18.6_
 
-- [ ] 13. A little mischief
+- [x] 13. A little mischief
   - _Requirements: 19.1 to 19.10, 4.1, 12.1, 18.1, 18.4_
-  - [ ] 13.1 Add `copy/mischief.ts` with the texts of design C16 and its test; show the Epitaph line in the Inspector
+  - [x] 13.1 Add `copy/mischief.ts` with the texts of design C16 and its test; show the Epitaph line in the Inspector
     - _Requirements: 19.1, 19.2, 19.10, 4.1_
-  - [ ] 13.2 Add the Dry line to every failure card and the unknown-replay card, and the Scanning line to the scanning card
+  - [x] 13.2 Add the Dry line to every failure card and the unknown-replay card, and the Scanning line to the scanning card
     - _Requirements: 19.3, 19.4, 19.8, 19.10, 12.1_
-  - [ ] 13.3 Move `paintGhost` to an exported `drawGhost` in `scene/draw.ts` with the Scene's output unchanged; add `scene/GhostPicture.tsx` and the Guide ghost in the Tour card and the Welcome bar
+  - [x] 13.3 Move `paintGhost` to an exported `drawGhost` in `scene/draw.ts` with the Scene's output unchanged; add `scene/GhostPicture.tsx` and the Guide ghost in the Tour card and the Welcome bar
     - _Requirements: 19.5, 19.6, 19.7, 19.9_
-  - [ ] 13.4 Update web.md (Inspector, failure cards, scanning card, the ghost exception) and structure.md (`copy/mischief.ts`); update `e2e/clean.spec.ts` and run the whole e2e suite; retake docs/cemetery.png
+  - [x] 13.4 Update web.md (Inspector, failure cards, scanning card, the ghost exception) and structure.md (`copy/mischief.ts`); update `e2e/clean.spec.ts` and run the whole e2e suite; retake docs/cemetery.png
     - _Requirements: 18.1, 18.4, 19.9_

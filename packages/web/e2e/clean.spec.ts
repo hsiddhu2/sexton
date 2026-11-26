@@ -6,10 +6,12 @@
 // - no visible DOM element over a grave's Art box but the allowed ones (3.15), on Home in every case that shows it;
 // - no request outside the page origin and the API base (16.13);
 // - no AudioContext and no audio element (4.3, 14.7).
+// Task 13.4 adds the mischief of requirement 19: the Epitaph line, the Dry lines, the Scanning line and the still Guide
+// ghost in the Welcome bar and the Tour card, none of them over a grave.
 // Axe runs on every view (16.9), and the Scene repaints 300 graves within the frame budget (16.2).
 import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
-import { chromium, expect, test, type BrowserContext, type Page, type Route } from "@playwright/test";
+import { chromium, expect, test, type BrowserContext, type Locator, type Page, type Route } from "@playwright/test";
 import { BUDGET_MS } from "./budget.js";
 import { scan300, SCAN_300_COUNT, SCAN_300_PATH } from "./scan-300.js";
 
@@ -253,6 +255,24 @@ async function coverings(page: Page): Promise<string[]> {
   });
 }
 
+/**
+ * Requirements 19.5 to 19.9: one Guide ghost inside `root`, hidden from assistive technology, taking no input and with
+ * no tab stop, never in the Scene, and still: its pixels are the same after a second, under any motion setting.
+ */
+async function expectStillGhost(page: Page, root: Locator): Promise<void> {
+  const ghost = root.locator("canvas.ghost-picture");
+  await expect(ghost).toHaveCount(1);
+  await expect(ghost).toHaveAttribute("aria-hidden", "true");
+  expect(await ghost.getAttribute("tabindex")).toBeNull();
+  expect(await ghost.evaluate((el) => getComputedStyle(el).pointerEvents)).toBe("none");
+  const box = await ghost.boundingBox();
+  expect([box?.width, box?.height]).toEqual([28, 28]);
+  await expect(page.locator(".scene-card canvas.ghost-picture")).toHaveCount(0);
+  const first = await ghost.evaluate((el) => (el as HTMLCanvasElement).toDataURL());
+  await page.waitForTimeout(1000);
+  expect(await ghost.evaluate((el) => (el as HTMLCanvasElement).toDataURL())).toBe(first);
+}
+
 /** Requirement 3.15 over the whole Scene: at a phone size the page scrolls, so each screenful of the Scene is sampled. */
 async function expectGravesClear(page: Page): Promise<void> {
   await scenePainted(page);
@@ -389,6 +409,8 @@ for (const size of SIZES) {
       await expect(card).toBeVisible();
       await expect(card.locator(".scanning-title")).toHaveText("Digging through hsiddhu2/sexton-demo");
       await expect(card).toContainText("This usually takes a few seconds.");
+      // 19.8: the Scanning line, one more line under the note in the same card.
+      await expect(card.locator(".scanning-note + .scanning-mischief")).toHaveText("Lantern lit. Mind the roots.");
       await expect(card.locator(".scanning-lines li")).toHaveText(["Reading package.json and the lockfile", "Asking npm, OSV and deps.dev", "Reading each headstone"]);
       await expect(page.getByRole("progressbar")).toHaveCount(0);
       await expect(field).toHaveValue("hsiddhu2/sexton-demo");
@@ -425,10 +447,16 @@ for (const size of SIZES) {
       const inspector = page.locator(".inspector");
       await expect(inspector.locator(".eyebrow")).toHaveText(/You are looking at\s*Selected/i);
       await expect(inspector.locator(".inspector-name")).toHaveText("left-padder");
+      // 19.1: the Epitaph line of the Reason family, under the name, as plain text in the muted colour, not italic.
+      const epitaph = inspector.locator(".inspector-name + .inspector-epitaph");
+      await expect(epitaph).toHaveText("The keys changed hands. Nobody heard the door.");
+      await expect(epitaph.locator("*")).toHaveCount(0);
+      expect(await epitaph.evaluate((el) => [getComputedStyle(el).fontStyle, getComputedStyle(el).fontFamily.split(",")[0]])).toEqual(["normal", "Inter"]);
       const panelBefore = await pageBox(page, ".panel");
       await grave(page, "lodash").hover();
       await expect(inspector.locator(".inspector-name")).toHaveText("lodash");
       await expect(inspector.locator(".eyebrow-mark")).toHaveCount(0);
+      await expect(epitaph).toHaveText("Something serious walks these grounds.");
       // 3.6: lodash has a Proposed plan.
       await expect(inspector.getByRole("button", { name: "See the evidence and the fix" })).toBeVisible();
       const panelAfter = await pageBox(page, ".panel");
@@ -699,11 +727,12 @@ for (const size of SIZES) {
       // 13.1, 13.2: the Legend opens under its button, eight entries and the fix order line, and nothing moves.
       // The Scene card settles its height once the fonts and the Footer bar are measured; take it after that.
       await page.evaluate(() => document.fonts.ready.then(() => undefined));
-      let sceneBefore = await pageBox(page, ".scene-card");
+      // Settled means the same box on two samples 400 ms apart; the first sample only starts the count.
+      let sceneBefore: Rect | null | undefined = undefined;
       await expect
         .poll(async () => {
           const now = await pageBox(page, ".scene-card");
-          const same = JSON.stringify(now) === JSON.stringify(sceneBefore);
+          const same = sceneBefore !== undefined && JSON.stringify(now) === JSON.stringify(sceneBefore);
           sceneBefore = now;
           return same;
         }, { intervals: [400, 400, 400, 400, 400, 400, 400, 400] })
@@ -747,6 +776,8 @@ for (const size of SIZES) {
       expect(new URL(page.url()).searchParams.get("at")).not.toBeNull();
       expect(await page.evaluate(() => history.length)).toBe(entries);
       await expect(page.locator(".inspector-why")).toHaveText(/^(On \d{1,2} \w{3} \d{4} this package was \w+\.|The installed version did not exist yet\.)$/);
+      // 19.2: no Epitaph line at an earlier date.
+      await expect(page.locator(".inspector-epitaph")).toHaveCount(0);
       await expectGravesClear(page);
       // 16.4, 16.15: Back to now.
       await page.getByRole("button", { name: "Back to now" }).click();
@@ -901,6 +932,9 @@ for (const size of SIZES) {
       expect(barBox?.y ?? 0).toBeGreaterThanOrEqual((headerBox?.y ?? 0) + (headerBox?.height ?? 0) - 1);
       expect(heroBox?.y ?? 0).toBeGreaterThanOrEqual((barBox?.y ?? 0) + (barBox?.height ?? 0));
       if (size.narrow) await expectNoSidewaysScroll(page);
+      // 19.6, 19.7, 19.9: the Guide ghost at the bar's start, before its text: hidden, no input, and still.
+      await expectStillGhost(page, bar);
+      await expect(bar.locator(".welcome-lead > :first-child")).toHaveClass("ghost-picture");
       await expectGravesClear(page);
       // 9.7: its close button hides it and stores the choice, so a reload keeps it hidden.
       await bar.getByRole("button", { name: "Close the welcome bar" }).click();
@@ -983,6 +1017,9 @@ for (const size of SIZES) {
         // 13.5 to 13.7: the card inside the viewport, its step line and buttons, the dimming and the spotlight.
         await expect(card.locator(".eyebrow")).toHaveText(`Step ${String(i + 1)} of 3`);
         await expect(card.locator(".tour-title")).toHaveText(title);
+        // 19.5, 19.7, 19.9: the Guide ghost beside the step title: hidden, no input, and still.
+        await expectStillGhost(page, card.locator(".tour-title-row"));
+        await expect(card.locator(".tour-title-row > .ghost-picture + .tour-title")).toHaveCount(1);
         await expect(card.locator(".tour-text")).toHaveText(text);
         await expect(card.getByRole("button", { name: "Skip" })).toBeVisible();
         await expect(card.getByRole("button", { name: i === 2 ? "Done" : "Next" })).toBeFocused();
@@ -1039,6 +1076,9 @@ for (const size of SIZES) {
       // 12.1, 12.2: one sentence, one next step and two buttons.
       const card = page.locator(".failure-card");
       await expect(card).toBeVisible();
+      // 19.3, 19.4: the Dry line opens the card, hidden from assistive technology, before the plain sentence.
+      await expect(card.locator(":scope > :first-child")).toHaveText("We knocked, and nobody answered.");
+      await expect(card.locator(".failure-dry")).toHaveAttribute("aria-hidden", "true");
       await expect(card.locator(".failure-sentence")).toHaveText("We could not read that repo.");
       await expect(card.locator(".failure-next")).toHaveText("Check the spelling. Sexton can only read public repos with a package.json at the top.");
       await expect(card.getByRole("button")).toHaveText(["Try the demo repo", "Back to the sample"]);
@@ -1148,6 +1188,7 @@ for (const size of SIZES) {
       // 10.10: an unknown replay shows its card and loads nothing.
       await page.goto("/?replay=nope");
       await expect(page.getByRole("alert")).toContainText("That replay does not exist.");
+      await expect(page.locator(".failure-dry")).toHaveText("No such ghost story is told here.");
       await page.getByRole("button", { name: "Back to the cemetery" }).click();
       await expect(home).toHaveText("1 of 12 dependencies needs you now.");
       await checkProbe(page, origin, g);

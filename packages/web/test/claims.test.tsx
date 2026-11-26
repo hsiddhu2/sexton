@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { App } from "../src/App.js";
 import { CLAIMS } from "../src/copy/claims.js";
+import { DRY_LINES } from "../src/copy/mischief.js";
 import { Drawer } from "../src/drawer/Drawer.js";
 import { NO_HISTORY_TEXT } from "../src/drawer/history-rows.js";
 import { PR_LINK_TEXT } from "../src/drawer/Drawer.js";
@@ -247,9 +248,10 @@ describe("Feature: clean-site, Property 9: Claims rest on README.md", () => {
   });
 
   it("finds no unclaimed capability sentence on each failure card and the scanning card", () => {
-    for (const card of [...Object.values(FAILURE_CARDS), LOAD_FAILED_CARD]) {
+    for (const card of [...Object.values(FAILURE_CARDS), { ...LOAD_FAILED_CARD, id: "load-failed" as const }]) {
       const shown = render(
         <FailureCard
+          dry={DRY_LINES[card.id]}
           sentence={card.sentence}
           next={card.next}
           actions={[TRY_DEMO_REPO, TRY_AGAIN, BACK_TO_SAMPLE].map((label) => ({ label, onPress: () => undefined }))}

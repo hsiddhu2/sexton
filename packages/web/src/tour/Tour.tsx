@@ -1,10 +1,11 @@
 // The Tour (spec clean-site, design C11, requirements 13.3 to 13.10): a full-screen blocker that takes every press
 // outside the card, a spotlight box around the highlighted part with the rest dimmed, and the card, placed by
 // tour/place-card.ts inside the viewport. The card takes focus when a step shows and keeps it inside; Escape is the
-// page's (10.3).
+// page's (10.3). The Guide ghost sits beside the step title (design C16, 19.5).
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { TourStep } from "../load/screen-state.js";
 import { trapStep } from "../drawer/focus-trap.js";
+import { GhostPicture } from "../scene/GhostPicture.js";
 import { placeCard, type Box } from "./place-card.js";
 import { TOUR_OFF_TEXT, TOUR_STEPS } from "./tour-steps.js";
 
@@ -134,9 +135,12 @@ export function Tour({ step, apiConfigured, onNext, onEnd }: TourProps) {
         style={{ left: place.x, top: place.y, width: place.width }}
       >
         <p className="eyebrow">Step {step + 1} of 3</p>
-        <h2 id="tour-title" className="tour-title">
-          {shown.title}
-        </h2>
+        <div className="tour-title-row">
+          <GhostPicture />
+          <h2 id="tour-title" className="tour-title">
+            {shown.title}
+          </h2>
+        </div>
         <p id="tour-text" className="tour-text">
           {text}
         </p>

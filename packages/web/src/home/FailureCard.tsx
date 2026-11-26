@@ -1,6 +1,7 @@
-// A failure card over the Scene (spec clean-site, design C10, requirements 12.1 and 12.7): one sentence, one next
-// step and its buttons. The sentence and next step come from the fixed card table of load/scan-failure.ts, never from
-// an error body (12.4).
+// A failure card over the Scene (spec clean-site, design C10, requirements 12.1 and 12.7): its Dry line (design C16,
+// 19.3), one sentence, one next step and its buttons. The sentence and next step come from the fixed card table of
+// load/scan-failure.ts, never from an error body (12.4). The Dry line is hidden from assistive technology, so the
+// alert announces the plain sentence and the next step only (19.4).
 export const TRY_DEMO_REPO = "Try the demo repo";
 export const BACK_TO_SAMPLE = "Back to the sample";
 export const TRY_AGAIN = "Try again";
@@ -12,16 +13,21 @@ export interface FailureAction {
 }
 
 export interface FailureCardProps {
+  /** The card's Dry line from copy/mischief.ts, shown first and hidden from assistive technology. */
+  readonly dry: string;
   readonly sentence: string;
   /** The next step; the unknown replay's card has none (10.10). */
   readonly next?: string;
   readonly actions: readonly FailureAction[];
 }
 
-export function FailureCard({ sentence, next, actions }: FailureCardProps) {
+export function FailureCard({ dry, sentence, next, actions }: FailureCardProps) {
   return (
     <div className="scene-card-overlay">
       <section role="alert" className="failure-card">
+        <p className="failure-dry" aria-hidden="true">
+          {dry}
+        </p>
         <span className="failure-mark" aria-hidden="true">
           !
         </span>

@@ -230,7 +230,7 @@ describe("the Replay view (8.1 to 8.8, 8.12, 8.16, 8.19 to 8.22)", () => {
     const storyless = (() => Promise.resolve(new Response(JSON.stringify(noTimelines), { status: 200 }))) as typeof fetch;
     render(<App fetchFn={storyless} apiBase={null} initialSearch="?replay=axios" pageOrigin={ORIGIN} />);
     await waitFor(() => {
-      expect(screen.getByRole("alert").textContent).toBe("!This scan could not be loaded.Try again, or open the sample.Try againBack to the sample");
+      expect(screen.getByRole("alert").textContent).toBe("This one would not come out of the ground.!This scan could not be loaded.Try again, or open the sample.Try againBack to the sample");
     });
     cleanup();
     // Should such a response reach the view anyway, it shows the load failure card, never a card that waits for ever.
@@ -245,7 +245,7 @@ describe("the Replay view (8.1 to 8.8, 8.12, 8.16, 8.19 to 8.22)", () => {
         onHome={() => undefined}
       />,
     );
-    expect(screen.getByRole("alert").textContent).toBe("!This scan could not be loaded.Try again, or open the sample.Try againBack to the sample");
+    expect(screen.getByRole("alert").textContent).toBe("This one would not come out of the ground.!This scan could not be loaded.Try again, or open the sample.Try againBack to the sample");
     expect(screen.queryByRole("status")).toBeNull();
   });
 

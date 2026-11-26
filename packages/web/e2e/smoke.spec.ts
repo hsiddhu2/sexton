@@ -20,7 +20,7 @@ interface DemoPackage {
 /** Resolves once the scene canvas holds a painted pixel: the sky fill makes device pixel (2, 2) opaque. */
 async function waitForFirstPaint(page: Page): Promise<void> {
   await page.waitForFunction(() => {
-    const canvas = document.querySelector("canvas");
+    const canvas = document.querySelector<HTMLCanvasElement>("canvas.scene-canvas");
     const data = canvas?.getContext("2d")?.getImageData(2, 2, 1, 1).data;
     return data !== undefined && data[3] === 255;
   });
@@ -217,7 +217,7 @@ test("the axios replay at its Possessed stop, for the README", async ({ page, ba
   await expect(page.locator(".burst-caption")).toHaveCount(0);
   const graveBox = await grave.boundingBox();
   const skin = await page.evaluate((b) => {
-    const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+    const canvas = document.querySelector<HTMLCanvasElement>("canvas.scene-canvas") as HTMLCanvasElement;
     const r = canvas.getBoundingClientRect();
     const k = canvas.width / r.width;
     const data = (canvas.getContext("2d") as CanvasRenderingContext2D).getImageData(Math.round((b.x - r.left) * k), Math.round((b.y - r.top) * k), Math.round(b.width * k), Math.round(b.height * k)).data;
@@ -267,7 +267,7 @@ test("draws the zombie on the Possessed grave and the skeleton on a Dead grave",
     expect(box).not.toBeNull();
     return page.evaluate(
       ({ b, hex }) => {
-        const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+        const canvas = document.querySelector<HTMLCanvasElement>("canvas.scene-canvas") as HTMLCanvasElement;
         const r = canvas.getBoundingClientRect();
         const k = canvas.width / r.width;
         const x = Math.round((b.x - r.left) * k);

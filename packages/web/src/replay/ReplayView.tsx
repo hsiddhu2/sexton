@@ -7,6 +7,7 @@ import type { ReactNode, RefObject } from "react";
 import { useMemo } from "react";
 import { Cemetery } from "../Cemetery.js";
 import { LoadingCard } from "../LoadingCard.js";
+import { DRY_LINES } from "../copy/mischief.js";
 import type { Term } from "../glossary/glossary.js";
 import { TermText } from "../glossary/TermText.js";
 import { BACK_TO_SAMPLE, FailureCard, TRY_AGAIN } from "../home/FailureCard.js";
@@ -79,6 +80,7 @@ export function ReplayView({ id, load, onHome, onRetry, onSample, ...rest }: Rep
           {load.status === "error" || ready !== null ? (
             // A refused file, or a loaded file whose Steps do not match its Stops (never a card that waits for ever).
             <FailureCard
+              dry={DRY_LINES["load-failed"]}
               sentence={LOAD_FAILED_CARD.sentence}
               next={LOAD_FAILED_CARD.next}
               actions={[

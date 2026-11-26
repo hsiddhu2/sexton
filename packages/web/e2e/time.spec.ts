@@ -53,7 +53,7 @@ test("at 1440 by 900 the canvas reaches the bottom of the Scene card, above the 
   // The scene sizes itself after the fonts and the header settle, so the gap is read until it has.
   const gap = async (): Promise<number> =>
     page.evaluate(() => {
-      const canvas = document.querySelector("canvas")?.getBoundingClientRect();
+      const canvas = document.querySelector<HTMLCanvasElement>("canvas.scene-canvas")?.getBoundingClientRect();
       const card = document.querySelector(".scene-card")?.getBoundingClientRect();
       return canvas === undefined || card === undefined ? 99 : Math.abs(card.bottom - canvas.bottom);
     });
@@ -77,7 +77,7 @@ test("the scrubber moves by keyboard, shows as of, and Back to now returns to th
   const last = await scrubber.getAttribute("max");
   await expect(scrubber).toHaveValue(last ?? "");
   await expect(page.locator(".date-badge")).toHaveCount(0);
-  const before = await page.locator("canvas").first().evaluate((c) => (c as HTMLCanvasElement).toDataURL());
+  const before = await page.locator("canvas.scene-canvas").first().evaluate((c) => (c as HTMLCanvasElement).toDataURL());
   await scrubber.focus();
   await scrubber.press("Home");
   await expect(scrubber).toHaveValue("0");
@@ -85,7 +85,7 @@ test("the scrubber moves by keyboard, shows as of, and Back to now returns to th
   await expect(page.locator("button[data-grave-index][aria-label$=\"not yet published on this date\"]").first()).toBeVisible();
   // The canvas repaints in the next animation frame.
   await expect
-    .poll(async () => page.locator("canvas").first().evaluate((c) => (c as HTMLCanvasElement).toDataURL()))
+    .poll(async () => page.locator("canvas.scene-canvas").first().evaluate((c) => (c as HTMLCanvasElement).toDataURL()))
     .not.toBe(before);
   await scrubber.press("End");
   await expect(scrubber).toHaveValue(last ?? "");
@@ -216,7 +216,7 @@ test("at 1440 by 900 on the demo Home fits the viewport, with every grave above 
   await expect.poll(async () => (await box("header.site-header")).height).toBeLessThanOrEqual(64);
   const welcome = await box(".welcome");
   expect(welcome.y).toBeLessThan(120);
-  const canvas = await box("canvas");
+  const canvas = await box("canvas.scene-canvas");
   const footer = await box("footer.foot-bar");
   const panel = await box("aside.panel");
   console.log(`canvas top ${String(canvas.y)}, canvas height ${String(canvas.height)}, footer bottom ${String(footer.y + footer.height)}`);
@@ -266,7 +266,7 @@ test("at 390 by 844 the worst graves come first, two to a row, then the Footer b
   expect(second.y).toBe(first.y);
   expect(second.x).toBeGreaterThan(first.x);
   expect(last.y).toBeGreaterThan(first.y);
-  const canvas = await page.locator("canvas").first().boundingBox();
+  const canvas = await page.locator("canvas.scene-canvas").first().boundingBox();
   const footer = await page.locator("footer.foot-bar").boundingBox();
   const panel = await page.locator("aside.panel").boundingBox();
   expect(canvas && footer && panel).toBeTruthy();

@@ -27,11 +27,11 @@ test("at 360 px the page does not scroll sideways and the canvas spans the conte
   await page.goto("/");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
   const closed = await scrollWidth(page);
-  const canvas = await page.locator("canvas").first().boundingBox();
+  const canvas = await page.locator("canvas.scene-canvas").first().boundingBox();
   expect(canvas?.x ?? 99).toBeLessThanOrEqual(16);
   // The canvas takes its width once the Scene card is measured, so its right edge is read until it has.
   const right = async (): Promise<number> => {
-    const b = await page.locator("canvas").first().boundingBox();
+    const b = await page.locator("canvas.scene-canvas").first().boundingBox();
     return b === null ? 0 : b.x + b.width;
   };
   await expect.poll(right, { timeout: 2000 }).toBeGreaterThanOrEqual(NARROW.width - 16);

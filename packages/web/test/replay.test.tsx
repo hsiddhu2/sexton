@@ -131,14 +131,14 @@ describe("opening a replay (requirement 18)", () => {
     for (const bad of ["other", "", "AXIOS", "axios%2F..", "..%2Fdemo%2Fscan", "https%3A%2F%2Fevil.example%2Fx.json"]) {
       const { urls } = mount(`?replay=${bad}`);
       await waitFor(() => {
-        expect(screen.getByRole("alert").textContent).toBe("!That replay does not exist.Back to the cemetery");
+        expect(screen.getByRole("alert").textContent).toBe("No such ghost story is told here.!That replay does not exist.Back to the cemetery");
       });
       expect(urls).toEqual([]);
       cleanup();
     }
     const repeated = mount("?replay=axios&replay=keyv");
     await waitFor(() => {
-      expect(screen.getByRole("alert").textContent).toBe("!That replay does not exist.Back to the cemetery");
+      expect(screen.getByRole("alert").textContent).toBe("No such ghost story is told here.!That replay does not exist.Back to the cemetery");
     });
     expect(repeated.urls).toEqual([]);
   });

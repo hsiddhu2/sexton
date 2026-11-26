@@ -108,7 +108,7 @@ describe("Home: headline, notices, chips and the view switch (2.1 to 2.15)", () 
     expect(yard.closest(".scene-card")).toBeNull();
     fireEvent.click(list);
     expect([yard.getAttribute("aria-pressed"), list.getAttribute("aria-pressed")]).toEqual(["false", "true"]);
-    expect(container.querySelector("canvas")).toBeNull();
+    expect(container.querySelector("canvas:not(.ghost-picture)")).toBeNull();
     expect(container.querySelector(".scene-help")).toBeNull();
     const table = container.querySelector("table.list-table") as HTMLElement;
     expect([...table.querySelectorAll("th")].map((th) => th.textContent)).toEqual(["Package", "Version", "State ↑ worst first", "Why", "Fix"]);
@@ -121,7 +121,7 @@ describe("Home: headline, notices, chips and the view switch (2.1 to 2.15)", () 
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(document.activeElement).toBe(within(table).getByRole("button", { name: "event-stream" }));
     fireEvent.click(yard);
-    expect(container.querySelector("canvas")).not.toBeNull();
+    expect(container.querySelector("canvas:not(.ghost-picture)")).not.toBeNull();
   });
 
   it("shows the help line in the Graveyard view, and the date badge and past headline at an earlier date (2.3, 2.10, 2.11)", async () => {
@@ -414,7 +414,7 @@ describe("one owner of what is open (17.1 to 17.3, 10.3)", () => {
     await ready();
     fireEvent.click(screen.getByRole("button", { name: "List" }));
     fireEvent.click(screen.getByRole("button", { name: "Tour" }));
-    expect(container.querySelector("canvas")).not.toBeNull();
+    expect(container.querySelector("canvas:not(.ghost-picture)")).not.toBeNull();
     const card = (): HTMLElement => container.querySelector(".tour-card") as HTMLElement;
     expect(card().textContent).toContain("Step 1 of 3");
     expect(card().textContent).toContain("Every grave is one dependency");

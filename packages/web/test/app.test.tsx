@@ -61,7 +61,7 @@ describe("App", () => {
     const rec = recorder(() => cheapScan(2));
     const { container } = mount(rec);
     expect(screen.getByRole("status").textContent).toBe("Loading the scan");
-    expect(container.querySelector("canvas")).toBeNull();
+    expect(container.querySelector("canvas:not(.ghost-picture)")).toBeNull();
     await ready();
     expect(rec.urls).toEqual(["http://localhost/demo/scan.json"]);
     expect(container.querySelector(".scan-tag")?.textContent).toBe("Sample scan");
@@ -80,10 +80,10 @@ describe("App", () => {
     const rec = recorder(() => cheapScan(1));
     const { container } = mount(rec, { search: "?scan=https%3A%2F%2Fevil.example%2Fx" });
     await waitFor(() => {
-      expect(screen.getByRole("alert").textContent).toBe("!This scan could not be loaded.Try again, or open the sample.Try againBack to the sample");
+      expect(screen.getByRole("alert").textContent).toBe("This one would not come out of the ground.!This scan could not be loaded.Try again, or open the sample.Try againBack to the sample");
     });
     expect(rec.urls).toEqual([]);
-    expect(container.querySelector("canvas")).toBeNull();
+    expect(container.querySelector("canvas:not(.ghost-picture)")).toBeNull();
     expect(container.querySelector("button[data-grave-index]")).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(container.textContent).not.toContain("evil.example");
@@ -93,9 +93,9 @@ describe("App", () => {
     const rec = recorder(() => Promise.resolve(new Response(JSON.stringify({ report: 1 }), { status: 200 })));
     const { container } = mount(rec);
     await waitFor(() => {
-      expect(screen.getByRole("alert").textContent).toBe("!This scan could not be loaded.Try again, or open the sample.Try againBack to the sample");
+      expect(screen.getByRole("alert").textContent).toBe("This one would not come out of the ground.!This scan could not be loaded.Try again, or open the sample.Try againBack to the sample");
     });
-    expect(container.querySelector("canvas")).toBeNull();
+    expect(container.querySelector("canvas:not(.ghost-picture)")).toBeNull();
     expect(container.textContent).not.toContain("invalid-response");
   });
 
@@ -266,7 +266,7 @@ describe("App loading, error and empty states (cemetery-polish task 8)", () => {
     const { container } = mount(rec);
     await ready();
     expect(container.querySelector(".cemetery-empty")?.textContent).toBe("no direct dependencies in this scan");
-    expect(container.querySelector("canvas")).toBeNull();
+    expect(container.querySelector("canvas:not(.ghost-picture)")).toBeNull();
   });
 });
 

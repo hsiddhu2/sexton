@@ -315,6 +315,6 @@ describe("the Tour (13.3 to 13.10)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Skip" }));
     expect(container.querySelector(".tour")).toBeNull();
     expect(container.querySelector("h1")?.textContent).toBe(before);
-    expect(container.querySelector("canvas")).not.toBeNull();
+    expect(container.querySelector("canvas:not(.ghost-picture)")).not.toBeNull();
   });
 });

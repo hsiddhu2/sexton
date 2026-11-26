@@ -140,7 +140,7 @@ describe("landmarks, labels and text alternatives (Requirements 10.1, 10.2, 10.6
   it("hides the canvas and labels every grave button with name, version and state", async () => {
     const { container } = mount();
     await ready();
-    expect(container.querySelector("canvas")?.getAttribute("aria-hidden")).toBe("true");
+    expect(container.querySelector("canvas:not(.ghost-picture)")?.getAttribute("aria-hidden")).toBe("true");
     const buttons = [...container.querySelectorAll<HTMLButtonElement>("button[data-grave-index]")];
     expect(buttons).toHaveLength(12);
     for (const b of buttons) {

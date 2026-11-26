@@ -49,7 +49,7 @@ for (const [width, height] of [
     // With the clock still, paint once with every Ghost and once with none, and compare each label's pixels.
     const result = await page.evaluate(() => {
       const hook = (window as unknown as HookWindow).__sextonTiming;
-      const canvas = document.querySelector("canvas");
+      const canvas = document.querySelector<HTMLCanvasElement>("canvas.scene-canvas");
       const ctx = canvas?.getContext("2d");
       if (hook === undefined || canvas === null || ctx === null || ctx === undefined) return { labels: 0, differing: -1, ghosts: 0 };
       const k = canvas.width / canvas.getBoundingClientRect().width;
@@ -160,7 +160,7 @@ test("under Reduced motion the axios replay shows the Burst's final pose at once
   // at once. The assertion is unchanged.
   const skin = (): Promise<number> =>
     page.evaluate((b) => {
-      const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+      const canvas = document.querySelector<HTMLCanvasElement>("canvas.scene-canvas") as HTMLCanvasElement;
       const r = canvas.getBoundingClientRect();
       const k = canvas.width / r.width;
       const data = (canvas.getContext("2d") as CanvasRenderingContext2D).getImageData(Math.round((b.x - r.left) * k), Math.round((b.y - r.top) * k), Math.round(b.width * k), Math.round(b.height * k)).data;
@@ -189,7 +189,7 @@ for (const [width, height] of [
     await page.evaluate(() => document.fonts.ready.then(() => undefined));
     const result = await page.evaluate(() => {
       const hook = (window as unknown as HookWindow).__sextonTiming;
-      const canvas = document.querySelector("canvas");
+      const canvas = document.querySelector<HTMLCanvasElement>("canvas.scene-canvas");
       const ctx = canvas?.getContext("2d");
       if (hook === undefined || canvas === null || ctx === null || ctx === undefined) return { total: 0, far: -1 };
       const at = Date.now();
@@ -225,7 +225,7 @@ test("a rising grave in the Load moment is drawn directly, not from a sprite", a
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
   const result = await page.evaluate(() => {
     const hook = (window as unknown as HookWindow).__sextonTiming;
-    const canvas = document.querySelector("canvas");
+    const canvas = document.querySelector<HTMLCanvasElement>("canvas.scene-canvas");
     const ctx = canvas?.getContext("2d");
     if (hook === undefined || canvas === null || ctx === null || ctx === undefined) return -1;
     // 300 ms in, most graves are part-way up; with and without sprites the frame must be the same, pixel for pixel.

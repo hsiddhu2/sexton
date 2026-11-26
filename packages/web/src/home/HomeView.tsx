@@ -5,6 +5,7 @@ import type { PackageHealth, ScanResponse, State } from "@sexton/api";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Cemetery } from "../Cemetery.js";
 import { LoadingCard } from "../LoadingCard.js";
+import { DRY_LINES } from "../copy/mischief.js";
 import { LOAD_FAILED_CARD, liveFailureCard, NO_SUCH_REPLAY_TEXT } from "../load/scan-failure.js";
 import { BACK_TO_CEMETERY, BACK_TO_SAMPLE, FailureCard, TRY_AGAIN, TRY_DEMO_REPO } from "./FailureCard.js";
 import type { Term } from "../glossary/glossary.js";
@@ -97,13 +98,13 @@ export function HomeView(props: HomeViewProps) {
  */
 function LoadFailure({ screen, live, error, onDemoRepo, onSample, onRetry }: HomeViewProps & { readonly error: LoadError }) {
   // A replay value outside the closed set loads nothing (10.10); its one button loads the Sample scan.
-  if (screen.view.source.kind === "rejected") return <FailureCard sentence={NO_SUCH_REPLAY_TEXT} actions={[{ label: BACK_TO_CEMETERY, onPress: onSample ?? none }]} />;
+  if (screen.view.source.kind === "rejected") return <FailureCard dry={DRY_LINES["no-such-replay"]} sentence={NO_SUCH_REPLAY_TEXT} actions={[{ label: BACK_TO_CEMETERY, onPress: onSample ?? none }]} />;
   const sample = { label: BACK_TO_SAMPLE, onPress: onSample ?? none };
   if (live === true) {
     const card = liveFailureCard(error);
-    return <FailureCard sentence={card.sentence} next={card.next} actions={[{ label: TRY_DEMO_REPO, onPress: onDemoRepo ?? none }, sample]} />;
+    return <FailureCard dry={DRY_LINES[card.id]} sentence={card.sentence} next={card.next} actions={[{ label: TRY_DEMO_REPO, onPress: onDemoRepo ?? none }, sample]} />;
   }
-  return <FailureCard sentence={LOAD_FAILED_CARD.sentence} next={LOAD_FAILED_CARD.next} actions={[{ label: TRY_AGAIN, onPress: onRetry ?? none }, sample]} />;
+  return <FailureCard dry={DRY_LINES["load-failed"]} sentence={LOAD_FAILED_CARD.sentence} next={LOAD_FAILED_CARD.next} actions={[{ label: TRY_AGAIN, onPress: onRetry ?? none }, sample]} />;
 }
 
 interface ReadyProps extends HomeViewProps {
