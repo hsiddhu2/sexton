@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { TRACK, type Track } from "./src/music/track.js";
@@ -41,10 +43,38 @@ export function cspPlugin(raw: string | undefined, track: Track | null = TRACK):
   };
 }
 
+/** The pictures the Home page and its preview tags show, served at the site root from docs/ (spec home-page, 15.3). */
+export const SITE_IMAGES: readonly string[] = ["cemetery.png", "replay-axios.png", "replay-keyv.png"];
+
+function docsFile(name: string): Buffer {
+  return readFileSync(fileURLToPath(new URL(`../../docs/${name}`, import.meta.url)));
+}
+
+/** Serves each of SITE_IMAGES from docs/ in the dev server and emits it, unchanged, into the build root. */
+export function siteImagesPlugin(): Plugin {
+  return {
+    name: "sexton-site-images",
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const name = (req.url ?? "").split("?")[0]?.slice(1) ?? "";
+        if (!SITE_IMAGES.includes(name)) {
+          next();
+          return;
+        }
+        res.setHeader("Content-Type", "image/png");
+        res.end(docsFile(name));
+      });
+    },
+    generateBundle() {
+      for (const name of SITE_IMAGES) this.emitFile({ type: "asset", fileName: name, source: docsFile(name) });
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const env = { ...loadEnv(mode, process.cwd(), "VITE_"), ...process.env };
   return {
-    plugins: [react(), cspPlugin(env["VITE_SEXTON_API"])],
+    plugins: [react(), cspPlugin(env["VITE_SEXTON_API"]), siteImagesPlugin()],
     define: { __SEXTON_E2E__: JSON.stringify(mode === "e2e") },
     build: { sourcemap: false, target: "es2022" },
   };

@@ -13,7 +13,7 @@ describe("web smoke", () => {
       />,
     );
     // Spec clean-site, task 3: the wordmark is a link home; the page's one h1 is the Home headline.
-    expect(screen.getByRole("link", { name: "Sexton, back to the cemetery" }).textContent).toBe("Sexton");
+    expect(screen.getByRole("link", { name: "Sexton, home page" }).textContent).toBe("Sexton");
   });
 
   it("installs the setup stubs", () => {

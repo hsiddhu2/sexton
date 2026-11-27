@@ -93,6 +93,12 @@ describe("static checks over packages/web/src", () => {
     // OSV and deps.dev"). Those Claims, and the README texts they rest on, live in copy/claims.ts, a data file that
     // calls no fetch; there only the bare word deps.dev (no path, no subdomain) is allowed.
     const CLAIMS_FILE = "copy/claims.ts";
+    // Spec home-page, requirements 2.1 and 10.1: the Home page links the repository and the Kiro Power folder on
+    // github.com. Those two link constants, and nothing else of that host, live in copy/home.ts, which calls no fetch.
+    const HOME_LINKS = [
+      'export const GITHUB_URL = "https://github.com/hsiddhu2/sexton";',
+      'export const POWER_URL = "https://github.com/hsiddhu2/sexton/tree/main/powers/sexton";',
+    ];
     const text = (f: { rel: string; text: string }) =>
       READS_LINKS.has(f.rel)
         ? f.text.replace(/(?<![\w.])github(\\)?\.com(?![\w.-])/g, "")
@@ -100,11 +106,15 @@ describe("static checks over packages/web/src", () => {
           ? f.text.replace(PR_PREFIX_LINE, "")
           : f.rel === CLAIMS_FILE
             ? f.text.replace(/(?<![\w./])deps\.dev(?![\w/-]|\.\w)/g, "")
-            : f.text;
+            : f.rel === "copy/home.ts"
+              ? HOME_LINKS.reduce((t, line) => t.replace(line, ""), f.text)
+              : f.text;
     expect(FILES.filter((f) => re.test(text(f))).map((f) => f.rel)).toEqual([]);
     expect(FILES.find((f) => f.rel === "load/remediate-client.ts")?.text).toContain(PR_PREFIX_LINE);
     expect(FILES.find((f) => f.rel === CLAIMS_FILE)?.text).toContain('"Asking npm, OSV and deps.dev"');
     expect(FILES.find((f) => f.rel === CLAIMS_FILE)?.text).not.toMatch(/fetch\(/);
+    for (const line of HOME_LINKS) expect(FILES.find((f) => f.rel === "copy/home.ts")?.text).toContain(line);
+    expect(FILES.find((f) => f.rel === "copy/home.ts")?.text).not.toMatch(/fetch\(/);
   });
 });
 

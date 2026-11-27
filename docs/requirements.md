@@ -143,6 +143,8 @@ R-UI-5. The scene SHALL be readable without the legend by a first-time viewer. V
 R-UI-6. The scene SHALL render 300 graves without visible lag on a 2020 laptop.
 R-UI-7. The UI SHALL meet WCAG 2.1 AA for text contrast and keyboard navigation. Every grave SHALL be reachable by keyboard.
 R-UI-8. THE SYSTEM SHALL play no generated sound and SHALL place no tooltip or speech bubble over the cemetery. It MAY play one recorded music track with its credit, only after the user turns Music on. While no track is set, THE SYSTEM SHALL ship no audio file and SHALL show no Music button.
+R-UI-9. THE SYSTEM SHALL show a product home page at / that says what Sexton is, where it runs and what comes next, with the cemetery at /cemetery, a live scan at /scan?repo=<owner/name> and older links forwarded.
+R-UI-10. WHEN a live scan of the same repository finished in this browser less than 15 minutes ago, THE SYSTEM SHALL show it again with no new scan, say how old it is and offer Rescan. The saved scans SHALL stay in the browser.
 
 ### 5.9 CLI and Action
 
@@ -212,3 +214,4 @@ Every Kiro spec names the requirements it implements. Every PR names the spec. T
 1.0, 25 November 2026. R-RM-2: a bump is never proposed over a declared range that is not a registry semver range, and the node-sass migration never raises sass-loader over one. R-RM-3: no remove for @types/* or compiler helper runtimes. R-RM-6: a migration body says when its scan was incomplete. Spec remediation-safety.
 1.1, 26 November 2026. Section 4.1: the MCP server and the Kiro Power. Spec sexton-power.
 1.1, 26 November 2026. R-UI-4: a fixed panel shows the grave pointed at, and the drawer has the tabs Evidence, The fix and History. R-UI-8: no generated sound, tooltip or speech bubble; one recorded music track at most, off until the user turns it on. Spec clean-site.
+1.1, 27 November 2026. R-UI-9: the home page and the new addresses. R-UI-10: the browser scan cache and Recent scans. Spec home-page.

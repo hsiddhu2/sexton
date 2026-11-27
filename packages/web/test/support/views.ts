@@ -1,12 +1,17 @@
 // Generators of Views (spec clean-site, Property 2), shared by the address and screen-state tests.
 import fc from "fast-check";
+import { normaliseRepo } from "../../src/header/repo-input.js";
 import type { HomeSource, View } from "../../src/load/view-address.js";
 import { REPLAY_IDS } from "../../src/replay/replay-ids.js";
 
 const arbTrimmed = (max: number) => fc.string({ minLength: 1, maxLength: max }).filter((s) => s.trim() === s && s !== "");
 export const arbHomeSource: fc.Arbitrary<HomeSource> = fc.oneof(
   fc.constant<HomeSource>({ kind: "demo" }),
-  arbTrimmed(200).map((url): HomeSource => ({ kind: "repo", url })),
+  // A repository the Scan field accepts is held as its canonical URL (spec home-page, 1.8).
+  arbTrimmed(200).map((raw): HomeSource => {
+    const repo = normaliseRepo(raw);
+    return { kind: "repo", url: repo.ok ? repo.url : raw };
+  }),
   fc.string({ maxLength: 80 }).map((address): HomeSource => ({ kind: "scan", address })),
 );
 export const arbInstant = fc.date({ min: new Date(0), max: new Date(8.64e15 - 1), noInvalidDate: true }).map((d) => d.toISOString());

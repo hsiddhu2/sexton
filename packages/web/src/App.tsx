@@ -27,6 +27,9 @@ import { replayAddress, type ReplayId } from "./replay/replay-ids.js";
 import { ReplayView } from "./replay/ReplayView.js";
 import { applyPalette, type Theme } from "./scene/palette.js";
 import { Tour } from "./tour/Tour.js";
+import { freshResponse, repoKey, type Entry } from "./cache/scan-cache.js";
+import { clearCache, readCache, saveScan } from "./cache/scan-store.js";
+import type { Navigate } from "./site/Root.js";
 import { TRACK } from "./music/track.js";
 import { useMusic } from "./music/use-music.js";
 
@@ -35,6 +38,24 @@ export interface AppProps {
   readonly apiBase: string | null;
   readonly initialSearch: string;
   readonly pageOrigin: string;
+  /** Moves to another Route (spec home-page, C2): the wordmark goes to "/" through it. */
+  readonly onNavigate?: Navigate;
+  /** True when a press on the Home page or a Recent scans row started this Live scan (spec home-page, 3.3). */
+  readonly startScan?: boolean;
+  /** The clock of the scan cache. */
+  readonly now?: () => number;
+}
+
+/** A Live scan response held in this page, with the time it was saved when it came from the scan cache. */
+interface Held {
+  readonly response: ScanResponse;
+  readonly savedAt: number | null;
+}
+
+/** Pure. The Repo key of a repository URL, or null when it is not a repository link (spec home-page, 13.1). */
+function keyOf(url: string): { readonly key: string; readonly label: string } | null {
+  const repo = normaliseRepo(url);
+  return repo.ok ? { key: repoKey(repo.label), label: repo.label } : null;
 }
 
 /** The tag and the Home scan the page showed last; `home` is null until a scan (not a replay) has shown. */
@@ -64,13 +85,23 @@ function loaderSearch(view: View): string {
   return source.kind === "repo" || source.kind === "demo" ? "" : formatView({ ...HOME_VIEW, source });
 }
 
-export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
+export function App({ fetchFn, apiBase, initialSearch, pageOrigin, onNavigate, startScan = false, now = Date.now }: AppProps) {
   const hosted = apiBase !== null;
   // The page shows the View its address names (10.6); a repository waits for a press unless this is a reload after
   // the visitor's own scan (10.11, 10.12).
   const [initial] = useState((): View => parseView(initialSearch, hosted));
+  // A Fresh Entry of the scan cache shows with no request (spec home-page, 13.2).
+  const [initialHeld] = useState((): Held | null => {
+    if (initial.source.kind !== "repo") return null;
+    const id = keyOf(initial.source.url);
+    const fresh = id === null ? null : freshResponse(readCache(), id.key, now());
+    return fresh === null ? null : { response: fresh.response, savedAt: fresh.savedAt };
+  });
   const [resume] = useState(
-    () => initial.source.kind === "repo" && mayResume(initial.source.url, readScanned(sessionStore()), isReload()),
+    () =>
+      initialHeld === null &&
+      initial.source.kind === "repo" &&
+      (startScan || mayResume(initial.source.url, readScanned(sessionStore()), isReload())),
   );
   const loader = useScanLoader({ fetchFn, pageOrigin, apiBase, initialSearch: loaderSearch(initial) });
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
@@ -89,7 +120,14 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
     setLoadedKey(key);
   }, []);
   // The responses of Live scans shown in this page, so Back and Forward show them again with no request.
-  const held = useRef(new Map<string, ScanResponse>());
+  const held = useRef(
+    new Map<string, Held>(initialHeld !== null && initial.source.kind === "repo" ? [[initial.source.url, initialHeld]] : []),
+  );
+  /** The repository whose request is running, so its response is saved to the scan cache when it arrives (13.1). */
+  const pendingSave = useRef<string | null>(null);
+  /** When the Live scan on screen came from the scan cache: its repository and save time (13.3). */
+  const [cached, setCached] = useState<{ readonly url: string; readonly savedAt: number } | null>(null);
+  const [recent, setRecent] = useState<readonly Entry[]>(readCache);
   const { loadFrom, submitRepo, show } = loader;
   const loadSource = useCallback(
     (source: ViewSource): void => {
@@ -103,6 +141,8 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
           return;
         case "repo":
           writeScanned(sessionStore(), source.url);
+          pendingSave.current = source.url;
+          setCached(null);
           submitRepo(source.url);
           return;
         case "scan":
@@ -127,10 +167,13 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
         loadSource(source);
         return;
       }
-      const response = held.current.get(source.url);
-      if (response !== undefined) {
+      const kept = held.current.get(source.url);
+      if (kept !== undefined) {
+        // Showing a held response aborts any request in flight, whose response must then not be saved (13.1).
+        pendingSave.current = null;
         markLoaded(key);
-        show(response, "hosted");
+        setCached(kept.savedAt === null ? null : { url: source.url, savedAt: kept.savedAt });
+        show(kept.response, "hosted");
         return;
       }
       if (loaded.current !== sourceKey({ kind: "demo" })) loadSource({ kind: "demo" });
@@ -144,8 +187,17 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
   }, []);
   const { state } = loader;
   useEffect(() => {
-    if (state.status === "ready" && state.source === "hosted" && loaded.current.startsWith("repo:")) held.current.set(loaded.current.slice(5), state.response);
-  }, [state]);
+    if (state.status === "error") pendingSave.current = null;
+    if (state.status !== "ready" || state.source !== "hosted" || !loaded.current.startsWith("repo:")) return;
+    const url = loaded.current.slice(5);
+    if (pendingSave.current !== url) return;
+    // A response that arrived from a request: kept for Back and Forward and saved to the scan cache (13.1).
+    pendingSave.current = null;
+    const savedAt = now();
+    held.current.set(url, { response: state.response, savedAt });
+    const id = keyOf(url);
+    if (id !== null) setRecent(saveScan(id.label, state.response, savedAt));
+  }, [state, now]);
   // The loader follows the Source the screen state names, whatever event changed it (Escape and Back included).
   const shownSource = screen.view.source;
   useEffect(() => {
@@ -173,9 +225,42 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
     (url: string): void => {
       const source: ViewSource = { kind: "repo", url };
       dispatch({ kind: "source", source });
-      loadSource(source);
+      // A Fresh Entry shows with no request (13.2); else the scan starts.
+      const id = keyOf(url);
+      const fresh = id === null ? null : freshResponse(readCache(), id.key, now());
+      if (fresh === null) {
+        loadSource(source);
+        return;
+      }
+      held.current.set(url, { response: fresh.response, savedAt: fresh.savedAt });
+      // Showing the saved response aborts any request in flight, whose response must then not be saved (13.1).
+      pendingSave.current = null;
+      markLoaded(sourceKey(source));
+      setCached({ url, savedAt: fresh.savedAt });
+      show(fresh.response, "hosted");
     },
-    [dispatch, loadSource],
+    [dispatch, loadSource, markLoaded, show, now],
+  );
+  // Rescan (13.4): one request for the repository on screen, whatever the cache holds.
+  const rescan = useCallback((): void => {
+    const source = screenRef.current.view.source;
+    if (source.kind === "repo") loadSource(source);
+  }, [loadSource]);
+  const refreshRecent = useCallback((): void => {
+    setRecent(readCache());
+  }, []);
+  const clearRecent = useCallback((): void => {
+    clearCache();
+    setRecent([]);
+  }, []);
+  const toHomePage = useMemo(
+    () =>
+      onNavigate === undefined
+        ? undefined
+        : (): void => {
+            onNavigate("/");
+          },
+    [onNavigate],
   );
   // The failure cards' buttons (12.5 to 12.7) and the unknown replay's "Back to the cemetery" (10.10). Each loads even
   // when its Source is the one that just failed.
@@ -286,6 +371,9 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
   // The tag goes with the page under the card: a Replay names itself, and Home keeps the tag of the scan it still
   // shows, not of a Replay seen in between.
   const tag = last === null || source.kind === "replay" ? tagNow : (previous?.tag ?? tagNow);
+  // The cached line shows while the saved response of the Live scan on screen is shown (13.3).
+  const cachedShown =
+    cached !== null && source.kind === "repo" && source.url === cached.url && state.status === "ready" && loadedKey === sourceKey(source) ? cached : null;
   const footerModel = useMemo(
     () => model ?? (previous === null ? null : headerModel(previous.response, previous.isDemo, previous.hosted ? apiBase : null)),
     [model, previous, apiBase],
@@ -301,7 +389,12 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
         popover={screen.popover}
         onPopover={onPopover}
         onScan={scan}
-        onHome={goHome}
+        {...(toHomePage !== undefined ? { onWordmark: toHomePage } : {})}
+        onCemetery={goHome}
+        recent={recent}
+        now={now}
+        onRecentOpen={refreshRecent}
+        onClearRecent={clearRecent}
         onGuide={openGuide}
         onTour={openTour}
         {...(TRACK !== null ? { music: { on: music.on, onToggle: music.toggle } } : {})}
@@ -355,6 +448,7 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
             onRetry={retry}
             beat={music.beat}
             {...(onRemediate !== undefined ? { onRemediate } : {})}
+            {...(cachedShown !== null ? { cached: { savedAt: cachedShown.savedAt, now, onRescan: rescan } } : {})}
           />
         </main>
       )}

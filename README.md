@@ -22,12 +22,14 @@ The hosted site, https://de1giv8lj8sfh.cloudfront.net, is deployed by hand, so i
 
 ## Try it in two minutes
 
-Open the hosted demo at [https://de1giv8lj8sfh.cloudfront.net](https://de1giv8lj8sfh.cloudfront.net). On your first visit a bar under the header offers a two-minute guide. "What is Sexton?" in the header opens it at any time, and Tour points out the three main parts of the page.
+Open the hosted site at [https://de1giv8lj8sfh.cloudfront.net](https://de1giv8lj8sfh.cloudfront.net). Its home page says what Sexton is, shows the two real attacks, how it works, where it runs and the roadmap. Press "Walk the sample cemetery" or go straight to [/cemetery](https://de1giv8lj8sfh.cloudfront.net/cemetery) for the sample scan. On your first visit a bar under the header offers a two-minute guide. "What is Sexton?" in the header opens it at any time, and Tour points out the three main parts of the page. The tabs "Overview" and "Cemetery" at the top of every page switch between the home page and the cemetery, and the wordmark also takes you back to the home page.
+
+To scan your own public repository, type `owner/name` in the home page's Scan box, or open `/scan?repo=<owner/name>`. A finished scan is kept in your browser for 15 minutes: a refresh or a second visit shows it again with no new scan, says "Scanned N min ago" and offers Rescan. Your last 10 scans are listed as Recent scans under the home page's Scan box and in the header's Scan field, with a Clear button. Nothing about them leaves your browser. Links of the form `/?repo=` and `/?replay=` still work. They forward to the new addresses.
 
 1. Hover a grave. Each grave is one dependency. Its shape and colour show its state. The cemetery puts the graves to fix first in front: Possessed, then Dead, Haunted and Restless, then by advisory severity and reach. The details panel shows the grave you point at, and "Fix in this order" lists the packages to fix first.
 2. Open its drawer. Click the grave, or press Enter on it. "List" shows the same packages as a table you can search and sort.
 3. Read the evidence and the fix. The drawer's Evidence tab shows every signal with its source and date. The fix tab shows the change Sexton proposes, when there is one, with the text of its pull request. History shows how the package's state changed over time.
-4. Replay an attack. Press "Watch a real attack" under the cemetery and pick axios, or open [the axios replay](https://de1giv8lj8sfh.cloudfront.net/?replay=axios) directly. [The keyv replay](https://de1giv8lj8sfh.cloudfront.net/?replay=keyv) shows a second attack. Press "Next step" to follow it.
+4. Replay an attack. Press "Watch a real attack" under the cemetery and pick axios, or open [the axios replay](https://de1giv8lj8sfh.cloudfront.net/cemetery?replay=axios) directly. [The keyv replay](https://de1giv8lj8sfh.cloudfront.net/cemetery?replay=keyv) shows a second attack. Press "Next step" to follow it.
 
 ## The problem
 
@@ -155,7 +157,7 @@ Keep Dependabot on and run Sexton beside it.
 
 ## Replay
 
-The cemetery has a history scrubber under it. It shows each package as it stood on an earlier date. Two replays tell real incidents step by step. Open the hosted page with [?replay=axios](https://de1giv8lj8sfh.cloudfront.net/?replay=axios) or [?replay=keyv](https://de1giv8lj8sfh.cloudfront.net/?replay=keyv). You can also press "Watch a real attack" under the cemetery and pick axios or keyv.
+The cemetery has a history scrubber under it. It shows each package as it stood on an earlier date. Two replays tell real incidents step by step. Open the hosted page with [/cemetery?replay=axios](https://de1giv8lj8sfh.cloudfront.net/cemetery?replay=axios) or [/cemetery?replay=keyv](https://de1giv8lj8sfh.cloudfront.net/cemetery?replay=keyv). You can also press "Watch a real attack" under the cemetery and pick axios or keyv.
 
 A replay opens at Step 1, before the attack, so the grave starts Alive. Each step says what happened and what Sexton shows. Press "Next step" to move on, or "Play all" to move one step every five seconds.
 
@@ -226,6 +228,7 @@ Specs, each with its requirements (or bugfix), design and tasks, in `.kiro/specs
 - `cemetery-undead-2`: sound, speech bubbles, the replay burst and the burial priest.
 - `cemetery-undead-fixes`: bugfix, defects in the web app and CI found after cemetery-undead-2.
 - `clean-site`: the site rebuilt around the cemetery: the header, Home with its panel and list, the drawer's tabs, the replay story, the guide, the tour, failure cards and a music slot. It removed sound, speech bubbles and the tooltip.
+- `home-page`: the product home page at `/`, the cemetery at `/cemetery` and `/scan?repo=<owner/name>` with old links forwarded, a 15-minute scan cache in the browser and Recent scans.
 
 Steering in `.kiro/steering/`:
 

@@ -32,7 +32,7 @@ test("a hosted scan of the demo repository opens a pull request from the drawer"
   });
 
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/");
+  await page.goto("/cemetery");
   await page.getByLabel("GitHub repository to scan").fill("https://github.com/hsiddhu2/sexton-demo");
   await page.getByLabel("GitHub repository to scan").press("Enter");
   await page.locator(`button[data-grave-index][aria-label^="${proposed?.packageName ?? ""}"]`).first().click();

@@ -37,7 +37,7 @@ for (const [width, height] of [
     await sameOriginOnly(page, baseURL);
     await page.clock.install({ time: new Date("2026-11-24T12:00:00Z") });
     await page.setViewportSize({ width, height });
-    await page.goto("/");
+    await page.goto("/cemetery");
     await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
     await page.waitForFunction(() => (window as unknown as HookWindow).__sextonTiming !== undefined);
     // Past the Load moment, which lasts under a second.
@@ -99,7 +99,7 @@ test("no AudioContext is made by hover, focus, a key press or a replay", async (
   await sameOriginOnly(page, baseURL);
   await countAudioContexts(page);
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/");
+  await page.goto("/cemetery");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
   await page.mouse.wheel(0, 300);
   const graves = page.locator("button[data-grave-index]");
@@ -179,7 +179,7 @@ for (const [width, height] of [
     await sameOriginOnly(page, baseURL);
     await page.clock.install({ time: new Date("2026-11-24T12:00:00Z") });
     await page.setViewportSize({ width, height });
-    await page.goto("/");
+    await page.goto("/cemetery");
     await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
     await page.waitForFunction(() => (window as unknown as HookWindow).__sextonTiming !== undefined);
     await page.clock.runFor(1_500);
@@ -215,7 +215,7 @@ test("a rising grave in the Load moment is drawn directly, not from a sprite", a
   await sameOriginOnly(page, baseURL);
   await page.clock.install({ time: new Date("2026-11-24T12:00:00Z") });
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/");
+  await page.goto("/cemetery");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
   await page.waitForFunction(() => (window as unknown as HookWindow).__sextonTiming !== undefined);
   await page.clock.runFor(1_500);

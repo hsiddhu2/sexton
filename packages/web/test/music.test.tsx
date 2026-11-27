@@ -135,7 +135,6 @@ describe("the Music button and the credit, with a track (14.2, 14.6, 1.15)", () 
         popover={popover}
         onPopover={setPopover}
         onScan={() => undefined}
-        onHome={() => undefined}
         onGuide={() => undefined}
         onTour={() => undefined}
         music={{ on, onToggle: () => { setOn((v) => !v); } }}

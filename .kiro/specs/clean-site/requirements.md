@@ -28,7 +28,7 @@ Out of scope: GitHub sign-in, any change to the engine's state rules, the canvas
 - **Scene**: the live canvas cemetery (scene/Scene.tsx) with its grave buttons.
 - **Wide layout**: a viewport at least 1100 px wide. **Middle layout**: 700 to 1099 px. **Narrow layout**: under 700 px.
 - **Home**: the page of a loaded non-replay scan (the Sample scan, a Live scan or a scan file opened with ?scan=) with the Scene or the List, the Panel and the Footer bar. A filter, an earlier date, the Drawer, the Tour or a Pop-over may sit on Home; a Replay and the Guide page replace it.
-- **Home action**: the move to Home of 10.2, taken by the wordmark, "← Cemetery" on a Replay or the Guide page, "Back to the cemetery", "Exit replay", "Go to the cemetery" and the last step of the Escape order. It lands on the **Home start**: Home of the scan shown before the Replay or Guide page opened (the Sample scan when none was), at its scan date, with no filter, Drawer, Tour or Pop-over, and with the Graveyard or List choice last made on Home.
+- **Home action**: the move to Home of 10.2, taken by the "Cemetery" tab of the Top bar (spec home-page, 12.6), "← Cemetery" on a Replay or the Guide page, "Back to the cemetery", "Exit replay", "Go to the cemetery" and the last step of the Escape order. It lands on the **Home start**: Home of the scan shown before the Replay or Guide page opened (the Sample scan when none was), at its scan date, with no filter, Drawer, Tour or Pop-over, and with the Graveyard or List choice last made on Home.
 - **Epitaph line**, **Dry line**, **Scanning line**, **Guide ghost**: the four kinds of mischief of requirement 19, with their texts in design C16.
 - **Sample scan**: the demo scan at /demo/scan.json. Its repository name (sexton-demo/fixture) is the **Fixture name**.
 - **Live scan**: a hosted scan of a repository through the API base, started by the visitor.
@@ -64,9 +64,9 @@ Out of scope: GitHub sign-in, any change to the engine's state rules, the canvas
 
 #### Acceptance Criteria
 
-1. THE Site SHALL show in the header, in order: the wordmark, the scan tag, the Scan field with its Scan button, and the buttons "What is Sexton?", Legend, Music (only where a track is set, 1.15) and Tour.
+1. THE Site SHALL show in the header, in order: the wordmark, the tabs "Overview" and "Cemetery" (spec home-page, 12.5), the scan tag, the Scan field with its Scan button, and the buttons "What is Sexton?", Legend, Music (only where a track is set, 1.15) and Tour.
 2. WHILE the Site is in the Wide or Middle layout THE header SHALL be one row of at most 64 px.
-3. WHILE the Site is in the Middle or Narrow layout THE Legend, Music and Tour buttons SHALL show their icons only, each with its accessible name.
+3. WHILE the Site is in the Middle or Narrow layout THE Legend, Music and Tour buttons SHALL show their icons only, each with its accessible name. In the Middle layout "What is Sexton?" SHALL do the same (spec home-page, 12.10).
 4. WHILE the viewport is under 1300 px wide THE scan tag SHALL be hidden.
 5. WHILE the Sample scan is shown THE scan tag SHALL read "Sample scan".
 6. WHILE a Live scan is shown THE scan tag SHALL show the scanned repository as owner/name.
@@ -379,7 +379,7 @@ Out of scope: GitHub sign-in, any change to the engine's state rules, the canvas
 
 #### Acceptance Criteria
 
-1. WHILE the Site is in the Narrow layout THE header SHALL wrap with the Scan field on its own row.
+1. WHILE the Site is in the Narrow layout THE header SHALL wrap, with the tabs and the Scan field on the row under the wordmark (spec home-page, 12.11).
 2. WHILE the Site is in the Middle or Narrow layout THE page SHALL be one column: the headline and chips, the Scene, the Footer bar, then the Panel.
 3. WHILE the Site is in the Narrow layout THE Scene SHALL draw its Tiers front first, so the Possessed and Dead graves come first from the top.
 4. WHILE the Site is in the Narrow layout THE Drawer SHALL be full width.

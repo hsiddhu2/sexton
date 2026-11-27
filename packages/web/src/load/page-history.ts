@@ -1,5 +1,6 @@
 // The page's history entries (spec calm-first-visit, requirement 8). Every call is guarded: in a frame that refuses
 // the history API the View still changes and the address does not.
+import { cemeteryPath } from "../site/paths.js";
 import { formatView, type View } from "./view-address.js";
 
 export interface EntryState {
@@ -9,7 +10,8 @@ export interface EntryState {
 }
 
 function urlOf(view: View): string {
-  return `${window.location.pathname}${formatView(view)}${window.location.hash}`;
+  // The path follows the View (spec home-page, 1.7): /scan for a Live scan, /cemetery for every other.
+  return `${cemeteryPath(view)}${formatView(view)}`;
 }
 
 export function pushEntry(view: View, drawerPushed = false): void {

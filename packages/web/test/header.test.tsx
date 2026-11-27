@@ -5,6 +5,7 @@ import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cemetery } from "../src/Cemetery.js";
 import { Header, type HeaderProps } from "../src/header/Header.js";
+import { SCAN_PLACEHOLDER, SCAN_PLACEHOLDER_NARROW } from "../src/header/ScanField.js";
 import { SiteFooter } from "../src/home/SiteFooter.js";
 import { EXAMPLES } from "../src/header/examples.js";
 import { REPO_INPUT_HINT } from "../src/header/repo-input.js";
@@ -20,6 +21,15 @@ afterEach(cleanup);
 
 const noop = (): void => undefined;
 
+/** Makes matchMedia report the Narrow layout, or not, until the returned function restores it. */
+function narrowMedia(matches: boolean): () => void {
+  const before = window.matchMedia;
+  window.matchMedia = ((query: string) => ({ matches: matches && query === "(max-width: 699px)", media: query, addEventListener: () => undefined, removeEventListener: () => undefined })) as unknown as typeof window.matchMedia;
+  return () => {
+    window.matchMedia = before;
+  };
+}
+
 /** The header with its Pop-over held as the screen state holds it. */
 function HeaderHarness(props: Partial<HeaderProps>) {
   const [popover, setPopover] = useState<Popover>("none");
@@ -31,7 +41,6 @@ function HeaderHarness(props: Partial<HeaderProps>) {
       popover={popover}
       onPopover={setPopover}
       onScan={noop}
-      onHome={noop}
       onGuide={noop}
       onTour={noop}
       {...props}
@@ -163,12 +172,14 @@ describe("Property 22: Untrusted strings are rendered only as text", () => {
 });
 
 describe("Header (spec clean-site, requirement 1)", () => {
-  it("orders the wordmark, the scan tag, the Scan field and Scan, then What is Sexton?, Legend and Tour, with no Music button", () => {
+  it("orders the wordmark, the tabs, the scan tag, the Scan field and Scan, then What is Sexton?, Legend and Tour, with no Music button", () => {
     const { container } = render(<HeaderHarness />);
     const header = container.querySelector("header") as HTMLElement;
     const controls = [...header.querySelectorAll<HTMLElement>("a[href], button, input")];
     expect(controls.map((el) => el.getAttribute("aria-label") ?? el.textContent?.trim())).toEqual([
-      "Sexton, back to the cemetery",
+      "Sexton, home page",
+      "Overview",
+      "Cemetery",
       "GitHub repository to scan",
       "Scan",
       "What is Sexton?",
@@ -176,12 +187,13 @@ describe("Header (spec clean-site, requirement 1)", () => {
       "Tour",
     ]);
     expect(header.querySelector(".scan-tag")?.textContent).toBe("Sample scan");
-    // The tag sits between the wordmark and the field.
-    expect(header.querySelector(".wordmark")?.nextElementSibling?.querySelector(".scan-tag")).not.toBeNull();
+    // The tabs sit right after the wordmark, and the tag between them and the field (spec home-page, 12.5).
+    expect(header.querySelector(".wordmark")?.nextElementSibling?.className).toBe("site-tabs");
+    expect(header.querySelector(".site-tabs")?.nextElementSibling?.querySelector(".scan-tag")).not.toBeNull();
     expect(screen.queryByRole("button", { name: "Music" })).toBeNull();
     expect(screen.queryByRole("button", { name: /^Sound/ })).toBeNull();
     expect(screen.queryByRole("button", { name: "Serious mode" })).toBeNull();
-    expect((screen.getByRole("link", { name: "Sexton, back to the cemetery" }) as HTMLAnchorElement).getAttribute("href")).toBe("/");
+    expect((screen.getByRole("link", { name: "Sexton, home page" }) as HTMLAnchorElement).getAttribute("href")).toBe("/");
   });
 
   it("names the tag for each Source and never shows the Fixture name (1.5 to 1.7, 1.16, 1.17)", () => {
@@ -194,14 +206,51 @@ describe("Header (spec clean-site, requirement 1)", () => {
     expect(container.querySelector(".scan-tag")).toBeNull();
   });
 
-  it("takes the Home action on a plain press of the wordmark and follows the link on a modified press", () => {
+  it("goes to the Home page on a plain press of the wordmark and follows the link on a modified press (spec home-page, 12.1)", () => {
     const onHome = vi.fn();
-    render(<HeaderHarness onHome={onHome} />);
-    const link = screen.getByRole("link", { name: "Sexton, back to the cemetery" });
+    render(<HeaderHarness onWordmark={onHome} />);
+    const link = screen.getByRole("link", { name: "Sexton, home page" });
     expect(fireEvent.click(link, { button: 0 })).toBe(false);
     expect(onHome).toHaveBeenCalledTimes(1);
     expect(fireEvent.click(link, { button: 0, metaKey: true })).toBe(true);
     expect(onHome).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the tabs Overview and Cemetery, real links with Cemetery current, each press rule as the wordmark's (spec home-page, 12.5 to 12.7)", () => {
+    const onHome = vi.fn();
+    const onCemetery = vi.fn();
+    render(<HeaderHarness onWordmark={onHome} onCemetery={onCemetery} />);
+    const nav = screen.getByRole("navigation", { name: "Site" });
+    const tabs = [...nav.querySelectorAll("a")];
+    expect(tabs.map((a) => [a.textContent, a.getAttribute("href"), a.getAttribute("aria-current"), a.getAttribute("target")])).toEqual([
+      ["Overview", "/", null, null],
+      ["Cemetery", "/cemetery", "page", null],
+    ]);
+    const overview = tabs[0] as HTMLElement;
+    const cemetery = tabs[1] as HTMLElement;
+    expect(fireEvent.click(overview, { button: 0 })).toBe(false);
+    expect(onHome).toHaveBeenCalledTimes(1);
+    expect(fireEvent.click(cemetery, { button: 0 })).toBe(false);
+    expect(onCemetery).toHaveBeenCalledTimes(1);
+    for (const tab of [overview, cemetery]) {
+      for (const key of ["metaKey", "ctrlKey", "shiftKey", "altKey"] as const) expect(fireEvent.click(tab, { button: 0, [key]: true })).toBe(true);
+      expect(fireEvent.click(tab, { button: 1 })).toBe(true);
+    }
+    expect(onHome).toHaveBeenCalledTimes(1);
+    expect(onCemetery).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the short hint owner/name in the Narrow layout and the long one otherwise (spec home-page, 12.12)", () => {
+    const restore = narrowMedia(true);
+    try {
+      render(<HeaderHarness />);
+      expect(screen.getByLabelText("GitHub repository to scan").getAttribute("placeholder")).toBe(SCAN_PLACEHOLDER_NARROW);
+    } finally {
+      restore();
+    }
+    cleanup();
+    render(<HeaderHarness />);
+    expect(screen.getByLabelText("GitHub repository to scan").getAttribute("placeholder")).toBe(SCAN_PLACEHOLDER);
   });
 
   it("disables the field and Scan, described by the exact text, when no API base is configured (1.13)", () => {

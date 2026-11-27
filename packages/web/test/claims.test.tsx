@@ -21,11 +21,19 @@ import { FAILURE_CARDS, LOAD_FAILED_CARD } from "../src/load/scan-failure.js";
 import { STATES } from "../src/load/lists.js";
 import { NO_LOCKFILE_NOTICE } from "../src/home/notices.js";
 import { reasonSentence } from "../src/panel/reason-family.js";
+import { HOME_LABELS } from "../src/copy/home.js";
+import { HomePage } from "../src/home-page/HomePage.js";
+import { addScan, CACHE_KEY, serialise } from "../src/cache/scan-cache.js";
+import { REPO_INPUT_HINT } from "../src/header/repo-input.js";
+import { HOSTED_UNAVAILABLE_TEXT } from "../src/load/use-scan-loader.js";
+import { CLEAR_TEXT, RECENT_HEADING } from "../src/home-page/RecentScans.js";
+import { TRACK } from "../src/music/track.js";
 import { cheapPackage, cheapScan } from "./arbitraries.js";
 import { readDemoScanText } from "./support/demo-scan.js";
 import { drawerProps } from "./support/drawer-props.js";
 
-const README = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "../../../README.md"), "utf8");
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+const README = readFileSync(resolve(ROOT, "README.md"), "utf8");
 
 /** A capability phrase (design C7): a sentence holding one must be a Claim or a listed label. */
 const CAPABILITY =
@@ -131,11 +139,17 @@ async function ready(): Promise<void> {
 }
 
 describe("Feature: clean-site, Property 9: Claims rest on README.md", () => {
-  it("finds every Claim's README text in README.md, with one Claim per id and per text", () => {
+  it("finds every Claim's README text in README.md and each file text in its file, with one Claim per id and per text", () => {
     expect(CLAIMS.length).toBeGreaterThan(0);
     for (const c of CLAIMS) {
       expect(c.text.trim(), c.id).not.toBe("");
+      // Spec home-page, 11.2: every Claim rests on at least one text.
+      expect(c.readme.length + (c.files?.length ?? 0), c.id).toBeGreaterThan(0);
       for (const text of c.readme) expect(README.includes(text), `${c.id}: ${text}`).toBe(true);
+      for (const [path, text] of c.files ?? []) {
+        expect(path.startsWith("private"), `${c.id}: ${path}`).toBe(false);
+        expect(readFileSync(resolve(ROOT, path), "utf8").includes(text), `${c.id}: ${path}: ${text}`).toBe(true);
+      }
     }
     expect(new Set(CLAIMS.map((c) => c.id)).size).toBe(CLAIMS.length);
     expect(new Set(CLAIMS.map((c) => c.text)).size).toBe(CLAIMS.length);
@@ -265,3 +279,56 @@ describe("Feature: clean-site, Property 9: Claims rest on README.md", () => {
     expect(unclaimed(view.container)).toEqual([]);
   });
 });
+
+// Spec home-page, task 3.4: every sentence of the Home page is a Claim sentence or a listed label (Property 6).
+describe("Feature: home-page, Property 6: Every Home page sentence is claimed", () => {
+  /** Data the Home page shows as it is: a Recent scans row (owner/name and age) and the track's credit parts. */
+  const DATA: readonly RegExp[] = [/^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/, /^(just now|\d+ (min|h|d) ago)$/];
+  const CREDIT = new Set(TRACK === null ? [] : [TRACK.footer.map((p) => p.text).join("")]);
+  const ALLOWED = new Set([...HOME_LABELS, REPO_INPUT_HINT, HOSTED_UNAVAILABLE_TEXT, RECENT_HEADING, CLEAR_TEXT, "Sexton", ...CREDIT].flatMap(sentences));
+
+  /** As visibleText, but a link or button outside running text is a block of its own, as the Home page shows it. */
+  function blockText(root: Element): string {
+    const out: string[] = [];
+    const walk = (node: Node): void => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        out.push(node.textContent ?? "");
+        return;
+      }
+      if (!(node instanceof Element)) return;
+      if (node instanceof HTMLElement && node.hidden) return;
+      const inline = INLINE.has(node.tagName) && !(node.tagName === "A" && node.parentElement?.closest("p") === null);
+      if (!inline) out.push("\n");
+      for (const child of node.childNodes) walk(child);
+      if (!inline) out.push("\n");
+    };
+    walk(root);
+    return out.join("");
+  }
+
+  function outside(root: Element): string[] {
+    return sentences(blockText(root)).filter((s) => !CLAIM_SENTENCES.has(s) && !ALLOWED.has(s) && !DATA.some((p) => p.test(s)));
+  }
+
+  it("holds no sentence outside the Claims and labels, with and without an API base, with Recent scans and a refused input", () => {
+    window.localStorage.setItem(CACHE_KEY, serialise(addScan([], "a/b", cheapScan(1), Date.now() - 120_000)));
+    for (const api of [null, "/api"]) {
+      const view = render(<HomePage apiBase={api} onNavigate={() => undefined} video="https://example.org/demo" />);
+      expect(outside(view.container), String(api)).toEqual([]);
+      if (api !== null) {
+        fireEvent.change(screen.getByLabelText("GitHub repository"), { target: { value: "not a repo" } });
+        fireEvent.submit(screen.getByLabelText("GitHub repository").closest("form") as HTMLFormElement);
+        expect(screen.getByRole("alert").textContent).toBe(REPO_INPUT_HINT);
+        expect(outside(view.container), "refused").toEqual([]);
+      }
+      view.unmount();
+    }
+  });
+
+  it("uses every home.* Claim on the Home page", () => {
+    const view = render(<HomePage apiBase="/api" onNavigate={() => undefined} />);
+    const shown = new Set(sentences(blockText(view.container)));
+    for (const c of CLAIMS.filter((x) => x.id.startsWith("home."))) for (const s of sentences(c.text)) expect(shown.has(s), c.id).toBe(true);
+  });
+});
+

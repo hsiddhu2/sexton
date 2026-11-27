@@ -1,5 +1,5 @@
 import type { ReplayInfo, ScanResponse } from "@sexton/api";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import fc from "fast-check";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -104,8 +104,9 @@ describe("opening a replay (requirement 18)", () => {
     expect(urls.slice(2)).toEqual([`${ORIGIN}/demo/scan.json`, `${ORIGIN}/replay/keyv.json`]);
     // The Replay opens at Step 1.
     expect(stepTime()).toBe(STOP_TEXT.keyv[0]);
-    // The wordmark takes the Home action and loads the Sample scan again.
-    fireEvent.click(screen.getByRole("link", { name: "Sexton, back to the cemetery" }), { button: 0 });
+    // The Replay's breadcrumb takes the Home action and loads the Sample scan again (the wordmark goes to the Home
+    // page, spec home-page 12.1).
+    fireEvent.click(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("button", { name: /Cemetery/ }));
     await waitFor(() => {
       expect(container.querySelectorAll("button[data-grave-index]").length).toBeGreaterThan(1);
     });

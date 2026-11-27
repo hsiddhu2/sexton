@@ -20,7 +20,7 @@ for (const width of [360, 768, 1280, 1920]) {
     await blockForeignOrigins(page, originOf(baseURL));
     await page.setViewportSize({ width, height: 800 });
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.goto("/");
+    await page.goto("/cemetery");
     await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
     await page.evaluate(() => document.fonts.ready);
     const parts = [".wordmark", ".scan-form", ".ib-guide", ".legend-toggle", "[data-tour-button]"];
@@ -48,7 +48,7 @@ test("at 1440 by 900 the canvas reaches the bottom of the Scene card, above the 
   await blockForeignOrigins(page, originOf(baseURL));
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/");
+  await page.goto("/cemetery");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
   // The scene sizes itself after the fonts and the header settle, so the gap is read until it has.
   const gap = async (): Promise<number> =>
@@ -70,7 +70,7 @@ test("the scrubber moves by keyboard, shows as of, and Back to now returns to th
   await blockForeignOrigins(page, originOf(baseURL));
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/");
+  await page.goto("/cemetery");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
   const scrubber = page.getByRole("slider", { name: "History date" });
   await expect(scrubber).toBeVisible();
@@ -109,7 +109,7 @@ async function openReplay(page: Page, baseURL: string | undefined, search: strin
   await blockForeignOrigins(page, originOf(baseURL));
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto(`/${search}`);
+  await page.goto(`/cemetery${search}`);
   await expect(page.locator("button[data-grave-index]")).toHaveCount(1);
   return { violations, requests };
 }
@@ -205,7 +205,7 @@ test("at 1440 by 900 on the demo Home fits the viewport, with every grave above 
   await blockForeignOrigins(page, originOf(baseURL));
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/");
+  await page.goto("/cemetery");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
   await page.evaluate(() => document.fonts.ready.then(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))));
   const box = async (selector: string) => {
@@ -250,7 +250,7 @@ test("at 390 by 844 the worst graves come first, two to a row, then the Footer b
   await blockForeignOrigins(page, originOf(baseURL));
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/");
+  await page.goto("/cemetery");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
   await page.evaluate(() => document.fonts.ready);
   const header = await page.locator("header.site-header").boundingBox();
@@ -281,7 +281,7 @@ for (const search of ["", "?replay=axios"]) {
     await blockForeignOrigins(page, originOf(baseURL));
     await page.setViewportSize({ width: 390, height: 844 });
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.goto(`/${search}`);
+    await page.goto(`/cemetery${search}`);
     await expect(page.locator("button[data-grave-index]").first()).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
   });
@@ -289,7 +289,7 @@ for (const search of ["", "?replay=axios"]) {
     await blockForeignOrigins(page, originOf(baseURL));
     await page.setViewportSize({ width: 360, height: 800 });
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.goto(`/${search}`);
+    await page.goto(`/cemetery${search}`);
     await expect(page.locator("button[data-grave-index]").first()).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(360);
   });
