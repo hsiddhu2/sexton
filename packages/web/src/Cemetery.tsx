@@ -25,8 +25,11 @@ import { BURST_MS } from "./scene/burst.js";
 import { loadMomentMs } from "./scene/rise.js";
 import { claimLoadMoment } from "./scene/load-moment.js";
 
-/** The shortest Scene with a reserve below it (spec clean-site): room for the sky band and one Tier. */
-export const MIN_SCENE_HEIGHT = 420;
+/**
+ * The shortest Scene with a reserve below it (spec clean-site, 3.29): room for the smallest sky band and the demo's
+ * three Tiers at the smallest fit scale (32 + 120 + 546.6 x 0.4 = 371 px), so a short screen keeps the demo in view.
+ */
+export const MIN_SCENE_HEIGHT = 380;
 /** The Narrow layout of spec clean-site: under 700 px, the breakpoint of styles.css. */
 export const NARROW_QUERY = "(max-width: 699px)";
 

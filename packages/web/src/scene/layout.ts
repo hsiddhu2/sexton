@@ -286,7 +286,9 @@ export function tierCell(tier: TierId, fit = 1): { readonly w: number; readonly 
  * The smallest fit scale (spec clean-site, task 11): every Tier keeps its own scale, and all three shrink together so a
  * scan fits the Scene's height (Wide and Middle layouts) or stands two front graves to a row (Narrow layout).
  */
-export const MIN_FIT_SCALE = 0.6;
+export const MIN_FIT_SCALE = 0.4;
+/** The smallest fit scale of the Narrow layout, unchanged by the lower floor of the Wide and Middle layouts. */
+export const NARROW_MIN_FIT_SCALE = 0.6;
 /** The fit scales tried, largest first. */
 const FIT_STEP = 0.02;
 /** The front graves the Narrow layout stands in one row, as in the approved design. */
@@ -309,7 +311,7 @@ function neededHeight(counts: Readonly<Record<TierId, number>>, inner: number, f
 
 /**
  * Pure. The fit scale of a layout (spec clean-site, task 11). The Narrow layout (`frontFirst`) takes the largest scale
- * that stands NARROW_FRONT_COLUMNS front graves in a row, never under MIN_FIT_SCALE. Otherwise, with a fit height, the
+ * that stands NARROW_FRONT_COLUMNS front graves in a row, never under NARROW_MIN_FIT_SCALE. Otherwise, with a fit height, the
  * largest scale from 1 down to MIN_FIT_SCALE whose graves fit in it; 1 when none does (a large scan scrolls as before)
  * or with no fit height.
  */
@@ -320,7 +322,7 @@ export function fitScale(counts: Readonly<Record<TierId, number>>, width: number
   if (frontFirst) {
     // Half a pixel short of the half width, so the rounded front cell still leaves two columns.
     const two = (inner / NARROW_FRONT_COLUMNS - 0.5) / CELL_WIDTH;
-    return Math.max(MIN_FIT_SCALE, Math.min(1, Math.floor(two * 1000) / 1000));
+    return Math.max(NARROW_MIN_FIT_SCALE, Math.min(1, Math.floor(two * 1000) / 1000));
   }
   if (!(fitHeight > 0)) return 1;
   const steps = Math.round((1 - MIN_FIT_SCALE) / FIT_STEP);

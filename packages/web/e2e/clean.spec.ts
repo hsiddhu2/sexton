@@ -1363,7 +1363,8 @@ for (const size of SIZES) {
 
 /**
  * Requirement 3.26: the boxes of the page, each in page coordinates so a scroll does not count as a move, except the
- * sticky header, which is read where it shows in the viewport.
+ * sticky header, which is read where it shows in the viewport. A box inside the Panel adds the Panel's own scroll, so
+ * scrolling a short screen's Panel does not count as a move either (3.29).
  */
 async function layoutBoxes(page: Page, selectors: readonly string[]): Promise<string> {
   return page.evaluate((sels) => {
@@ -1376,7 +1377,8 @@ async function layoutBoxes(page: Page, selectors: readonly string[]): Promise<st
       }
       const r = el.getBoundingClientRect();
       const dy = sel === ".site-header" ? 0 : window.scrollY;
-      out[sel] = [r.left + window.scrollX, r.top + dy, r.width, r.height];
+      const inner = el.closest(".panel")?.scrollTop ?? 0;
+      out[sel] = [r.left + window.scrollX, r.top + dy + inner, r.width, r.height];
     }
     return JSON.stringify(out);
   }, selectors);
@@ -1397,9 +1399,14 @@ async function settledBoxes(page: Page, selectors: readonly string[]): Promise<s
 }
 
 const HOME_BOXES = [".site-header", ".inspector", ".fix-order", ".scene-card", ".foot-bar", ".site-footer"] as const;
+/** The short laptop screens of 3.29: Home fits them with the graves smaller and the Panel scrolling inside itself. */
+const SHORT_SIZES: readonly Size[] = [
+  { name: "1366 by 768", width: 1366, height: 768, narrow: false },
+  { name: "1280 by 800", width: 1280, height: 800, narrow: false },
+];
 const REPLAY_BOXES = [".site-header", ".step-panel", ".why-card", ".replay-stage", ".replay-stage .date-badge", ".foot-bar", ".site-footer"] as const;
 
-for (const size of SIZES) {
+for (const size of [...SIZES, ...SHORT_SIZES.slice(0, 1)]) {
   test(`requirement 3.26 at ${size.name}: pointing at or selecting a grave or a List row moves no box`, async ({ browser, baseURL }) => {
     const origin = new URL(baseURL ?? "http://localhost:4173").origin;
     const context = await browser.newContext();
@@ -1636,3 +1643,72 @@ test("requirement 3.28: Home fits 1440 by 900 with no page scroll, with the Welc
   await checkProbe(page, origin, g);
   await context.close();
 });
+
+// Spec clean-site, 3.29 (owner decision, 27 Nov): on short laptop screens the demo's graves shrink below the old fit
+// floor so Home fits with no page scroll, and the Panel scrolls inside itself when its cards are taller than its box.
+for (const size of SHORT_SIZES) {
+  test(`requirement 3.29 at ${size.name}: Home fits with every grave in view, Welcome bar open and closed, and the Panel scrolls inside itself`, async ({ browser, baseURL }) => {
+    const origin = new URL(baseURL ?? "http://localhost:4173").origin;
+    const context = await browser.newContext();
+    const page = await freshPage(context, size);
+    const g = await guard(page, origin);
+    await page.goto("/");
+    await expect(grave(page, "left-padder")).toHaveCount(1);
+    await scenePainted(page);
+    const names = DEMO.report.packages.map((p) => p.name);
+    const bar = page.getByRole("region", { name: "Welcome" });
+    await expect(bar).toBeVisible();
+
+    const check = async (when: string): Promise<void> => {
+      // The Scene takes the Welcome bar's room after the close; wait until it and the grave buttons have settled.
+      await settledBoxes(page, [".scene-canvas", ".foot-bar", `button.grave-button[aria-label^="left-padder "]`]);
+      const sizes = () => page.evaluate(() => ({ scroll: document.documentElement.scrollHeight, viewport: window.innerHeight }));
+      await expect.poll(sizes, `the page height ${when}`).toEqual({ scroll: size.height, viewport: size.height });
+      expect(await page.evaluate(() => window.scrollY), `the page scroll ${when}`).toBe(0);
+      const scene = await pageBox(page, ".scene-canvas");
+      const foot = await pageBox(page, ".foot-bar");
+      expect(scene).not.toBeNull();
+      expect(foot).not.toBeNull();
+      if (scene === null || foot === null) return;
+      // Every grave of the demo lies wholly inside the Scene and above the Footer bar.
+      for (const name of names) {
+        const box = await pageBox(page, `button.grave-button[aria-label^="${name} "]`);
+        expect(box, `${name} ${when}`).not.toBeNull();
+        if (box === null) continue;
+        expect(box.x, `${name} left ${when}`).toBeGreaterThanOrEqual(scene.x);
+        expect(box.y, `${name} top ${when}`).toBeGreaterThanOrEqual(scene.y);
+        expect(box.x + box.w, `${name} right ${when}`).toBeLessThanOrEqual(scene.x + scene.w + 0.5);
+        expect(box.y + box.h, `${name} bottom ${when}`).toBeLessThanOrEqual(scene.y + scene.h + 0.5);
+        expect(box.y + box.h, `${name} above the Footer bar ${when}`).toBeLessThanOrEqual(foot.y);
+      }
+      // The Possessed grave is wholly in view.
+      await expectInViewport(page, `button.grave-button[aria-label^="left-padder "]`);
+      await expectInViewport(page, ".foot-bar");
+      await expectInViewport(page, ".site-footer");
+      // The Panel is taller inside than its box, so it scrolls itself; its cards keep their heights.
+      const panel = page.locator("aside.panel");
+      await expect(panel, `the Panel scrolls ${when}`).toHaveAttribute("data-scroll", "");
+      const before = await panel.evaluate((el) => ({ content: el.scrollHeight, box: el.clientHeight, overflow: getComputedStyle(el).overflowY }));
+      expect(before.content, `the Panel's content against its box ${when}`).toBeGreaterThan(before.box);
+      expect(before.overflow).toBe("auto");
+      const cards = await layoutBoxes(page, [".inspector", ".fix-order"]);
+      await panel.evaluate((el) => {
+        el.scrollTop = el.scrollHeight;
+      });
+      await expect.poll(() => panel.evaluate((el) => el.scrollTop), `the Panel scrolled ${when}`).toBeGreaterThan(0);
+      await expectInViewport(page, ".fix-order .fix-row >> nth=4");
+      expect(await page.evaluate(() => window.scrollY), `the page stays put while the Panel scrolls ${when}`).toBe(0);
+      expect(await layoutBoxes(page, [".inspector", ".fix-order"]), `the cards ${when}`).toBe(cards);
+      await panel.evaluate((el) => {
+        el.scrollTop = 0;
+      });
+    };
+
+    await check("with the Welcome bar open");
+    await bar.getByRole("button", { name: "Close the welcome bar" }).click();
+    await expect(bar).toHaveCount(0);
+    await check("after the Welcome bar is closed");
+    await checkProbe(page, origin, g);
+    await context.close();
+  });
+}

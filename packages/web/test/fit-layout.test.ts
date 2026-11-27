@@ -2,7 +2,9 @@
 import type { PackageHealth } from "@sexton/api";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { fitScale, MIN_FIT_SCALE, NARROW_FRONT_COLUMNS, planScene, type Rect } from "../src/scene/layout.js";
+import { MIN_SCENE_HEIGHT } from "../src/Cemetery.js";
+import { panelOverflows } from "../src/panel/use-panel-scroll.js";
+import { fitScale, MIN_FIT_SCALE, NARROW_FRONT_COLUMNS, NARROW_MIN_FIT_SCALE, planScene, type Rect } from "../src/scene/layout.js";
 import { OVERLAY_BAND } from "../src/scene/overlay-band.js";
 import { TIER_OF, TIER_SCALE, type TierId } from "../src/scene/tiers.js";
 import { triageOrder } from "../src/triage/triage.js";
@@ -99,5 +101,42 @@ describe("Feature: clean-site, the fit scale and the front-first layout (15.3)",
     const a = planScene({ packages, width: 1440, theme: "dark", selectedIndex: null, ghostPhase: 0 });
     const b = planScene({ packages, width: 1440, theme: "dark", selectedIndex: null, ghostPhase: 0, frontFirst: false });
     expect(b.graves.map((g) => g.rect)).toEqual(a.graves.map((g) => g.rect));
+  });
+
+  // Spec clean-site, 3.29 (owner decision, 27 Nov): the floor is 0.4 in the Wide and Middle layouts, so short laptop
+  // screens fit the demo; the Narrow layout keeps 0.6.
+  it("fits the demo below the old floor of 0.6 in short Scenes, and never under the new floor", () => {
+    expect(MIN_FIT_SCALE).toBe(0.4);
+    expect(NARROW_MIN_FIT_SCALE).toBe(0.6);
+    // 1366 by 768 with the Welcome bar open leaves a Scene of about 400 px, 912 px wide.
+    for (const [width, fit] of [[912, 400], [826, 432], [912, 447], [826, 479]] as const) {
+      const s = fitScale({ front: 6, middle: 4, back: 2 }, width, fit, false);
+      expect(s).toBeLessThan(0.6);
+      expect(s).toBeGreaterThanOrEqual(MIN_FIT_SCALE);
+      const plan = planScene({ packages: triageOrder(demo()), width, theme: "dark", selectedIndex: null, ghostPhase: 0, fitHeight: fit, minHeight: fit });
+      expect(plan.height).toBeLessThanOrEqual(fit);
+    }
+  });
+
+  it("keeps the shortest Scene tall enough for the demo at the floor", () => {
+    expect(fitScale({ front: 6, middle: 4, back: 2 }, 912, MIN_SCENE_HEIGHT, false)).toBeGreaterThanOrEqual(MIN_FIT_SCALE);
+    expect(fitScale({ front: 6, middle: 4, back: 2 }, 912, MIN_SCENE_HEIGHT, false)).toBeLessThan(1);
+  });
+
+  it("keeps the Narrow layout's floor at 0.6 however narrow", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 224, max: 699 }), fc.integer({ min: 0, max: 2000 }), (width, fit) => {
+        expect(fitScale({ front: 6, middle: 4, back: 2 }, width, fit, true)).toBeGreaterThanOrEqual(NARROW_MIN_FIT_SCALE);
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  it("scrolls the Panel only when its content is taller than its box by more than a rounding", () => {
+    expect(panelOverflows(722, 594)).toBe(true);
+    expect(panelOverflows(726, 726)).toBe(false);
+    expect(panelOverflows(726.4, 726)).toBe(false);
+    expect(panelOverflows(100, 0)).toBe(false);
+    expect(panelOverflows(Number.NaN, 100)).toBe(false);
   });
 });

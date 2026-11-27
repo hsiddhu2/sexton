@@ -35,6 +35,7 @@ import { ListView } from "./ListView.js";
 import { notices } from "./notices.js";
 import { ScanningCard } from "./ScanningCard.js";
 import { useReserve } from "./use-reserve.js";
+import { usePanelScroll } from "../panel/use-panel-scroll.js";
 
 export const HELP_LINE = "Point at a grave to see its details on the right. Click it to open.";
 export const BACK_TO_NOW = "Back to now";
@@ -270,6 +271,7 @@ function ReadyHome({ response, loadId, screen, current = true, dispatch, theme, 
   const filter = screen.filter;
   const list = screen.view.list;
   const reserve = useReserve(loadId);
+  const [panelRef, panelScroll] = usePanelScroll();
   const lookedForm = lookedPkg === undefined ? undefined : formOf(response, lookedPkg, shownMs);
   const overlays = overlayRects(0);
 
@@ -384,7 +386,7 @@ function ReadyHome({ response, loadId, screen, current = true, dispatch, theme, 
         </footer>
       </section>
       {lookedPkg === undefined || looked === null ? null : (
-        <aside className="panel" aria-label="Details" inert={still}>
+        <aside ref={panelRef} className="panel" aria-label="Details" inert={still} {...(panelScroll ? { "data-scroll": "" } : {})}>
           <Inspector
             pkg={lookedPkg}
             state={lookedForm?.state ?? null}

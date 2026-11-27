@@ -77,6 +77,12 @@ const LANTERN_RADIUS = 0.6;
 const GHOST_DRAW_SCALE = 2;
 const MIN_NAME_PX = 12;
 const INSCRIPTION_UNITS_PX = 15;
+/**
+ * The narrowest a name may be squeezed on screen: its 96-unit width at the back Tier and the old smallest fit scale,
+ * 96 x 0.64 x 0.6 px. Below that scale the name's width in units grows, so the lower fit floor squeezes no name more
+ * than before (spec clean-site, 3.29); at and above it nothing changes.
+ */
+const MIN_NAME_WIDTH_PX = 96 * 0.64 * 0.6;
 /** The side face of a stone: its outline again, this far right and up in shape units, shaded with SHADOW_ALPHA_BYTE. */
 /** The ghost is drawn this far from its planned point, in cell units, so it floats over the top of its stone. */
 const GHOST_SHIFT_X = -4;
@@ -943,7 +949,7 @@ export function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan
     // The name stays at least MIN_NAME_PX on screen whatever the Tier scale (critic round 5).
     ctx.font = scale >= 1 ? g.inscription.font : g.inscription.font.replace(/\d+px/, `${String(Math.max(INSCRIPTION_UNITS_PX, Math.round(MIN_NAME_PX / scale)))}px`);
     ctx.textAlign = "center";
-    ctx.fillText(grave.inscription, g.inscription.x, g.inscription.baseline, g.inscription.maxWidth);
+    ctx.fillText(grave.inscription, g.inscription.x, g.inscription.baseline, Math.max(g.inscription.maxWidth, MIN_NAME_WIDTH_PX / scale));
   }
   ctx.restore();
 }

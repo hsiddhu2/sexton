@@ -138,6 +138,7 @@ Out of scope: GitHub sign-in, any change to the engine's state rules, the canvas
 26. WHEN the pointer moves onto or off any grave or List row, any grave or List row is pressed or selected, or a Replay moves to another Step, THE Site SHALL leave the position and size of every box on the page unchanged, other than what the Inspector and the Step panel hold, at every viewport width of 360 px and more.
 27. IF a line is longer than its share of the Inspector, a Fix order row or the Step panel THEN THE Site SHALL end it in an ellipsis and keep its whole text for assistive technology and in the Drawer.
 28. WHILE Home shows the Sample at 1440 by 900 THE page SHALL not scroll, with the Welcome bar open and after it is closed, and no text SHALL be made smaller to fit.
+29. WHILE Home shows the Sample in the Wide layout at 1366 by 768 or 1280 by 800, with the Welcome bar open or closed, THE page SHALL not scroll, every grave SHALL lie wholly inside the Scene above the Footer bar, and THE Panel SHALL be no taller than the space under the header and SHALL scroll inside itself when its cards are taller, with the Inspector and Fix order keeping their fixed heights; graves MAY shrink to a fit scale of 0.4, name labels SHALL keep their minimum on-screen size, and no font size SHALL change.
 
 ### Requirement 4: What is removed
 

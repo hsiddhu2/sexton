@@ -166,3 +166,10 @@ Run-time notes:
     - _Requirements: 14.6, 16.12_
   - [x] 17.2 Fit Home to 1440 by 900 with the Welcome bar open and closed by trimming spacing, never text; let the Scene take the Welcome bar's room when it closes; e2e check of the scroll height in a fresh profile
     - _Requirements: 3.26, 3.28, 9.9_
+
+- [x] 18. Short laptop screens
+  - _Requirements: 3.26, 3.29_
+  - [x] 18.1 Lower the fit floor to 0.4 in the Wide and Middle layouts, keep 0.6 in the Narrow layout, lower the shortest Scene to 380 px and keep the names' minimum on-screen size
+    - _Requirements: 3.29_
+  - [x] 18.2 Give Home's Panel the grid row's height under the header and let it scroll inside itself only when its cards are taller; e2e checks at 1366 by 768 and 1280 by 800, and the no-layout-shift cases at 1366 by 768
+    - _Requirements: 3.26, 3.29_
