@@ -33,6 +33,8 @@ Found by a headless review run of the gravedigger agent on commit e3761ff (one d
 
 2.5 WHEN a local scan walks a directory and skips a `build`, `dist` or `coverage` directory THEN the system SHALL count the listing as skipped, with the same result as 2.4.
 
+2.6 WHEN a PR body is built for a plan with a remove-dependency Edit THEN the system SHALL print the fixed line "The edit removes it from dependencies and devDependencies in package.json.", and the demo scan, which carries the node-sass migrate body, SHALL be regenerated with it.
+
 ### Unchanged Behavior (Regression Prevention)
 
 3.1 WHEN a `remove-dependency` Edit is applied to a name listed in `dependencies`, `devDependencies` or both THEN the system SHALL CONTINUE TO remove it from each of them and keep indentation, key order and the final newline.
@@ -45,4 +47,4 @@ Found by a headless review run of the gravedigger agent on commit e3761ff (one d
 
 3.5 WHEN the node-sass migration runs THEN the system SHALL CONTINUE TO produce the same Edits, review sites and scan-incomplete flag, because its file scan does not use the import-site listing.
 
-3.6 WHEN the demo scan, the demo evidence, the golden evidence pack and the replays are recomputed from the recorded fixtures THEN the system SHALL CONTINUE TO produce them byte for byte, because the hosted path never removes and the PR body text is unchanged.
+3.6 WHEN the demo evidence, the golden evidence pack and the replays are recomputed from the recorded fixtures THEN the system SHALL CONTINUE TO produce them byte for byte, because the hosted path never removes and none of them carries a PR body.

@@ -54,7 +54,7 @@ describe("applyPackageJsonEdits (1.1 to 1.5)", () => {
     expect(out.endsWith("\n")).toBe(false);
   });
 
-  it("removes a name from every dependency section", () => {
+  it("removes a name from dependencies and devDependencies", () => {
     const text = '{"dependencies":{"x":"1"},"devDependencies":{"x":"1","y":"1"}}';
     const parsed = JSON.parse(ok(text, [{ path: "package.json", op: "remove-dependency", section: "dependencies", name: "x" }])) as Record<string, Record<string, string>>;
     expect(parsed).toEqual({ dependencies: {}, devDependencies: { y: "1" } });

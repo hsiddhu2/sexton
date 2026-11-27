@@ -99,7 +99,7 @@ describe("migrate plans, intents and bodies", () => {
     expect(body).toContain("- `package.json` node-sass-script: `css`");
     expect(body).toContain(`${NOTE_NOT_SCANNED}.`);
     expect(body).toContain("Stylesheets and scripts: not scanned.");
-    expect(body).toContain("The edit removes it from every dependency section of package.json that lists it.");
+    expect(body).toContain("The edit removes it from dependencies and devDependencies in package.json.");
     expect(body).not.toContain("\nnone\n");
     expect(body).toContain(LOCKFILE_NOTE);
     expect(body.indexOf(NOTE_NOT_SCANNED)).toBeLessThan(body.indexOf("## Lockfile"));
