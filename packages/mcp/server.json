@@ -1,0 +1,25 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.hsiddhu2/sexton",
+  "title": "Sexton",
+  "description": "Read-only answers about a project's npm dependencies: state, signals, fix order and policy.",
+  "repository": {
+    "url": "https://github.com/hsiddhu2/sexton",
+    "source": "github",
+    "id": "1469651228",
+    "subfolder": "packages/mcp"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@sexton/mcp",
+      "version": "0.1.0",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

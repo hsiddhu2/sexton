@@ -2,10 +2,39 @@
   "name": "@sexton/engine",
   "version": "0.2.0",
   "description": "Sexton core: signals, states, policy, remediation planning.",
+  "keywords": [
+    "supply-chain",
+    "npm",
+    "dependencies",
+    "security",
+    "sbom"
+  ],
   "license": "Apache-2.0",
+  "author": "Harpreet Singh Siddhu",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hsiddhu2/sexton.git",
+    "directory": "packages/engine"
+  },
+  "homepage": "https://github.com/hsiddhu2/sexton/tree/main/packages/engine#readme",
+  "bugs": {
+    "url": "https://github.com/hsiddhu2/sexton/issues"
+  },
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "dependencies": {
     "ajv": "8.20.0",
     "semver": "7.8.6",

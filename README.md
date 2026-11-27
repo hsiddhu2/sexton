@@ -68,6 +68,12 @@ npm run scan:self                   # score Sexton's own dependencies live and c
 
 The last command calls the npm registry, OSV and deps.dev, so it needs network. It exits non-zero when the policy fails.
 
+## Install (coming with release 0.1)
+
+Nothing is on npm yet. With release 0.1, the CLI and the MCP server will be published to npm from GitHub Actions, each with npm provenance that links the package to the commit and workflow that built it. The server will also be listed in the official MCP Registry. The install commands will go here once they work.
+
+Until then, run the CLI from a clone (see "CLI" below), and use the MCP server through the Kiro Power (see "Ask Sexton from Kiro"). Both run on Node.js 20.19 or later; building from a clone needs Node.js 22. The release plan is `.kiro/specs/release`.
+
 ## CLI
 
 Not published to npm yet, run it from a clone with Node.js 22:

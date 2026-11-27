@@ -2,14 +2,41 @@
   "name": "@sexton/mcp",
   "version": "0.1.0",
   "description": "Sexton MCP server: ask about the dependencies of the open project from Kiro. Read-only.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "supply-chain",
+    "npm",
+    "dependencies"
+  ],
   "license": "Apache-2.0",
+  "author": "Harpreet Singh Siddhu",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hsiddhu2/sexton.git",
+    "directory": "packages/mcp"
+  },
+  "homepage": "https://github.com/hsiddhu2/sexton/tree/main/packages/mcp#readme",
+  "bugs": {
+    "url": "https://github.com/hsiddhu2/sexton/issues"
+  },
   "type": "module",
   "bin": {
     "sexton-mcp": "dist/bin.js"
   },
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "NOTICE"
+  ],
   "engines": {
-    "node": ">=22"
+    "node": ">=20.19.0"
   },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "mcpName": "io.github.hsiddhu2/sexton",
   "dependencies": {
     "@modelcontextprotocol/server": "2.4.0",
     "@sexton/cli": "0.1.0",
