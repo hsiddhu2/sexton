@@ -145,8 +145,9 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
   const free = useFreeHeight(containerRef, width);
   const footerHeight = usePinnedFooterHeight(width, response);
   const reserve = page.reserve ?? 0;
-  // With a reserve the Scene ends above the Footer bar and the site footer, and its graves stand at its bottom.
-  const minHeight = reserve > 0 ? Math.max(MIN_SCENE_HEIGHT, free - reserve) : free;
+  // With a reserve the Scene ends above the Footer bar and the site footer, and its graves stand at its bottom. The
+  // free height is rounded up, so one pixel less keeps a fractional top from pushing the page past the viewport (3.28).
+  const minHeight = reserve > 0 ? Math.max(MIN_SCENE_HEIGHT, free - reserve - 1) : free;
   const fit = reserve > 0 ? (free > 0 ? minHeight : 0) : fitHeight(free, footerHeight, footerHeight > 0);
   const anyGhost = useMemo(() => order.some(hasGhost), [order]);
   const phase = useGhostPhase(anyGhost, reducedMotion);

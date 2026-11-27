@@ -137,6 +137,7 @@ Out of scope: GitHub sign-in, any change to the engine's state rules, the canvas
 25. IF a chosen signal is unavailable THEN THE Inspector SHALL show its value as "not available".
 26. WHEN the pointer moves onto or off any grave or List row, any grave or List row is pressed or selected, or a Replay moves to another Step, THE Site SHALL leave the position and size of every box on the page unchanged, other than what the Inspector and the Step panel hold, at every viewport width of 360 px and more.
 27. IF a line is longer than its share of the Inspector, a Fix order row or the Step panel THEN THE Site SHALL end it in an ellipsis and keep its whole text for assistive technology and in the Drawer.
+28. WHILE Home shows the Sample at 1440 by 900 THE page SHALL not scroll, with the Welcome bar open and after it is closed, and no text SHALL be made smaller to fit.
 
 ### Requirement 4: What is removed
 
@@ -364,7 +365,7 @@ Out of scope: GitHub sign-in, any change to the engine's state rules, the canvas
 3. WHEN Music is turned on THE Site SHALL play the track in a loop and drive the Characters' Pose clock from the track's beat.
 4. WHEN Music is turned off THE Site SHALL stop the track and return the Characters to their normal idle motion.
 5. WHILE reduced motion is preferred THE Characters SHALL hold still whether Music is on or off.
-6. WHERE a track is set THE site footer and README.md SHALL show its credit line: title, artist, licence and source link.
+6. WHERE a track is set THE site footer SHALL show one credit line, "Music: <title> by <artist>, <licence>", with the title and artist linked to the source and the licence linked to the licence's address, and README.md, CREDITS.md and the Guide page under the heading "Music" SHALL show the full credit word for word.
 7. THE Site SHALL create no audio element before Music is first turned on.
 8. WHERE a track is set THE Content Security Policy SHALL allow media from the page origin only.
 

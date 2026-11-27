@@ -309,9 +309,14 @@ describe("the Footer bar and the site footer (16.3 to 16.16)", () => {
     const footer = container.querySelector("footer.site-footer") as HTMLElement;
     expect(footer.querySelector("time")?.getAttribute("dateTime")).toBe("2026-11-12T00:00:00.000Z");
     expect(footer.textContent).toMatch(/policy: (pass|fail), (default policy|policy file), \d+ failing rules?/);
-    // The one line holds the evidence links; the track's credit lines and their links sit under it (14.6).
-    expect([...footer.querySelectorAll(".site-footer-line a")].map((a) => a.textContent)).toEqual(["Evidence JSON", "Evidence Markdown"]);
-    expect(footer.querySelectorAll(".footer-credit-line")).toHaveLength(4);
+    // The one line holds the evidence links and then the track's one-line credit with its two links (14.6).
+    expect([...footer.querySelectorAll(".site-footer-line a")].map((a) => a.textContent)).toEqual([
+      "Evidence JSON",
+      "Evidence Markdown",
+      "Ghost Party by The Piano Says",
+      "CC BY 3.0",
+    ]);
+    expect(footer.querySelectorAll("p")).toHaveLength(1);
   });
 
   it("reserves the measured Footer bar and site footer under the Scene, and nothing when none is measured", () => {

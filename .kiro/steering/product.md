@@ -32,7 +32,7 @@ A sexton keeps the churchyard: buries the dead, keeps the grounds, tolls the bel
 - The site (spec clean-site): a header with the Scan field, one row from 700 px up; Home with the headline, the State chips, the cemetery or a List, the details panel (the grave pointed at and the Fix order) and the history scrubber; a drawer with the tabs Evidence, The fix and History; a Guide page, a Legend and a three-step Tour; a failure card for each failed scan. Nothing floats over a grave, and the site offers no sign-in.
 - The cemetery is night-only. Every colour is a token in packages/web/src/scene/palette.ts; styles.css holds no colour literal. State colours: Alive #8fe3d0, Restless #e69f00, Haunted #56b4e9, Dead #bfb8ad, Possessed #cc79a7.
 - Fonts are self-hosted in packages/web/public/fonts with their OFL files: Inter and Cormorant Garamond. No font request leaves the page origin.
-- The site makes no generated sound and creates no AudioContext. Its one sound is the recorded track of the Track slot, Ghost Party by The Piano Says (CC BY 3.0), off by default and played only after the visitor turns Music on. Its credit shows in the site footer, README.md and CREDITS.md.
+- The site makes no generated sound and creates no AudioContext. Its one sound is the recorded track of the Track slot, Ghost Party by The Piano Says (CC BY 3.0), off by default and played only after the visitor turns Music on. A one-line credit shows in the site footer; the full credit is on the Guide page, in README.md and in CREDITS.md.
 
 ## Rules that never change
 - Every signal carries its source URL and fetch timestamp.

@@ -310,6 +310,7 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
       {guide ? (
         <GuidePage
           theme={theme}
+          track={TRACK}
           onTerm={onTerm}
           onHome={goHome}
           onAttack={() => {

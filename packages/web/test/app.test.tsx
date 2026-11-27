@@ -212,7 +212,7 @@ describe("App demo scan", () => {
       const rec = demoRecorder();
       const { container, unmount } = mount(rec, { search });
       await ready();
-      const links = [...container.querySelectorAll(".site-footer-line a")].map((a) => a.getAttribute("href"));
+      const links = [...container.querySelectorAll(".site-footer-line a.evidence-link")].map((a) => a.getAttribute("href"));
       expect(links).toEqual(["/demo/evidence.json", "/demo/evidence.md"]);
       expect(rec.urls.some((u) => u.includes("evidence"))).toBe(false);
       unmount();
@@ -232,7 +232,7 @@ describe("App demo scan", () => {
     });
     // The demo body names sexton-demo/fixture in its scan metadata, so the link carries that canonical URL.
     const repo = encodeURIComponent("https://github.com/sexton-demo/fixture");
-    const links = [...container.querySelectorAll(".site-footer-line a")].map((a) => a.getAttribute("href"));
+    const links = [...container.querySelectorAll(".site-footer-line a.evidence-link")].map((a) => a.getAttribute("href"));
     expect(links).toEqual([`${API}/evidence?repo=${repo}&format=json`, `${API}/evidence?repo=${repo}&format=md`]);
     expect(rec.urls.some((u) => u.includes("evidence"))).toBe(false);
   });

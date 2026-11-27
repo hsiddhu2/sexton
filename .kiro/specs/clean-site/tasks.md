@@ -159,3 +159,10 @@ Run-time notes:
     - _Requirements: 14.1, 14.2, 14.6, 1.15, 16.12_
   - [x] 16.2 Update the music, CSP and footer tests and the e2e header case; add the e2e case that Music makes one looping audio element from the origin and the next press pauses it
     - _Requirements: 14.3, 14.4, 14.5, 14.7, 14.8_
+
+- [x] 17. Home fits 1440 by 900
+  - _Requirements: 3.26, 3.28, 9.9, 14.6, 16.12_
+  - [x] 17.1 Show one credit line in the site footer line and the four credit lines on the Guide page under "Music"; keep them in README.md and CREDITS.md
+    - _Requirements: 14.6, 16.12_
+  - [x] 17.2 Fit Home to 1440 by 900 with the Welcome bar open and closed by trimming spacing, never text; let the Scene take the Welcome bar's room when it closes; e2e check of the scroll height in a fresh profile
+    - _Requirements: 3.26, 3.28, 9.9_

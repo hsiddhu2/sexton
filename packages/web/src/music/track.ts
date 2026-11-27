@@ -12,8 +12,10 @@ export interface Track {
   readonly source: string;
   /** Beats a minute; the Characters take one Pose step every half beat. */
   readonly bpm: number;
-  /** The credit the licence asks for, word for word, one entry a line (14.6). */
+  /** The credit the licence asks for, word for word, one entry a line (14.6); the Guide page shows it in full. */
   readonly credit: readonly string[];
+  /** The short credit of the site footer, one line, its title and licence linked to their sources (14.6). */
+  readonly footer: readonly CreditPart[];
 }
 
 export const TRACK: Track | null = {
@@ -28,6 +30,12 @@ export const TRACK: Track | null = {
     "Royalty Free Music by https://www.free-stock-music.com",
     "Creative Commons / Attribution 3.0 Unported License (CC BY 3.0)",
     "https://creativecommons.org/licenses/by/3.0/deed.en_US",
+  ],
+  footer: [
+    { text: "Music: ", href: null },
+    { text: "Ghost Party by The Piano Says", href: "https://soundcloud.com/thepianosays" },
+    { text: ", ", href: null },
+    { text: "CC BY 3.0", href: "https://creativecommons.org/licenses/by/3.0/deed.en_US" },
   ],
 };
 

@@ -63,6 +63,14 @@ describe("the Guide page (9.1 to 9.4, 9.10, 11.2)", () => {
       "What Sexton does",
       "What the five graves mean",
       "Questions people ask",
+      "Music",
+    ]);
+    // The track's full credit, word for word, one line each, under "Music" (14.6).
+    expect([...guide.querySelectorAll(".guide-credit-line")].map((l) => l.textContent)).toEqual([
+      "Ghost Party by The Piano Says | https://soundcloud.com/thepianosays",
+      "Royalty Free Music by https://www.free-stock-music.com",
+      "Creative Commons / Attribution 3.0 Unported License (CC BY 3.0)",
+      "https://creativecommons.org/licenses/by/3.0/deed.en_US",
     ]);
     expect([...guide.querySelectorAll(".guide-step")].map((s) => s.querySelector("h3")?.textContent)).toEqual([
       "It reads your list",

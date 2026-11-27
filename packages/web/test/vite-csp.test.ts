@@ -63,7 +63,7 @@ describe("vite CSP origin", () => {
 
   // Spec clean-site, 14.8: media from the page origin only, and only while a track is set in the Track slot.
   it("adds media-src 'self' only while a track is set", () => {
-    const track: Track = { file: "/music/t.mp3", title: "T", artist: "A", licence: "CC BY 4.0", source: "https://example.org/t", bpm: 120, credit: ["T by A"] };
+    const track: Track = { file: "/music/t.mp3", title: "T", artist: "A", licence: "CC BY 4.0", source: "https://example.org/t", bpm: 120, credit: ["T by A"], footer: [{ text: "T by A", href: null }] };
     expect(cspFor("/api", null)).not.toContain("media-src");
     expect(cspFor("/api", track).match(/media-src [^;]*;/g)).toEqual(["media-src 'self';"]);
     expect(cspFor("https://api.sexton.example", track)).toContain("connect-src 'self' https://api.sexton.example; ");

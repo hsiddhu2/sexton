@@ -971,7 +971,7 @@ for (const size of SIZES) {
       await expect(guide.locator(".crumbs")).toHaveText(/←\s*Cemetery\s*\/\s*What is Sexton\?/);
       await expect(guide.locator(".eyebrow").first()).toHaveText(/The two-minute guide/i);
       await expect(guide.locator("h1")).toHaveText("Sexton looks after the code your app borrows.");
-      await expect(guide.locator("h2.guide-heading")).toHaveText(["The problem, in plain words", "What Sexton does", "What the five graves mean", "Questions people ask"]);
+      await expect(guide.locator("h2.guide-heading")).toHaveText(["The problem, in plain words", "What Sexton does", "What the five graves mean", "Questions people ask", "Music"]);
       await expect(guide.locator(".guide-step")).toHaveCount(3);
       await expect(guide.locator(".guide-grave .badge")).toHaveText(["Possessed", "Dead", "Haunted", "Restless", "Alive"]);
       await expect(guide.locator(".guide-qa")).toHaveCount(5);
@@ -1605,5 +1605,34 @@ test("requirement 14.7: Music makes one looping audio element from the site orig
   expect(await page.locator("audio").count()).toBe(0);
   const outside = g.requests.filter((u) => new URL(u).origin !== origin);
   expect(outside, "requests outside the page origin").toEqual([]);
+  await context.close();
+});
+
+// Spec clean-site, task 17 (3.28, 14.6): at 1440 by 900 in a fresh profile, Home fits the viewport with no page scroll,
+// with the Welcome bar open and again after it is closed, and the site footer's one-line credit is in view.
+test("requirement 3.28: Home fits 1440 by 900 with no page scroll, with the Welcome bar open and after it is closed", async ({ browser, baseURL }) => {
+  const origin = new URL(baseURL ?? "http://localhost:4173").origin;
+  const context = await browser.newContext();
+  const page = await freshPage(context, SIZES[0] ?? { name: "1440 by 900", width: 1440, height: 900, narrow: false });
+  const g = await guard(page, origin);
+  await page.goto("/");
+  await expect(grave(page, "left-padder")).toHaveCount(1);
+  await scenePainted(page);
+  const sizes = () => page.evaluate(() => ({ scroll: document.documentElement.scrollHeight, viewport: window.innerHeight }));
+  const bar = page.getByRole("region", { name: "Welcome" });
+  await expect(bar).toBeVisible();
+  await expect.poll(sizes).toEqual({ scroll: 900, viewport: 900 });
+  const credit = page.locator(".site-footer-line .footer-credit");
+  await expect(credit).toHaveText("Music: Ghost Party by The Piano Says, CC BY 3.0");
+  await expectInViewport(page, ".site-footer");
+  const sceneOpen = await pageBox(page, ".scene-card");
+
+  await bar.getByRole("button", { name: "Close the welcome bar" }).click();
+  await expect(bar).toHaveCount(0);
+  await expect.poll(sizes).toEqual({ scroll: 900, viewport: 900 });
+  await expectInViewport(page, ".site-footer");
+  // The Scene takes the Welcome bar's height, so no gap opens above the site footer.
+  await expect.poll(async () => (await pageBox(page, ".scene-card"))?.h ?? 0).toBeGreaterThan(sceneOpen?.h ?? 0);
+  await checkProbe(page, origin, g);
   await context.close();
 });

@@ -11,6 +11,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App.js";
 import { Header } from "../src/header/Header.js";
 import { headerModel } from "../src/header/header-model.js";
+import { GuidePage } from "../src/guide/GuidePage.js";
 import { SiteFooter } from "../src/home/SiteFooter.js";
 import type { Popover } from "../src/load/screen-state.js";
 import { beatMs, creditParts, TRACK, type Track } from "../src/music/track.js";
@@ -42,6 +43,12 @@ const SAMPLE: Track = {
   source: "https://example.org/track",
   bpm: 120,
   credit: ["A Title by An Artist | https://example.org/track", "CC BY 4.0"],
+  footer: [
+    { text: "Music: ", href: null },
+    { text: "A Title by An Artist", href: "https://example.org/track" },
+    { text: ", ", href: null },
+    { text: "CC BY 4.0", href: "javascript:alert(1)" },
+  ],
 };
 
 function files(dir: string): string[] {
@@ -59,6 +66,14 @@ const GHOST_PARTY_CREDIT = [
   "https://creativecommons.org/licenses/by/3.0/deed.en_US",
 ];
 
+/** The site footer's one-line credit of Ghost Party, its title and licence linked (14.6). */
+const GHOST_PARTY_FOOTER = [
+  { text: "Music: ", href: null },
+  { text: "Ghost Party by The Piano Says", href: "https://soundcloud.com/thepianosays" },
+  { text: ", ", href: null },
+  { text: "CC BY 3.0", href: "https://creativecommons.org/licenses/by/3.0/deed.en_US" },
+];
+
 describe("the Track slot holds Ghost Party (14.1, 14.2, 14.6, 14.7, 1.15)", () => {
   it("names the track, its licence, source and tempo, and ships its one audio file under public", () => {
     expect(TRACK).toEqual({
@@ -69,6 +84,7 @@ describe("the Track slot holds Ghost Party (14.1, 14.2, 14.6, 14.7, 1.15)", () =
       source: "https://soundcloud.com/thepianosays",
       bpm: 110,
       credit: GHOST_PARTY_CREDIT,
+      footer: GHOST_PARTY_FOOTER,
     });
     const audio = files(PUBLIC).filter((f) => AUDIO.test(f));
     expect(audio).toEqual([join(PUBLIC, "music", "ghost-party.mp3")]);
@@ -88,7 +104,14 @@ describe("the Track slot holds Ghost Party (14.1, 14.2, 14.6, 14.7, 1.15)", () =
     expect(container.querySelector("audio")).toBeNull();
     expect(audio).not.toHaveBeenCalled();
     expect(make.mock.calls.filter(([tag]) => String(tag).toLowerCase() === "audio")).toEqual([]);
-    expect([...container.querySelectorAll(".footer-credit-line")].map((l) => l.textContent)).toEqual(GHOST_PARTY_CREDIT);
+    // The site footer holds the one-line credit, inside its one line (14.6).
+    const credit = container.querySelector(".site-footer-line .footer-credit");
+    expect(credit?.textContent).toBe("Music: Ghost Party by The Piano Says, CC BY 3.0");
+    expect([...(credit?.querySelectorAll("a") ?? [])].map((a) => [a.textContent, a.getAttribute("href")])).toEqual([
+      ["Ghost Party by The Piano Says", "https://soundcloud.com/thepianosays"],
+      ["CC BY 3.0", "https://creativecommons.org/licenses/by/3.0/deed.en_US"],
+    ]);
+    expect(container.querySelectorAll(".footer-credit-line")).toHaveLength(0);
   });
 
   it("puts the credit in README.md and CREDITS.md word for word (14.6)", () => {
@@ -132,18 +155,31 @@ describe("the Music button and the credit, with a track (14.2, 14.6, 1.15)", () 
     expect(music.getAttribute("aria-pressed")).toBe("true");
   });
 
-  it("shows the credit line by line in the site footer, linking only its https addresses", () => {
+  it("shows the one-line credit in the site footer line, linking only https addresses", () => {
     render(<SiteFooter model={headerModel(cheapScan(1), true)} track={SAMPLE} />);
-    const lines = [...document.querySelectorAll(".footer-credit .footer-credit-line")];
-    expect(lines.map((l) => l.textContent)).toEqual(["A Title by An Artist | https://example.org/track", "CC BY 4.0"]);
+    const credit = document.querySelector(".site-footer-line .footer-credit");
+    expect(credit?.textContent).toBe("Music: A Title by An Artist, CC BY 4.0");
+    // The licence part's address is not https, so it stays plain text.
     expect([...document.querySelectorAll(".footer-credit a")].map((a) => a.getAttribute("href"))).toEqual(["https://example.org/track"]);
-    cleanup();
-    render(<SiteFooter model={headerModel(cheapScan(1), true)} track={{ ...SAMPLE, credit: ["Source javascript:alert(1) http://example.org"] }} />);
-    expect(document.querySelector(".footer-credit a")).toBeNull();
-    expect(document.querySelector(".footer-credit")?.textContent).toBe("Source javascript:alert(1) http://example.org");
+    expect([...document.querySelectorAll(".footer-credit a")].map((a) => a.getAttribute("rel"))).toEqual(["noopener noreferrer"]);
     cleanup();
     render(<SiteFooter model={headerModel(cheapScan(1), true)} track={null} />);
     expect(document.querySelector(".footer-credit")).toBeNull();
+  });
+
+  it("shows the full credit line by line under the heading Music on the Guide page, linking only its https addresses", () => {
+    render(<GuidePage theme="dark" onHome={() => undefined} onAttack={() => undefined} track={SAMPLE} />);
+    expect(screen.getByRole("heading", { level: 2, name: "Music" })).toBeDefined();
+    expect([...document.querySelectorAll(".guide-credit-line")].map((l) => l.textContent)).toEqual(SAMPLE.credit);
+    expect([...document.querySelectorAll(".guide-credit a")].map((a) => a.getAttribute("href"))).toEqual(["https://example.org/track"]);
+    cleanup();
+    render(<GuidePage theme="dark" onHome={() => undefined} onAttack={() => undefined} track={{ ...SAMPLE, credit: ["Source javascript:alert(1) http://example.org"] }} />);
+    expect(document.querySelector(".guide-credit a")).toBeNull();
+    expect(document.querySelector(".guide-credit")?.textContent).toBe("Source javascript:alert(1) http://example.org");
+    cleanup();
+    render(<GuidePage theme="dark" onHome={() => undefined} onAttack={() => undefined} track={null} />);
+    expect(screen.queryByRole("heading", { name: "Music" })).toBeNull();
+    expect(document.querySelector(".guide-credit")).toBeNull();
   });
 
   it("splits a credit line into its text and its https addresses, losing no character", () => {

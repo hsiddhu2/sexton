@@ -4,6 +4,7 @@
 import { Fragment, type ReactNode } from "react";
 import type { Term } from "../glossary/glossary.js";
 import { TermText } from "../glossary/TermText.js";
+import { creditParts, type Track } from "../music/track.js";
 import { GravePicture } from "../scene/GravePicture.js";
 import type { Theme } from "../scene/palette.js";
 import {
@@ -16,6 +17,7 @@ import {
   GUIDE_HEADLINE,
   GUIDE_HOME,
   GUIDE_LEAD,
+  MUSIC_HEADING,
   PROBLEM,
   PROBLEM_HEADING,
   QUESTIONS,
@@ -31,6 +33,8 @@ export interface GuidePageProps {
   readonly onHome: () => void;
   readonly onAttack: () => void;
   readonly onTerm?: (term: Term, anchor: HTMLButtonElement) => void;
+  /** The track in the Track slot, whose full credit shows under "Music" (14.6), or null. */
+  readonly track?: Track | null;
 }
 
 const CODE_PATTERN = new RegExp(`(${CODE_WORDS.map((w) => w.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")).join("|")})`);
@@ -48,7 +52,7 @@ function Answer({ text, onTerm }: { readonly text: string; readonly onTerm?: Gui
   );
 }
 
-export function GuidePage({ theme, onHome, onAttack, onTerm }: GuidePageProps) {
+export function GuidePage({ theme, onHome, onAttack, onTerm, track = null }: GuidePageProps) {
   return (
     <main className="guide">
       <nav className="crumbs" aria-label="Breadcrumb">
@@ -103,6 +107,27 @@ export function GuidePage({ theme, onHome, onAttack, onTerm }: GuidePageProps) {
           </p>
         </section>
       ))}
+
+      {track === null ? null : (
+        <>
+          <h2 className="guide-heading">{MUSIC_HEADING}</h2>
+          <p className="guide-text guide-credit">
+            {track.credit.map((line) => (
+              <span className="guide-credit-line" key={line}>
+                {creditParts(line).map((part, i) =>
+                  part.href === null ? (
+                    part.text
+                  ) : (
+                    <a key={i} href={part.href} target="_blank" rel="noopener noreferrer">
+                      {part.text}
+                    </a>
+                  ),
+                )}
+              </span>
+            ))}
+          </p>
+        </>
+      )}
 
       <p className="guide-buttons">
         <button type="button" className="button button-primary" onClick={onHome}>

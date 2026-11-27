@@ -33,6 +33,8 @@ export const GRAVES: readonly { readonly state: State; readonly meaning: string 
 }));
 
 export const QUESTIONS_HEADING = "Questions people ask";
+/** The heading over the track's full credit, word for word (14.6). */
+export const MUSIC_HEADING = "Music";
 export interface GuideAnswer {
   readonly question: string;
   readonly answer: string;
