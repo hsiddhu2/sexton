@@ -76,3 +76,8 @@ The same run reported seven notes. Note 2 (build, dist, coverage) is defect 2 ab
 5. **`log-entry.ts` and `in-memory-log.ts` read each field twice, so an entry with getters could differ between the reads.** Accepted. Entries are plain data: built by the executor from strings it holds, or parsed from DynamoDB items. Copying first and then validating touches two files and the validator's tests; not a one-line change.
 6. **A bump candidate is judged on deprecation and advisories only, so for a Possessed package the chosen version can carry the same signal.** Accepted, as specified by R-RM-2 and remediation 2.4 to 2.13. The PR body of a Possessed plan carries the Possessed warning, so a reviewer sees it.
 7. **A `set-range` Edit overwrites the range found at the commit the executor reads, which may differ from the scanned range.** Accepted. The hosted executor re-scans the repository at request time (POST /api/remediate), and `applyPackageJsonEdits` refuses an Edit whose name is absent. Comparing the current range with the scanned one would change the executor's contract (remediate spec); not a one-line change.
+
+## After the third run
+
+The third headless review reported two defects. D1 (a migrate intent carries several Edits) and D2 (a migration removes node-sass with no import-sites count, on the hosted path too) came from a checklist written before migrations existed, and from an agent that did not load the migration spec. Both behaviours are what migration-node-sass 4.2, 4.6, 5.4 and 7.1 and hosted-plans 6.5 require. The agent now loads migration-node-sass, checklist items 4, 5 and 6 follow it, and remediation 1.6 and 4.12 point to the change. No code changed.
+
