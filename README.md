@@ -244,6 +244,7 @@ Agents in `.kiro/agents/`:
 - `impl.md`: the implementer for spec tasks; it runs tests, typecheck, lint and read-only commands without asking, and asks before anything else.
 - `security-reviewer.md`: read-only reviewer against the spec and the security steering.
 - `gravedigger.md`: read-only reviewer that checks a remediation plan can never make a repository worse.
+- The gravedigger agent was also run headless from the Kiro CLI: see [`build/reviews/cli-run.md`](build/reviews/cli-run.md).
 
 ## Limits
 
