@@ -308,7 +308,7 @@ A full search of tracked files (`git grep` for "no API", "no registry", "only da
 |---|---|---|
 | Tool or vendor name | Only in the two git hook files then tracked, which reject attribution trailers; "Kiro" throughout, which belongs | Hooks kept at the time. On 25 November 2026, after this spec merged, the git hooks moved to the machine's shared hooks folder and left the repository (chore: keep git hooks local), as the updated project rules require |
 | Private path | 36 mentions in 20 files: 19 spec files, build/reviews/05-remediation.md:3 and build/reviews/10c-remediate.md:36 | All reworded (owner decision 4); each line still says what happened. Guards kept: .gitignore, eslint.config.js, .kiro/hooks/security.json, packages/web/test/lint-config.test.ts. A recorded lodash lockfile holds the npm package named `private`, which is data |
-| Machine path | none (`/Users/`, the owner's account name) | — |
+| Machine path | none (a macOS home folder path, the owner's account name) | — |
 | Secret | none; token patterns only in guards and tests | — |
 | TODO, FIXME, XXX | none | — |
 | Links | 115 absolute links in tracked Markdown, each requested; relative links outside spec folders all resolve | Every real link answers 200 once a trailing colon from prose is dropped. https://github.com/hsiddhu2/sexton answers 404 while the repository is private, to be checked after 2 December 2026. https://poly.pizza/bundle/Cube-World-Kit-DwDr8493Fw answers 403 to a script, as cemetery-undead design.md:622 already records. Placeholders and test addresses (a/b, evil.invalid) are not links |

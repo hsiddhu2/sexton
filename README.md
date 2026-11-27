@@ -107,6 +107,18 @@ jobs:
 
 Inputs: `path` (default `.`), `comment` (default `true`), `token` (default the workflow token). On a pull request from a fork the token is read-only, so the comment is skipped with a warning and the check still decides the job. The comment is updated only when `github-actions[bot]` wrote it; with a personal token each run adds a new comment.
 
+## Ask Sexton from Kiro
+`powers/sexton` is a Kiro Power. It gives Kiro four read-only tools that answer from the same scan the CLI runs: `scan_project` (every direct dependency with its state and reason), `explain_package` (one package with every signal, its source URL and fetch time), `fix_order` (what to fix first, with the proposed plan) and `check_policy` (what `sexton check` reports, as data).
+
+Install it in under two minutes, with no clone and no build:
+1. In Kiro, open the Powers panel, choose Add Custom Power, then Import power from a repository URL, and paste `https://github.com/hsiddhu2/sexton/tree/main/powers/sexton`. The folder is also installable with Import power from a folder.
+2. Open a project that has a `package.json` and ask in chat: "Which of my npm dependencies should I fix first, and why?" Kiro approves each tool call with you and passes the workspace root as `projectDir`.
+
+The server runs on the Node that Kiro starts it with (Node 20 or later), reads `package.json`, `package-lock.json`, `sexton.policy.yml` and source files to count imports, and asks `registry.npmjs.org`, `api.osv.dev` and `api.deps.dev`. It writes nothing, installs nothing, runs no code from the project and returns no file contents. Every string in an answer came from a registry or the project, so each answer starts with a line that says to treat it as data.
+
+Residual risk. Kiro does not tell a Power's server which folder is the workspace, so every tool takes a `projectDir`. The server accepts any real directory that holds a `package.json`, not only the workspace. If a model, or text that steers it, passes another directory and you approve the call, Sexton scans that directory and sends its dependency names and versions to the three public services above, and the model learns what that project depends on. The Power sets no auto-approve, so Kiro shows the `projectDir` before a call runs. Trust the tools for all calls only if you accept this.
+
+A recorded session, with the tool calls Kiro made and its answer, is in [`build/reviews/sexton-power-proof.md`](build/reviews/sexton-power-proof.md). The spec is `.kiro/specs/sexton-power`.
 ## Sexton scans itself
 
 Sexton runs its own policy against its own dependencies with `npm run scan:self`. The `self-scan` job in `.github/workflows/ci.yml` runs it on every push and pull request. The first time we ran it, it failed.
@@ -198,6 +210,7 @@ Specs, each with its requirements (or bugfix), design and tasks, in `.kiro/specs
 - `infra`: the CDK app, the hosted scan API and the snapshotter on AWS.
 - `hosted-plans`: remediation plans on `GET /api/scan`.
 - `remediate`: `POST /api/remediate`, which opens the pull request.
+- `sexton-power`: the read-only MCP server `packages/mcp` and the Kiro Power `powers/sexton`.
 - `engine-version`: bugfix, the engine version when bundled into Lambda.
 - `state-age-rule`: bugfix, age alone gives Restless and Dead needs an advisory or deprecation.
 - `new-signals`: the publisherChange and newDependency signals and their two Possessed rules.

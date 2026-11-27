@@ -22,6 +22,7 @@ const ALLOWED: Readonly<Record<string, string>> = {
   "packages/web/e2e/polish.spec.ts": "web e2e reads its own demo scan, created by pretest:e2e",
   "packages/web/e2e/remediate.spec.ts": "web e2e reads its own demo scan, created by pretest:e2e",
   "infra/test/nag.test.ts": "skips cdk.out while it walks infra/",
+  "packages/mcp/test/stdio.test.ts": "mcp runs its own dist/bin.js, which its pretest builds (tsc -b)",
 };
 
 const ROOTS = [
