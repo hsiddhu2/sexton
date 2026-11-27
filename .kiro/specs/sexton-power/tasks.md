@@ -145,5 +145,5 @@ Stop conditions, from the brief: if `sexton check` fails on the repository after
 ## Notes
 
 - 11.2 was reviewed by the `security-reviewer` agent (read-only subagent) on 26 Nov 2026: 8 findings (0 defects, 8 notes), 8 handled (3 code, 4 test, 1 spec wording). Details in design.md "Notes and open items: review of task 11.2".
-- 10.2: the question was posed by the building agent, not typed in a fresh chat, and Kiro's own skill activation was not observed. The proof file says so.
+- 10.2: the first live session's question was posed by the building agent. The owner's fresh chat, on the current Bundle, observed both Kiro choosing the Power from keywords and Kiro loading the skill on its own. The proof file records both ("Fresh chat by the owner").
 - Task 11.1 ran the root gates and `npm run scan:self`; counts are in the final report.
