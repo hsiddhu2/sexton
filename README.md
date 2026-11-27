@@ -2,19 +2,11 @@
 
 Sexton finds the dependencies that will hurt you, proves it, and opens the pull request that fixes it.
 
+Sexton is an open-source supply-chain tool for npm projects. Give it a GitHub repository and it reads the public registry history of each direct dependency, up to 300, gives each one a state from Alive to Possessed, and proposes a fix where a safe one exists. Every finding links to its source and date.
+
+The web app draws the scan as a cemetery where each grave is one dependency. The same engine runs as a command line, as a GitHub Action that fails CI when your policy breaks, and as an MCP server you can ask from Kiro.
+
 ![The Sexton cemetery for the demo scan. Each grave is one dependency. Its shape and colour show its state.](docs/cemetery.png)
-
-Characters are original vector art. The ghost is original art.
-
-The site plays no generated sound. Music is off until you press the Music button; it then plays one recorded track, Ghost Party, in a loop, and the characters dance to its beat. Under reduced motion they hold still. The track's credit:
-
-Ghost Party by The Piano Says | https://soundcloud.com/thepianosays
-
-Royalty Free Music by https://www.free-stock-music.com
-
-Creative Commons / Attribution 3.0 Unported License (CC BY 3.0)
-
-https://creativecommons.org/licenses/by/3.0/deed.en_US
 
 Status: pre-release. Release 0.1 is due on 4 December 2026. Each feature below says whether it is on `main` today, in progress, or planned.
 
@@ -28,6 +20,16 @@ Open the hosted demo at [https://de1giv8lj8sfh.cloudfront.net](https://de1giv8lj
 2. Open its drawer. Click the grave, or press Enter on it. "List" shows the same packages as a table you can search and sort.
 3. Read the evidence and the fix. The drawer's Evidence tab shows every signal with its source and date. The fix tab shows the change Sexton proposes, when there is one, with the text of its pull request. History shows how the package's state changed over time.
 4. Replay an attack. Press "Watch a real attack" under the cemetery and pick axios, or open [the axios replay](https://de1giv8lj8sfh.cloudfront.net/?replay=axios) directly. [The keyv replay](https://de1giv8lj8sfh.cloudfront.net/?replay=keyv) shows a second attack. Press "Next step" to follow it.
+
+The site plays no generated sound. Music is off until you press the Music button. It then plays one recorded track, Ghost Party, in a loop, and the characters dance to its beat. Under reduced motion they hold still. The track's credit:
+
+Ghost Party by The Piano Says | https://soundcloud.com/thepianosays
+
+Royalty Free Music by https://www.free-stock-music.com
+
+Creative Commons / Attribution 3.0 Unported License (CC BY 3.0)
+
+https://creativecommons.org/licenses/by/3.0/deed.en_US
 
 ## The problem
 
@@ -75,6 +77,17 @@ npm run scan:self                   # score Sexton's own dependencies live and c
 ```
 
 The last command calls the npm registry, OSV and deps.dev, so it needs network. It exits non-zero when the policy fails.
+
+## Install (coming with release 0.1)
+
+Nothing is on npm yet. With release 0.1, two packages will be published to npm from GitHub Actions, each with npm provenance that links it to the commit and workflow that built it:
+
+- `sexton`, the command line, with the `sexton` command.
+- `sexton-mcp`, the MCP server, with the `sexton-mcp` command. It will also be listed in the official MCP Registry as `io.github.hsiddhu2/sexton`.
+
+Each is one file with no dependencies, and runs on Node.js 20.19 or later. The install commands will go here once they work.
+
+Until then, run the CLI from a clone (see "CLI" below), and use the MCP server through the Kiro Power (see "Ask Sexton from Kiro"). Building from a clone needs Node.js 22. The release plan is `.kiro/specs/release`.
 
 ## CLI
 
@@ -278,4 +291,4 @@ Open-source packages are used as dependencies at the exact versions in `package-
 
 ## Licence
 
-Apache-2.0. See LICENSE and NOTICE.
+Apache-2.0. See LICENSE and NOTICE. Credits for the art, the fonts and the music are in CREDITS.md.

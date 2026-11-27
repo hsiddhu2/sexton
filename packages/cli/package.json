@@ -1,5 +1,6 @@
 {
   "name": "@sexton/cli",
+  "private": true,
   "version": "0.1.0",
   "description": "Sexton command line: scan, check and evidence.",
   "license": "Apache-2.0",

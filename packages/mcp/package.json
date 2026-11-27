@@ -1,5 +1,6 @@
 {
   "name": "@sexton/mcp",
+  "private": true,
   "version": "0.1.0",
   "description": "Sexton MCP server: ask about the dependencies of the open project from Kiro. Read-only.",
   "license": "Apache-2.0",
