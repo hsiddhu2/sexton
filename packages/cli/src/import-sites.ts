@@ -1,4 +1,4 @@
-// When the CLI may offer a remove. Spec: .kiro/specs/cli-and-action, Requirements 2.5, 2.6 (handoff decision 15). Pure.
+// When the CLI may offer a remove. Spec: .kiro/specs/cli-and-action, Requirements 2.5, 2.6 (decision 15). Pure.
 
 import type { IntakePackage } from "@sexton/engine";
 

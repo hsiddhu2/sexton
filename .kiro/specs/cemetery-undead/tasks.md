@@ -9,7 +9,7 @@ Phase 1 of "Night of the Living Deps":
 - U4 depth Tiers and a night backdrop;
 - U5 Epitaphs;
 - U6 Serious mode;
-- U7 a header and a Footer bar like the mockup.
+- U7 a header and a Footer bar like the approved design.
 
 Then the README, web.md, the screenshots, the gates and the fresh-clone run. Paths are relative to the repository root. No test touches the network.
 
@@ -43,7 +43,7 @@ Run-time notes:
   - [x] 2.1 Update `packages/web/src/scene/palette.ts` and `styles.css`
     - The tokens of design.md "Palette", the costume tokens, the silhouette and lantern tokens, and the new alpha byte constants. CSS custom properties for the new interface tokens, with no colour literal.
     - _Requirements: 1.1, 1.2, 1.3_
-    - Notes: night tokens, costume tokens, silhouette, lantern, moonEdge and the four new alpha bytes in palette.ts. After critic round 1 the sky, ground and gold moved: skyHorizon #5a2d6e, groundTop #2e2440, fog #6f5296, moon #f2a030 with moonEdge #d9781e, focus, ring and accentBg #e8a30c, wordmark #f2b02e (after round 2), border #ab9cc6 and muted #cdc4db (both raised to keep 3:1 and 4.5:1 on the new stops), starFar #c2b5df. The five state colours are the handoff values. styles.css holds no colour literal.
+    - Notes: night tokens, costume tokens, silhouette, lantern, moonEdge and the four new alpha bytes in palette.ts. After critic round 1 the sky, ground and gold moved: skyHorizon #5a2d6e, groundTop #2e2440, fog #6f5296, moon #f2a030 with moonEdge #d9781e, focus, ring and accentBg #e8a30c, wordmark #f2b02e (after round 2), border #ab9cc6 and muted #cdc4db (both raised to keep 3:1 and 4.5:1 on the new stops), starFar #c2b5df. The five state colours are the decided values. styles.css holds no colour literal.
   - [x] 2.2 Write `packages/web/test/colour-vision.test.ts`
     - Linearise, apply the fixed Machado 2009 severity 1.0 matrices, convert to CIELAB, then CIEDE2000. Every State pair is at least 8 apart for protanopia, deuteranopia and tritanopia. Includes a worked example of a CIEDE2000 pair from Sharma, Wu and Dalal 2005 Table 1.
     - _Requirements: 1.7_
@@ -240,7 +240,7 @@ Run-time notes:
     - _Requirements: 15.5_
     - Review notes: NOT READY, one defect, fixed. The smoke-test screenshot step (blur and mouse move, no assertion change) was cited as change 19, but no listed change covered it. It is now Deliberate test change 27, and both citations are corrected. Clean: paths, secrets, network, origins, injection, random sources, numRuns, budget, package files, wording, trailers, no Kiro logo. Notes acted on: change 26 now says it drops the replay-row sub-check; the Backdrop and Tiers sections point to decisions 5, 6 and 11 for the final values (no cache, sky 120, no Tier gap).
 
-- [x] 10. K2d fix 1: match the approved mockups
+- [x] 10. Fix round: match the approved design
   - [x] 10.1 Rule changes: a replay draws its grave full size, and the Footer bar stays in view at 960 px and wider only
     - Amend requirements 5.8 and 9.4, add the 0.6 line to docs/requirements.md, record it in design.md.
     - _Requirements: 5.8, 9.4_
@@ -257,7 +257,7 @@ Run-time notes:
     - The version shows once and the tooltip sits beside its grave; the wordmark mark is removed; a browser test checks the zombie and the skeleton are drawn.
     - _Requirements: 3.1, 7.1, 9.1_
     - Notes: Deliberate test changes 28, 29 and 33.
-  - [x] 10.5 README screenshots, gates, Visual critic rounds against the mockup PNGs and an independent review
+  - [x] 10.5 README screenshots, gates, Visual critic rounds against the approved design pictures and an independent review
     - _Requirements: 14.1, 15.3, 15.4, 15.5_
     - Notes: root tests 1913 (web 435), typecheck and lint clean, e2e 26 passed; 300-grave medians 2.90 ms and 2.70 ms; canvas top 119.7 px on the demo and 72.6 px on the axios replay at 1440 by 900. Critic: round 1 and 2 NOT READY, round 3 READY at 1440 and 390 (design.md decision 17).
     - Review notes: READY, no defects. Notes acted on: Property 7 states how many pairs it checks; change 33 names the renamed test; the "Not published" Stop card wording is in decision 17. Notes left open: the footer height hook watches the footer node it found first (the footer is not replaced on a new load); the open grave's lid paints past its cell (drawn only, never a hit area); the Character e2e relies on the skin and bone tokens staying unique to Costumes.
@@ -266,7 +266,7 @@ Run-time notes:
 
 - Spec review, 24 Nov 2026, three rounds by independent reviewers:
   - Round 1: NOT READY with 5 defects, all fixed.
-    1. The state colours were changed from the handoff without a failing check. They are now the handoff values.
+    1. The state colours were changed from the decided values without a failing check. They are now the decided values.
     2. The glows under graves had no contrast check. `glowStops` was added.
     3. Property 4 claimed punchlines never contain the name, which fails for short names. It now proves name-independence by signature.
     4. The maintainer-change punchline was false for a removal. It now reads "The keys changed hands. Nobody heard the door."

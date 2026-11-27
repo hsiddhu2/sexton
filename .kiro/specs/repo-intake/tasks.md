@@ -9,10 +9,10 @@ Deviations from the requested order and from design.md, recorded here:
 - The semver dependency sub-task is moved from task 3 to 2.1. `manifest.ts` needs `semver.valid` for the 4.7 normalisation check (`semver.valid(v) === v`), so the dependency must exist before task 2 is implemented. Task 3 keeps the install verification as 3.1. The install itself is run by the orchestrator, not the impl agent.
 - Property 17 is split. Task 1 covers its names part (prototype key names against `isValidPackageName`). Its `parseManifests` part, which needs `manifest.ts`, is completed in task 2 (2.6).
 - Property 18 is split. Task 5 covers the `fetchManifest` arm with unvalidated references in test/clients/github-raw.test.ts. Task 6 covers the `intakeRepo` arm in test/intake/intake.test.ts.
-- Property 20 sits in test/intake/scan.test.ts (with 19 and 21) instead of design.md's test/policy/scan-ignored.test.ts, to keep one test file per source file as the brief asks.
+- Property 20 sits in test/intake/scan.test.ts (with 19 and 21) instead of design.md's test/policy/scan-ignored.test.ts, to keep one test file per source file as the instructions ask.
 - design.md names test/http-text.test.ts for the text reader tests. test/http.test.ts exists, so the tests extend it additively.
 - design.md lists lockfile fixture files (package-lock-v1/v2/v3.json and others). The lockfile v1, v2 and v3 example tests build their lockfile texts inline in the test, so only the fixtures listed in task 8 are committed.
-- `@types/semver` is added to the root devDependencies as the brief asks, not to the engine package as design.md's table says.
+- `@types/semver` is added to the root devDependencies as the instructions ask, not to the engine package as design.md's table says.
 - [x] 1. Types, names and url with properties 1, 2 and 17 (names part)
   - Adds the intake types, the package-name validator and the URL parser. Property 17 is completed in task 2: the names part is covered here, the parseManifests part in 2.6.
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 1.10, 1.11, 1.12, 8.2, 8.3, 8.4, 8.5_

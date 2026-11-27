@@ -9,7 +9,8 @@ export function freeHeight(innerHeight: number, top: number): number {
 
 /**
  * Free height of the viewport under the container, so the ground can reach the bottom of the page.
- * Recomputed on resize and when the container width changes.
+ * Recomputed on resize, when the container width changes, and when the main area's box changes, as it does when the
+ * Welcome bar above it closes (spec clean-site, 3.25).
  */
 export function useFreeHeight(ref: RefObject<HTMLElement | null>, width: number): number {
   const [height, setHeight] = useState(0);
@@ -26,8 +27,12 @@ export function useFreeHeight(ref: RefObject<HTMLElement | null>, width: number)
     };
     measure();
     window.addEventListener("resize", measure);
+    const main = ref.current?.closest("main") ?? null;
+    const observer = typeof ResizeObserver === "function" && main !== null ? new ResizeObserver(measure) : null;
+    if (main !== null) observer?.observe(main);
     return () => {
       window.removeEventListener("resize", measure);
+      observer?.disconnect();
     };
   }, [ref, width]);
   return height;
@@ -40,7 +45,7 @@ export function fitHeight(free: number, footer: number, pinned: boolean): number
 }
 
 /**
- * The height of the Footer bar while it stays in view over the scene (960 px and wider), else 0 (K2d fix 1).
+ * The height of the Footer bar while it stays in view over the scene (960 px and wider), else 0.
  * Every `.night-footer` node is measured and observed, and the nodes are found again when `key` changes (a new
  * response can replace a footer). The height is the tallest sticky node (spec cemetery-undead-2, A8).
  */

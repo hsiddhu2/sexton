@@ -14,8 +14,8 @@ import { BoundsContext, unionOf, type Box } from "./bounds-context.js";
 import { readDemoScan } from "./support/demo-scan.js";
 
 const NUM_RUNS = 100;
-/** Time limit for the Part box property: 60 s on CI, where it takes about 20 s, and the 20 s default locally. */
-const PART_BOX_TIMEOUT_MS = process.env["CI"] ? 60_000 : 20_000;
+/** Time limit for the Part box property: 60 s everywhere, since it takes about 20 s and more on a loaded machine. */
+const PART_BOX_TIMEOUT_MS = 60_000;
 const SHAPES: readonly ShapeId[] = ["rounded", "tilted", "cross", "cracked", "open", "unmarked"];
 /** The Tier scales and the replay scale (design.md A1). */
 export const PROBE_SCALES: readonly number[] = [0.64, 0.8, 1, REPLAY_SCALE];
@@ -38,6 +38,7 @@ export function probeGrave(g: ProbeGrave, nowMs: number, plan: ScenePlan = BASE_
   const s = g.scale;
   const rect: Rect = { x: 0, y: 0, w: CELL_WIDTH * s, h: CELL_HEIGHT * s };
   let grave: GravePlan = {
+    dimmed: false,
     index: 0,
     name: "probe",
     state: "Alive",
@@ -60,7 +61,7 @@ export function probeGrave(g: ProbeGrave, nowMs: number, plan: ScenePlan = BASE_
 export function probeMarks(g: ProbeGrave, nowMs: number): { box: Box; poly: [number, number][]; grow: number }[] {
   const s = g.scale;
   const rect: Rect = { x: 0, y: 0, w: CELL_WIDTH * s, h: CELL_HEIGHT * s };
-  const grave: GravePlan = { index: 0, name: "probe", state: "Alive", rect, shape: g.shape, fill: PALETTE.dark.states.Alive, ghost: null, inscription: null, pending: g.shape === "unmarked", marker: false, burial: null };
+  const grave: GravePlan = { index: 0, name: "probe", state: "Alive", rect, shape: g.shape, fill: PALETTE.dark.states.Alive, ghost: null, inscription: null, pending: g.shape === "unmarked", marker: false, burial: null, dimmed: false };
   const ctx = new BoundsContext();
   drawGrave(ctx, grave, { ...BASE_PLAN, dancers: new Set(["probe"]) }, DECO, nowMs);
   return ctx.marks
@@ -88,8 +89,10 @@ describe("Feature: cemetery-undead-2, Property 1: No grave covers another grave'
         arbSceneWidth,
         fc.oneof(fc.integer({ min: -100, max: 3000 }), fc.constant(Number.NaN)),
         fc.boolean(),
-        (packages, width, fit, replay) => {
-          const plan = planScene({ packages, width, theme: "dark", selectedIndex: null, ghostPhase: 0, fitHeight: fit, replay });
+        fc.boolean(),
+        (packages, width, fit, replay, frontFirst) => {
+          // Spec clean-site, task 11: the fit scale and the front-first Narrow layout keep every name clear too.
+          const plan = planScene({ packages, width, theme: "dark", selectedIndex: null, ghostPhase: 0, fitHeight: fit, replay, frontFirst });
           const n = plan.graves.length;
           for (const g of plan.graves) {
             const art = artRect(g);
@@ -189,6 +192,7 @@ describe("cemetery-undead-2, requirement 4: the pit edge colour", () => {
   it("strokes the open grave's pit edge in costume.flower and nothing near it in the lantern gold", () => {
     const ctx = new BoundsContext();
     const grave: GravePlan = {
+      dimmed: false,
       index: 0,
       name: "probe",
       state: "Possessed",

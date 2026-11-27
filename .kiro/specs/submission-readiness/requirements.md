@@ -92,7 +92,7 @@ It does not change packages/web/src, packages/web/e2e, the pictures in docs, the
 6. THE policy file sexton.policy.yml SHALL forbid the state Haunted in its `forbid_state` rule, with the rule name updated to match, WHEN `npm run scan:self` passes with it. IF it does not pass and no fixed version is available without a new dependency, THEN THE spec SHALL leave Haunted out and SHALL record the advisory and the reason in design.md.
 7. THE 22 tasks.md files in .kiro/specs on main a01fcce SHALL keep their "Task Dependency Graph" sections exactly as they are, with none removed, changed or added, as the owner decided at go on 25 November 2026, and design.md SHALL close the cleanup item with that reason.
 8. THE function `isValidOwner` SHALL reject the reserved name `orgs`, as `parseRepoUrl` does, so that FOR ANY owner string that holds no `/` and ANY repository string that `isValidRepo` accepts, `isValidOwner(owner)` is true if and only if `parseRepoUrl("https://github.com/" + owner + "/" + repo).ok` is true (agreement).
-9. THE third line of build/reviews/05-remediation.md SHALL say "the project review rules" in place of the private file name.
+9. THE third line of build/reviews/05-remediation.md SHALL say "the project review rules" in place of the earlier wording.
 10. WHERE a publish record has no publisher name, THE state reason, the evidence summary and the pull request body row SHALL all show the word "unknown".
 
 ### Requirement 6: Sweep
@@ -101,10 +101,10 @@ It does not change packages/web/src, packages/web/e2e, the pictures in docs, the
 
 #### Acceptance Criteria
 
-1. THE spec SHALL search every Tracked file for: a tool or vendor name that does not belong to the product, its tests or its documented dependencies; a path under private/ or a path on the owner's machine; a secret or a string shaped like one; a TODO, FIXME or XXX with no owner; and a link that does not resolve.
+1. THE spec SHALL search every Tracked file for: a tool or vendor name that does not belong to the product, its tests or its documented dependencies; a path that git ignores or a path on the owner's machine; a secret or a string shaped like one; a TODO, FIXME or XXX with no owner; and a link that does not resolve.
 2. THE spec SHALL list every finding in design.md with its path, line, kind and what was done.
 3. WHERE a finding is in a path this spec may change, THE spec SHALL fix it, or SHALL record why it stays.
-4. WHERE a finding is in a path this spec may not change, THE spec SHALL record it in the report for the lane that owns the path.
+4. WHERE a finding is in a path this spec may not change, THE spec SHALL list it for the lane that owns the path.
 5. THE spec SHALL NOT remove a line from a guard that exists to detect one of these findings, such as .gitignore, eslint.config.js, .kiro/hooks or a test that checks for a secret pattern.
 
 ### Requirement 7: Browser tests in CI
@@ -129,7 +129,7 @@ It does not change packages/web/src, packages/web/e2e, the pictures in docs, the
 2. THE spec SHALL check that every `license` field in the root and workspace package.json files says Apache-2.0, and SHALL fix any that does not.
 3. CREDITS.md SHALL list every font file under packages/web/public/fonts and every vendored third-party file, with its source and licence.
 4. THE spec SHALL check that /.kiro is tracked and that no .gitignore line ignores it.
-5. THE report SHALL list what the owner must set by hand on GitHub: at least the About description, the website link, the topics, the visibility change on 2 December 2026, and whether GitHub detects the licence.
+5. THE spec SHALL list for the owner what must be set by hand on GitHub: at least the About description, the website link, the topics, the visibility change on 2 December 2026, and whether GitHub detects the licence.
 
 ### Requirement 9: Process
 
@@ -137,8 +137,8 @@ It does not change packages/web/src, packages/web/e2e, the pictures in docs, the
 
 #### Acceptance Criteria
 
-1. THE spec SHALL change only the paths listed in the Introduction, plus the K6b progress notes and the K6b report, kept outside the repository, which git ignores.
-2. THE Gates SHALL pass before every commit, and SHALL pass in a fresh clone installed with `npx npm@11 ci` before the report.
+1. THE spec SHALL change only the paths listed in the Introduction.
+2. THE Gates SHALL pass before every commit, and SHALL pass in a fresh clone installed with `npx npm@11 ci` before the work is handed over.
 3. AN independent review that has not seen the work SHALL run before every commit, and its findings SHALL be recorded under "Review notes" in design.md.
 4. THE change-log line of docs/requirements.md SHALL take the next free number when main is merged in.
 5. THE spec SHALL push nothing, open no pull request and deploy nothing until the owner types push.

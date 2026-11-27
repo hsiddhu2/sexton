@@ -21,6 +21,7 @@ afterEach(() => {
 });
 
 const withoutGhost = (g: GravePlan): Omit<GravePlan, "ghost"> => ({
+  dimmed: g.dimmed,
   index: g.index,
   name: g.name,
   state: g.state,

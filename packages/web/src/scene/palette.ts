@@ -37,6 +37,23 @@ export interface PaletteTheme {
   readonly lantern: string;
   /** The rim of the harvest moon; the centre is moon. */
   readonly moonEdge: string;
+  /** The hover ring on a grave that is not the Selected one (spec clean-site, 3.13). It sits on the Ring casing. */
+  readonly ringHover: string;
+  /**
+   * Spec clean-site, design C14: the chrome around the Scene, from the approved design. The `ui` prefix keeps the
+   * canvas tokens bg, text and muted as they are. uiFaint and uiAccent differ from the approved design (decisions in design.md).
+   */
+  readonly uiBg: string;
+  readonly uiBg2: string;
+  readonly uiPanel: string;
+  readonly uiPanel2: string;
+  readonly uiLine: string;
+  readonly uiLine2: string;
+  readonly uiText: string;
+  readonly uiMuted: string;
+  readonly uiFaint: string;
+  readonly uiAccent: string;
+  readonly uiAccentInk: string;
   /** Drawn Costume layers (spec cemetery-undead, design.md "Palette"). */
   readonly costume: Readonly<Record<CostumeToken, string>>;
   readonly states: Readonly<Record<State, string>>;
@@ -72,6 +89,18 @@ const NIGHT: PaletteTheme = {
   silhouette: "#08060f",
   lantern: "#ffb547",
   moonEdge: "#d9781e",
+  ringHover: "#c9c2dc",
+  uiBg: "#0f0d1a",
+  uiBg2: "#141127",
+  uiPanel: "#17142a",
+  uiPanel2: "#1d1a33",
+  uiLine: "#2a2644",
+  uiLine2: "#3a3560",
+  uiText: "#eeebf7",
+  uiMuted: "#a19cba",
+  uiFaint: "#8a85a6",
+  uiAccent: "#f2c46b",
+  uiAccentInk: "#1a1206",
   costume: {
     horns: "#d23a3a",
     eyes: "#ff3b30",
@@ -112,6 +141,16 @@ export const GRAIN_ALPHA_BYTE = "14";
  * check guards can sit (scene/halo.ts), so it is not a Glow stop.
  */
 export const HALO_ALPHA_BYTE = "a0";
+/**
+ * Spec clean-site, 2.7: the one fixed alpha of a grave dimmed by a filter, as a byte; the painter sets
+ * globalAlpha to DIM_ALPHA_BYTE / 255 around every per-grave draw of a dimmed grave. Categorical, not a scale.
+ */
+export const DIM_ALPHA_BYTE = "38";
+
+/** Pure. The globalAlpha of a dimmed grave. */
+export function dimAlpha(): number {
+  return parseInt(DIM_ALPHA_BYTE, 16) / 255;
+}
 
 const FOG_PEAK = 52;
 
@@ -152,6 +191,18 @@ export function cssVariables(theme: Theme): Record<string, string> {
     "--accent-text": p.accentText,
     "--wordmark": p.wordmark,
     "--marker": p.marker,
+    "--ring-hover": p.ringHover,
+    "--ui-bg": p.uiBg,
+    "--ui-bg2": p.uiBg2,
+    "--ui-panel": p.uiPanel,
+    "--ui-panel2": p.uiPanel2,
+    "--ui-line": p.uiLine,
+    "--ui-line2": p.uiLine2,
+    "--ui-text": p.uiText,
+    "--ui-muted": p.uiMuted,
+    "--ui-faint": p.uiFaint,
+    "--ui-accent": p.uiAccent,
+    "--ui-accent-ink": p.uiAccentInk,
   };
 }
 

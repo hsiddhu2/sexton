@@ -1,7 +1,7 @@
 import { memo, useEffect, useRef } from "react";
 import { drawScene } from "./draw.js";
 import { backingStore, type ScenePlan } from "./layout.js";
-import { FRAME_MS } from "./motion.js";
+import { poseStepMs } from "./motion.js";
 import { createRedrawScheduler, type RedrawScheduler } from "./scheduler.js";
 
 export interface SceneProps {
@@ -59,6 +59,8 @@ function SceneView({ plan }: SceneProps) {
   // The Character clock (spec cemetery-undead, 4.1, 4.2, 4.6): one repaint every FRAME_MS while motion is allowed
   // and the page is visible. React does not re-render for it: only the canvas repaints.
   const still = plan.reducedMotion || plan.graves.length === 0;
+  // One repaint per Pose step: every FRAME_MS, or every half beat while Music is on (spec clean-site, 14.3).
+  const stepMs = poseStepMs(plan.beat ?? null);
   useEffect(() => {
     if (still) return undefined;
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -66,18 +68,18 @@ function SceneView({ plan }: SceneProps) {
       timer = null;
       if (document.visibilityState === "hidden") return;
       schedulerRef.current?.invalidate();
-      timer = setTimeout(tick, FRAME_MS);
+      timer = setTimeout(tick, stepMs);
     };
     const onVisibility = (): void => {
       if (document.visibilityState !== "hidden" && timer === null) tick();
     };
-    timer = setTimeout(tick, FRAME_MS);
+    timer = setTimeout(tick, stepMs);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
       if (timer !== null) clearTimeout(timer);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [still]);
+  }, [still, stepMs]);
 
   return (
     <canvas

@@ -66,5 +66,5 @@ Adds the read side of hosted remediation: a token from Secrets Manager, two auth
     - _Requirements: 9.4_
 
 - [x] 10. Close
-  - Root gates and an independent review before each commit, build/reviews/10b-hosted-plans.md, merge to main with --no-ff, PROGRESS, TRACKER, report with the express timings, the cap, the cdk diff summary and the 10c items (request shapes, write permissions, where the remediation log plugs in, every reviewComments element validated, case-insensitive branch collision).
+  - Root gates and an independent review before each commit, build/reviews/10b-hosted-plans.md, merge to main with --no-ff, a summary with the express timings, the cap, the cdk diff summary and the 10c items (request shapes, write permissions, where the remediation log plugs in, every reviewComments element validated, case-insensitive branch collision).
   - _Requirements: 1 to 9_

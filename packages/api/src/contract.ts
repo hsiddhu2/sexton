@@ -50,6 +50,9 @@ export type { PackageJsonEdit, PrIntent, RemediationEntry, RemediationKind, Reme
 export { REMEDIATION_KINDS, REMEDIATION_STATUSES } from "@sexton/engine";
 export type RemediationStatusList = typeof REMEDIATION_STATUSES;
 
+// Spec clean-site, design C10: the API's error codes, as a type only, so web can mirror the list and match a code.
+export type { ApiErrorCode } from "./http/responses.js";
+
 // The evidence pack lives in the engine (spec evidence-pack, decision 2); the contract re-exports it.
 export type { EvidencePack, EvidenceBody, EvidenceIntegrity, EvidenceScan, EvidencePlan, CycloneDxBom } from "@sexton/engine";
 
@@ -76,9 +79,20 @@ export interface PullRequestMark {
   readonly timestamp: string;
 }
 
+/** Spec clean-site, 8.13: one Step of a Replay, told in plain words. */
+export interface ReplayStep {
+  readonly title: string;
+  readonly happened: string;
+  readonly shows: string;
+}
+
 export interface ReplayInfo {
   readonly id: "axios" | "keyv";
   readonly title: string;
   readonly summary: string;
   readonly sources: readonly { readonly label: string; readonly url: string }[];
+  /** Spec clean-site, 8.13 and 8.15: one per Stop, in order, each different from every other. */
+  readonly steps: readonly ReplayStep[];
+  /** Spec clean-site, 8.12: the "Why attackers do this" text. */
+  readonly why: string;
 }

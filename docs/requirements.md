@@ -138,11 +138,11 @@ R-EV-3. The evidence pack SHALL contain a SHA-256 hash of its JSON body so that 
 R-UI-1. THE SYSTEM SHALL render each direct dependency as a grave in a cemetery scene. Grave form encodes state: a rounded stone with a party hat and flowers for Alive, a tilted stone with a hand clawing out of the dirt for Restless, a cross for Haunted, a cracked tilted stone with a lounging skeleton for Dead, and an open grave with a dancing devil-costumed zombie for Possessed. Colour follows the same state. Graves sit in three depth tiers by state group, each at a fixed scale. A replay, which shows one package, draws its grave full size. No continuous encodings. A package whose installed version is not yet published on the chosen date shows an unmarked mound (the Not-published form), and a package with a logged pull request shows a pennant beside its grave. Neither changes the grave form of a State.
 R-UI-2. A ghost above a grave SHALL mean one or more advisories, and nothing else.
 R-UI-3. Graves SHALL be ordered by triage priority: Possessed first, then by state from least healthy to most healthy (Dead, Haunted, Restless, Alive), then by highest advisory severity, then by transitive reach descending, then by name.
-R-UI-4. Selecting a grave SHALL show the package's signals with sources, its state and the rule that produced it, and the proposed remediation with a preview of the PR body. The drawer shows the scan date.
+R-UI-4. WHEN a grave is pointed at or selected, THE SYSTEM SHALL show its name, version, state, a plain sentence of the rule that produced it and three of its signals in a fixed panel beside or under the scene, never over a grave. WHEN a grave is opened, THE SYSTEM SHALL show the package in a drawer with three tabs: Evidence (its state, the rule that produced it, and every signal with its source and fetch time), The fix (the proposed remediation and its change, with a preview of the PR body) and History (its states over time). The drawer shows the scan date.
 R-UI-5. The scene SHALL be readable without the legend by a first-time viewer. Verified by one person outside the project before submission.
 R-UI-6. The scene SHALL render 300 graves without visible lag on a 2020 laptop.
 R-UI-7. The UI SHALL meet WCAG 2.1 AA for text contrast and keyboard navigation. Every grave SHALL be reachable by keyboard.
-R-UI-8. THE SYSTEM MAY play sound generated in code and show short speech bubbles over the cemetery. Sound SHALL be off by default and SHALL not start before the user turns it on. Speech bubbles SHALL never cover a grave's name, SHALL be hidden in Serious mode, and SHALL carry no information the grave's tooltip and drawer do not.
+R-UI-8. THE SYSTEM SHALL play no generated sound and SHALL place no tooltip or speech bubble over the cemetery. It MAY play one recorded music track with its credit, only after the user turns Music on. While no track is set, THE SYSTEM SHALL ship no audio file and SHALL show no Music button.
 
 ### 5.9 CLI and Action
 
@@ -159,7 +159,7 @@ R-AG-3. The agent SHALL NOT open PRs on its own. It proposes. A human requests.
 
 ## 6. Non-functional requirements
 
-N-1. Security. No secrets in the repository. GitHub credentials held in AWS Secrets Manager. Least-privilege IAM. Public endpoints behind WAF. Private folder gitignored and verified by a pre-commit hook.
+N-1. Security. No secrets in the repository. GitHub credentials held in AWS Secrets Manager. Least-privilege IAM. Public endpoints behind WAF. Local working files are gitignored.
 N-2. Privacy. Sexton reads only public repositories in release 0.1. It stores package metadata, never source code.
 N-3. Performance. A scan of 50 direct dependencies completes in under 20 seconds with a warm cache and under 60 seconds cold.
 N-4. Reliability. An upstream outage degrades one signal, never the whole scan.
@@ -211,3 +211,4 @@ Every Kiro spec names the requirements it implements. Every PR names the spec. T
 0.9, 25 November 2026. Section 2: the packument fields Sexton reads are named, and Socket, npq and Renovate are named as partial overlaps in place of the claim that no tool combines these parts. Release 0.1 lists seven signals.
 1.0, 25 November 2026. R-RM-2: a bump is never proposed over a declared range that is not a registry semver range, and the node-sass migration never raises sass-loader over one. R-RM-3: no remove for @types/* or compiler helper runtimes. R-RM-6: a migration body says when its scan was incomplete. Spec remediation-safety.
 1.1, 26 November 2026. Section 4.1: the MCP server and the Kiro Power. Spec sexton-power.
+1.1, 26 November 2026. R-UI-4: a fixed panel shows the grave pointed at, and the drawer has the tabs Evidence, The fix and History. R-UI-8: no generated sound, tooltip or speech bubble; one recorded music track at most, off until the user turns it on. Spec clean-site.

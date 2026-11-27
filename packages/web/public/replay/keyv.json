@@ -194,6 +194,19 @@
         "label": "npm registry: keyv",
         "url": "https://registry.npmjs.org/keyv"
       }
-    ]
+    ],
+    "steps": [
+      {
+        "title": "A normal day",
+        "happened": "keyv 5.6.0 is the latest stable release. It has no install script, so installing it runs nothing.",
+        "shows": "Nothing to flag. The grave is Alive."
+      },
+      {
+        "title": "A poisoned release appears",
+        "happened": "keyv 6.0.0 is published at 09:35 UTC with a new preinstall script, node setup.mjs. It still carries valid provenance from GitHub Actions, the trusted publisher.",
+        "shows": "The grave turns Possessed. An install script appeared that earlier versions did not have. Provenance alone would not have flagged it."
+      }
+    ],
+    "why": "npm recorded 619,682,667 downloads of keyv from 5 July to 3 August. npm runs a preinstall script by itself during install, so no one has to import keyv or start an app for the code to run. Reports say its hidden second stage goes after GitHub and npm tokens, cloud credentials and private keys. Developer laptops and CI runners are prized targets because they often hold those credentials."
   }
 }

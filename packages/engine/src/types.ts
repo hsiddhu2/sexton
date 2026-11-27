@@ -187,7 +187,7 @@ export interface PackageRef {
 
 export interface PackageHealth extends PackageRef {
   readonly state: State;
-  /** The rule that matched. Requirement 7.1 of the handoff spec. */
+  /** The rule that matched. */
   readonly stateReason: string;
   readonly signals: PackageSignals;
   readonly missingSignals: readonly SignalName[];

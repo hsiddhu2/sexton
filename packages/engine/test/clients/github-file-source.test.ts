@@ -76,7 +76,7 @@ describe("GithubFileSource (3.1 to 3.6)", () => {
     expect(seen).toEqual([]);
   });
 
-  it("lists a capped tree and reports it through counts (handoff decision 8)", async () => {
+  it("lists a capped tree and reports it through counts (decision 8)", async () => {
     const { transport } = fake(["a.scss"], { "a.scss": "x" }, { truncated: true });
     const source = new GithubFileSource(makeContext(transport), REPO, SHA, { token: TOKEN });
     expect(await source.listFiles()).toEqual(["a.scss"]);

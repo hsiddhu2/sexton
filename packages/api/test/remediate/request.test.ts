@@ -73,7 +73,7 @@ describe("parseRemediateRequest (6.1)", () => {
   });
 });
 
-describe("allowlist (handoff decision 1)", () => {
+describe("allowlist (decision 1)", () => {
   it("parses owner/repo names lower-cased and drops anything else", () => {
     const allow = parseAllowlist(" HSiddhu2/Sexton-Demo ,bad,a/b/c,");
     expect([...allow]).toEqual(["hsiddhu2/sexton-demo"]);

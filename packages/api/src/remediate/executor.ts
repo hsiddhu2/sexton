@@ -1,4 +1,4 @@
-// The GitHub executor. Spec: .kiro/specs/remediate, Requirements 2 to 5, handoff decision 5.
+// The GitHub executor. Spec: .kiro/specs/remediate, Requirements 2 to 5, decision 5.
 // Turns one proposed RemediationEntry from the server's own scan into one pull request on an allowed repository.
 // Order: repository, branch check, read package.json at the commit, apply edits, create branch, put package.json,
 // open the pull request, review-site comment, log entry. Nothing is deleted; a failure leaves the branch.

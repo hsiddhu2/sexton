@@ -22,7 +22,7 @@ It also moves `RemediationEntry` into the Engine types, replaces the placeholder
 
 Implements requirements 1 to 8 of this spec, which cover R-RM-1, R-RM-2, R-RM-3, R-RM-5, R-RM-6 and R-RM-8 on the engine side, R-SG-3, R-SG-7, R-SG-8 and R-SG-9 for the new reads, and N-2 in part. R-RM-4 and R-RM-7 (recipes) are a later spec. The planner is the N-8 property-tested "bump selector".
 
-Out of scope: the node-sass to sass recipe and any other recipe, migration sections of the PR body, branch creation, commits, pull requests, merging, default-branch resolution, GitHub MCP calls, counting import sites, reading repository source, editing `package-lock.json`, a persistent log (DynamoDB belongs to the api), a user-facing control that opens a pull request, changes to the drawer, the CLI, the API handler or the agent. The Engine writes no file. The demo scan generator gains a `remediations` list (HP decision 13 and handoff task 4, requirement 7.13).
+Out of scope: the node-sass to sass recipe and any other recipe, migration sections of the PR body, branch creation, commits, pull requests, merging, default-branch resolution, GitHub MCP calls, counting import sites, reading repository source, editing `package-lock.json`, a persistent log (DynamoDB belongs to the api), a user-facing control that opens a pull request, changes to the drawer, the CLI, the API handler or the agent. The Engine writes no file. The demo scan generator gains a `remediations` list (HP decision 13 and the owner's task 4, requirement 7.13).
 
 ### Names in the source that shape the design
 
@@ -1174,7 +1174,7 @@ These settle the contradictions and open items above. requirements.md and the se
 10. Missing or unusable declared range: every candidate is out of range and every pick is labelled Major upgrade.
 11. Branch encoding as written: injective, `@` kept, `/`, `_`, `~` and dangerous dots escaped, names whose branch exceeds 200 characters get no intent.
 12. The PR intent carries a structured Edit `{ path: "package.json", op, section, name, range? }`, never file text. The executor of spec 10b applies it.
-13. `RemediationEntry` lives in `packages/engine/src/types.ts` and `packages/api/src/contract.ts` re-exports it, with the shape above. The web validator accepts the new shape and rejects the old one. The drawer code is unchanged. The demo scan generator gains remediations (handoff task 4), which replaces the old 7.13.
+13. `RemediationEntry` lives in `packages/engine/src/types.ts` and `packages/api/src/contract.ts` re-exports it, with the shape above. The web validator accepts the new shape and rejects the old one. The drawer code is unchanged. The demo scan generator gains remediations (the owner's task 4), which replaces the old 7.13.
 14. This section's former "Analyze findings" heading is relabelled "Requirements review findings". `.kiro/specs/cemetery-ui/.config.kiro` gets a fresh UUID so it no longer shares one with repo-intake.
 
 Items 13 (cleanLine for invalid names), 16 (migrate title), 10 (stricter log validation), 11 (no cap on distinct IDs), 12 (`-0`), 15 (inner concurrency 8) and 17 (batch cache key) stay as the design describes.
@@ -1183,8 +1183,8 @@ Items 13 (cleanLine for invalid names), 16 (migrate title), 10 (stricter log val
 
 Recorded as the session protocol requires: each is the choice that keeps the smallest surface.
 
-1. **Remediation fixtures use the installed versions of `test/fixtures/packages.json`**, the same versions the demo scan scores, so one recording serves the engine tests and the demo. Besides the four packages the handoff names (request, uuid, lodash, event-stream), the recorder also records node-sass, left-pad and colors, so every Dead package of the demo has bump data. The recorder queries OSV for every release above the installed version, a superset of the 20 candidates of any range, and the test transport answers any batch from that per-version table.
-2. **Expected plans follow the recorded data, not the handoff's expectation, where they differ.** request 2.88.2: every one of its 126 versions is deprecated and none is above 2.88.2, so the plan is `no-safe-version` with 0 candidates (the handoff expected "the lowest safe major"). event-stream 3.3.6: 4.0.0 and 4.0.1 are not deprecated and have no advisory, so the plan bumps to 4.0.0, a Major upgrade (the handoff expected no safe version). uuid 9.0.1: the first non-deprecated release candidate, 11.0.0, has a Moderate advisory, so the plan bumps to 11.1.1, the first candidate that is neither deprecated nor above Low, a Major upgrade because it is outside ^9.0.1. lodash 4.17.21: 4.17.23 has a High and a Moderate advisory, 4.18.0 is deprecated, so the plan bumps to 4.18.1 in range. The reasoning is in `test/fixtures/remediation/expected-plans.md` (added with the fixtures commit).
+1. **Remediation fixtures use the installed versions of `test/fixtures/packages.json`**, the same versions the demo scan scores, so one recording serves the engine tests and the demo. Besides the four packages named in the decisions (request, uuid, lodash, event-stream), the recorder also records node-sass, left-pad and colors, so every Dead package of the demo has bump data. The recorder queries OSV for every release above the installed version, a superset of the 20 candidates of any range, and the test transport answers any batch from that per-version table.
+2. **Expected plans follow the recorded data, not the first expectation, where they differ.** request 2.88.2: every one of its 126 versions is deprecated and none is above 2.88.2, so the plan is `no-safe-version` with 0 candidates (the first expectation was "the lowest safe major"). event-stream 3.3.6: 4.0.0 and 4.0.1 are not deprecated and have no advisory, so the plan bumps to 4.0.0, a Major upgrade (the first expectation was that no version is safe). uuid 9.0.1: the first non-deprecated release candidate, 11.0.0, has a Moderate advisory, so the plan bumps to 11.1.1, the first candidate that is neither deprecated nor above Low, a Major upgrade because it is outside ^9.0.1. lodash 4.17.21: 4.17.23 has a High and a Moderate advisory, 4.18.0 is deprecated, so the plan bumps to 4.18.1 in range. The reasoning is in `test/fixtures/remediation/expected-plans.md` (added with the fixtures commit).
 3. **Demo intake ranges.** The demo has no package.json, so the generator builds each IntakePackage with `declaredRange` `^{installedVersion}` and `origin` `dependencies`, the common npm default. The demo `importSites` map is empty, so no plan is a remove.
 4. **Demo transport.** `packages/api/scripts/lib/remediation-routes.mjs` answers the full packument GET and any `querybatch` POST for a recorded package from the per-version table, and the detail GETs from the recorded `vulns`. It runs on its own cache, separate from scoring, because the scoring fixtures hold packuments trimmed to one version.
 
@@ -1193,7 +1193,7 @@ Recorded as the session protocol requires: each is the choice that keeps the sma
 7. **Small helper files.** `unhealthy.ts` (the Haunted, Dead or Possessed test) and `plan-options.ts` (the `PlanOptions` type, shared by the planner and `bump-targets.ts` without an import cycle) are added under `remediation/`. `clients/osv.ts` exports `OsvShapeError` and `OsvPaginationError` so `gatherBumpData` can choose the fixed reason by error class.
 8. **The planner and the bump-target list skip a repeated report name after its first entry, whatever the first entry's state**, so both see exactly the same packages.
 
-## Correction, 21 Nov 2026 (spec migration-node-sass, handoff decision 13)
+## Correction, 21 Nov 2026 (spec migration-node-sass, decision 13)
 
 Two open items of this spec are closed by the migration-node-sass spec, and the body rules are widened for its migrate plans. Requirements 2.20, 2.21, 2.22, 5.2, 5.6, 5.9 and 5.14 above were edited to match; tasks.md is not changed.
 
@@ -1201,7 +1201,7 @@ Two open items of this spec are closed by the migration-node-sass spec, and the 
 2. Distinct advisory IDs per package are capped at 200. Beyond that `gatherBumpData` fetches no detail and returns the failure `too many advisories`. The fetch body moved to `remediation/version-data.ts`, shared with `gatherMigrationData`; for 200 IDs or fewer the behaviour is unchanged. This closes open item 11 ("no cap on distinct IDs").
 3. A proposed migrate plan's body adds "Files changed" and "Review before merging" before the lockfile note, carries the lockfile note, and renders Review site paths, line numbers, script names and excerpts from the repository, each only through `escapeField` (5.2, 5.9, 5.14 amended).
 
-## Correction, 21 Nov 2026 (spec cli-and-action, handoff decision 16)
+## Correction, 21 Nov 2026 (spec cli-and-action, decision 16)
 
 A remove plan's body carries one more fixed line after the remove-scope line: "No reference to this package was found in the files read. A package loaded by name at run time is not detected. Check before merging." (`REMOVE_CHECK_LINE` in `pr-body.ts`). The CLI is the first caller that supplies `importSites`, from a reference count over the working tree, and the line states what that count cannot see. Requirement 5 of this spec is read with this line added; its tasks.md is unchanged.
 

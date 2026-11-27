@@ -5,11 +5,12 @@ import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ScanResponse } from "@sexton/api";
 import { App } from "../src/App.js";
-import { DEMO_ONLY_TEXT, Drawer, OPEN_PR_TEXT, PR_LINK_TEXT } from "../src/drawer/Drawer.js";
-import { drawerModel } from "../src/drawer/drawer-model.js";
+import { Drawer, OPEN_PR_TEXT, PR_LINK_TEXT } from "../src/drawer/Drawer.js";
+import { PLAN_NOTE } from "../src/drawer/fix-view.js";
 import { OUTCOME_TEXT, PR_PREFIX, requestRemediation } from "../src/load/remediate-client.js";
 import { validateScanResponse } from "../src/load/validate-scan-response.js";
 import { readDemoScan } from "./support/demo-scan.js";
+import { drawerProps } from "./support/drawer-props.js";
 
 afterEach(cleanup);
 
@@ -67,17 +68,19 @@ describe("requestRemediation (9.3)", () => {
 });
 
 describe("Drawer button (9.2 to 9.4)", () => {
-  it("shows the demo-only text and no button without onRemediate", () => {
-    render(<Drawer model={drawerModel(DEMO, PKG)} onClose={() => undefined} />);
+  it("shows the Sample scan's note and no button without onRemediate (7.13)", () => {
+    render(<Drawer {...drawerProps(DEMO, PKG, "sample")} onClose={() => undefined} />);
     const dialog = screen.getByRole("dialog");
-    expect(dialog.textContent).toContain(DEMO_ONLY_TEXT);
+    fireEvent.click(within(dialog).getByRole("tab", { name: "The fix" }));
+    expect(dialog.textContent).toContain(PLAN_NOTE.sample);
     expect(within(dialog).queryByRole("button", { name: OPEN_PR_TEXT })).toBeNull();
   });
 
   it("opens the pull request, stays focusable while in flight, and links with noopener noreferrer", async () => {
     let resolve: (v: { status: "opened"; prUrl: string; text: string }) => void = () => undefined;
     const onRemediate = () => new Promise<{ status: "opened"; prUrl: string; text: string }>((r) => (resolve = r));
-    render(<Drawer model={drawerModel(HOSTED, PKG)} onClose={() => undefined} onRemediate={onRemediate} />);
+    render(<Drawer {...drawerProps(HOSTED, PKG, "live-remediate")} onClose={() => undefined} onRemediate={onRemediate} />);
+    fireEvent.click(screen.getByRole("tab", { name: "The fix" }));
     const button = screen.getByRole("button", { name: OPEN_PR_TEXT });
     button.focus();
     fireEvent.click(button);
@@ -95,10 +98,11 @@ describe("Drawer button (9.2 to 9.4)", () => {
   });
 
   it("never shows a link without the prefix", async () => {
-    render(<Drawer model={drawerModel(HOSTED, PKG)} onClose={() => undefined} onRemediate={() => Promise.resolve({ status: "existing", prUrl: "https://evil.example/pull/1", text: "x" })} />);
+    render(<Drawer {...drawerProps(HOSTED, PKG, "live-remediate")} onClose={() => undefined} onRemediate={() => Promise.resolve({ status: "existing", prUrl: "https://evil.example/pull/1", text: "x" })} />);
+    fireEvent.click(screen.getByRole("tab", { name: "The fix" }));
     fireEvent.click(screen.getByRole("button", { name: OPEN_PR_TEXT }));
     await waitFor(() => expect(screen.getByText("x")).toBeTruthy());
-    expect(screen.queryByRole("link")).toBeNull();
+    expect(screen.queryByRole("link", { name: PR_LINK_TEXT })).toBeNull();
   });
 });
 
@@ -106,16 +110,18 @@ describe("App wiring (9.2, 9.4)", () => {
   async function openDrawer(container: HTMLElement): Promise<void> {
     await waitFor(() => expect(container.querySelector(`[aria-label*="${PKG?.name ?? ""}"]`)).not.toBeNull());
     fireEvent.click(container.querySelector(`[aria-label*="${PKG?.name ?? ""}"]`) as HTMLElement);
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("tab", { name: "The fix" }));
   }
 
   it("shows the button for a hosted scan with actions.remediate true", async () => {
     const fetchFn = ((url: string) => Promise.resolve(new Response(JSON.stringify(String(url).includes("/scan?") ? HOSTED : DEMO), { status: 200 }))) as unknown as typeof fetch;
     const { container } = render(<App fetchFn={fetchFn} apiBase={API} initialSearch="" pageOrigin="http://localhost" />);
-    await waitFor(() => expect(screen.getByLabelText("Repository URL")).toBeTruthy());
-    fireEvent.change(screen.getByLabelText("Repository URL"), { target: { value: "https://github.com/hsiddhu2/sexton-demo" } });
+    await waitFor(() => expect(screen.getByLabelText("GitHub repository to scan")).toBeTruthy());
+    fireEvent.change(screen.getByLabelText("GitHub repository to scan"), { target: { value: "https://github.com/hsiddhu2/sexton-demo" } });
     fireEvent.submit(container.querySelector("form") as HTMLFormElement);
     await openDrawer(container);
     expect(within(screen.getByRole("dialog")).getByRole("button", { name: OPEN_PR_TEXT })).toBeTruthy();
+    expect(screen.getByRole("dialog").textContent).toContain(PLAN_NOTE["live-remediate"]);
   });
 
   it("never shows the button for the demo fixture", async () => {
@@ -123,6 +129,6 @@ describe("App wiring (9.2, 9.4)", () => {
     const { container } = render(<App fetchFn={fetchFn} apiBase={API} initialSearch="" pageOrigin="http://localhost" />);
     await openDrawer(container);
     expect(within(screen.getByRole("dialog")).queryByRole("button", { name: OPEN_PR_TEXT })).toBeNull();
-    expect(screen.getByRole("dialog").textContent).toContain(DEMO_ONLY_TEXT);
+    expect(screen.getByRole("dialog").textContent).toContain(PLAN_NOTE.sample);
   });
 });

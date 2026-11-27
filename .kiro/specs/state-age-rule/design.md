@@ -122,7 +122,6 @@ Found with `grep -rnE "DEAD_AFTER_MONTHS|RESTLESS_AFTER_MONTHS"` over the reposi
 - `packages/engine/src/state.ts`: defines both, uses both.
 - `packages/engine/src/index.ts` line 19: re-exports both from `./state.js`. It is the only importer of `state.ts` constants.
 - `packages/engine/test/support/health-scoring-oracle.ts`: declares its own `DEAD_AFTER_MONTHS` and `RESTLESS_AFTER_MONTHS` (lines 8 and 9) and uses them on lines 50, 51, 60 and 70. It imports neither from `src`.
-- The owner's two handoff notes for this spec: prose only, ignored by git, not edited.
 No file in `packages/api`, `packages/cli`, `packages/web`, `packages/action`, `infra` or `scripts` uses either name. `test/index.test.ts` does not list them. The typecheck gate confirms no importer was missed.
 ### Policy
 The default policy stays `forbid_state` for Possessed and Dead. `sexton.policy.yml` keeps `max_age_months` 24. That rule still flags stale packages, so this repository's own scan can still fail on a package that is Restless by age. That is a policy choice a repository makes on purpose, not a state. No policy code changes.
@@ -213,5 +212,5 @@ No test in `test/policy/` asserts the 12 to 24 months Restless rule. `test/polic
 ### Integration Tests
 - `npm run demo:generate -w @sexton/api` followed by the api, web and cli tests that read the demo files
 - Root `npm run typecheck`, `npm run lint` and `npm test` pass
-- A run of the built CLI against https://github.com/expressjs/express, run by the orchestrator because it needs the network. The state counts and every Dead package with its reason go to `build/kiro-reports/13-state-age-rule.md`. `build/*` is git-ignored, so the report is not committed
+- A run of the built CLI against https://github.com/expressjs/express, run by the orchestrator because it needs the network. The state counts and every Dead package with its reason go to a file under `build/`. `build/*` is git-ignored, so the file is not committed
 - No deploy. The change goes live with the next deploy

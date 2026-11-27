@@ -84,5 +84,5 @@ Gets the repository ready for judges on 2 December 2026: two claims corrected, t
 
 - [x] 9. Final checks
   - Notes: main is still a01fcce, so no merge was needed and the change-log line stays 0.9. Root gates 2,068 tests. Fresh clone of 90bbbb7 with `npx npm@11 ci`: gates exit 0, 2,068 tests, clean tree. Whole-branch review: three text defects, fixed before 90bbbb7 (design.md Review notes, build).
-  - Merge main in, renumber the change-log line if needed, root gates, a fresh clone with `npx npm@11 ci` and the gates, an independent review of the whole branch, the K6b progress notes and the K6b report (kept outside the repository). Nothing is pushed.
+  - Merge main in, renumber the change-log line if needed, root gates, a fresh clone with `npx npm@11 ci` and the gates, an independent review of the whole branch. Nothing is pushed.
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_

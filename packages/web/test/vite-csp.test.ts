@@ -1,12 +1,13 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { parseApiBase } from "../src/load/api-base.js";
+import { TRACK, type Track } from "../src/music/track.js";
 import { apiOrigin, cspPlugin } from "../vite.config.js";
 
 const PATTERN = /^https:\/\/[A-Za-z0-9.-]+(:\d+)?$/;
 
-function cspFor(raw: string | undefined): string {
-  const plugin = cspPlugin(raw);
+function cspFor(raw: string | undefined, track: Track | null = TRACK): string {
+  const plugin = cspPlugin(raw, track);
   const hook = plugin.transformIndexHtml as (html: string) => string;
   const html = hook("<!-- sexton:csp -->");
   const m = /content="([^"]*)"/.exec(html);
@@ -58,5 +59,21 @@ describe("vite CSP origin", () => {
     expect(cspFor("/api")).toContain("connect-src 'self'; ");
     expect(cspFor("/api")).not.toContain("https:");
     expect(cspFor("https://api.sexton.example")).toContain("connect-src 'self' https://api.sexton.example; ");
+  });
+
+  // Spec clean-site, 14.8: media from the page origin only, and only while a track is set in the Track slot.
+  it("adds media-src 'self' only while a track is set", () => {
+    const track: Track = { file: "/music/t.mp3", title: "T", artist: "A", licence: "CC BY 4.0", source: "https://example.org/t", bpm: 120, credit: ["T by A"], footer: [{ text: "T by A", href: null }] };
+    expect(cspFor("/api", null)).not.toContain("media-src");
+    expect(cspFor("/api", track).match(/media-src [^;]*;/g)).toEqual(["media-src 'self';"]);
+    expect(cspFor("https://api.sexton.example", track)).toContain("connect-src 'self' https://api.sexton.example; ");
+    expect(cspFor("/api").includes("media-src")).toBe(TRACK !== null);
+  });
+
+  // Spec clean-site, task 16: Ghost Party is in the slot, so the build allows media from the page origin and nowhere else.
+  it("allows media-src 'self' and nothing more with the track in the slot", () => {
+    expect(TRACK).not.toBeNull();
+    expect(cspFor("/api").match(/media-src [^;]*;/g)).toEqual(["media-src 'self';"]);
+    expect(cspFor("https://api.sexton.example").match(/media-src [^;]*;/g)).toEqual(["media-src 'self';"]);
   });
 });

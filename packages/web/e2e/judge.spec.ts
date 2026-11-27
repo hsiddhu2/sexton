@@ -1,4 +1,5 @@
-// Spec judge-path: the Guide, the Fix-first line, the ring's Halo and the burial's speed in a real browser.
+// Spec judge-path: the ring's Halo and the burial's speed in a real browser. Spec clean-site, task 2: the Guide and
+// Fix-first cases went with those features (4.1).
 import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import { chromium, expect, test, type Page } from "@playwright/test";
@@ -15,7 +16,6 @@ interface Rect {
 
 interface HookWindow {
   __sextonTiming?: {
-    labels(): Rect[];
     paintVariant(variant: object): void;
     haloAlpha(x: number, y: number): number | null;
     redrawBurial(n: number, index: number): number[];
@@ -26,7 +26,6 @@ interface HookWindow {
 }
 
 const AXE_PATH = createRequire(import.meta.url).resolve("axe-core/axe.min.js");
-const FIX_FIRST = "Fix first: left-padder 1.2.1, Possessed, maintainer change in the last 90 days";
 
 async function sameOriginOnly(page: Page, baseURL: string | undefined): Promise<void> {
   const origin = new URL(baseURL ?? "http://localhost:4173").origin;
@@ -41,129 +40,23 @@ const median = (xs: readonly number[]): number => {
   return ((s[14] ?? 0) + (s[15] ?? 0)) / 2;
 };
 
-test.describe("first visit", () => {
-  // A browser that has never closed the Guide.
-  test.use({ storageState: { cookies: [], origins: [] } });
-
-  for (const [width, height] of [
-    [1440, 900],
-    [390, 844],
-  ] as const) {
-    test(`requirements 1.1, 1.13 to 1.16: at ${String(width)} by ${String(height)} every step sits by its Anchor, on screen and off every name`, async ({ page, baseURL }) => {
-      await sameOriginOnly(page, baseURL);
-      await page.emulateMedia({ reducedMotion: "reduce" });
-      await page.setViewportSize({ width, height });
-      await page.goto("/");
-      await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
-      const guide = page.locator("section.guide");
-      await expect(guide).toBeVisible();
-      await page.waitForFunction(() => (window as unknown as HookWindow).__sextonTiming !== undefined);
-      for (let step = 1; step <= 4; step += 1) {
-        await expect(guide).toContainText(`Step ${String(step)} of 4`);
-        const anchor = step < 4 ? page.locator('button[data-grave-index="0"]') : page.locator(".night-footer .replay-button", { hasText: "axios, Mar 2026" });
-        await expect(anchor).toBeInViewport();
-        // The card follows its Anchor each frame: wait until it has settled, clear of every name.
-        await expect
-          .poll(() => page.evaluate(() => (document.querySelector("section.guide") as HTMLElement).dataset["side"]), { timeout: 3000 })
-          .not.toBe("dock-forced");
-        // The pointer rests on the card, so no grave under it shows its tooltip in the picture.
-        const cardBox = await guide.boundingBox();
-        if (cardBox !== null) await page.mouse.move(cardBox.x + cardBox.width / 2, cardBox.y + 6);
-        await page.waitForTimeout(100);
-        const found = await page.evaluate(() => {
-          const card = (document.querySelector("section.guide") as HTMLElement).getBoundingClientRect();
-          const canvas = (document.querySelector("canvas") as HTMLCanvasElement).getBoundingClientRect();
-          const labels = (window as unknown as HookWindow).__sextonTiming?.labels() ?? [];
-          const over = labels.filter((l) => {
-            const x = canvas.left + l.x;
-            const y = canvas.top + l.y;
-            return x < card.right && card.left < x + l.w && y < card.bottom && card.top < y + l.h;
-          }).length;
-          return { side: (document.querySelector("section.guide") as HTMLElement).dataset["side"], left: card.left, top: card.top, right: card.right, bottom: card.bottom, over, vw: window.innerWidth, vh: window.innerHeight };
-        });
-        console.log(`guide step ${String(step)} at ${String(width)}: ${String(found.side)}`);
-        expect(found.side).not.toBe("dock-forced");
-        expect(found.over).toBe(0);
-        expect(found.left).toBeGreaterThanOrEqual(0);
-        expect(found.top).toBeGreaterThanOrEqual(0);
-        expect(found.right).toBeLessThanOrEqual(found.vw);
-        expect(found.bottom).toBeLessThanOrEqual(found.vh);
-        await page.screenshot({ path: `test-results/judge-${String(width)}-step${String(step)}.png` });
-        await guide.getByRole("button", { name: step < 4 ? "Next" : "Done" }).click();
-      }
-      await expect(guide).toHaveCount(0);
-      await page.mouse.move(1, 1);
-      await page.evaluate(() => {
-        window.scrollTo(0, 0);
-      });
-      await page.waitForTimeout(150);
-      await page.screenshot({ path: `test-results/judge-${String(width)}-closed.png` });
-      // Closed is remembered across a reload.
-      await page.reload();
-      await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
-      await expect(page.getByRole("button", { name: "Guide" })).toBeVisible();
-      await expect(guide).toHaveCount(0);
-    });
-  }
-
-  test("requirements 7.6 and 7.7: axe finds no violation with the Guide open and with it closed", async ({ browser, baseURL }) => {
-    // axe is injected as a script, which the page's policy rightly blocks: this one context sets the policy aside.
-    const context = await browser.newContext({ bypassCSP: true, storageState: { cookies: [], origins: [] }, viewport: { width: 1440, height: 900 } });
-    const page = await context.newPage();
-    await sameOriginOnly(page, baseURL);
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/");
-    await expect(page.locator("section.guide")).toBeVisible();
-    await page.addScriptTag({ path: AXE_PATH });
-    const run = (): Promise<string[]> =>
-      page.evaluate(async () => {
-        const axe = (window as unknown as { axe: { run(ctx: Document, o: object): Promise<{ violations: { id: string }[] }> } }).axe;
-        // As the unit axe check: colour contrast is proved by the contrast tests, not read off a page mid-fade.
-        const r = await axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] }, rules: { "color-contrast": { enabled: false } } });
-        return r.violations.map((v) => `${v.id}: ${(v as unknown as { nodes: { html: string }[] }).nodes.map((n) => n.html).join(" | ")}`);
-      });
-    expect(await run()).toEqual([]);
-    await page.getByRole("button", { name: "Close guide" }).click();
-    await expect(page.locator("section.guide")).toHaveCount(0);
-    expect(await run()).toEqual([]);
-    await context.close();
-  });
-});
-
-test("requirements 1.10 to 1.12: the Guide works by keyboard alone, from the Guide button to Done", async ({ page, baseURL }) => {
+// The general half of judge-path 7.6 and 7.7, kept when the Guide case went: axe in a real browser on the demo.
+test("requirement 7.7: axe finds no violation on the demo", async ({ browser, baseURL }) => {
+  // axe is injected as a script, which the page's policy rightly blocks: this one context sets the policy aside.
+  const context = await browser.newContext({ bypassCSP: true, viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage();
   await sameOriginOnly(page, baseURL);
-  await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
-  // The default storage state of this suite holds "closed": the Guide waits for its button.
-  await expect(page.locator("section.guide")).toHaveCount(0);
-  await page.getByRole("button", { name: "Guide" }).focus();
-  await page.keyboard.press("Enter");
-  await expect(page.locator("#guide-title")).toBeFocused();
-  await page.keyboard.press("Tab");
-  await expect(page.getByRole("button", { name: "Next" })).toBeFocused();
-  for (let step = 2; step <= 4; step += 1) {
-    await page.keyboard.press("Enter");
-    await expect(page.locator("section.guide")).toContainText(`Step ${String(step)} of 4`);
-  }
-  await expect(page.getByRole("button", { name: "Done" })).toBeFocused();
-  await page.keyboard.press("Enter");
-  await expect(page.locator("section.guide")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Guide" })).toBeFocused();
-});
-
-test("requirement 2.3: Fix first focuses left-padder's grave and shows its tooltip", async ({ page, baseURL }) => {
-  await sameOriginOnly(page, baseURL);
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/");
-  const button = page.getByRole("button", { name: FIX_FIRST });
-  await expect(button).toBeVisible();
-  await button.click();
-  const grave = page.locator('button[data-grave-index="0"]');
-  await expect(grave).toBeFocused();
-  await expect(grave).toHaveAttribute("aria-label", /^left-padder 1\.2\.1/);
-  await expect(page.locator(".grave-tooltip")).toBeVisible();
-  await expect(page.locator(".grave-tooltip")).toContainText("maintainer change in the last 90 days");
+  await page.addScriptTag({ path: AXE_PATH });
+  const violations = await page.evaluate(async () => {
+    const axe = (window as unknown as { axe: { run(ctx: Document, o: object): Promise<{ violations: { id: string }[] }> } }).axe;
+    // As the unit axe check: colour contrast is proved by the contrast tests.
+    const r = await axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] }, rules: { "color-contrast": { enabled: false } } });
+    return r.violations.map((v) => `${v.id}: ${(v as unknown as { nodes: { html: string }[] }).nodes.map((n) => n.html).join(" | ")}`);
+  });
+  expect(violations).toEqual([]);
+  await context.close();
 });
 
 test("requirement 4.7: after the axios Burst the Halo round the ring reads at least half the uncut Halo", async ({ page, baseURL }) => {
@@ -173,10 +66,8 @@ test("requirement 4.7: after the axios Burst the Halo round the ring reads at le
   await page.goto("/?replay=axios");
   const grave = page.locator("button[data-grave-index]").first();
   await expect(grave).toHaveCount(1);
-  const slider = page.getByRole("slider", { name: "History date" });
-  await slider.focus();
-  await slider.press("ArrowRight");
-  await slider.blur();
+  // Spec clean-site, task 6.3: a Replay moves by "Next step"; it has no scrubber.
+  await page.getByRole("button", { name: "Next step" }).click();
   await page.mouse.move(1, 899);
   await expect(grave).toHaveAttribute("aria-label", "axios 1.14.1, Possessed");
   await page.waitForFunction(() => (window as unknown as HookWindow).__sextonTiming !== undefined);

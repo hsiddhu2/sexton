@@ -1,4 +1,4 @@
-import { formParts, labelRect } from "./art-box.js";
+import { artRect, formParts, labelRect } from "./art-box.js";
 import { haloMask, uncutHaloAlphaAt } from "./halo.js";
 import { HALO_ALPHA_BYTE } from "./palette.js";
 import { BURST_MS } from "./burst.js";
@@ -26,6 +26,8 @@ export interface SextonTiming {
   redraw(n: number): number[];
   /** The name label of every grave, in CSS pixels of the canvas. */
   labels(): Rect[];
+  /** Every grave's Art box, in CSS pixels of the canvas (spec clean-site, 3.15). */
+  artBoxes(): Rect[];
   /** One synchronous paint of the current plan with the variant applied, at the page clock. */
   paintVariant(variant: PlanVariant): void;
   /** n full paints, each with the Halo layer painted afresh, each timed (spec cemetery-undead-fixes, 2.9). */
@@ -90,6 +92,9 @@ export function installTimingHook(repaint: () => void, current: () => ScenePlan,
     },
     labels(): Rect[] {
       return current().graves.map((g) => labelRect(g));
+    },
+    artBoxes(): Rect[] {
+      return current().graves.map((g) => artRect(g));
     },
     paintVariant(variant: PlanVariant): void {
       const now = variant.nowMs ?? Date.now();

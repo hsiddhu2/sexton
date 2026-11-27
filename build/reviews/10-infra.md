@@ -85,7 +85,7 @@ The reviewer checked that the quoted N-7 matches the amended wording word for wo
 | "a dated change-log entry" does not match how requirements.md tracks changes | Now "a version bump and a date" |
 | Condition 4 said "this ADR", narrower than N-7's "docs/adr" | Now "recorded in docs/adr" |
 | The GPL and AGPL ban goes beyond N-7 | Now stated as a rule this ADR adds |
-| cemetery-ui design.md expects the name `00NN-axe-core-dev-only.md` | Told Kiro the real path in build/handoffs/to-kiro.md |
+| cemetery-ui design.md expects the name `00NN-axe-core-dev-only.md` | Told Kiro the real path |
 | The byline reads "Harpreet S. Siddhu" while requirements.md says "Harpreet Singh Siddhu" | Kept. The byline uses the published form of the name |
 | MPL-2.0 also requires source when a binary is distributed | Kept as written. Sexton distributes no form of axe-core |
 
@@ -209,11 +209,11 @@ The reviewer checked:
 - no echo: bodies are built from named fields, and Property 10 runs a sliding 4-character window over nine scenarios
 - no secrets and no network in tests
 
-During this task, the real `cdk synth` bundle of the scan handler was loaded offline. It fails with `Cannot find module '../package.json'`, because the engine's `version.ts` reads its manifest at run time. This is handed to Kiro (build/handoffs/to-kiro.md, item 7), and deploy is blocked until it is fixed.
+During this task, the real `cdk synth` bundle of the scan handler was loaded offline. It fails with `Cannot find module '../package.json'`, because the engine's `version.ts` reads its manifest at run time. This is handed to Kiro (spec engine-version), and deploy is blocked until it is fixed.
 
 | Note | Action |
 |---|---|
-| The lint run failed on `infra/cdk.out`, the local synth output that git ignores and eslint does not | Deleted. Asked Kiro to add `**/cdk.out/**` to the eslint ignores (to-kiro.md, item 8) |
+| The lint run failed on `infra/cdk.out`, the local synth output that git ignores and eslint does not | Deleted. Asked Kiro to add `**/cdk.out/**` to the eslint ignores |
 | Upstream log lines carry `/{owner}/{repo}` for github-raw, while the summary line leaves the repository out | Recorded in design.md, "Notes on requirements and open items", item 14, for HP to decide |
 | The end-to-end test loads cemetery-ui's validator by path | Kept. A rename in web will break the test loudly |
 | design.md quoted old engine text for `invalid-url` | Updated |
@@ -273,7 +273,7 @@ The reviewer synthesised the stacks to a directory outside the repository and ch
 | No rollback for a failed Data create, where the retained resources block a rerun | Rows added that stop for HP. Nobody deletes the table or the secret |
 | The rollback and destroy commands synthesised into `infra/cdk.out` | Both write to `$WORK` |
 
-The runbook needs at least 111 for unreserved concurrency, not the 110 in HP's brief. Lambda keeps 100 units unreserved, and these two functions reserve 11. The reviewer confirmed this, and design.md item 10 and task 14.1, which said 21, are corrected too.
+The runbook needs at least 111 for unreserved concurrency, not the 110 in the owner's instructions. Lambda keeps 100 units unreserved, and these two functions reserve 11. The reviewer confirmed this, and design.md item 10 and task 14.1, which said 21, are corrected too.
 
 | Note | Action |
 |---|---|

@@ -114,7 +114,8 @@ describe("the session mark", () => {
 
   async function open(container: HTMLElement): Promise<void> {
     fireEvent.click(container.querySelector(`button[data-grave-index][aria-label^="${PKG} "]`) as HTMLElement);
-    fireEvent.click(screen.getByRole("button", { name: OPEN_PR_TEXT }));
+    fireEvent.click(screen.getByRole("tab", { name: "The fix" }));
+      fireEvent.click(screen.getByRole("button", { name: OPEN_PR_TEXT }));
     await waitFor(() => expect(screen.getByText("Pull request opened.")).toBeTruthy());
   }
 
@@ -134,6 +135,7 @@ describe("the session mark", () => {
         <Cemetery response={HOSTED} theme="dark" reducedMotion={true} onRemediate={() => Promise.resolve({ status, prUrl: null, text: `done ${status}` })} />,
       );
       fireEvent.click(container.querySelector(`button[data-grave-index][aria-label^="${PKG} "]`) as HTMLElement);
+      fireEvent.click(screen.getByRole("tab", { name: "The fix" }));
       fireEvent.click(screen.getByRole("button", { name: OPEN_PR_TEXT }));
       await waitFor(() => expect(screen.getByText(`done ${status}`)).toBeTruthy());
       fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
@@ -144,7 +146,8 @@ describe("the session mark", () => {
       <Cemetery response={HOSTED} theme="dark" reducedMotion={true} onRemediate={() => Promise.resolve({ status: "existing", prUrl: null, text: "already" })} />,
     );
     fireEvent.click(container.querySelector(`button[data-grave-index][aria-label^="${PKG} "]`) as HTMLElement);
-    fireEvent.click(screen.getByRole("button", { name: OPEN_PR_TEXT }));
+    fireEvent.click(screen.getByRole("tab", { name: "The fix" }));
+      fireEvent.click(screen.getByRole("button", { name: OPEN_PR_TEXT }));
     await waitFor(() => expect(screen.getByText("already")).toBeTruthy());
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
     await waitFor(() => expect(labelOf(container)?.endsWith(MARKER_LABEL_SUFFIX)).toBe(true));

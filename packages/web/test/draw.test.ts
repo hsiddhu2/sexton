@@ -1,7 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { drawScene, type PaintContext2D } from "../src/scene/draw.js";
-import { GRAVE_GEOMETRY, planScene, type ScenePlan } from "../src/scene/layout.js";
+import { drawGhost, drawScene, ghostPictureArgs, type PaintContext2D } from "../src/scene/draw.js";
+import { CELL_WIDTH, ghostOffset, GRAVE_GEOMETRY, planScene, type ScenePlan } from "../src/scene/layout.js";
 import {
   ALPHA_ZERO_BYTE,
   FOG_PEAK_ALPHA_BYTE,
@@ -75,7 +75,7 @@ function graveStart(calls: readonly Logged[], plan: ScenePlan): number {
   return at === -1 ? calls.length : at - 1;
 }
 
-/** K2d fix 1, Deliberate test change 32: path fills per grave by shape, and unit arcs beyond the shadow (the pit). */
+/** Path fills per grave by shape, and unit arcs beyond the shadow (the pit). */
 const pathFills = (shape: string): number => (shape === "unmarked" ? 2 : shape === "open" ? 5 : 4);
 const pitArcs = (shape: string): number => (shape === "open" ? 1 : 0);
 
@@ -177,7 +177,7 @@ describe("Feature: cemetery-theme, Property 4: Painter call discipline", () => {
     const log = logger();
     drawScene(log.ctx, plan, 1);
     // Spec cemetery-undead, Deliberate test change 9: the scenery fills six paths (church, tree, four bats) first.
-    // K2d fix 1, Deliberate test change 32: and the hill twice (its lit edge, then the ground); each grave fills its
+    // The hill is filled twice (its lit edge, then the ground); each grave fills its
     // path count from PATH_FILLS (side face twice, stone, plinth, and the mound of the open grave).
     const withPath = log.calls.slice(graveStart(log.calls, plan)).filter((c) => c.method === "fill" && c.args.length === 1).map((c) => c.args[0]);
     expect(withPath).toHaveLength(plan.graves.reduce((sum, g) => sum + pathFills(g.shape), 0));
@@ -302,7 +302,7 @@ describe("Feature: cemetery-polish, Property 4: Painter call discipline for star
           const ghosts = plan.graves.filter((g) => g.ghost !== null).length;
           expect(rest.filter((c) => c.method === "scale" && c.args[0] === 72 && c.args[1] === 8)).toHaveLength(n);
           // Each ghost adds two eye and two blush ovals (a unit arc and an argument-less fill each).
-          // Deliberate test change 32: the open grave's pit is one more unit arc; path fills follow pathFills.
+          // The open grave's pit is one more unit arc; path fills follow pathFills.
           const pits = plan.graves.reduce((sum, g) => sum + pitArcs(g.shape), 0);
           expect(rest.filter((c) => c.method === "arc" && c.args[2] === 1)).toHaveLength(n + 4 * ghosts + pits);
           expect(rest.filter((c) => c.method === "fill" && c.args.length === 0)).toHaveLength(n + 4 * ghosts + pits);
@@ -327,7 +327,7 @@ describe("Feature: cemetery-polish, Property 4: Painter call discipline for star
             // the next save after the shadow opens the shape: its stroke comes after its fill
             expect(names[at + 7]).toBe("save");
             let f = at + 8;
-            // Deliberate test change 32: the stone's own fill is the path fill that its stroke follows (after the side face).
+            // The stone's own fill is the path fill that its stroke follows (after the side face).
             while (f < calls.length && !(names[f] === "fill" && calls[f]?.args.length === 1 && names[f + 1] === "stroke")) f += 1;
             const k1 = SPECKS[g?.shape ?? "rounded"].length;
             expect(names[f + 1]).toBe("stroke");
@@ -374,7 +374,7 @@ describe("Feature: cemetery-polish, Property 4: Painter call discipline for star
         body.forEach((c, i) => {
           if (c.method === "translate" && plan.graves.some((g) => g.rect.x === c.args[0] && g.rect.y === c.args[1]) && body[i - 1]?.method === "save") starts.push(i - 1);
         });
-        // K2d fix 1, Deliberate test change 32: the Possessed glows are drawn in one pass before the graves, each in
+        // The Possessed glows are drawn in one pass before the graves, each in
         // its own frame, so a Possessed pair opens two glow frames first, and the glow frames are equal too.
         const glows = state === "Possessed" ? 2 : 0;
         expect(starts).toHaveLength(2 + glows);
@@ -508,5 +508,46 @@ describe("Feature: cemetery-time, Property 2: Painter call discipline for tufts 
       ),
       { numRuns: NUM_RUNS },
     );
+  });
+});
+
+// Spec clean-site, task 13.3 (design C16, 19.7): the ghost is drawn by drawGhost, lifted from drawGrave with the
+// Scene's calls unchanged, and the Guide ghost uses the same function.
+describe("clean-site: drawGhost", () => {
+  it("is the Scene's own ghost drawing: the same calls drawGrave makes, at the planned point, drifted by its phase", () => {
+    const plan = planScene({ packages: [scenePackage("p", "Haunted", "some")], width: 900, theme: "dark", selectedIndex: null, ghostPhase: 0, reducedMotion: true });
+    const grave = plan.graves[0];
+    if (grave?.ghost == null) throw new Error("the Haunted grave has a ghost");
+    const scale = grave.rect.w / CELL_WIDTH;
+    const scene = logger();
+    drawScene(scene.ctx, plan, 1);
+    const ghost = logger();
+    drawGhost(ghost.ctx, (grave.ghost.x - grave.rect.x) / scale, (grave.ghost.y - grave.rect.y) / scale, 2, 0);
+    const want = JSON.stringify(ghost.calls);
+    const found = scene.calls.some((_, i) => JSON.stringify(scene.calls.slice(i, i + ghost.calls.length)) === want);
+    expect(found).toBe(true);
+    for (const phase of [0, 5, 12, 30]) {
+      const drifted = logger();
+      drawGhost(drifted.ctx, 3, 4, 1, phase);
+      expect(drifted.calls[1]).toEqual({ method: "translate", args: [3, 4 + ghostOffset(phase)] });
+    }
+  });
+
+  it("fits the whole ghost into the Guide ghost's square, and takes the colours every theme shares", () => {
+    for (const side of [20, 28, 40]) {
+      const { x, y, size } = ghostPictureArgs(side);
+      const log = logger();
+      drawGhost(log.ctx, x, y, size, 0);
+      const [, move, shift, scaled] = log.calls;
+      const left = (move?.args[0] as number) + (shift?.args[0] as number);
+      const top = (move?.args[1] as number) + (shift?.args[1] as number);
+      expect(scaled?.args).toEqual([size, size]);
+      expect(left).toBeGreaterThanOrEqual(0);
+      expect(left + 24 * size).toBeLessThanOrEqual(side + 1e-9);
+      expect(top).toBeCloseTo(0, 9);
+      expect(top + 28 * size).toBeCloseTo(side, 9);
+    }
+    const ghostColours = (t: Theme) => [PALETTE[t].ghost, PALETTE[t].ink, PALETTE[t].costume.blush];
+    expect(ghostColours("light")).toEqual(ghostColours("dark"));
   });
 });

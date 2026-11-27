@@ -75,7 +75,7 @@ PrIntent         += reviewComments: readonly ReviewComment[]
 
 All fields are `readonly`. `RemediationPlan.edit` stays for bump and remove only; a Migrate plan carries `edits`. `RemediationEntry` is unchanged except through `PrIntent`.
 
-`Recipe.run` resolves to a `RecipeOutcome` rather than the bare `RecipeResult` the handoff sketched, because a data failure is a value, never a throw (steering: missing data is recorded, never thrown).
+`Recipe.run` resolves to a `RecipeOutcome` rather than the bare `RecipeResult` first sketched, because a data failure is a value, never a throw (steering: missing data is recorded, never thrown).
 
 ### intake/scripts.ts (Requirement 8)
 
@@ -254,7 +254,7 @@ Migrate plan for the sample repository (versions are the recorded ones, see `tes
 Fixtures:
 
 - `test/fixtures/migration/packages/{sass,sass-loader}/`: packument (all versions, deprecation markers), `osv-by-version.json` for every release, `vulns/`. Recorded with `node scripts/record-fixtures.mjs --migration`. Kept apart from `test/fixtures/remediation/packages` so the remediation fixture test, which lists that directory, is unchanged.
-- `test/fixtures/migration/node-sass-app/`: the sample repository of handoff decision 14.
+- `test/fixtures/migration/node-sass-app/`: the sample repository of decision 14.
 
 ## Error Handling
 
@@ -406,4 +406,4 @@ Each is the choice that keeps the smallest surface.
 17. **Remediation Requirements 5.2, 5.9 and 5.14 are amended** (Requirement 9.3) because the migrate body must render repository paths and excerpts (R-RM-6) and needs the lockfile note; the amendment is recorded in the Correction section of the remediation design.
 18. **The runner filters what any recipe returns**: only Edits with path `package.json`, and Review sites on `package.json` or on a Safe, non-ignored path the Capped source listed. The default recipe never needs this; it keeps an injected recipe from widening the intent (code review 2, note 1).
 19. **An excerpt is cut to 119 code points plus the ellipsis**, so it is at most 120 code points in all.
-20. **The migrate body prints the remediation remove-scope line** after a remove Edit, and the review list says "Stylesheets and scripts: not scanned." when no scan was performed (handoff decision 9), above the fixed not-scanned note.
+20. **The migrate body prints the remediation remove-scope line** after a remove Edit, and the review list says "Stylesheets and scripts: not scanned." when no scan was performed (decision 9), above the fixed not-scanned note.

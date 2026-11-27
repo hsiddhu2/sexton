@@ -61,53 +61,53 @@ describe("App", () => {
     const rec = recorder(() => cheapScan(2));
     const { container } = mount(rec);
     expect(screen.getByRole("status").textContent).toBe("Loading the scan");
-    expect(container.querySelector("canvas")).toBeNull();
+    expect(container.querySelector("canvas:not(.ghost-picture)")).toBeNull();
     await ready();
     expect(rec.urls).toEqual(["http://localhost/demo/scan.json"]);
-    expect(container.textContent).toContain("demo fixture, recorded data");
+    expect(container.querySelector(".scan-tag")?.textContent).toBe("Sample scan");
     expect(container.querySelectorAll("button[data-grave-index]").length).toBe(2);
   });
 
-  it("loads the scan parameter without the demo label", async () => {
+  it("loads the scan parameter with the Scan file tag (spec clean-site, 1.17)", async () => {
     const rec = recorder(() => cheapScan(1));
     const { container } = mount(rec, { search: "?scan=%2Fother.json" });
     await ready();
     expect(rec.urls).toEqual(["http://localhost/other.json"]);
-    expect(container.textContent).not.toContain("demo fixture, recorded data");
+    expect(container.querySelector(".scan-tag")?.textContent).toBe("Scan file");
   });
 
   it("shows a load error with no scene, no grave button and no drawer, and issues no request for a rejected address", async () => {
     const rec = recorder(() => cheapScan(1));
     const { container } = mount(rec, { search: "?scan=https%3A%2F%2Fevil.example%2Fx" });
     await waitFor(() => {
-      expect(screen.getByRole("alert").textContent).toContain("scan-url-rejected");
+      expect(screen.getByRole("alert").textContent).toBe("This one would not come out of the ground.!This scan could not be loaded.Try again, or open the sample.Try againBack to the sample");
     });
     expect(rec.urls).toEqual([]);
-    expect(container.querySelector("canvas")).toBeNull();
+    expect(container.querySelector("canvas:not(.ghost-picture)")).toBeNull();
     expect(container.querySelector("button[data-grave-index]")).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(container.textContent).not.toContain("evil.example");
   });
 
-  it("shows invalid-response errors as path, code and message", async () => {
+  it("shows the load failure card for an invalid response, with no code, path or message of the error (12.4, 12.7)", async () => {
     const rec = recorder(() => Promise.resolve(new Response(JSON.stringify({ report: 1 }), { status: 200 })));
     const { container } = mount(rec);
     await waitFor(() => {
-      expect(screen.getByRole("alert").textContent).toContain("invalid-response");
+      expect(screen.getByRole("alert").textContent).toBe("This one would not come out of the ground.!This scan could not be loaded.Try again, or open the sample.Try againBack to the sample");
     });
-    expect(container.querySelector(".load-error li")?.textContent).toContain("/");
-    expect(container.querySelector("canvas")).toBeNull();
+    expect(container.querySelector("canvas:not(.ghost-picture)")).toBeNull();
+    expect(container.textContent).not.toContain("invalid-response");
   });
 
   it("shows the disabled field text when no API base URL is configured", async () => {
     const rec = recorder(() => cheapScan(1));
     const { container } = mount(rec);
     await ready();
-    expect((screen.getByLabelText("Repository URL") as HTMLInputElement).disabled).toBe(true);
-    expect(container.textContent).toContain("hosted scan arrives with release 0.1 infra");
+    expect((screen.getByLabelText("GitHub repository to scan") as HTMLInputElement).disabled).toBe(true);
+    expect(container.textContent).toContain("Scanning is off in this build.");
   });
 
-  it("keeps the header live and the page inert while the drawer is open", async () => {
+  it("keeps the header live and the scene, hero, Footer bar and Panel inert while the drawer is open", async () => {
     const rec = recorder(() => cheapScan(2));
     const { container } = mount(rec);
     await ready();
@@ -116,7 +116,7 @@ describe("App", () => {
     fireEvent.click(container.querySelector("button[data-grave-index]") as HTMLElement);
     const dialog = screen.getByRole("dialog");
     expect(header.closest("[inert]")).toBeNull();
-    expect(container.querySelector("main")?.closest("[inert]")).not.toBeNull();
+    for (const part of [".scene-main", ".hero", ".foot-bar", ".panel"]) expect(container.querySelector(part)?.closest("[inert]"), part).not.toBeNull();
     expect(dialog.closest("[inert]")).toBeNull();
     fireEvent.keyDown(dialog, { key: "Escape" });
     expect(header.closest("[inert]")).toBeNull();
@@ -130,7 +130,7 @@ describe("App", () => {
     const buttons = (): HTMLButtonElement[] => [...container.querySelectorAll<HTMLButtonElement>("button[data-grave-index]")];
     fireEvent.click(buttons()[2] as HTMLButtonElement);
     expect(screen.getByRole("dialog")).toBeTruthy();
-    fireEvent.change(screen.getByLabelText("Repository URL"), { target: { value: "https://github.com/o/r" } });
+    fireEvent.change(screen.getByLabelText("GitHub repository to scan"), { target: { value: "https://github.com/o/r" } });
     fireEvent.submit(container.querySelector("form") as HTMLFormElement);
     await waitFor(() => {
       expect(screen.queryByRole("dialog")).toBeNull();
@@ -138,14 +138,15 @@ describe("App", () => {
     await ready();
     expect(buttons().map((b) => b.tabIndex)).toEqual([0, -1, -1]);
     expect((container.querySelector("header") as HTMLElement).closest("[inert]")).toBeNull();
-    expect(within(container).queryByText("demo fixture, recorded data")).toBeNull();
+    expect(within(container).queryByText("Sample scan")).toBeNull();
+    expect(container.querySelector(".scan-tag")?.textContent).toBe("o/r");
   });
 
   it("requests only the demo address, the accepted scan address and the API scan endpoint", async () => {
     const rec = recorder(() => cheapScan(1));
     const { container } = mount(rec, { apiBase: API });
     await ready();
-    fireEvent.change(screen.getByLabelText("Repository URL"), { target: { value: "https://github.com/o/r" } });
+    fireEvent.change(screen.getByLabelText("GitHub repository to scan"), { target: { value: "o/r" } });
     fireEvent.submit(container.querySelector("form") as HTMLFormElement);
     await ready();
     expect(rec.urls).toEqual([
@@ -155,21 +156,21 @@ describe("App", () => {
     for (const url of rec.urls) expect(url).not.toMatch(/registry\.npmjs|deps\.dev|osv\.dev|github\.com\/|githubusercontent/);
   });
 
-  it("accepts a 200 character repository URL and refuses 201 without a request", async () => {
+  it("refuses input that is not owner/name or a repository link without a request, and scans a link (spec clean-site, 1.11, 1.12)", async () => {
     const rec = recorder(() => cheapScan(1));
     const { container } = mount(rec, { apiBase: API });
     await ready();
     const form = container.querySelector("form") as HTMLFormElement;
-    const input = screen.getByLabelText("Repository URL");
-    fireEvent.change(input, { target: { value: "x".repeat(201) } });
-    fireEvent.submit(form);
-    expect(screen.getByRole("alert").textContent).toBe("Enter a repository URL of 1 to 200 characters.");
-    expect(rec.urls.length).toBe(1);
+    const input = screen.getByLabelText("GitHub repository to scan");
     fireEvent.change(input, { target: { value: "x".repeat(200) } });
+    fireEvent.submit(form);
+    expect(screen.getByRole("alert").textContent).toBe("Enter a repo as owner/name, or paste a github.com link.");
+    expect(rec.urls.length).toBe(1);
+    fireEvent.change(input, { target: { value: "https://www.github.com/acme/app/" } });
     fireEvent.submit(form);
     await ready();
     expect(rec.urls.length).toBe(2);
-    expect(rec.urls[1]).toBe(`${API}/scan?repo=${"x".repeat(200)}`);
+    expect(rec.urls[1]).toBe(`${API}/scan?repo=${encodeURIComponent("https://github.com/acme/app")}`);
   });
 });
 
@@ -183,13 +184,16 @@ describe("App demo scan", () => {
     return { fetchFn, urls };
   };
 
-  it("serves the Demo scan on the default load with twelve grave buttons and the demo label", async () => {
+  it("serves the Demo scan on the default load with twelve grave buttons, the Sample scan tag and no Fixture name", async () => {
     const rec = demoRecorder();
     const { container } = mount(rec);
     await ready();
     expect(rec.urls).toEqual(["http://localhost/demo/scan.json"]);
     expect(container.querySelectorAll("button[data-grave-index]").length).toBe(12);
-    expect(container.querySelector("header")?.textContent).toContain("demo fixture, recorded data");
+    expect(container.querySelector("header .scan-tag")?.textContent).toBe("Sample scan");
+    // Spec clean-site, 1.7: the Fixture name is never on the page outside the Drawer's own evidence.
+    const outside = [...container.children].filter((el) => !el.classList.contains("backdrop"));
+    for (const el of outside) expect(el.textContent).not.toContain("sexton-demo/fixture");
   });
 
   it("shows no demo label for a non-demo load of the same body", async () => {
@@ -198,8 +202,8 @@ describe("App demo scan", () => {
     await ready();
     expect(rec.urls).toEqual(["http://localhost/other.json"]);
     expect(container.querySelectorAll("button[data-grave-index]").length).toBe(12);
-    expect(container.textContent).not.toContain("demo fixture, recorded data");
-    expect(container.querySelector(".header-evidence")).toBeNull();
+    expect(container.querySelector(".scan-tag")?.textContent).toBe("Scan file");
+    expect(container.querySelector(".site-footer .evidence-link")).toBeNull();
   });
 
   // Spec evidence-pack, Requirement 8.2: links per load source, and no fetch of the evidence.
@@ -208,7 +212,7 @@ describe("App demo scan", () => {
       const rec = demoRecorder();
       const { container, unmount } = mount(rec, { search });
       await ready();
-      const links = [...container.querySelectorAll(".header-evidence a")].map((a) => a.getAttribute("href"));
+      const links = [...container.querySelectorAll(".site-footer-line a.evidence-link")].map((a) => a.getAttribute("href"));
       expect(links).toEqual(["/demo/evidence.json", "/demo/evidence.md"]);
       expect(rec.urls.some((u) => u.includes("evidence"))).toBe(false);
       unmount();
@@ -219,41 +223,42 @@ describe("App demo scan", () => {
     const rec = demoRecorder();
     const { container } = mount(rec, { apiBase: API, search: "?scan=%2Fother.json" });
     await ready();
-    expect(container.querySelector(".header-evidence")).toBeNull();
+    expect(container.querySelector(".site-footer .evidence-link")).toBeNull();
     fireEvent.change(container.querySelector("input[name=repo]") as HTMLInputElement, { target: { value: "https://github.com/acme/app" } });
     fireEvent.submit(container.querySelector("form") as HTMLFormElement);
     await ready();
     await waitFor(() => {
-      expect(container.querySelector(".header-evidence")).not.toBeNull();
+      expect(container.querySelector(".site-footer .evidence-link")).not.toBeNull();
     });
     // The demo body names sexton-demo/fixture in its scan metadata, so the link carries that canonical URL.
     const repo = encodeURIComponent("https://github.com/sexton-demo/fixture");
-    const links = [...container.querySelectorAll(".header-evidence a")].map((a) => a.getAttribute("href"));
+    const links = [...container.querySelectorAll(".site-footer-line a.evidence-link")].map((a) => a.getAttribute("href"));
     expect(links).toEqual([`${API}/evidence?repo=${repo}&format=json`, `${API}/evidence?repo=${repo}&format=md`]);
     expect(rec.urls.some((u) => u.includes("evidence"))).toBe(false);
   });
 });
 
 describe("App loading, error and empty states (cemetery-polish task 8)", () => {
-  it("shows a loading card with a hidden spinner, removes it after the load and keeps the header summary", async () => {
+  it("shows a loading card with a hidden spinner, removes it after the load and keeps the header and its tag", async () => {
     const rec = recorder(() => cheapScan(2));
     const { container } = mount(rec);
     const card = screen.getByRole("status");
     expect(card.classList.contains("loading-card")).toBe(true);
     expect(card.querySelector(".loading-spinner")?.getAttribute("aria-hidden")).toBe("true");
-    expect(container.querySelector(".header-summary")).not.toBeNull();
+    expect(container.querySelector("header .scan-tag")?.textContent).toBe("Sample scan");
     await ready();
     expect(container.querySelector(".loading-card")).toBeNull();
-    expect(container.querySelector(".header-summary")).not.toBeNull();
+    expect(container.querySelector("header .scan-tag")?.textContent).toBe("Sample scan");
   });
 
-  it("shows the error panel with an alert, the heading and the code in a code element", async () => {
+  it("shows the failure card with an alert, the sentence as its heading, and no error code (12.4, 12.7)", async () => {
     const rec = recorder(() => cheapScan(1));
     const { container } = mount(rec, { search: "?scan=https%3A%2F%2Fevil.example%2Fx" });
     const alert = await screen.findByRole("alert");
-    expect(alert.querySelector("h2")?.textContent).toBe("Scan could not be loaded");
-    expect(alert.querySelector("code")?.textContent).toBe("scan-url-rejected");
-    expect(container.querySelector("main.panel-main")).not.toBeNull();
+    expect(alert.querySelector("h2")?.textContent).toBe("This scan could not be loaded.");
+    expect(alert.querySelector("code")).toBeNull();
+    expect(alert.textContent).not.toContain("scan-url-rejected");
+    expect(container.querySelector("main.home-main .scene-card")?.contains(alert)).toBe(true);
   });
 
   it("shows the empty state text and no canvas for a scan with no packages", async () => {
@@ -261,7 +266,7 @@ describe("App loading, error and empty states (cemetery-polish task 8)", () => {
     const { container } = mount(rec);
     await ready();
     expect(container.querySelector(".cemetery-empty")?.textContent).toBe("no direct dependencies in this scan");
-    expect(container.querySelector("canvas")).toBeNull();
+    expect(container.querySelector("canvas:not(.ghost-picture)")).toBeNull();
   });
 });
 
