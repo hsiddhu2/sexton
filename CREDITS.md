@@ -25,6 +25,14 @@ The characters (the zombie, the skeleton, the hand, the priest), the costumes, t
 
 ## Sound
 
-The site plays no generated sound and ships no audio file. It has a slot for one recorded music track; the slot is empty, so no track is credited here yet.
+The site plays no generated sound. It ships one recorded music track, `packages/web/public/music/ghost-party.mp3`, which plays only after the visitor presses Music. Its credit, as its licence asks:
+
+Ghost Party by The Piano Says | https://soundcloud.com/thepianosays
+
+Royalty Free Music by https://www.free-stock-music.com
+
+Creative Commons / Attribution 3.0 Unported License (CC BY 3.0)
+
+https://creativecommons.org/licenses/by/3.0/deed.en_US
 
 The SIL Open Font License, Version 1.1: https://openfontlicense.org/

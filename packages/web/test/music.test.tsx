@@ -1,6 +1,6 @@
-// Spec clean-site, task 10: the Track slot (requirement 14). With TRACK null no audio file ships and no Music button
-// renders (the CSP half is in vite-csp.test.ts); with a track the button starts off, one audio element is made on the first
-// turn-on, the Characters' Pose clock follows the beat, and the credit shows.
+// Spec clean-site, tasks 10 and 16: the Track slot (requirement 14). It holds Ghost Party, whose one file ships under
+// public (the CSP half is in vite-csp.test.ts); the button starts off, one audio element is made on the first turn-on,
+// the Characters' Pose clock follows the beat, and the credit shows word for word.
 import { act, cleanup, render, renderHook, screen, waitFor } from "@testing-library/react";
 import fc from "fast-check";
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -13,7 +13,7 @@ import { Header } from "../src/header/Header.js";
 import { headerModel } from "../src/header/header-model.js";
 import { SiteFooter } from "../src/home/SiteFooter.js";
 import type { Popover } from "../src/load/screen-state.js";
-import { beatMs, creditLine, TRACK, type Track } from "../src/music/track.js";
+import { beatMs, creditParts, TRACK, type Track } from "../src/music/track.js";
 import { useMusic, type MakeAudio } from "../src/music/use-music.js";
 import { planScene } from "../src/scene/layout.js";
 import { FRAME_MS, poseAt, poseClock, poseStepMs, STILL_POSE } from "../src/scene/motion.js";
@@ -31,9 +31,18 @@ afterEach(() => {
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PUBLIC = resolve(HERE, "../public");
 const README = readFileSync(resolve(HERE, "../../../README.md"), "utf8");
+const CREDITS = readFileSync(resolve(HERE, "../../../CREDITS.md"), "utf8");
 const AUDIO = /\.(mp3|ogg|oga|opus|wav|flac|aac|m4a|weba|webm|mid|midi)$/i;
 
-const SAMPLE: Track = { file: "/music/sample.mp3", title: "A Title", artist: "An Artist", licence: "CC BY 4.0", source: "https://example.org/track", bpm: 120 };
+const SAMPLE: Track = {
+  file: "/music/sample.mp3",
+  title: "A Title",
+  artist: "An Artist",
+  licence: "CC BY 4.0",
+  source: "https://example.org/track",
+  bpm: 120,
+  credit: ["A Title by An Artist | https://example.org/track", "CC BY 4.0"],
+};
 
 function files(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -42,13 +51,31 @@ function files(dir: string): string[] {
   });
 }
 
-describe("the empty Track slot (14.1, 1.15)", () => {
-  it("is empty, and no audio file ships under public", () => {
-    expect(TRACK).toBeNull();
-    expect(files(PUBLIC).filter((f) => AUDIO.test(f))).toEqual([]);
+/** The credit of Ghost Party, word for word, as its licence asks (14.6). */
+const GHOST_PARTY_CREDIT = [
+  "Ghost Party by The Piano Says | https://soundcloud.com/thepianosays",
+  "Royalty Free Music by https://www.free-stock-music.com",
+  "Creative Commons / Attribution 3.0 Unported License (CC BY 3.0)",
+  "https://creativecommons.org/licenses/by/3.0/deed.en_US",
+];
+
+describe("the Track slot holds Ghost Party (14.1, 14.2, 14.6, 14.7, 1.15)", () => {
+  it("names the track, its licence, source and tempo, and ships its one audio file under public", () => {
+    expect(TRACK).toEqual({
+      file: "/music/ghost-party.mp3",
+      title: "Ghost Party",
+      artist: "The Piano Says",
+      licence: "CC BY 3.0",
+      source: "https://soundcloud.com/thepianosays",
+      bpm: 110,
+      credit: GHOST_PARTY_CREDIT,
+    });
+    const audio = files(PUBLIC).filter((f) => AUDIO.test(f));
+    expect(audio).toEqual([join(PUBLIC, "music", "ghost-party.mp3")]);
+    expect(statSync(audio[0] ?? "").size).toBeGreaterThan(0);
   });
 
-  it("renders no Music button and makes no audio element on the page", async () => {
+  it("renders the Music button off, and makes no audio element on the page until it is pressed", async () => {
     const audio = vi.spyOn(window, "Audio");
     const make = vi.spyOn(document, "createElement");
     const fetchFn = ((): Promise<Response> => Promise.resolve(new Response(readDemoScanText(), { status: 200 }))) as typeof fetch;
@@ -56,19 +83,20 @@ describe("the empty Track slot (14.1, 1.15)", () => {
     await waitFor(() => {
       expect(screen.queryByRole("status")).toBeNull();
     });
-    expect(screen.queryByRole("button", { name: "Music" })).toBeNull();
-    expect(container.querySelector("audio, .footer-credit")).toBeNull();
+    const music = screen.getByRole("button", { name: "Music" });
+    expect(music.getAttribute("aria-pressed")).toBe("false");
+    expect(container.querySelector("audio")).toBeNull();
     expect(audio).not.toHaveBeenCalled();
     expect(make.mock.calls.filter(([tag]) => String(tag).toLowerCase() === "audio")).toEqual([]);
+    expect([...container.querySelectorAll(".footer-credit-line")].map((l) => l.textContent)).toEqual(GHOST_PARTY_CREDIT);
   });
 
-  it("puts the credit in README.md once a track is set (14.6)", () => {
-    if (TRACK === null) {
-      expect(README).not.toMatch(/^Music: “/m);
-      return;
+  it("puts the credit in README.md and CREDITS.md word for word (14.6)", () => {
+    expect(TRACK).not.toBeNull();
+    for (const text of [README, CREDITS]) {
+      const lines = text.split("\n").map((l) => l.trim());
+      for (const line of GHOST_PARTY_CREDIT) expect(lines, line).toContain(line);
     }
-    expect(README).toContain(creditLine(TRACK));
-    expect(README).toContain(TRACK.source);
   });
 });
 
@@ -104,14 +132,34 @@ describe("the Music button and the credit, with a track (14.2, 14.6, 1.15)", () 
     expect(music.getAttribute("aria-pressed")).toBe("true");
   });
 
-  it("shows the credit line with an https source link in the site footer", () => {
+  it("shows the credit line by line in the site footer, linking only its https addresses", () => {
     render(<SiteFooter model={headerModel(cheapScan(1), true)} track={SAMPLE} />);
-    const credit = document.querySelector(".footer-credit") as HTMLElement;
-    expect(credit.textContent).toBe("Music: “A Title” by An Artist, CC BY 4.0. Source");
-    expect(credit.querySelector("a")?.getAttribute("href")).toBe("https://example.org/track");
+    const lines = [...document.querySelectorAll(".footer-credit .footer-credit-line")];
+    expect(lines.map((l) => l.textContent)).toEqual(["A Title by An Artist | https://example.org/track", "CC BY 4.0"]);
+    expect([...document.querySelectorAll(".footer-credit a")].map((a) => a.getAttribute("href"))).toEqual(["https://example.org/track"]);
     cleanup();
-    render(<SiteFooter model={headerModel(cheapScan(1), true)} track={{ ...SAMPLE, source: "javascript:alert(1)" }} />);
+    render(<SiteFooter model={headerModel(cheapScan(1), true)} track={{ ...SAMPLE, credit: ["Source javascript:alert(1) http://example.org"] }} />);
     expect(document.querySelector(".footer-credit a")).toBeNull();
+    expect(document.querySelector(".footer-credit")?.textContent).toBe("Source javascript:alert(1) http://example.org");
+    cleanup();
+    render(<SiteFooter model={headerModel(cheapScan(1), true)} track={null} />);
+    expect(document.querySelector(".footer-credit")).toBeNull();
+  });
+
+  it("splits a credit line into its text and its https addresses, losing no character", () => {
+    expect(creditParts("Ghost Party by The Piano Says | https://soundcloud.com/thepianosays")).toEqual([
+      { text: "Ghost Party by The Piano Says | ", href: null },
+      { text: "https://soundcloud.com/thepianosays", href: "https://soundcloud.com/thepianosays" },
+    ]);
+    fc.assert(
+      fc.property(fc.array(fc.oneof(fc.string(), fc.webUrl()), { maxLength: 5 }), (parts) => {
+        const line = parts.join(" ");
+        const out = creditParts(line);
+        expect(out.map((p) => p.text).join("")).toBe(line);
+        for (const p of out) if (p.href !== null) expect(p.href).toMatch(/^https:\/\/[^\s|]+$/);
+      }),
+      { numRuns: 100 },
+    );
   });
 });
 

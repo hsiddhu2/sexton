@@ -63,10 +63,17 @@ describe("vite CSP origin", () => {
 
   // Spec clean-site, 14.8: media from the page origin only, and only while a track is set in the Track slot.
   it("adds media-src 'self' only while a track is set", () => {
-    const track: Track = { file: "/music/t.mp3", title: "T", artist: "A", licence: "CC BY 4.0", source: "https://example.org/t", bpm: 120 };
+    const track: Track = { file: "/music/t.mp3", title: "T", artist: "A", licence: "CC BY 4.0", source: "https://example.org/t", bpm: 120, credit: ["T by A"] };
     expect(cspFor("/api", null)).not.toContain("media-src");
     expect(cspFor("/api", track).match(/media-src [^;]*;/g)).toEqual(["media-src 'self';"]);
     expect(cspFor("https://api.sexton.example", track)).toContain("connect-src 'self' https://api.sexton.example; ");
     expect(cspFor("/api").includes("media-src")).toBe(TRACK !== null);
+  });
+
+  // Spec clean-site, task 16: Ghost Party is in the slot, so the build allows media from the page origin and nowhere else.
+  it("allows media-src 'self' and nothing more with the track in the slot", () => {
+    expect(TRACK).not.toBeNull();
+    expect(cspFor("/api").match(/media-src [^;]*;/g)).toEqual(["media-src 'self';"]);
+    expect(cspFor("https://api.sexton.example").match(/media-src [^;]*;/g)).toEqual(["media-src 'self';"]);
   });
 });

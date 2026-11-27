@@ -90,6 +90,9 @@ describe("the Inspector's three signals", () => {
     );
     expect(pickSignals(changed)[0]).toMatchObject({ label: "Maintainer change", value: "alice, bob became alice, mallory", tone: "bad" });
     expect(pickSignals(base)[2]).toMatchObject({ label: "Last publish", value: "1 Jan 2026", tone: "ok" });
+    // A blank maintainer name is no name: the row reads "none", never an empty value (seed 995333568 found it).
+    const blank = pickSignals(withSignal(cheapPackage("a", "Possessed"), "maintainers", on(["", " "])));
+    expect(blank.find((row) => row.key === "maintainers")).toMatchObject({ value: "none", tone: "ok" });
   });
 
   it("gives three labelled rows for any package and never throws, whatever the signal values hold", () => {

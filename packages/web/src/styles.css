@@ -1391,6 +1391,22 @@ a {
   color: var(--ui-accent);
 }
 
+/* The track's credit, word for word, one line each, under the footer line (14.6). */
+.footer-credit {
+  margin: 8px 0 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.footer-credit-line {
+  display: block;
+  overflow-wrap: break-word;
+}
+
+.footer-credit a {
+  color: var(--ui-accent);
+}
+
 /* The Guide page and the Tour, in their first form. */
 .guide {
   box-sizing: border-box;
@@ -1756,9 +1772,13 @@ a {
   .legend {
     position: static;
   }
-  /* The wordmark and the four buttons share the first row at 390 px, as in the approved design (15.1). */
+  /* The wordmark and the four buttons, Music among them, share the first row at 390 px, as in the approved design
+     (15.1): the buttons are 8 px in, and "What is Sexton?" drops its decorative book glyph and keeps its words. */
   .ib {
-    padding: 0 10px;
+    padding: 0 8px;
+  }
+  .ib-guide svg {
+    display: none;
   }
   .home {
     padding: 14px;

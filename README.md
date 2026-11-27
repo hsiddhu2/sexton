@@ -6,7 +6,15 @@ Sexton finds the dependencies that will hurt you, proves it, and opens the pull 
 
 Characters are original vector art. The ghost is original art.
 
-The site plays no sound. It has a slot for one recorded music track, and the slot is empty today.
+The site plays no generated sound. Music is off until you press the Music button; it then plays one recorded track, Ghost Party, in a loop, and the characters dance to its beat. Under reduced motion they hold still. The track's credit:
+
+Ghost Party by The Piano Says | https://soundcloud.com/thepianosays
+
+Royalty Free Music by https://www.free-stock-music.com
+
+Creative Commons / Attribution 3.0 Unported License (CC BY 3.0)
+
+https://creativecommons.org/licenses/by/3.0/deed.en_US
 
 Status: pre-release. Release 0.1 is due on 4 December 2026. Each feature below says whether it is on `main` today, in progress, or planned.
 

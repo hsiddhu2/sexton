@@ -193,7 +193,7 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin }: AppProps) {
   const retry = useCallback((): void => {
     loadSource(shown);
   }, [loadSource, shown]);
-  // The Track slot (14): no track, no button, no audio element and the normal idle motion.
+  // The Track slot (14): Music starts off, with no audio element and the normal idle motion until it is pressed.
   const music = useMusic(TRACK);
   const [welcome, setWelcome] = useState(() => !welcomeClosed());
   const hideWelcome = useCallback((): void => {

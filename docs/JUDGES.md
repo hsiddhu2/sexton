@@ -12,7 +12,7 @@ One page. Everything named here is on `main`. The hosted site is deployed by han
 1. Hover a grave, or move to it with Tab and the arrow keys. The details panel shows its name, version, state, a plain sentence of why, and three of its signals. "Fix in this order" lists the packages to fix first. A chip over the cemetery picks one state and dims the rest, and "List" shows the packages as a table.
 2. Click a grave, or press Enter. The drawer opens with three tabs: Evidence (the state, the reason and every signal with its source and the time it was read), The fix (the plan when there is one, its change to package.json and the pull request body Sexton would open) and History. Escape closes it.
 3. Press "Watch a real attack" under the cemetery and pick axios or keyv. Each step says what happened and what Sexton shows. Press "Next step" to move on, or "Play all".
-4. "What is Sexton?" opens a two-minute guide. Legend explains each grave. Tour points out the three main parts of the page. The site plays no sound.
+4. "What is Sexton?" opens a two-minute guide. Legend explains each grave. Tour points out the three main parts of the page. Music is off until you press it; then a recorded track plays and the characters dance to its beat.
 5. The links in the site footer download the evidence pack as JSON and as Markdown.
 
 Type a public GitHub repository, as owner/name or a github.com link, in the header field and press Scan for a live scan. The "Open pull request" button on the drawer's fix tab appears only on a live scan of the demo repository `https://github.com/hsiddhu2/sexton-demo`, and it opens a real pull request there.

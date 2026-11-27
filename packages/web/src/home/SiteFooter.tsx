@@ -1,9 +1,9 @@
 // The site footer (spec clean-site, design C15, requirement 16.12): the scan time in a time element, the policy line
-// as main writes it, the evidence links where main offers them, and the track credit slot.
+// as main writes it, the evidence links where main offers them, and under them the track's credit, line by line.
 import type { HeaderModel } from "../header/header-model.js";
 import { failingRulesText } from "../header/failing-rules-text.js";
 import { ScanTime } from "../header/ScanTime.js";
-import { creditLine, type Track } from "../music/track.js";
+import { creditParts, type Track } from "../music/track.js";
 
 export const EVIDENCE_JSON_TEXT = "Evidence JSON";
 export const EVIDENCE_MARKDOWN_TEXT = "Evidence Markdown";
@@ -36,17 +36,24 @@ export function SiteFooter({ model, track = null }: SiteFooterProps) {
             </a>
           </>
         )}
-        {track === null ? null : (
-          <span className="footer-credit">
-            {creditLine(track)}{" "}
-            {track.source.startsWith("https://") ? (
-              <a href={track.source} target="_blank" rel="noopener noreferrer">
-                Source
-              </a>
-            ) : null}
-          </span>
-        )}
       </p>
+      {track === null ? null : (
+        <p className="footer-credit">
+          {track.credit.map((line) => (
+            <span className="footer-credit-line" key={line}>
+              {creditParts(line).map((part, i) =>
+                part.href === null ? (
+                  part.text
+                ) : (
+                  <a key={i} href={part.href} target="_blank" rel="noopener noreferrer">
+                    {part.text}
+                  </a>
+                ),
+              )}
+            </span>
+          ))}
+        </p>
+      )}
     </footer>
   );
 }

@@ -10,6 +10,8 @@ const MEASURED = [".foot-bar", ".site-footer"] as const;
 
 /** The scrubber notes an earlier date adds to the Footer bar; the reserve leaves them out (D1). */
 const NOTES = ".foot-bar .scrub-note";
+/** The track's credit under the site footer line; the reserve leaves it out, so it sits below the fold (14.6). */
+const CREDIT = ".site-footer .footer-credit";
 
 /**
  * Pure. The reserve from the measured heights, less the height of the earlier date's notes, so the Scene and its fit
@@ -39,7 +41,10 @@ export function useReserve(key: unknown): number {
     const measure = (): void => {
       // A note row also adds the scrubber's row gap above it.
       const notes = [...document.querySelectorAll<HTMLElement>(NOTES)].reduce((a, n) => a + outerHeight(n) + NOTE_GAP, 0);
-      setReserve(reserveFor(nodes.map((n) => n.getBoundingClientRect().height), notes));
+      const credit = document.querySelector<HTMLElement>(CREDIT);
+      const creditHeight = credit === null ? 0 : outerHeight(credit);
+      const heights = nodes.map((n) => n.getBoundingClientRect().height - (n.matches(".site-footer") ? creditHeight : 0));
+      setReserve(reserveFor(heights, notes));
     };
     measure();
     window.addEventListener("resize", measure);

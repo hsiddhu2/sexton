@@ -33,7 +33,8 @@ const OTHER: readonly [SignalName, SignalName, SignalName] = ["advisories", "dep
 type Rec = Readonly<Record<string, unknown>>;
 const isRec = (v: unknown): v is Rec => typeof v === "object" && v !== null && !Array.isArray(v);
 const str = (v: unknown): string | null => (typeof v === "string" ? v : null);
-const strings = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
+/** The non-blank strings of a list; a blank name would make an empty row (found by the reason-family property). */
+const strings = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && x.trim() !== "") : []);
 
 function list(names: readonly string[]): string {
   if (names.length === 0) return "none";

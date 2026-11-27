@@ -293,3 +293,21 @@ Notes:
 2. design.md's review protocol said "Before the report"; it now says "After the last task", which matches task 12.3.
 
 Gates: typecheck, lint (zero warnings) and test pass, 2386 tests across 6 workspaces. Playwright, from packages/web on its own port: 72 passed. Repaint medians at 300 graves at 1440 by 900: 2.40 ms at rest, 1.70 ms with the Dead filter, 1.65 ms with the hover ring.
+
+## Ghost Party in the music slot
+
+Task 16: the owner confirmed Ghost Party by The Piano Says (CC BY 3.0). The MP3 ships under public/music, `TRACK` holds it at 110 BPM with its four credit lines, the Music button shows and starts off, and the build CSP gains `media-src 'self'`. The site footer, README.md and CREDITS.md carry the credit word for word. With the fourth button the phone header had wrapped to three rows at 390 px; the buttons are now 8 px in and "What is Sexton?" drops its decorative glyph under 700 px, so the header is one row plus the Scan field again.
+
+Independent review before the commit. Verdict: ready. No defect found: the four credit lines match byte for byte in all three places, only https addresses become links, the beat reaches the Characters only while Music is on and motion is allowed, the probes for no AudioContext and no audio element still hold in every flow that does not press Music, and the new case stubs play and pause so no sound plays.
+
+Notes:
+
+1. design.md and web.md said the credit sat below the fold at 1440 by 900; the first two lines show at the foot of the viewport. Reworded.
+2. `creditParts` would take a trailing "." or ")" into a link if a future credit had one right after an address. The four lines have none; left as it is.
+3. The MP3 is served with `Cache-Control: no-cache` from the default behaviour, so a browser revalidates it (a 304, not a new download) on a later visit. Acceptable; no infra change.
+4. The reason-family property found a blank maintainer name giving an empty Inspector value; fixed in `pick-signals.ts` with one assertion, recorded in design.md.
+5. Under heavy machine load the three Part box property tests ran past their 20 s timeout in two gate runs; they pass alone and in a full run at normal load. Nothing in this change touches them.
+
+Infra, read only: the CloudFront header CSP is `default-src 'self'` with no media-src, so same-origin media is allowed; an unhashed path such as /music/ghost-party.mp3 takes the default behaviour with `Cache-Control: no-cache` (Property 1 of the cache-header tests). The web deployment is a CDK BucketDeployment of the whole dist folder with no size cap or file-type list, and no deploy script lists types or sizes. No infra change is needed.
+
+Gates: typecheck, lint (zero warnings) and test pass, 2388 tests across 6 workspaces. Playwright, from packages/web on its own port: 73 passed. Repaint medians at 300 graves at 1440 by 900: 2.35 ms at rest, 1.60 ms with the Dead filter, 1.65 ms with the hover ring. The production build holds dist/music/ghost-party.mp3 at 4,884,945 bytes.

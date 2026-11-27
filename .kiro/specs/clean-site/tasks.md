@@ -152,3 +152,10 @@ Run-time notes:
     - _Requirements: 13.1, 13.3, 17.5, 18.8, 19.1, 19.10_
   - [x] 15.2 Give the Inspector, the Fix order card and the Step panel one height at each layout with clamped lines and `panel/Clamped.tsx`; keep the Scene card from stretching; e2e check that no box moves on hover, select, List rows and Replay Steps at 1440 by 900 and 390 by 844
     - _Requirements: 3.5, 3.26, 3.27_
+
+- [x] 16. Ghost Party in the music slot
+  - _Requirements: 14.1 to 14.8, 1.15, 16.12_
+  - [x] 16.1 Ship `public/music/ghost-party.mp3` and set `TRACK` (Ghost Party, The Piano Says, CC BY 3.0, 110 BPM) with its four credit lines; show them in the site footer, README.md and CREDITS.md; keep the phone header on one row at 390 px
+    - _Requirements: 14.1, 14.2, 14.6, 1.15, 16.12_
+  - [x] 16.2 Update the music, CSP and footer tests and the e2e header case; add the e2e case that Music makes one looping audio element from the origin and the next press pauses it
+    - _Requirements: 14.3, 14.4, 14.5, 14.7, 14.8_

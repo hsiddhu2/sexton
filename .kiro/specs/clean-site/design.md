@@ -36,7 +36,7 @@ The approved design was opened in a browser on 26 November 2026 and every flow w
 1. The approved design wins over any other description of the look. Real data wins over the approved design; the layout stays.
 2. The canvas Scene and Characters are not touched (the owner: "keep the characters, do not touch them").
 3. From spec/calm-first-visit only the way back and the addresses carry over. Not the speech bubble timing, the guide card or the per-state sounds.
-4. No GitHub sign-in. No audio file until the owner names the track and its licence; until then the Music button is not rendered.
+4. No GitHub sign-in. No audio file until the owner names the track and its licence; until then the Music button is not rendered. On 26 November 2026 the owner confirmed Ghost Party by The Piano Says (CC BY 3.0), so it ships and the button shows (task 16).
 5. Per-step replay text goes in the replay files and is written only from sources each replay already cites.
 6. Every Guide page statement matches README.md; the page changes, not the README.
 7. Nothing is pushed without the owner's `push`. The owner does a cold look before any push.
@@ -68,7 +68,7 @@ They are then extended with `page` and `list` and the canonical form. The App wi
 | No "Back to now" | "Back to now" shows while an earlier date is chosen | A one-press way back to the scan date. The scrubber ticks alone are hard to hit by keyboard. |
 | No too-large line | Kept | main's guard (timelinesOmitted) needs its explanation. |
 | "Reconstructed from public reports. Not a live scan." not shown | Shown once, in the Why card | product.md's text, said once. |
-| Music pop-over with "Choose a track" from disk and "Dance without sound" | Not rendered until the Track slot is set; then one on/off button | One recorded track; the button is hidden until the owner names it. |
+| Music pop-over with "Choose a track" from disk and "Dance without sound" | Not rendered until the Track slot is set; then one on/off button, off at load | One recorded track, Ghost Party, set in task 16. |
 | Graves drawn as SVG with plates; the Step title as a caption under the replay grave | Canvas graves with Inter name labels; the Step title in the Panel | The canvas stays. A DOM caption under the grave would sit in its Art box. |
 | JetBrains Mono for versions and diffs | System monospace stack | One text face (Inter); no third font file. |
 | Hash addresses (#pkg-lodash) | Query addresses (?grave=lodash) | README links use ?replay=axios; the carried address module uses the query. |
@@ -372,8 +372,8 @@ export function markTerms(text: string): readonly ({ text: string } | { text: st
 `music/track.ts`:
 
 ```ts
-export interface Track { readonly file: string; readonly title: string; readonly artist: string; readonly licence: string; readonly source: string; readonly bpm: number }
-export const TRACK: Track | null = null;   // set only when the owner names the track and its licence
+export interface Track { readonly file: string; readonly title: string; readonly artist: string; readonly licence: string; readonly source: string; readonly bpm: number; readonly credit: readonly string[] }
+export const TRACK: Track | null = { file: "/music/ghost-party.mp3", title: "Ghost Party", artist: "The Piano Says", licence: "CC BY 3.0", source: "https://soundcloud.com/thepianosays", bpm: 110, credit: [/* the four credit lines, word for word */] };
 ```
 
 The parts:
@@ -384,7 +384,7 @@ The parts:
   - without one, the 12 Poses a second of today;
   - under reduced motion, a still Pose (14.3 to 14.5).
 - The CSP plugin in `vite.config.ts` adds `media-src 'self'` only when `TRACK` is set, with a vite-csp test (14.8).
-- The candidate the owner has named (Ghost Party, The Piano Says, CC BY 3.0) is not shipped until he confirms it.
+- The owner confirmed Ghost Party (The Piano Says, CC BY 3.0) on 26 November 2026. It ships as `public/music/ghost-party.mp3`; Music is off at load and the Characters follow its 110 BPM beat only while Music is on and motion is allowed.
 
 ### C13. Layouts and phone (requirement 15)
 
@@ -412,7 +412,7 @@ One line under the main area holds:
 - the scan time, in a `<time>` element;
 - main's policy line (status, label and failing rules);
 - "Evidence JSON" and "Evidence Markdown", as main offers them;
-- the track credit, when a track is set.
+- the track credit, when a track is set: its four lines word for word, under the line, each https address a link.
 
 The Sample's evidence downloads keep the Fixture name inside the files. 1.7 covers the pages, not the downloaded files.
 
@@ -603,7 +603,7 @@ For every Claim in the Claim registry, README.md contains its `readme` text. The
   - the Replay Steps for both fixtures, with distinct texts and the Step count;
   - the Guide page sections and the Welcome bar with and without storage;
   - the Legend with its eight entries and the Tour, including with no API base;
-  - the Music button absent while `TRACK` is null;
+  - the Music button shown, off, with no audio element before the first turn-on;
   - each failure card, including 429 with code `rate-limited`;
   - the three notices;
   - the reason-family drift check (web and api halves).
@@ -615,7 +615,7 @@ For every Claim in the Claim registry, README.md contains its `readme` text. The
   - the List of 300 packages, from a generated fixture, updating within 100 ms per key;
   - the repaint budget at 300 graves;
   - no request outside the origin and the API base;
-  - no AudioContext and no audio element created.
+  - no AudioContext, and no audio element until Music is pressed; then exactly one, looping, from the page origin, paused by the next press.
 - **Replay texts:** every Step and why sentence is checked by hand against its cited source during the build, with the source key beside it in replay-facts.mjs.
 
 ### Deliberate test changes
@@ -644,7 +644,7 @@ The build lists each changed test in "Decisions made during implementation" with
 ### Review protocol
 
 - **Before every commit:** typecheck, lint and test at the root with zero warnings, then an independent review by a reviewer that has not seen the implementation. The reviewer gets this folder, the diff against main, docs/requirements.md and the steering files.
-- **After the last task:** the built site, in a fresh profile at 1440 by 900 and 390 by 844, through every flow of the approved design. With the Music button absent, the review checks that no audio is created. The built site is placed next to the approved design, and every difference is listed with its reason.
+- **After the last task:** the built site, in a fresh profile at 1440 by 900 and 390 by 844, through every flow of the approved design. With Music off, the review checks that no audio is created. The built site is placed next to the approved design, and every difference is listed with its reason.
 
 ## Calls made without a user decision
 
@@ -989,3 +989,19 @@ The cold look: no layout shift on hover (task 15.2):
 13. **Notes from the independent review, kept as they are.** The `title` of a cut box is a native tooltip on Panel text, never over a grave, and shows only on text that is cut, which no real text is at 390 px and more, so 4.1 and 19.9 hold. If a future text passed its line budget the card would cut it with an ellipsis, never the buttons, since every line that follows the grave is clamped. The Legend's Restless meaning ("no release in two years") is a Claim of the Guide page and the Legend, not an Epitaph line, so it was left as the owner's decision covered only the two Epitaph lines.
 14. **Checks.** The whole Playwright suite: 72 passed. Repaint medians at 300 graves at 1440 by 900: 2.55 ms at rest, 1.60 ms with the Dead filter, 1.60 ms with the hover ring (16 ms budget).
 
+### Task 16: Ghost Party in the music slot
+
+1. **The track.** The owner confirmed Ghost Party by The Piano Says, CC BY 3.0, on 26 November 2026. `public/music/ghost-party.mp3` (4,884,945 bytes, 320 kbps MP3) ships unchanged, and `TRACK` holds its file, title, artist, licence, source (https://soundcloud.com/thepianosays) and tempo (110 BPM, so a Pose step every 272.7 ms while Music plays).
+2. **The credit.** The licence's credit is four lines, kept word for word in `Track.credit` (a new field: the credit names the music site and the licence address, which the other fields do not hold). `creditLine` went; the site footer shows the four lines under its one line, each https address as a link of its own text (`creditParts`, pure), and nothing else as a link. README.md and CREDITS.md hold the same four lines, each its own paragraph so no line gains a character.
+3. **The footer stays one line.** The credit sits under the footer line, not in it, so the line of 16.12 is unchanged. `useReserve` leaves the credit's height out of the measured site footer, as it leaves out the scrubber notes (D1), so the Scene and its fit scale are as before; at 1440 by 900 the first credit lines show at the foot of the viewport and the rest is a short scroll down.
+4. **The phone header.** With Music shown, the wordmark and four buttons no longer fitted one row at 390 px (the header grew to 157 px). Under 700 px the header buttons now have 8 px side padding and "What is Sexton?" hides its decorative book glyph (it keeps its words), so at 390 px they share the first row again (header 111 px) and at 360 px the buttons wrap to their own row, as before.
+5. **The CSP.** With the track set, the meta CSP has `media-src 'self'` and nothing more for media; vite.config.ts already followed `TRACK` (task 10). The CloudFront header CSP is `default-src 'self'` with no media-src, so it already allows same-origin media, and `/music/ghost-party.mp3` takes the default behaviour with `Cache-Control: no-cache`. No infra change is needed; the web deployment has no size cap or type list.
+6. **A blank maintainer name.** The reason-family property found (seed 995333568) that a maintainers list of blank strings gave the Inspector an empty value. `strings` in `panel/pick-signals.ts` now drops blank strings, so the row reads "none". Not a music change; it blocked the gates.
+7. **Tests changed in task 16.**
+   - `test/music.test.tsx`: "the empty Track slot" became "the Track slot holds Ghost Party": the slot's fields and credit, the one audio file under public (was: none); the Music button shown, off, with no audio element made and the four credit lines in the footer (was: no button); README.md and CREDITS.md hold the four lines (was: no credit line). The footer case now checks the credit line by line and that only https addresses are links. New: `creditParts` keeps every character and links only https addresses (fast-check, 100 runs).
+   - `test/vite-csp.test.ts`: the sample track gains its credit; new case: the build's CSP has exactly `media-src 'self'`.
+   - `test/app.test.tsx` and `test/home.test.tsx`: the evidence links are read from the footer line (`.site-footer-line a`), since the credit adds its own links under it; the home case also checks the four credit lines.
+   - `test/reason-family.test.ts`: one assertion for a blank maintainer name.
+   - `e2e/clean.spec.ts`: the header case expects the Music button, off (was: absent). New: pressing Music makes exactly one looping audio element whose source is `/music/ghost-party.mp3` on the page origin, and the next press pauses it; play and pause are stubbed, so no sound plays. Every other case still checks that no AudioContext and no audio element is made, since none presses Music.
+   - `docs/cemetery.png` and `docs/replay-axios.png` are retaken by `smoke.spec.ts`: the header now shows the Music button, and the cemetery picture shows the start of the credit under the footer line.
+8. **Checks.** The whole Playwright suite: 73 passed. Repaint medians at 300 graves at 1440 by 900: 2.35 ms at rest, 1.60 ms with the Dead filter, 1.65 ms with the hover ring.

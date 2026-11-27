@@ -5,7 +5,7 @@
 // - at most one View owner and at most one Pop-over (17.1);
 // - no visible DOM element over a grave's Art box but the allowed ones (3.15), on Home in every case that shows it;
 // - no request outside the page origin and the API base (16.13);
-// - no AudioContext and no audio element (4.3, 14.7).
+// - no AudioContext and no audio element while Music is not pressed (4.3, 14.7).
 // Task 13.4 adds the mischief of requirement 19: the Epitaph line, the Dry lines, the Scanning line and the still Guide
 // ghost in the Welcome bar and the Tour card, none of them over a grave.
 // Axe runs on every view (16.9), and the Scene repaints 300 graves within the frame budget (16.2).
@@ -364,8 +364,9 @@ for (const size of SIZES) {
       await expect(page.getByRole("button", { name: "What is Sexton?" })).toBeVisible();
       await expect(page.getByRole("button", { name: "Legend" })).toBeVisible();
       await expect(page.getByRole("button", { name: "Tour" })).toBeVisible();
-      // 1.15: no track is set, so no Music button.
-      await expect(page.getByRole("button", { name: "Music" })).toHaveCount(0);
+      // 1.15 and 14.2: a track is set, so the Music button shows, off; no audio element exists until it is pressed.
+      await expect(page.getByRole("button", { name: "Music" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Music" })).toHaveAttribute("aria-pressed", "false");
       if (size.width >= 1300) await expect(page.locator(".scan-tag")).toHaveText("Sample scan");
       // 1.2 at the wide size: one row of at most 64 px. 15.1 at the phone size: the Scan field on its own row.
       const headerBox = await header.boundingBox();
@@ -1535,5 +1536,74 @@ test("requirement 16.2: 300 graves repaint within the frame budget at 1440 by 90
   await time("with the hover ring");
   await expectGravesClear(page);
   await checkProbe(page, origin, g);
+  await context.close();
+});
+
+/** Runs in the page before the site: play and pause only count, so no sound plays, and every audio element is kept. */
+function quietMedia(): void {
+  const w = window as unknown as { __media: { plays: number; pauses: number; made: HTMLAudioElement[] } };
+  const media = { plays: 0, pauses: 0, made: [] as HTMLAudioElement[] };
+  w.__media = media;
+  HTMLMediaElement.prototype.play = function play(): Promise<void> {
+    media.plays += 1;
+    return Promise.resolve();
+  };
+  HTMLMediaElement.prototype.pause = function pause(): void {
+    media.pauses += 1;
+  };
+  const Real = window.Audio;
+  window.Audio = new Proxy(Real, {
+    construct(target, args, next) {
+      const element = Reflect.construct(target, args, next) as HTMLAudioElement;
+      media.made.push(element);
+      return element;
+    },
+  });
+}
+
+// Spec clean-site, task 16 (14.2, 14.3, 14.4, 14.7, 14.8): pressing Music makes exactly one looping audio element from
+// the page origin, and pressing it again pauses that element. Play is stubbed, so no sound plays in the test.
+test("requirement 14.7: Music makes one looping audio element from the site origin on the first press, and the next press pauses it", async ({ browser, baseURL }) => {
+  const origin = new URL(baseURL ?? "http://localhost:4173").origin;
+  const context = await browser.newContext();
+  await context.addInitScript(quietMedia);
+  const page = await freshPage(context, SIZES[0] ?? { name: "1440 by 900", width: 1440, height: 900, narrow: false });
+  const g = await guard(page, origin);
+  await page.goto("/");
+  await expect(grave(page, "left-padder")).toHaveCount(1);
+  const music = page.getByRole("button", { name: "Music" });
+  await expect(music).toHaveAttribute("aria-pressed", "false");
+  // Before the press: the probe holds, with no AudioContext and no audio element.
+  await checkProbe(page, origin, g);
+  const media = () =>
+    page.evaluate(() => {
+      const m = (window as unknown as { __media: { plays: number; pauses: number; made: HTMLAudioElement[] } }).__media;
+      return { plays: m.plays, pauses: m.pauses, made: m.made.map((a) => ({ src: a.src, loop: a.loop })) };
+    });
+  expect(await media()).toEqual({ plays: 0, pauses: 0, made: [] });
+
+  await music.click();
+  await expect(music).toHaveAttribute("aria-pressed", "true");
+  const on = await media();
+  expect(on.made).toHaveLength(1);
+  expect(on.made[0]?.loop).toBe(true);
+  expect(new URL(on.made[0]?.src ?? "").origin).toBe(origin);
+  expect(new URL(on.made[0]?.src ?? "").pathname).toBe("/music/ghost-party.mp3");
+  expect(on.plays).toBe(1);
+  expect(on.pauses).toBe(0);
+
+  await music.click();
+  await expect(music).toHaveAttribute("aria-pressed", "false");
+  const off = await media();
+  expect(off.made).toHaveLength(1);
+  expect(off.pauses).toBe(1);
+  expect(off.plays).toBe(1);
+
+  const probe = await page.evaluate(() => window.__cleanProbe);
+  expect(probe?.audioContexts, "AudioContexts made").toBe(0);
+  expect(probe?.audioElements, "audio elements made").toBe(1);
+  expect(await page.locator("audio").count()).toBe(0);
+  const outside = g.requests.filter((u) => new URL(u).origin !== origin);
+  expect(outside, "requests outside the page origin").toEqual([]);
   await context.close();
 });
