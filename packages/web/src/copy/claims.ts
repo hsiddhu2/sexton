@@ -19,6 +19,8 @@ const README_PUBLIC = "It reads a GitHub repository only when it is public.";
 const README_SAFE_BUMP = "Sexton proposes a bump only to a version that passes its checks; otherwise it proposes no change.";
 const README_SOURCES = "Sexton sees what the npm registry, OSV, deps.dev and GitHub publish.";
 const README_GRAVE = "Each grave is one dependency. Its shape and colour show its state.";
+const README_ORDER =
+  "The cemetery puts the graves to fix first in front: Possessed, then Dead, Haunted and Restless, then by advisory severity and reach.";
 const README_FIX = "For each dangerous package it proposes one fix";
 const README_EVIDENCE = "The pull request carries its evidence.";
 
@@ -90,9 +92,17 @@ const DEFS = {
     readme: ["The last publish was more than 24 months ago, or it has a Low or Moderate advisory"],
   },
   "state.Alive": { text: "No rule matched. Healthy.", readme: ["| Alive | None of the above |"] },
+  // The Legend's fix order line (13.1).
+  "legend.fix-order": {
+    text: "Fix order: Possessed first, then Dead, Haunted, Restless. Then by advisory severity and reach.",
+    readme: [README_ORDER],
+  },
   // The Tour (13.3, 13.4).
   "tour.1.title": { text: "Every grave is one dependency", readme: [README_GRAVE] },
-  "tour.1.text": { text: "Its shape tells you its health. The worst ones stand in the front row.", readme: [README_GRAVE] },
+  "tour.1.text": {
+    text: "Its shape tells you its health. The worst ones stand in the front row.",
+    readme: [README_GRAVE, README_ORDER],
+  },
   "tour.2.title": { text: "One panel, always in the same place", readme: ["Every signal carries its source URL and fetch time."] },
   "tour.2.text": {
     text: "Hover a grave and its details show here. Nothing floats over the graves.",

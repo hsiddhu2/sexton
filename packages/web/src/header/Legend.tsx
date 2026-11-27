@@ -9,7 +9,8 @@ import type { PictureKind } from "../scene/picture.js";
 import { ListGlyph } from "./icons.js";
 
 export const LEGEND_HEADING = "What each grave means";
-export const LEGEND_FIX_ORDER = "Fix order: Possessed first, then Dead, Haunted, Restless. Then by advisory severity and reach.";
+/** The fix order line, a Claim resting on README.md's sentence on the order of the graves (13.1). */
+export const LEGEND_FIX_ORDER = claim("legend.fix-order");
 
 /** The three marks beside the States (13.1). */
 export const LEGEND_MARKS: readonly { readonly kind: PictureKind; readonly name: string; readonly meaning: string }[] = [

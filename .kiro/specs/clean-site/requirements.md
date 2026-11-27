@@ -426,6 +426,7 @@ Out of scope: GitHub sign-in, any change to the engine's state rules, the canvas
 5. THE build SHALL move docs/requirements.md to version 1.1, correct its header line, rewrite R-UI-4 and R-UI-8, and add a change-log line.
 6. THE review SHALL use the built site in a fresh browser profile at 1440 by 900 and 390 by 844 through every flow of the prototype, and SHALL list every difference from the prototype with its reason.
 7. WHEN the owner approves at go THE build SHALL add to README.md the three facts the Claim registry rests on that README lacks: "The hosted site needs no sign-in and never asks for a GitHub password.", "Sexton reads a repository's package.json and package-lock.json at its root." and "Sexton proposes a bump only to a version that passes its checks; otherwise it proposes no change."
+8. THE build SHALL add to README.md the sentence "The cemetery puts the graves to fix first in front: Possessed, then Dead, Haunted and Restless, then by advisory severity and reach.", approved by the owner on 26 November 2026, and the Claim registry SHALL rest the Tour's first step (13.3) and the Legend's fix order line (13.1) on it.
 
 ### Requirement 19: A little mischief, never in the way
 

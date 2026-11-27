@@ -145,3 +145,8 @@ Run-time notes:
     - _Requirements: 11.4_
   - [x] 14.4 Keep the scan tag and the page of the scan shown before under the scanning and failure cards; put "Scanning is off in this build." inside the field and dim a disabled Scan button
     - _Requirements: 1.5, 1.6, 1.13, 1.14, 3.15, 12.1_
+
+- [x] 15. Owner decisions and the cold look, 26 Nov
+  - _Requirements: 13.1, 13.3, 17.5, 18.8, 19.1, 19.10_
+  - [x] 15.1 Add the README sentence on the order of the graves; rest the Tour's first step and the Legend's fix order line on it in the Claim registry; change the stale and stale-advisory Epitaph lines in `copy/mischief.ts` and C16
+    - _Requirements: 13.1, 13.3, 17.5, 18.8, 19.1, 19.10_

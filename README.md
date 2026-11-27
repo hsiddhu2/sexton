@@ -16,7 +16,7 @@ The hosted site, https://de1giv8lj8sfh.cloudfront.net, is deployed by hand, so i
 
 Open the hosted demo at [https://de1giv8lj8sfh.cloudfront.net](https://de1giv8lj8sfh.cloudfront.net). On your first visit a bar under the header offers a two-minute guide. "What is Sexton?" in the header opens it at any time, and Tour points out the three main parts of the page.
 
-1. Hover a grave. Each grave is one dependency. Its shape and colour show its state. The details panel shows the grave you point at, and "Fix in this order" lists the packages to fix first.
+1. Hover a grave. Each grave is one dependency. Its shape and colour show its state. The cemetery puts the graves to fix first in front: Possessed, then Dead, Haunted and Restless, then by advisory severity and reach. The details panel shows the grave you point at, and "Fix in this order" lists the packages to fix first.
 2. Open its drawer. Click the grave, or press Enter on it. "List" shows the same packages as a table you can search and sort.
 3. Read the evidence and the fix. The drawer's Evidence tab shows every signal with its source and date. The fix tab shows the change Sexton proposes, when there is one, with the text of its pull request. History shows how the package's state changed over time.
 4. Replay an attack. Press "Watch a real attack" under the cemetery and pick axios, or open [the axios replay](https://de1giv8lj8sfh.cloudfront.net/?replay=axios) directly. [The keyv replay](https://de1giv8lj8sfh.cloudfront.net/?replay=keyv) shows a second attack. Press "Next step" to follow it.

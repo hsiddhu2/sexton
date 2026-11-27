@@ -12,10 +12,10 @@ export const EPITAPH_LINES: Readonly<Record<Family, string>> = {
   "new-dependency": "It brought a new friend along. Check the friend.",
   publisher: "A new hand signed this one. The pipeline did not.",
   deprecated: "Deprecated, not departed.",
-  "stale-advisory": "Two years without a release, and a hole still open.",
+  "stale-advisory": "More than two years without a release, and a hole still open.",
   high: "Something serious walks these grounds.",
   unavailable: "Nobody could find its records.",
-  stale: "Two years of silence. It may just be resting.",
+  stale: "More than two years of silence. It may just be resting.",
   low: "A small advisory keeps it awake.",
   none: "Alive and well, as far as the records show.",
 };
