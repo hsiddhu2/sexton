@@ -18,6 +18,7 @@ import {
   intakeFromManifests,
   intakeRepoWithManifests,
   isCountedPath,
+  isUnreadSourcePath,
   MAX_MANIFEST_BYTES,
   MAX_POLICY_BYTES,
   mapWithConcurrency,
@@ -99,7 +100,18 @@ function readError(outcome: ReadOutcome, messages: { missing: string; tooLarge: 
 /** Counts references in the working tree with the Count limits. Entries only under the conditions of Requirement 2.5. */
 async function importSites(path: string, intake: readonly IntakePackage[], scripts: ReadonlyMap<string, string>, deps: CliDeps): Promise<Map<string, number>> {
   const tree = deps.workingTree(path);
-  const capped = capFileSource(tree, COUNT_LIMITS);
+  // Spec remediation-remove-scope, bugfix 2.4, 2.5: an unread build, dist or coverage file or folder makes the listing incomplete.
+  // The capped source drops Ignored directories, so the raw listing is counted on the way in.
+  let unread = 0;
+  const counted = {
+    listFiles: async (): Promise<readonly string[]> => {
+      const all = await tree.listFiles();
+      unread = all.filter(isUnreadSourcePath).length;
+      return all;
+    },
+    readFile: (p: string) => tree.readFile(p),
+  };
+  const capped = capFileSource(counted, COUNT_LIMITS);
   const listed = (await capped.source.listFiles()).filter(isCountedPath);
   const texts = await mapWithConcurrency(listed, READ_CONCURRENCY, async (p) => ({ path: p, text: await capped.source.readFile(p) }));
   const files = texts.flatMap((f) => (typeof f.text === "string" ? [{ path: f.path, text: f.text }] : []));
@@ -107,7 +119,7 @@ async function importSites(path: string, intake: readonly IntakePackage[], scrip
   const counts = countReferences(files, scripts, names);
   const c = capped.counts();
   const t = tree.counts();
-  return importSitesFor(intake, counts, { performed: c.performed && t.performed, capped: c.capped || t.rawCapped, skipped: c.skipped + t.skipped });
+  return importSitesFor(intake, counts, { performed: c.performed && t.performed, capped: c.capped || t.rawCapped, skipped: c.skipped + t.skipped + t.unread + unread });
 }
 
 export async function runScanPipeline(target: ResolvedTarget, deps: CliDeps): Promise<PipelineResult | PipelineError> {

@@ -78,7 +78,7 @@ describe("Working-tree source", () => {
     expect(await tree.readFile("src/bad.js")).toBeUndefined();
     expect(await tree.readFile("src/link.js")).toBeUndefined();
     expect(await tree.readFile("../" + outside.split("/").pop() + "/secret.js")).toBeUndefined();
-    expect(tree.counts()).toEqual({ performed: true, rawCapped: false, skipped: 2 });
+    expect(tree.counts()).toEqual({ performed: true, rawCapped: false, skipped: 2, unread: 0 });
   });
 
   it("drops a git-listed path that is a link or escapes the root", async () => {
@@ -89,9 +89,17 @@ describe("Working-tree source", () => {
     const tree = createWorkingTreeSource(dir, git);
     expect(await tree.listFiles()).toEqual(["a.js"]);
     // gone.js is tracked but missing on disk (a sparse checkout): skipped, so remove is not offered.
-    expect(tree.counts()).toEqual({ performed: true, rawCapped: false, skipped: 1 });
+    expect(tree.counts()).toEqual({ performed: true, rawCapped: false, skipped: 1, unread: 0 });
   });
 
+  // Spec remediation-remove-scope, bugfix 2.5: a walked build, dist or coverage folder counts as unread.
+  it("counts each walked build, dist or coverage folder as unread, and node_modules or .git as nothing", async () => {
+    for (const d of ["build", "dist", "coverage", "node_modules", ".git"]) mkdirSync(join(dir, d));
+    writeFileSync(join(dir, "a.js"), "x");
+    const tree = createWorkingTreeSource(dir, noGit);
+    expect(await tree.listFiles()).toEqual(["a.js"]);
+    expect(tree.counts()).toEqual({ performed: true, rawCapped: false, skipped: 0, unread: 3 });
+  });
   it("marks the raw listing capped above 20000 entries", async () => {
     writeFileSync(join(dir, "a.js"), "x");
     const many = Array.from({ length: MAX_RAW_ENTRIES + 1 }, (_, i) => (i === 0 ? "a.js" : `f${String(i)}.js`));

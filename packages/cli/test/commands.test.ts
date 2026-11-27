@@ -77,6 +77,24 @@ describe("scan", () => {
     expect(devScan.remediations.find((r) => r.packageName === "left-pad")?.kind).toBe("bump");
   });
 
+  // Spec remediation-remove-scope, bugfix 2.4 (exploration) and 3.3 (preservation).
+  it("proposes no remove when a counted file under build/, dist/ or coverage/ was left unread", async () => {
+    for (const dir of ["build", "dist", "coverage"]) {
+      const tree = { "src/a.js": 'require("request");', [`${dir}/webpack.config.js`]: 'require("left-pad");' };
+      const h = fakeDeps({ files: appFiles(), tree });
+      expect(await runCli(["scan", "."], h.deps)).toBe(0);
+      const scan = JSON.parse(h.writes.get(`${ROOT}/scan.json`) ?? "{}") as { remediations: { packageName: string; kind: string }[] };
+      expect(scan.remediations.find((r) => r.packageName === "left-pad")?.kind).toBe("bump");
+      expect(scan.remediations.some((r) => r.kind === "remove")).toBe(false);
+    }
+  });
+  it("still proposes remove when the only unread paths are under node_modules/ or .git/, or are not counted files", async () => {
+    const tree = { "src/a.js": 'require("request");', "node_modules/left-pad/index.js": 'module.exports = "left-pad";', ".git/config": "x", "build/notes.md": "left-pad" };
+    const h = fakeDeps({ files: appFiles(), tree });
+    expect(await runCli(["scan", "."], h.deps)).toBe(0);
+    const scan = JSON.parse(h.writes.get(`${ROOT}/scan.json`) ?? "{}") as { remediations: { packageName: string; kind: string }[] };
+    expect(scan.remediations.find((r) => r.packageName === "left-pad")?.kind).toBe("remove");
+  });
   it("scans a repository target from GitHub with no file source and no import counting", async () => {
     const { pkg, lock } = manifestsFor(fixturePackages);
     const { fixtureTransport } = await import("./support.js");
