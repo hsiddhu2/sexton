@@ -90,7 +90,7 @@ Out of scope: GitHub sign-in, any change to the engine's state rules, the canvas
 
 1. WHILE Home shows the scan date and <n>, the number of Possessed packages, is above 0 THE headline SHALL read "<n> of <total> dependencies need you now.", with "needs" for an <n> of 1 and <n> in the Possessed colour.
 2. WHILE Home shows the scan date, no package is Possessed, Dead or Haunted, and the policy passes THE headline SHALL read "Nothing needs you now."; it SHALL never read so while a package is Possessed, Dead or Haunted or the policy fails.
-3. WHILE Home shows an earlier date THE headline SHALL read "<n> of <total> dependencies needed you on <date>." or "Nothing needed you on <date>.", where <total> counts only the packages published on that date.
+3. WHILE Home shows an earlier date and <n>, the number of packages Possessed on that date, is above 0 THE headline SHALL read "On <date>, <n> of <total> dependencies needed you.", with <n> in the Possessed colour; WHILE no package is Possessed, Dead or Haunted on that date THE headline SHALL read "Nothing needed you on <date>." The States are those the graves show on that date, <total> counts only the packages published on that date, and <date> is written as the site writes a day ("12 Nov 2026"). No policy rule applies at an earlier date, as there is no policy result for it.
 4. THE chip row SHALL show one chip per State in the order Possessed, Dead, Haunted, Restless, Alive, each with its colour dot and its count at the shown date.
 5. WHEN a chip that is not pressed is pressed THE Site SHALL set the filter to its State and mark only that chip aria-pressed.
 6. WHEN the pressed chip is pressed THE Site SHALL clear the filter.
@@ -105,6 +105,7 @@ Out of scope: GitHub sign-in, any change to the engine's state rules, the canvas
 15. WHILE the scan is capped THE Site SHALL show under the headline "Showing <n> of <m> direct dependencies."
 16. WHILE Home shows the scan date, no package is Possessed and <k>, the number of Dead and Haunted packages, is above 0 THE headline SHALL read "Nothing is possessed. <k> of <total> need fixing.", with "needs" for a <k> of 1.
 17. WHILE Home shows the scan date, no package is Possessed, Dead or Haunted, and the policy fails on <r> rules THE headline SHALL read "Nothing is possessed. The policy fails on <r> rules.", with "rule" for an <r> of 1. On a Replay, whose policy result is not for the shown Step, the policy SHALL not change the headline.
+18. WHILE Home shows an earlier date, no package is Possessed on that date and <k>, the number of Dead and Haunted packages on that date, is above 0 THE headline SHALL read "Nothing was possessed on <date>. <k> of <total> needed fixing.", for a <k> of 1 as for more.
 
 ### Requirement 3: The Panel, the Inspector and the Fix order
 

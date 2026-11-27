@@ -779,7 +779,9 @@ for (const size of SIZES) {
       await slider.focus();
       await slider.press("Home");
       await slider.press("ArrowRight");
-      await expect(page.locator(".headline")).toHaveText(/(needed you on|Nothing needed you on) \d{1,2} \w{3} \d{4}\.$/);
+      await expect(page.locator(".headline")).toHaveText(
+        /^(On \d{1,2} \w{3} \d{4}, \d+ of \d+ dependencies needed you\.|Nothing was possessed on \d{1,2} \w{3} \d{4}\. \d+ of \d+ needed fixing\.|Nothing needed you on \d{1,2} \w{3} \d{4}\.)$/,
+      );
       await expect(page.locator(".date-badge")).toHaveText(/^Viewing \d{1,2} \w{3} \d{4}$/);
       await expect(page.locator(".scene-help")).toHaveCount(0);
       expect(new URL(page.url()).searchParams.get("at")).not.toBeNull();
@@ -1795,6 +1797,37 @@ test("requirement 2.16: a scan with 0 Possessed and some Dead names the packages
   await expect(page.locator("h1.headline .headline-count")).toHaveCount(0);
   await expect(page.locator(".chip-possessed")).toContainText("0");
   await expect(page.locator(".chip-dead")).toContainText("5");
+  expect(g.api, "no API call").toEqual([]);
+  await checkProbe(page, origin, g);
+  await context.close();
+});
+
+// Spec clean-site, 2.3 and 2.18 (owner decision, 27 Nov): at an earlier date the headline follows the scan date's rules
+// in the past tense, from the States the graves show on that date and only the packages published by then. On the
+// recorded demo no package was Possessed, Dead or Haunted before the scan date. No API call.
+test("requirement 2.18: the history slider's earlier dates on the demo read the past-tense headline", async ({ browser, baseURL }) => {
+  const origin = new URL(baseURL ?? "http://localhost:4173").origin;
+  const context = await browser.newContext();
+  const page = await freshPage(context, SIZES[0] ?? { name: "1440 by 900", width: 1440, height: 900, narrow: false });
+  const g = await guard(page, origin);
+  await page.goto("/");
+  await expect(grave(page, "left-padder")).toHaveCount(1);
+  const headline = page.locator("h1.headline");
+  await expect(headline).toHaveText("1 of 12 dependencies needs you now.");
+  const slider = page.getByRole("slider", { name: "History date" });
+  await slider.focus();
+  await slider.press("Home");
+  await expect(slider).toHaveAttribute("aria-valuetext", /^15 Mar 2011/);
+  await expect(headline).toHaveText("Nothing needed you on 15 Mar 2011.");
+  await expect(page.locator(".chip-alive")).toContainText("1");
+  await slider.press("End");
+  await expect(headline).toHaveText("1 of 12 dependencies needs you now.");
+  await slider.press("ArrowLeft");
+  await expect(slider).toHaveAttribute("aria-valuetext", /^2 Nov 2026/);
+  await expect(headline).toHaveText("Nothing needed you on 2 Nov 2026.");
+  for (const [state, n] of [["possessed", "0"], ["dead", "0"], ["haunted", "0"], ["restless", "5"], ["alive", "7"]] as const) {
+    await expect(page.locator(`.chip-${state}`)).toContainText(n);
+  }
   expect(g.api, "no API call").toEqual([]);
   await checkProbe(page, origin, g);
   await context.close();

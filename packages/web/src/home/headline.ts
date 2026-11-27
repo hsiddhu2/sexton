@@ -4,7 +4,16 @@
 import type { ScanResponse, State } from "@sexton/api";
 import { hasGhost } from "../scene/layout.js";
 import { formAt, timelineOf } from "../time/form-at.js";
-import { ALL_CLEAR_TEXT, needFixingText, pastNothingText, pastPossessedText, policyFailsText, possessedText } from "../copy/headline.js";
+import {
+  ALL_CLEAR_TEXT,
+  needFixingText,
+  pastNeedFixingText,
+  pastNothingText,
+  pastPossessedLead,
+  pastPossessedText,
+  policyFailsText,
+  possessedText,
+} from "../copy/headline.js";
 
 export type StateCounts = Readonly<Record<State, number>>;
 
@@ -15,6 +24,8 @@ export interface Counts {
 }
 
 export interface Headline {
+  /** The words before the count, when there are any ("On <date>, " at an earlier date). */
+  readonly lead?: string;
   /** The number set in the Possessed colour, or null when nothing needs the visitor. */
   readonly count: string | null;
   /** The rest of the headline after the count, or the whole headline when count is null. */
@@ -41,14 +52,18 @@ export function countsAt(response: ScanResponse, atMs: number | null): Counts {
  * Pure. At the scan date (`date` null), in this order (2.1, 2.16, 2.17, 2.2): "<n> of <total> dependencies need you
  * now." when any package is Possessed; "Nothing is possessed. <k> of <total> need fixing." when any is Dead or Haunted;
  * "Nothing is possessed. The policy fails on <r> rules." when `failingRules` is above 0; else "Nothing needs you now."
- * At an earlier `date` (already written for display): "<n> of <total> dependencies needed you on <date>." or "Nothing
- * needed you on <date>." (2.3). `failingRules` is 0 where the policy result does not apply, as on a replay.
+ * At an earlier `date` (already written for display), the same order in the past tense with no policy rule, since
+ * there is no policy result for a past date (2.3, 2.18): "On <date>, <n> of <total> dependencies needed you."; "Nothing
+ * was possessed on <date>. <k> of <total> needed fixing."; else "Nothing needed you on <date>." The counts and <total>
+ * are those at that date. `failingRules` is 0 where the policy result does not apply, as on a replay.
  */
 export function headline(counts: StateCounts, total: number, date: string | null, failingRules = 0): Headline {
   const n = counts.Possessed;
   if (date !== null) {
-    if (n === 0) return { count: null, text: pastNothingText(date) };
-    return { count: String(n), text: pastPossessedText(total, date) };
+    if (n > 0) return { lead: pastPossessedLead(date), count: String(n), text: pastPossessedText(total) };
+    const was = counts.Dead + counts.Haunted;
+    if (was > 0) return { count: null, text: pastNeedFixingText(was, total, date) };
+    return { count: null, text: pastNothingText(date) };
   }
   if (n > 0) return { count: String(n), text: possessedText(n, total) };
   const k = counts.Dead + counts.Haunted;

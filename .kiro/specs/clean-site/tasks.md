@@ -181,3 +181,7 @@ Run-time notes:
     - _Requirements: 3.26, 3.29_
   - [x] 19.3 One README limit line: a firewall block or a not-found address on the hosted site shows the general failure card
     - _Requirements: 12.2_
+- [x] 20. The headline at an earlier date
+  - _Requirements: 2.3, 2.18_
+  - [x] 20.1 The past-tense headline rules from the counts at that date, with no policy rule; words in `copy/headline.ts`; unit, property and e2e checks
+    - _Requirements: 2.3, 2.18_

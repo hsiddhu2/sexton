@@ -281,6 +281,7 @@ function ReadyHome({ response, loadId, screen, current = true, dispatch, theme, 
       <section className="home-left">
         <div className="hero" inert={still}>
           <h1 className="headline">
+            {head.lead}
             {head.count === null ? null : <em className="headline-count">{head.count}</em>}
             {head.text}
           </h1>

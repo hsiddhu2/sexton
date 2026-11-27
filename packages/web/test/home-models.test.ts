@@ -15,7 +15,7 @@ import { readDemoScan } from "./support/demo-scan.js";
 import { arbTimeline, DAY, T0 } from "./support/timelines.js";
 
 const counts = (c: Partial<Record<State, number>>) => ({ Possessed: 0, Dead: 0, Haunted: 0, Restless: 0, Alive: 0, ...c });
-const join = (h: { count: string | null; text: string }) => `${h.count ?? ""}${h.text}`;
+const join = (h: { lead?: string; count: string | null; text: string }) => `${h.lead ?? ""}${h.count ?? ""}${h.text}`;
 
 describe("headline", () => {
   it("counts only Possessed packages at the scan date (2.1, 2.2)", () => {
@@ -46,14 +46,27 @@ describe("headline", () => {
         const total = c.Possessed + c.Dead + c.Haunted + c.Restless + c.Alive;
         const clear = join(headline(c, total, null, failing)) === "Nothing needs you now.";
         expect(clear).toBe(c.Possessed === 0 && c.Dead === 0 && c.Haunted === 0 && failing === 0);
+        // At an earlier date (2.3, 2.18) the all-clear shows exactly when nothing was Possessed, Dead or Haunted.
+        const past = join(headline(c, total, "12 Aug 2026", failing)) === "Nothing needed you on 12 Aug 2026.";
+        expect(past).toBe(c.Possessed === 0 && c.Dead === 0 && c.Haunted === 0);
       }),
       { numRuns: 200 },
     );
   });
 
+  it("names the Dead and Haunted packages at an earlier date when nothing was Possessed (2.18)", () => {
+    expect(headline(counts({ Dead: 1, Alive: 3 }), 4, "12 Aug 2026")).toEqual({ count: null, text: "Nothing was possessed on 12 Aug 2026. 1 of 4 needed fixing." });
+    expect(join(headline(counts({ Dead: 2, Haunted: 1 }), 9, "1 Oct 2026"))).toBe("Nothing was possessed on 1 Oct 2026. 3 of 9 needed fixing.");
+  });
+
+  it("takes no policy rule at an earlier date: there is no policy result for a past date (2.3)", () => {
+    expect(join(headline(counts({ Alive: 2 }), 2, "12 Aug 2026", 3))).toBe("Nothing needed you on 12 Aug 2026.");
+  });
+
   it("speaks in the past at an earlier date (2.3)", () => {
-    expect(join(headline(counts({ Possessed: 1 }), 4, "12 Aug 2026"))).toBe("1 of 4 dependencies needed you on 12 Aug 2026.");
-    expect(join(headline(counts({}), 4, "12 Aug 2026"))).toBe("Nothing needed you on 12 Aug 2026.");
+    expect(headline(counts({ Possessed: 1 }), 4, "12 Aug 2026")).toEqual({ lead: "On 12 Aug 2026, ", count: "1", text: " of 4 dependencies needed you." });
+    expect(join(headline(counts({ Possessed: 2, Dead: 1 }), 4, "12 Aug 2026"))).toBe("On 12 Aug 2026, 2 of 4 dependencies needed you.");
+    expect(join(headline(counts({ Alive: 3, Restless: 1 }), 4, "12 Aug 2026"))).toBe("Nothing needed you on 12 Aug 2026.");
   });
 
   it("reads 1 of 12 on the Sample scan", () => {
@@ -61,6 +74,21 @@ describe("headline", () => {
     const { counts: c, total } = countsAt(demo, null);
     expect(join(headline(c, total, null))).toBe("1 of 12 dependencies needs you now.");
     expect(c).toEqual({ Possessed: 1, Dead: 5, Haunted: 1, Restless: 3, Alive: 2 });
+  });
+
+  it("never shows the past all-clear while a counted grave of the demo is Possessed, Dead or Haunted at that date (2.3, 2.18)", () => {
+    const demo = readDemoScan() as ScanResponse;
+    const scanMs = Date.parse(demo.report.generatedAt);
+    fc.assert(
+      fc.property(fc.integer({ min: 0, max: 3 * 365 }), (daysBack) => {
+        const { counts: c, total } = countsAt(demo, scanMs - daysBack * DAY);
+        const text = join(headline(c, total, "1 Jan 2026"));
+        const worrying = c.Possessed + c.Dead + c.Haunted > 0;
+        expect(text === "Nothing needed you on 1 Jan 2026.").toBe(!worrying);
+        expect(total).toBe(c.Possessed + c.Dead + c.Haunted + c.Restless + c.Alive);
+      }),
+      { numRuns: 200 },
+    );
   });
 
   it("counts only the packages published at an earlier date", () => {

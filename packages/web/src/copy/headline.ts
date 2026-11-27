@@ -19,12 +19,22 @@ export function policyFailsText(r: number): string {
 /** 2.2: the all-clear. Only when nothing is Possessed, Dead or Haunted and the policy passes. */
 export const ALL_CLEAR_TEXT = "Nothing needs you now.";
 
-/** 2.3: at an earlier date. */
-export function pastPossessedText(total: number, date: string): string {
-  return ` of ${String(total)} dependencies needed you on ${date}.`;
+/** 2.3: the words before the count at an earlier <date>, when any package was Possessed then. */
+export function pastPossessedLead(date: string): string {
+  return `On ${date}, `;
 }
 
-/** 2.3: at an earlier date with nothing Possessed. */
+/** 2.3: the rest of that line after the count; "needed" serves one and many alike. */
+export function pastPossessedText(total: number): string {
+  return ` of ${String(total)} dependencies needed you.`;
+}
+
+/** 2.18: no Possessed package at an earlier <date>, but <k> Dead or Haunted ones; "needed fixing" serves one and many. */
+export function pastNeedFixingText(k: number, total: number, date: string): string {
+  return `Nothing was possessed on ${date}. ${String(k)} of ${String(total)} needed fixing.`;
+}
+
+/** 2.3: nothing Possessed, Dead or Haunted at an earlier <date>. There is no policy result for a past date. */
 export function pastNothingText(date: string): string {
   return `Nothing needed you on ${date}.`;
 }
