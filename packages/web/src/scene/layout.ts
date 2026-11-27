@@ -252,10 +252,8 @@ let lastScenery: { readonly width: number; readonly sky: number; readonly scener
 
 /** The scale of a replay's one grave, before it is fitted to the width and the fit height. */
 export const REPLAY_SCALE = 1.8;
-/** The smallest scale of a replay's grave, on a short screen only (spec clean-site, 3.29). */
-export const REPLAY_MIN_FIT_SCALE = 0.8;
-/** The shortest Scene a replay's grave fits at REPLAY_MIN_FIT_SCALE: the sky, the padding and the cell (331.2 px). */
-export const REPLAY_MIN_SCENE_HEIGHT = Math.ceil(SKY_HEIGHT + 2 * PADDING + CELL_HEIGHT * REPLAY_MIN_FIT_SCALE);
+/** The shortest Scene that holds a replay's grave at full size (spec clean-site, 3.29): the sky, the padding and the cell. */
+export const REPLAY_MIN_SCENE_HEIGHT = SKY_HEIGHT + 2 * PADDING + CELL_HEIGHT;
 /** How far the open grave's lid reaches past its cell, in cell units. */
 export const REPLAY_OVERHANG = 60;
 
@@ -343,12 +341,6 @@ export function replayCell(width: number, fit: number | undefined): { readonly w
   const byWidth = (Math.min(width, MAX_BACKING) - 2 * PADDING) / (CELL_WIDTH + 2 * REPLAY_OVERHANG);
   const byHeight = typeof fit === "number" && Number.isFinite(fit) && fit > 0 ? (fit - SKY_HEIGHT - 2 * PADDING) / CELL_HEIGHT : REPLAY_SCALE;
   const s = Math.max(1, Math.min(REPLAY_SCALE, byWidth, byHeight));
-  // A short Scene (spec clean-site, 3.29) shrinks the grave below 1, never under REPLAY_MIN_FIT_SCALE; the width alone
-  // never takes it under 1, so the Narrow layout is unchanged.
-  if (byHeight < 1) {
-    const short = Math.max(REPLAY_MIN_FIT_SCALE, Math.min(byHeight, s));
-    return { w: Math.floor(CELL_WIDTH * short), h: Math.floor(CELL_HEIGHT * short) };
-  }
   return { w: Math.floor(CELL_WIDTH * s), h: Math.floor(CELL_HEIGHT * s) };
 }
 

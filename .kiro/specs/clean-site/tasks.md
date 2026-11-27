@@ -177,7 +177,7 @@ Run-time notes:
   - _Requirements: 2.1, 2.2, 2.16, 2.17, 3.26, 3.29, 12.2_
   - [x] 19.1 The headline never reads the all-clear while a grave is Possessed, Dead or Haunted or the policy fails; its words in `copy/headline.ts`; unit, property and e2e checks
     - _Requirements: 2.1, 2.2, 2.16, 2.17_
-  - [x] 19.2 Give a Replay's Panel Home's inner scroll, and a Replay's Scene a shorter minimum, so both Replays fit at 1440 by 900, 1366 by 768 and 1280 by 800 at every Step; e2e checks
+  - [x] 19.2 Give a Replay's Panel Home's inner scroll, a Replay's Scene the full-size grave as its minimum and short screens one line of Step cards, so both Replays fit at 1440 by 900, 1366 by 768 and 1280 by 800 at every Step; e2e checks
     - _Requirements: 3.26, 3.29_
   - [x] 19.3 One README limit line: a firewall block or a not-found address on the hosted site shows the general failure card
     - _Requirements: 12.2_

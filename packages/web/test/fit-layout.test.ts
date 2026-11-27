@@ -4,7 +4,7 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { MIN_SCENE_HEIGHT } from "../src/Cemetery.js";
 import { panelOverflows } from "../src/panel/use-panel-scroll.js";
-import { CELL_HEIGHT, CELL_WIDTH, fitScale, MIN_FIT_SCALE, NARROW_FRONT_COLUMNS, NARROW_MIN_FIT_SCALE, planScene, REPLAY_MIN_FIT_SCALE, REPLAY_MIN_SCENE_HEIGHT, replayCell, type Rect } from "../src/scene/layout.js";
+import { CELL_HEIGHT, CELL_WIDTH, fitScale, MIN_FIT_SCALE, NARROW_FRONT_COLUMNS, NARROW_MIN_FIT_SCALE, planScene, REPLAY_MIN_SCENE_HEIGHT, replayCell, type Rect } from "../src/scene/layout.js";
 import { OVERLAY_BAND } from "../src/scene/overlay-band.js";
 import { TIER_OF, TIER_SCALE, type TierId } from "../src/scene/tiers.js";
 import { triageOrder } from "../src/triage/triage.js";
@@ -80,8 +80,7 @@ describe("Feature: clean-site, the fit scale and the front-first layout (15.3)",
     expect(fitScale({ front: 300, middle: 0, back: 0 }, 986, 560, false)).toBe(1);
     expect(fitScale({ front: 6, middle: 4, back: 2 }, Number.NaN, 560, true)).toBe(1);
     const one = planScene({ packages: [scenePackage("axios", "Possessed", "none")], width: 986, theme: "dark", selectedIndex: null, ghostPhase: 0, fitHeight: 300, replay: true });
-    // A Replay's one grave keeps its own rule: on a Scene this short it stops at its floor (3.29).
-    expect(one.graves[0]?.rect.w).toBe(Math.floor(CELL_WIDTH * REPLAY_MIN_FIT_SCALE));
+    expect(one.graves[0]?.rect.w).toBeGreaterThanOrEqual(192);
   });
 
   it("stands two front graves to a row in the Narrow layout at 390 and 360, with the front Tier on top", () => {
@@ -142,24 +141,11 @@ describe("Feature: clean-site, the fit scale and the front-first layout (15.3)",
   });
 });
 
-describe("Replay grave on short screens (3.29)", () => {
-  it("shrinks the grave below 1 only when the Scene is short, never under the floor, and leaves the width rule alone", () => {
-    // 1440 by 900 and the phone keep their cells.
-    expect(replayCell(1000, 508)).toEqual({ w: 305, h: 356 });
-    expect(replayCell(358, 380)).toEqual({ w: 195, h: 228 });
-    // A short Scene: the cell fits its height, down to the floor.
-    expect(replayCell(1000, 354)).toEqual({ w: 173, h: 202 });
-    expect(REPLAY_MIN_SCENE_HEIGHT).toBe(332);
-    expect(replayCell(1000, REPLAY_MIN_SCENE_HEIGHT)).toEqual({ w: 154, h: 180 });
-    expect(replayCell(1000, 200)).toEqual({ w: Math.floor(CELL_WIDTH * REPLAY_MIN_FIT_SCALE), h: Math.floor(CELL_HEIGHT * REPLAY_MIN_FIT_SCALE) });
-    fc.assert(
-      fc.property(fc.integer({ min: 200, max: 2000 }), fc.integer({ min: 100, max: 1200 }), (width, fit) => {
-        const cell = replayCell(width, fit);
-        expect(cell.h).toBeGreaterThanOrEqual(Math.floor(CELL_HEIGHT * REPLAY_MIN_FIT_SCALE));
-        // At or above the shortest Scene, the grave fits inside it with the sky and padding.
-        if (fit >= REPLAY_MIN_SCENE_HEIGHT) expect(cell.h).toBeLessThanOrEqual(Math.max(fit - 152, 228));
-      }),
-      { numRuns: 200 },
-    );
+describe("Replay Scene on short screens (3.29)", () => {
+  it("is never shorter than the Replay's grave at full size, which still fits it", () => {
+    expect(REPLAY_MIN_SCENE_HEIGHT).toBe(376);
+    expect(REPLAY_MIN_SCENE_HEIGHT).toBeLessThan(MIN_SCENE_HEIGHT);
+    expect(replayCell(1000, REPLAY_MIN_SCENE_HEIGHT)).toEqual({ w: CELL_WIDTH, h: CELL_HEIGHT });
+    expect(REPLAY_MIN_SCENE_HEIGHT - CELL_HEIGHT).toBeGreaterThanOrEqual(120 + 32);
   });
 });

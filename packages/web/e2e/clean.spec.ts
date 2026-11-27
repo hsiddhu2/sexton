@@ -1752,6 +1752,8 @@ for (const size of [SIZES[0] ?? { name: "1440 by 900", width: 1440, height: 900,
           if (scene !== null && box !== null) {
             expect(box.y, `the grave top, ${at}`).toBeGreaterThanOrEqual(scene.y);
             expect(box.y + box.h, `the grave bottom, ${at}`).toBeLessThanOrEqual(scene.y + scene.h + 0.5);
+            // R-UI-1: a Replay draws its grave at least full size.
+            expect(box.w, `the grave width, ${at}`).toBeGreaterThanOrEqual(192);
           }
           await expectInViewport(page, ".foot-bar");
           await expectInViewport(page, ".site-footer");

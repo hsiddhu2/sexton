@@ -939,6 +939,14 @@ a {
   min-width: 0;
 }
 
+/* On a short Wide screen (spec clean-site, 3.29) each Step card takes the width its title needs, so no title wraps and
+   the Footer bar keeps one line of cards; the Scene above keeps room for the Replay's grave at full size. */
+@media (min-width: 1100px) and (max-height: 820px) {
+  .step-cards li {
+    flex: 1 1 auto;
+  }
+}
+
 .step-card {
   display: block;
   box-sizing: border-box;
