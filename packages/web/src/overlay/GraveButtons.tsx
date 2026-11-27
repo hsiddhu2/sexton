@@ -1,12 +1,10 @@
 import type { PackageHealth } from "@sexton/api";
-import { useEffect, useRef, type KeyboardEvent, type MutableRefObject } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type MutableRefObject } from "react";
+import { flushSync } from "react-dom";
 import type { FormView } from "../time/form-at.js";
 import type { ScenePlan } from "../scene/layout.js";
 import { reduceSelection } from "../selection/selection.js";
 import { graveLabel } from "./grave-label.js";
-import { GraveTooltip, TOOLTIP_ID } from "./GraveTooltip.js";
-import { labelRect } from "../scene/art-box.js";
-import { useGraveTooltip } from "./use-grave-tooltip.js";
 
 export interface GraveButtonsProps {
   readonly plan: ScenePlan;
@@ -14,55 +12,46 @@ export interface GraveButtonsProps {
   readonly packages: readonly PackageHealth[];
   readonly onSelect: (index: number) => void;
   readonly onOpen: (index: number) => void;
-  /** True while the drawer is open: no tooltip is shown. */
-  readonly suppressTooltip?: boolean;
-  /** Set by the parent before it returns focus to a grave in code; that one focus shows no tooltip. */
+  /** True while the drawer is open: no grave holds the Lantern glow. */
+  readonly suppressLantern?: boolean;
+  /** Set by the parent before it returns focus to a grave in code; that one focus lights no Lantern. */
   readonly quietFocus?: MutableRefObject<boolean>;
   /** The Form of each grave as of the chosen date, in triage order; undefined entries show the scan Form. */
   readonly views?: readonly (FormView | undefined)[];
-  /** The As-of date text for the tooltip, set only before the scan date. */
-  readonly asOfDate?: string;
-  /** Told the grave whose tooltip shows (hovered or focused), for the Lantern glow; null when none. */
+  /** Told the grave under the pointer, else the one holding key-driven focus, for the Lantern glow; null when none. */
   readonly onLantern?: (index: number | null) => void;
-  /** Serious mode hides the tooltip Punchline. */
-  readonly serious?: boolean;
+  /** Spec clean-site, 3.3 to 3.5 and 3.13: told the grave under the pointer, or null. */
+  readonly onHover?: (index: number | null) => void;
+  /** Spec clean-site, 3.3: told the grave whose button has focus, or null. */
+  readonly onFocusGrave?: (index: number | null) => void;
+  /** The one grave in the tab order; the Selected grave when absent. */
+  readonly tabStop?: number | null;
+  /** Spec clean-site, 2.8: the dimmed graves' buttons leave the tab order. */
+  readonly dimmed?: ReadonlySet<string>;
 }
 
-export function GraveButtons({ plan, selectedIndex, packages, onSelect, onOpen, suppressTooltip = false, quietFocus, views, asOfDate, onLantern, serious = false }: GraveButtonsProps) {
+export function GraveButtons({ plan, selectedIndex, packages, onSelect, onOpen, suppressLantern = false, quietFocus, views, onLantern, onHover, onFocusGrave, tabStop, dimmed }: GraveButtonsProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const { shownIndex, dispatch } = useGraveTooltip(suppressTooltip);
+  const [hovered, setHovered] = useState<number | null>(null);
+  const [focused, setFocused] = useState<number | null>(null);
+  // Opening the drawer resets both: nothing is lit after it closes until a pointer move or a key-driven focus.
   useEffect(() => {
-    onLantern?.(shownIndex);
-  }, [shownIndex, onLantern]);
-  // The tooltip takes no pointer events, so clicks reach what lies under it. While it shows, a pointer over its area
-  // still counts as over the tooltip, wherever it opens (spec cemetery-undead-fixes, bug 3; WCAG 1.4.13, hoverable).
+    if (!suppressLantern) return;
+    setHovered(null);
+    setFocused(null);
+  }, [suppressLantern]);
+  const lit = suppressLantern ? null : (hovered ?? focused);
   useEffect(() => {
-    if (shownIndex === null) return undefined;
-    let over = false;
-    const onMove = (e: PointerEvent): void => {
-      const tip = document.getElementById(TOOLTIP_ID);
-      if (tip === null) return;
-      const r = tip.getBoundingClientRect();
-      const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
-      if (inside === over) return;
-      over = inside;
-      if (inside) {
-        dispatch({ type: "tip-enter" });
-        return;
-      }
-      // Back over its own grave (the part the tooltip does not cover): the grave holds the tooltip again (review).
-      const button = document.querySelector<HTMLElement>(`button[data-grave-index="${String(shownIndex)}"]`);
-      const b = button?.getBoundingClientRect();
-      const onGrave = b !== undefined && e.clientX >= b.left && e.clientX <= b.right && e.clientY >= b.top && e.clientY <= b.bottom;
-      dispatch(onGrave ? { type: "pointer-enter", index: shownIndex } : { type: "tip-leave" });
-    };
-    document.addEventListener("pointermove", onMove);
-    return () => {
-      document.removeEventListener("pointermove", onMove);
-    };
-  }, [shownIndex, dispatch]);
-  const shownPkg = shownIndex === null ? undefined : packages[shownIndex];
-  const shownCell = shownIndex === null ? undefined : plan.graves[shownIndex]?.rect;
+    onLantern?.(lit);
+  }, [lit, onLantern]);
+  // The grave under the pointer is told in the pointer event itself, not in an effect after it, so the Inspector
+  // shows the right package before the next press lands on it (review against the approved design, D5).
+  const pointer = useRef<number | null>(null);
+  const [holder, setHolder] = useState<number | null>(null);
+  useEffect(() => {
+    onFocusGrave?.(holder);
+  }, [holder, onFocusGrave]);
+  const stop = tabStop === undefined ? selectedIndex : tabStop;
 
   // A focus counts as key-driven when a key was pressed after the last pointer press (any element, so Tab into the grave counts).
   const keyDriven = useRef(false);
@@ -104,8 +93,7 @@ export function GraveButtons({ plan, selectedIndex, packages, onSelect, onOpen, 
             className="grave-button"
             data-grave-index={i}
             aria-label={graveLabel(pkg, views?.[i], plan.graves[i]?.marker === true)}
-            {...(i === shownIndex ? { "aria-describedby": TOOLTIP_ID } : {})}
-            tabIndex={i === selectedIndex ? 0 : -1}
+            tabIndex={i === stop && dimmed?.has(pkg.name) !== true ? 0 : -1}
             style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
             onKeyDown={onKeyDown}
             onFocus={() => {
@@ -114,19 +102,29 @@ export function GraveButtons({ plan, selectedIndex, packages, onSelect, onOpen, 
               if (quietFocus !== undefined) quietFocus.current = false;
               const key = !programmatic && keyDriven.current;
               keyDriven.current = false;
-              dispatch({ type: "focus", index: i, key });
+              setFocused(key ? i : null);
+              setHolder(i);
             }}
             onBlur={() => {
-              dispatch({ type: "blur", index: i });
+              setFocused((f) => (f === i ? null : f));
+              setHolder((f) => (f === i ? null : f));
             }}
-            onPointerEnter={(event) => {
-              dispatch({ type: "pointer-enter", index: i, x: event.clientX, y: event.clientY });
-            }}
-            onPointerMove={(event) => {
-              dispatch({ type: "pointer-move", index: i, x: event.clientX, y: event.clientY });
+            onPointerEnter={() => {
+              setHovered(i);
+              pointer.current = i;
+              flushSync(() => {
+                onHover?.(i);
+              });
             }}
             onPointerLeave={() => {
-              dispatch({ type: "pointer-leave", index: i });
+              setHovered((h) => (h === i ? null : h));
+              if (pointer.current !== i) return;
+              pointer.current = null;
+              // A pointer event is not a discrete event in React, so its update could land after the press that
+              // follows it; flushSync shows the Selected grave in the Panel before that press is hit-tested.
+              flushSync(() => {
+                onHover?.(null);
+              });
             }}
             onClick={() => {
               onOpen(i);
@@ -134,24 +132,6 @@ export function GraveButtons({ plan, selectedIndex, packages, onSelect, onOpen, 
           />
         );
       })}
-      {shownPkg !== undefined && shownCell !== undefined ? (
-        <GraveTooltip
-          pkg={shownPkg}
-          cell={shownCell}
-          {...(shownIndex !== null && views?.[shownIndex] !== undefined ? { view: views[shownIndex] } : {})}
-          {...(asOfDate !== undefined ? { asOfDate } : {})}
-          sceneWidth={plan.width}
-          sceneHeight={plan.groundHeight}
-          labels={plan.graves.filter((g) => g.index !== shownIndex).map((g) => labelRect(g))}
-          serious={serious}
-          onPointerEnter={() => {
-            dispatch({ type: "tip-enter" });
-          }}
-          onPointerLeave={() => {
-            dispatch({ type: "tip-leave" });
-          }}
-        />
-      ) : null}
     </div>
   );
 }

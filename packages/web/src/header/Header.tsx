@@ -1,163 +1,82 @@
-import { useState, type FormEvent, type ReactNode, type RefObject } from "react";
+// The one-row header (spec clean-site, design C2, requirement 1): the wordmark, the scan tag, the Scan field with its
+// Scan button, then "What is Sexton?", Legend, Music (only with a track, 1.15) and Tour.
+import type { RefObject } from "react";
+import type { Popover } from "../load/screen-state.js";
 import type { Theme } from "../scene/palette.js";
-import { HOSTED_UNAVAILABLE_TEXT } from "../load/use-scan-loader.js";
-import type { HeaderModel } from "./header-model.js";
-import { failingRulesText } from "./failing-rules-text.js";
+import { BookGlyph, MusicGlyph, TourGlyph } from "./icons.js";
 import { Legend } from "./Legend.js";
-import { ScanTime } from "./ScanTime.js";
+import { ScanField } from "./ScanField.js";
 import { Wordmark } from "./Wordmark.js";
-import { ReplayButtons } from "../replay/ReplayButtons.js";
-import type { ReplayId } from "../replay/replay-ids.js";
-import { fixFirstText, type FixFirst } from "./fix-first.js";
+
+export const GUIDE_BUTTON_TEXT = "What is Sexton?";
+export const TOUR_BUTTON_TEXT = "Tour";
+export const MUSIC_BUTTON_TEXT = "Music";
 
 export interface HeaderProps {
-  /** Null while loading or after a load error: only the shell is shown. */
-  readonly model: HeaderModel | null;
+  /** The scan tag text, or null when nothing is shown (a rejected replay value). */
+  readonly tag: string | null;
+  /** A repository from the address that waits for a press (10.11), or null. */
+  readonly prompt?: string | null;
   readonly theme: Theme;
   readonly apiConfigured: boolean;
-  /** Returns fixed text when no request started, or null when one did. */
-  readonly onSubmit: (value: string) => string | null;
-  /** Lets the page move focus to the Repository URL box (task 7). */
+  /** The Scan field, so the page can move focus to it. */
   readonly fieldRef?: RefObject<HTMLInputElement | null>;
-  /** Renders the Replay buttons after the Scan button when present. */
-  readonly onReplay?: (id: ReplayId) => void;
-  /** Set while the As-of date is before the scan date. */
-  readonly asOf?: { readonly iso: string; readonly onBack: () => void };
-  /** Serious mode toggle (spec cemetery-undead, 8.1). Shown when onSerious is given. */
-  readonly serious?: boolean;
-  readonly onSerious?: () => void;
-  /** A replay labels its two times: "Window ends" and "Showing" (spec cemetery-undead-2, A2). */
-  readonly replay?: boolean;
-  /** The Sound toggle (spec cemetery-undead-2, requirement 8.1). Off by default. */
-  readonly sound?: { readonly on: boolean; readonly onToggle: () => void };
-  /** The Fix-first line (spec judge-path, requirement 2), computed in App. Absent, no line. */
-  readonly fixFirst?: { readonly value: Exclude<FixFirst, null>; readonly onPress: () => void };
-  /** The Guide button and the Guide after it (spec judge-path, requirement 1). Absent, neither shows. */
-  readonly guide?: { readonly onOpen: () => void; readonly buttonRef: RefObject<HTMLButtonElement | null>; readonly panel: ReactNode };
+  /** The open Pop-over of the screen state. */
+  readonly popover: Popover;
+  /** Opens a Pop-over, or closes the open one with "none". */
+  readonly onPopover: (popover: Popover) => void;
+  /** Starts a Live scan of a canonical repository URL. */
+  readonly onScan: (url: string) => void;
+  readonly onHome: () => void;
+  readonly onGuide: () => void;
+  readonly onTour: () => void;
+  /** The Music switch, given only when a track is set in the Track slot (1.15, 14.2); absent, no button. */
+  readonly music?: { readonly on: boolean; readonly onToggle: () => void };
 }
 
-function DownloadGlyph() {
-  return (
-    <svg className="evidence-glyph" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false">
-      <path d="M5 1h2v5h2.5L6 10 2.5 6H5z M2 11h8v1H2z" />
-    </svg>
-  );
-}
-
-export function Header({ model, theme, apiConfigured, onSubmit, fieldRef, asOf, onReplay, serious = false, onSerious, replay = false, sound, fixFirst, guide }: HeaderProps) {
-  const [value, setValue] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
-  const submit = (event: FormEvent<HTMLFormElement>): void => {
-    event.preventDefault();
-    setMessage(onSubmit(value));
-  };
+export function Header({ tag, prompt = null, theme, apiConfigured, fieldRef, popover, onPopover, onScan, onHome, onGuide, onTour, music }: HeaderProps) {
   return (
     <header className="site-header">
-      <div className="header-top">
-        <Wordmark />
-        <div className="header-summary">
-          {model === null ? null : (
-            <>
-              <p className="header-repo">
-                <span className="repo-text">{model.repoText}</span>
-                {model.demoLabel === null ? null : <span className="demo-label"> {model.demoLabel}</span>}
-              </p>
-              <p className="header-time">
-                {replay ? "Window ends " : null}
-                <ScanTime iso={model.scanTime} />
-              </p>
-              {asOf === undefined ? null : (
-                <p className="header-asof">
-                  <span className="as-of">
-                    {replay ? "Showing " : "as of "}
-                    <ScanTime iso={asOf.iso} />
-                  </span>{" "}
-                  <button type="button" className="asof-back" onClick={asOf.onBack}>
-                    Back to now
-                  </button>
-                </p>
-              )}
-              {model.unlockedNotice === null ? null : <p className="notice notice-unlocked">{model.unlockedNotice}</p>}
-              {model.cappedNotice === null ? null : <p className="notice notice-capped">{model.cappedNotice}</p>}
-              {model.showPolicy ? (
-                <p className="header-policy">
-                  policy: <strong>{model.policyStatus}</strong>, {model.policyLabel}, {failingRulesText(model.failingRules)}
-                </p>
-              ) : null}
-            </>
-          )}
-        </div>
+      <Wordmark onHome={onHome} />
+      {tag === null ? null : (
+        <p className="scan-tag-wrap">
+          <span className="scan-tag">{tag}</span>
+        </p>
+      )}
+      <ScanField
+        apiConfigured={apiConfigured}
+        {...(fieldRef !== undefined ? { fieldRef } : {})}
+        prompt={prompt}
+        examplesOpen={popover === "examples"}
+        onExamples={(open) => {
+          if (open) onPopover("examples");
+          else if (popover === "examples") onPopover("none");
+        }}
+        onScan={onScan}
+      />
+      <div className="header-buttons">
+        <button type="button" className="ib ib-guide" onClick={onGuide}>
+          <BookGlyph />
+          <span className="ib-guide-text">{GUIDE_BUTTON_TEXT}</span>
+        </button>
+        <Legend
+          theme={theme}
+          open={popover === "legend"}
+          onToggle={() => {
+            onPopover(popover === "legend" ? "none" : "legend");
+          }}
+        />
+        {music === undefined ? null : (
+          <button type="button" className="ib ib-music" aria-pressed={music.on} onClick={music.onToggle}>
+            <MusicGlyph />
+            <span className="ib-text">{MUSIC_BUTTON_TEXT}</span>
+          </button>
+        )}
+        <button type="button" className="ib" data-tour-button onClick={onTour}>
+          <TourGlyph />
+          <span className="ib-text">{TOUR_BUTTON_TEXT}</span>
+        </button>
       </div>
-      {model?.evidenceLinks == null ? null : (
-        <div className="header-evidence" role="group" aria-label="Evidence pack">
-          <a className="evidence-link" href={model.evidenceLinks.json} download aria-label="Download evidence pack as JSON">
-            <DownloadGlyph />
-            JSON
-          </a>
-          <a className="evidence-link" href={model.evidenceLinks.markdown} download aria-label="Download evidence pack as Markdown">
-            <DownloadGlyph />
-            Markdown
-          </a>
-        </div>
-      )}
-      <form className="repo-form" onSubmit={submit}>
-        <label>
-          <span className="repo-label-text">Repository URL</span>
-          <input
-            ref={fieldRef}
-            type="text"
-            name="repo"
-            placeholder="Paste a public repository URL"
-            value={value}
-            disabled={!apiConfigured}
-            onChange={(event) => {
-              setValue(event.target.value);
-            }}
-          />
-        </label>
-        <button type="submit" className="scan-button" disabled={!apiConfigured}>
-          Scan
-        </button>
-        {apiConfigured ? null : <span className="repo-disabled">{HOSTED_UNAVAILABLE_TEXT}</span>}
-      </form>
-      {/* A native toggle with aria-pressed, named by its state (spec cemetery-undead-2, requirement 8.1). */}
-      <button type="button" className="sound-toggle" aria-pressed={sound?.on === true} onClick={sound?.onToggle}>
-        <svg className="sound-glyph" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-          {sound?.on === true ? <path d="M2 6h3l4-3v10l-4-3H2z M11 5.5q2 2.5 0 5 M13 4q3.5 4 0 8" /> : <path d="M2 6h3l4-3v10l-4-3H2z M11 5l4 6 M15 5l-4 6" />}
-        </svg>
-        {sound?.on === true ? "Sound on" : "Sound off"}
-      </button>
-      {onSerious === undefined ? null : (
-        <button type="button" className="serious-toggle" aria-pressed={serious} onClick={onSerious}>
-          Serious mode
-        </button>
-      )}
-      <Legend theme={theme} />
-      {guide === undefined ? null : (
-        <>
-          <button type="button" className="guide-button" ref={guide.buttonRef} onClick={guide.onOpen}>
-            Guide
-          </button>
-          {guide.panel}
-        </>
-      )}
-      {/* The Fix-first line, a full row at the header's foot (spec judge-path, requirement 2). */}
-      {fixFirst === undefined ? null : fixFirst.value.kind === "all-alive" ? (
-        <p className="fix-first-line">{fixFirstText(fixFirst.value)}</p>
-      ) : (
-        <p className="fix-first-line">
-          <button type="button" className="fix-first" onClick={fixFirst.onPress}>
-            <span className="fix-first-chip" aria-hidden="true" style={{ background: `var(--state-${fixFirst.value.state.toLowerCase()})` }} />
-            {fixFirstText(fixFirst.value)}
-          </button>
-        </p>
-      )}
-      {onReplay === undefined ? null : <ReplayButtons onReplay={onReplay} />}
-      {message === null ? null : (
-        <p role="alert" className="header-message">
-          {message}
-        </p>
-      )}
     </header>
   );
 }

@@ -1,15 +1,15 @@
-import type { PackageHealth, ReplayInfo, ScanResponse } from "@sexton/api";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import type { ReplayInfo, ScanResponse } from "@sexton/api";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import fc from "fast-check";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { App } from "../src/App.js";
-import { Drawer } from "../src/drawer/Drawer.js";
-import { drawerModel } from "../src/drawer/drawer-model.js";
 import { checkScanUrl } from "../src/load/check-scan-url.js";
-import { REPLAY_BANNER_TEXT, ReplayBanner } from "../src/replay/ReplayBanner.js";
+import { WhyCard } from "../src/replay/ReplayView.js";
+import { REPLAY_NOT_LIVE } from "../src/replay/replay-story.js";
 import { REPLAY_IDS, parseReplayParam, replayAddress, type ReplayId } from "../src/replay/replay-ids.js";
 import { stopsFor } from "../src/time/stops.js";
+import { readDemoScanText } from "./support/demo-scan.js";
 import { EIGHT_URLS, EXPECTED_SEGMENTS, readReplay, readReplayText } from "./support/replay-fixture.js";
 
 afterEach(cleanup);
@@ -30,6 +30,8 @@ function mount(search: string): Mounted {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     urls.push(url);
     const id = REPLAY_IDS.find((r) => url === `${ORIGIN}${replayAddress(r)}`);
+    // Spec clean-site, task 3: the attack picker sits in the Footer bar of a loaded scan, so the demo is served too.
+    if (id === undefined && url === `${ORIGIN}/demo/scan.json`) return Promise.resolve(new Response(readDemoScanText(), { status: 200 }));
     return Promise.resolve(
       id === undefined ? new Response("not found", { status: 404 }) : new Response(readReplayText(id), { status: 200 }),
     );
@@ -42,10 +44,12 @@ async function ready(): Promise<void> {
     expect(screen.queryByRole("status")).toBeNull();
   });
 }
-const slider = (): HTMLInputElement => screen.getByRole("slider", { name: "History date" }) as HTMLInputElement;
+// Spec clean-site, task 6.3: a Replay moves by its Step cards in the Footer bar; it has no scrubber.
+const stepCards = (): HTMLButtonElement[] => [...document.querySelectorAll<HTMLButtonElement>("footer .step-card")];
 const move = (value: number): void => {
-  fireEvent.change(slider(), { target: { value: String(value) } });
+  fireEvent.click(stepCards()[value] as HTMLButtonElement);
 };
+const stepTime = (): string => document.querySelector(".step-panel .eyebrow-time")?.textContent ?? "";
 const grave = (container: HTMLElement): HTMLElement => container.querySelector<HTMLElement>("button[data-grave-index]") as HTMLElement;
 const label = (container: HTMLElement): string => grave(container).getAttribute("aria-label") ?? "";
 
@@ -55,41 +59,58 @@ const STOP_TEXT = {
 } as const;
 
 describe("opening a replay (requirement 18)", () => {
-  it("renders the Replay group after the Scan button with the two button texts", async () => {
+  // Spec clean-site, 16.7 and 16.16: "Watch a real attack" in the Footer bar opens the attack picker in place of the
+  // Replay group.
+  it("opens the attack picker from the Footer bar with its heading, its line and one button per Replay, and closes it again", async () => {
     mount("");
     await ready();
-    const group = screen.getByRole("group", { name: "Replay an attack" });
-    expect([...group.querySelectorAll("button")].map((b) => b.textContent)).toEqual(["axios, Mar 2026", "keyv, Aug 2026"]);
-    const scan = screen.getByRole("button", { name: "Scan" });
-    expect(scan.compareDocumentPosition(group) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const watch = screen.getByRole("button", { name: "Watch a real attack" });
+    expect(watch.closest("footer.foot-bar")).not.toBeNull();
+    expect(watch.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(watch);
+    const pop = document.getElementById("attack-pop") as HTMLElement;
+    expect(pop.querySelector(".pop-heading")?.textContent).toBe("Two real npm attacks from 2026");
+    expect(pop.querySelector(".pop-line")?.textContent).toBe(
+      "A trusted package was taken over and a bad version was published. See how each one would have looked in your cemetery.",
+    );
+    expect([...pop.querySelectorAll("button.attack")].map((b) => b.textContent)).toEqual(["axios31 March 2026. 3 steps.", "keyv4 August 2026. 2 steps."]);
+    fireEvent.click(watch);
+    expect(document.getElementById("attack-pop")).toBeNull();
   });
 
-  it("names the group with the visible label Replay an attack (spec cemetery-time-fixes, 8.1)", async () => {
-    mount("");
-    await ready();
-    const group = screen.getByRole("group", { name: "Replay an attack" });
-    const label = group.querySelector(".replay-label") as HTMLElement;
-    expect(label.textContent).toBe("Replay an attack");
-    expect(group.getAttribute("aria-labelledby")).toBe(label.id);
-    expect(group.hasAttribute("aria-label")).toBe(false);
-    expect(group.firstElementChild).toBe(label);
-  });
-
-  it("loads each fixture from the page origin when its button is pressed, then a second one from the header", async () => {
+  // Spec clean-site, task 6.3: the Replay's Footer bar has no attack picker (the design's), so the second Replay
+  // is picked after Exit replay.
+  it("loads each fixture from the page origin when its picker button is pressed, the second one after Exit replay", async () => {
     const { urls, container } = mount("");
     await ready();
-    fireEvent.click(screen.getByRole("button", { name: "axios, Mar 2026" }));
+    const pick = (name: RegExp): void => {
+      fireEvent.click(screen.getByRole("button", { name: "Watch a real attack" }));
+      fireEvent.click(screen.getByRole("button", { name }));
+    };
+    pick(/^axios/);
     await waitFor(() => {
       expect(label(container)).toBe("axios 1.14.0, Alive");
     });
     expect(urls).toEqual([`${ORIGIN}/demo/scan.json`, `${ORIGIN}/replay/axios.json`]);
-    fireEvent.click(screen.getByRole("button", { name: "keyv, Aug 2026" }));
+    expect(container.querySelector("header .scan-tag")?.textContent).toBe("Replay");
+    fireEvent.click(screen.getByRole("button", { name: "Exit replay" }));
+    await waitFor(() => {
+      expect(container.querySelectorAll("button[data-grave-index]").length).toBeGreaterThan(1);
+    });
+    pick(/^keyv/);
     await waitFor(() => {
       expect(label(container)).toBe("keyv 5.6.0, Alive");
     });
-    expect(urls[2]).toBe(`${ORIGIN}/replay/keyv.json`);
-    // The scrubber is at the first Stop of the replay.
-    expect(slider().getAttribute("aria-valuetext")).toBe(STOP_TEXT.keyv[0]);
+    expect(urls.slice(2)).toEqual([`${ORIGIN}/demo/scan.json`, `${ORIGIN}/replay/keyv.json`]);
+    // The Replay opens at Step 1.
+    expect(stepTime()).toBe(STOP_TEXT.keyv[0]);
+    // The wordmark takes the Home action and loads the Sample scan again.
+    fireEvent.click(screen.getByRole("link", { name: "Sexton, back to the cemetery" }), { button: 0 });
+    await waitFor(() => {
+      expect(container.querySelectorAll("button[data-grave-index]").length).toBeGreaterThan(1);
+    });
+    expect(urls[4]).toBe(`${ORIGIN}/demo/scan.json`);
+    expect(container.querySelector("header .scan-tag")?.textContent).toBe("Sample scan");
   });
 
   it("loads the matching fixture for ?replay=axios and ?replay=keyv instead of the demo", async () => {
@@ -102,7 +123,7 @@ describe("opening a replay (requirement 18)", () => {
     }
   });
 
-  it("wins over ?scan= and shows the error panel with no request for any other value", async () => {
+  it("wins over ?scan= and shows the unknown replay card (10.10) with no request for any other value", async () => {
     const wins = mount("?scan=%2Fdemo%2Fscan.json&replay=keyv");
     await ready();
     expect(wins.urls).toEqual([`${ORIGIN}/replay/keyv.json`]);
@@ -110,125 +131,104 @@ describe("opening a replay (requirement 18)", () => {
     for (const bad of ["other", "", "AXIOS", "axios%2F..", "..%2Fdemo%2Fscan", "https%3A%2F%2Fevil.example%2Fx.json"]) {
       const { urls } = mount(`?replay=${bad}`);
       await waitFor(() => {
-        expect(screen.getByRole("alert").textContent).toContain("scan-url-rejected");
+        expect(screen.getByRole("alert").textContent).toBe("No such ghost story is told here.!That replay does not exist.Back to the cemetery");
       });
       expect(urls).toEqual([]);
       cleanup();
     }
     const repeated = mount("?replay=axios&replay=keyv");
     await waitFor(() => {
-      expect(screen.getByRole("alert").textContent).toContain("scan-url-rejected");
+      expect(screen.getByRole("alert").textContent).toBe("No such ghost story is told here.!That replay does not exist.Back to the cemetery");
     });
     expect(repeated.urls).toEqual([]);
   });
 
-  it("shows no demo label, no evidence downloads and no pull request button on a replay", async () => {
+  // Spec clean-site, 8.19: the grave opens nothing, so no Drawer (and no pull request button) can show on a Replay.
+  it("shows no demo label, no evidence downloads and no pull request button on a replay, and its grave opens nothing", async () => {
     const { container } = mount("?replay=axios");
     await ready();
-    expect(container.textContent).not.toContain("demo fixture, recorded data");
+    expect(container.querySelector("header .scan-tag")?.textContent).toBe("Replay");
     expect(container.querySelector(".evidence-link")).toBeNull();
-    expect(container.querySelector(".header-evidence")).toBeNull();
     fireEvent.click(grave(container));
-    const dialog = screen.getByRole("dialog");
-    expect(within(dialog).queryByRole("button", { name: "Open pull request" })).toBeNull();
-    expect(dialog.textContent).not.toContain("Open pull request");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(container.textContent).not.toContain("Open pull request");
   });
 });
 
-describe("the banner (requirement 19)", () => {
-  it("shows the title, the exact text and one link per source on the scene screen and inside the drawer", async () => {
+// Spec clean-site, task 6.3: the banner became the Why card in the Panel (8.12), with the not-live line said once.
+describe("the Why card (requirement 19, spec clean-site 8.12)", () => {
+  it("shows the not-live line once and one link per https source in the Panel, and nothing in the header", async () => {
     for (const id of REPLAY_IDS) {
       const replay = (readReplay(id) as ScanResponse).replay as ReplayInfo;
       const { container } = mount(`?replay=${id}`);
       await ready();
-      const notes = container.querySelectorAll('[role="note"]');
-      expect(notes).toHaveLength(1);
-      // K2d fix 1, Deliberate test change 31: the banner is a card over the scene, in main, not in the header.
-      expect(container.querySelector("header")?.contains(notes[0] ?? null)).toBe(false);
-      expect(container.querySelector("main")?.contains(notes[0] ?? null)).toBe(true);
-      expect(notes[0]?.classList.contains("replay-card")).toBe(true);
-      expect(notes[0]?.textContent).toContain(REPLAY_BANNER_TEXT);
-      expect(notes[0]?.textContent).toContain(replay.title);
-      const links = [...(notes[0]?.querySelectorAll("a") ?? [])];
+      const card = container.querySelector("main aside .why-card") as HTMLElement;
+      expect(container.querySelector("header")?.textContent).not.toContain(REPLAY_NOT_LIVE);
+      expect(card.textContent).toContain(REPLAY_NOT_LIVE);
+      expect(container.textContent?.split(REPLAY_NOT_LIVE)).toHaveLength(2);
+      const links = [...card.querySelectorAll("a")];
       expect(links.map((a) => a.getAttribute("href"))).toEqual(replay.sources.map((s) => s.url));
       for (const a of links) {
         expect(a.getAttribute("target")).toBe("_blank");
         expect(a.getAttribute("rel")).toBe("noopener noreferrer");
       }
-      fireEvent.click(grave(container));
-      const dialog = screen.getByRole("dialog");
-      const inDrawer = dialog.querySelectorAll('[role="note"]');
-      expect(inDrawer).toHaveLength(1);
-      expect(inDrawer[0]?.textContent).toContain(REPLAY_BANNER_TEXT);
       cleanup();
     }
   });
 
-  it("shows no banner on the demo", async () => {
+  it("shows no Why card and no not-live line on a scan that is not a replay", async () => {
     const urlOf = (): typeof fetch =>
       ((): Promise<Response> => Promise.resolve(new Response(JSON.stringify({ ...(readReplay("axios") as ScanResponse), replay: undefined }), { status: 200 }))) as typeof fetch;
     render(<App fetchFn={urlOf()} apiBase={null} initialSearch="" pageOrigin={ORIGIN} />);
     await ready();
-    expect(document.querySelector('[role="note"]')).toBeNull();
+    expect(document.querySelector(".why-card")).toBeNull();
+    expect(document.body.textContent).not.toContain(REPLAY_NOT_LIVE);
   });
 });
 
-describe("the replay through the scrubber (requirement 20)", () => {
-  it("places the Stops at the sourced instants, one Step mark at every Stop after the first", async () => {
+// Spec clean-site, task 6.3: the Stops are the Replay's Steps, reached by the Step cards.
+describe("the replay through its Steps (requirement 20)", () => {
+  it("places the Stops at the sourced instants, one Step card per Stop", async () => {
     for (const id of REPLAY_IDS) {
       const stops = stopsFor(readReplay(id) as ScanResponse);
       expect(stops.stops.map((ms) => new Date(ms).toISOString())).toEqual(EXPECTED_SEGMENTS[id].map((s) => s.from));
-      const { container } = mount(`?replay=${id}`);
+      mount(`?replay=${id}`);
       await ready();
-      expect(Number(slider().max) + 1).toBe(EXPECTED_SEGMENTS[id].length);
-      expect(container.querySelectorAll(".scrub-ticks path")).toHaveLength(1);
+      expect(stepCards()).toHaveLength(EXPECTED_SEGMENTS[id].length);
+      expect(screen.queryByRole("slider")).toBeNull();
       cleanup();
     }
   });
 
-  it("shows the version, state and reason of each Stop in the grave name, tooltip and drawer", async () => {
+  // Spec clean-site, task 2.1: the tooltip half went with the tooltip (4.1). Task 6.3: the drawer half became the
+  // Step badge, since the grave opens nothing on a Replay (8.19).
+  it("shows the version and state of each Stop in the grave name and the Step badge", async () => {
     for (const id of REPLAY_IDS) {
       const { container } = mount(`?replay=${id}`);
       await ready();
       for (const [i, expected] of EXPECTED_SEGMENTS[id].entries()) {
         move(i);
-        expect(slider().getAttribute("aria-valuetext")).toBe(STOP_TEXT[id][i]);
+        expect(stepTime()).toBe(STOP_TEXT[id][i]);
         expect(label(container)).toBe(`${id} ${expected.version}, ${expected.state}`);
         expect(label(container)).not.toContain("not yet published");
-        fireEvent.pointerEnter(grave(container));
-        const tooltip = screen.getByRole("tooltip");
-        const tip = tooltip.textContent ?? "";
-        // K2d fix 1, Deliberate test change 28: the version shows once, in the "Here lies" line; the State line is the State.
-        expect(tooltip.querySelector(".epitaph-line")?.textContent).toBe(`Here lies ${id} ${expected.version}`);
-        expect(tooltip.querySelector(".tooltip-state")?.textContent).toBe(expected.state);
-        expect(tip).not.toContain(`${expected.version}, ${expected.state}`);
-        expect(tip).toContain(expected.reason);
-        fireEvent.pointerLeave(grave(container));
-      }
-      for (const [i, expected] of EXPECTED_SEGMENTS[id].entries()) {
-        move(i);
-        fireEvent.click(grave(container));
-        const dialog = screen.getByRole("dialog");
-        expect(within(dialog).getByRole("heading", { level: 2 }).textContent).toBe(`${id} ${expected.version}`);
-        expect(dialog.querySelector(".drawer-asof")?.textContent).toBe(`State on ${STOP_TEXT[id][i]}: ${expected.state}. ${expected.reason}`);
-        fireEvent.keyDown(dialog, { key: "Escape" });
+        expect(container.querySelector(".step-panel .badge")?.textContent).toBe(`${id} ${expected.version} is ${expected.state}`);
       }
       cleanup();
     }
   });
 
-  it("names the provenance regression at axios 1.14.1 and the new install script at keyv 6.0.0 in the tooltip", async () => {
-    const axios = mount("?replay=axios");
+  // Task 6.3: read from "What Sexton shows" now that the Replay has no Drawer.
+  it("names the provenance drop at axios 1.14.1 and the new install script at keyv 6.0.0 in What Sexton shows", async () => {
+    const shows = (): string => [...document.querySelectorAll(".step-panel .step-text")][1]?.textContent ?? "";
+    mount("?replay=axios");
     await ready();
     move(1);
-    fireEvent.pointerEnter(grave(axios.container));
-    expect(screen.getByRole("tooltip").textContent).toContain("provenance regression");
+    expect(shows()).toContain("1.14.1 has none");
     cleanup();
-    const keyv = mount("?replay=keyv");
+    mount("?replay=keyv");
     await ready();
     move(1);
-    fireEvent.pointerEnter(grave(keyv.container));
-    expect(screen.getByRole("tooltip").textContent).toContain("install script added in 6.0.0");
+    expect(shows()).toContain("An install script appeared");
   });
 
   it("opens each replay at its first Stop with the first row of its table (spec cemetery-time-fixes, 3.1)", async () => {
@@ -236,26 +236,26 @@ describe("the replay through the scrubber (requirement 20)", () => {
       const { container } = mount(`?replay=${id}`);
       await ready();
       const first = EXPECTED_SEGMENTS[id][0];
-      expect(slider().value).toBe("0");
-      expect(slider().getAttribute("aria-valuetext")).toBe(STOP_TEXT[id][0]);
+      expect(stepCards()[0]?.getAttribute("aria-current")).toBe("step");
+      expect(stepTime()).toBe(STOP_TEXT[id][0]);
       expect(label(container)).toBe(`${id} ${first.version}, ${first.state}`);
-      expect(screen.getByRole("button", { name: "Play" })).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Play all" })).toBeTruthy();
       cleanup();
     }
   });
 
-  it("shows the replay title in place of the repository and no policy line, at every Stop", async () => {
+  // Spec clean-site, 8.1: the Replay's headline and sub-line in place of the Home headline; no policy line.
+  it("shows the replay headline and sub-line and no policy line, at every Stop", async () => {
     for (const id of REPLAY_IDS) {
       const { container } = mount(`?replay=${id}`);
       await ready();
-      const title = (readReplay(id) as { replay: { title: string } }).replay.title;
       for (let i = 0; i < EXPECTED_SEGMENTS[id].length; i += 1) {
         move(i);
-        expect(container.querySelector(".repo-text")?.textContent).toBe(title);
-        expect(container.querySelector(".header-policy")).toBeNull();
-        const header = container.querySelector("header.site-header")?.textContent ?? "";
-        expect(header).not.toContain("no scan metadata in this response");
-        expect(header).not.toContain("policy:");
+        expect(container.querySelector(".headline")?.textContent).toBe(`Watch the ${id} attack unfold`);
+        expect(container.querySelector(".hero-line")?.textContent).toMatch(/^\d{1,2} [A-Z][a-z]+ 2026\. A real attack on one package, step by step\. Watch the grave change\.$/);
+        expect(container.querySelector(".footer-policy")).toBeNull();
+        expect(container.textContent).not.toContain("policy:");
+        expect(container.textContent).not.toContain("no scan metadata in this response");
       }
       cleanup();
     }
@@ -265,18 +265,10 @@ describe("the replay through the scrubber (requirement 20)", () => {
     const { container } = mount("?replay=axios");
     await ready();
     move(2);
-    expect(slider().value).toBe("2");
+    expect(stepTime()).toBe(STOP_TEXT.axios[2]);
     expect(label(container)).toBe("axios 1.14.0, Alive");
   });
 });
-
-let parser: DOMParser | null = null;
-/** Parses both screens in one document, each in its own wrapper, so a run costs one parse. */
-function screensOf(scene: string, drawer: string): readonly Element[] {
-  parser ??= new DOMParser();
-  const doc = parser.parseFromString(`<!doctype html><body><div id="s">${scene}</div><div id="d">${drawer}</div>`, "text/html");
-  return [doc.getElementById("s"), doc.getElementById("d")].filter((e): e is HTMLElement => e !== null);
-}
 
 const HOSTILE = [
   "javascript:alert(1)",
@@ -294,6 +286,8 @@ const HOSTILE = [
 ];
 
 const arbReplayBlock: fc.Arbitrary<ReplayInfo> = fc.record({
+  steps: fc.constant([]),
+  why: fc.oneof(fc.string({ maxLength: 80 }), fc.constant("<script>alert(1)</script>")),
   id: fc.constantFrom<ReplayId>("axios", "keyv"),
   title: fc.oneof(fc.string({ maxLength: 40 }), fc.constant("<script>alert(1)</script>")),
   summary: fc.oneof(fc.string({ maxLength: 80 }), fc.constant('<img src="x" onerror="alert(1)">')),
@@ -309,42 +303,34 @@ const arbReplayBlock: fc.Arbitrary<ReplayInfo> = fc.record({
 // eslint-disable-next-line no-control-regex -- the link rule rejects control characters
 const safe = (url: string): boolean => url.startsWith("https://") && !/[\s\u0000-\u001f\u007f]/.test(url);
 
+// Spec clean-site, task 6.3: the banner is the Why card, the one place a Replay shows its sources and the not-live
+// line; the Drawer no longer carries a replay (8.19), so the property runs on the card alone.
 describe("Property 21: The banner is on every replay screen and links only to https", () => {
   it("Feature: cemetery-time, Property 21: The banner is on every replay screen and links only to https", () => {
-    const base = readReplay("axios") as ScanResponse;
-    const pkg = base.report.packages[0] as PackageHealth;
-    const model = drawerModel(base, pkg);
-    const noop = (): void => undefined;
+    parser ??= new DOMParser();
     fc.assert(
       fc.property(arbReplayBlock, (replay) => {
-        const screens = screensOf(
-          // K2d fix 1, Deliberate test change 31: the scene screen's banner is the card over the scene.
-          renderToStaticMarkup(<ReplayBanner replay={replay} className="replay-card" />),
-          renderToStaticMarkup(<Drawer model={model} replay={replay} onClose={noop} />),
-        );
-        expect(screens).toHaveLength(2);
-        for (const doc of screens) {
-          const notes = doc.querySelectorAll('[role="note"]');
-          expect(notes).toHaveLength(1);
-          const note = notes[0] as Element;
-          expect(note.textContent).toContain(REPLAY_BANNER_TEXT);
-          const anchors = [...note.querySelectorAll("a")];
-          expect(anchors).toHaveLength(replay.sources.filter((s) => safe(s.url)).length);
-          for (const a of anchors) {
-            expect(a.getAttribute("target")).toBe("_blank");
-            expect(a.getAttribute("rel")).toBe("noopener noreferrer");
-            const href = a.getAttribute("href") ?? "";
-            expect(href.startsWith("https://")).toBe(true);
-            expect(/\s/.test(href)).toBe(false);
-          }
-          expect(note.querySelectorAll("script, img, iframe, svg, style")).toHaveLength(0);
-          for (const el of note.querySelectorAll("[href], [src]")) expect(el.tagName).toBe("A");
+        const doc = (parser as DOMParser).parseFromString(`<!doctype html><body>${renderToStaticMarkup(<WhyCard replay={replay} />)}</body>`, "text/html");
+        const card = doc.querySelector(".why-card") as Element;
+        expect(card.textContent).toContain(REPLAY_NOT_LIVE);
+        const anchors = [...card.querySelectorAll("a")];
+        expect(anchors).toHaveLength(replay.sources.filter((s) => safe(s.url)).length);
+        for (const a of anchors) {
+          expect(a.getAttribute("target")).toBe("_blank");
+          expect(a.getAttribute("rel")).toBe("noopener noreferrer");
+          const href = a.getAttribute("href") ?? "";
+          expect(href.startsWith("https://")).toBe(true);
+          expect(/\s/.test(href)).toBe(false);
         }
+        expect(card.querySelectorAll("script, img, iframe, svg, style")).toHaveLength(0);
+        for (const el of card.querySelectorAll("[href], [src]")) expect(el.tagName).toBe("A");
       }),
       { numRuns: 1000 },
     );
   });
 });
+
+let parser: DOMParser | null = null;
 
 describe("Property 22: The replay query is a closed set", () => {
   it("Feature: cemetery-time, Property 22: The replay query is a closed set", () => {

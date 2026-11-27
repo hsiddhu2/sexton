@@ -20,7 +20,7 @@ interface DemoPackage {
 /** Resolves once the scene canvas holds a painted pixel: the sky fill makes device pixel (2, 2) opaque. */
 async function waitForFirstPaint(page: Page): Promise<void> {
   await page.waitForFunction(() => {
-    const canvas = document.querySelector("canvas");
+    const canvas = document.querySelector<HTMLCanvasElement>("canvas.scene-canvas");
     const data = canvas?.getContext("2d")?.getImageData(2, 2, 1, 1).data;
     return data !== undefined && data[3] === 255;
   });
@@ -48,13 +48,14 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await expect(page.locator("header")).toBeVisible();
-  await expect(page.locator("header")).toContainText("demo fixture, recorded data");
+  await expect(page.locator("header .scan-tag")).toHaveText("Sample scan");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
 
-  // Spec evidence-pack, Requirement 8.4: both demo evidence links are in the header and both files download.
+  // Spec evidence-pack, Requirement 8.4: both demo evidence links download. Spec clean-site moved them to the site
+  // footer as "Evidence JSON" and "Evidence Markdown" (16.12).
   for (const [name, path, file] of [
-    ["Download evidence pack as JSON", "/demo/evidence.json", "evidence.json"],
-    ["Download evidence pack as Markdown", "/demo/evidence.md", "evidence.md"],
+    ["Evidence JSON", "/demo/evidence.json", "evidence.json"],
+    ["Evidence Markdown", "/demo/evidence.md", "evidence.md"],
   ] as const) {
     const link = page.getByRole("link", { name });
     await expect(link).toHaveAttribute("href", path);
@@ -70,8 +71,11 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
   expect(csp).toContain("object-src 'none'");
   expect(csp).not.toContain("unsafe-inline");
 
-  // Task 10.2: the README screenshot is the closed cemetery at 1440 by 900 with Reduced motion on.
+  // Task 10.2: the README screenshot is the closed cemetery at 1440 by 900 with Reduced motion on. Spec clean-site,
+  // task 12.2 (18.1): the picture shows Home as a returning visitor sees it, so the Welcome bar is closed first.
   await page.setViewportSize({ width: 1440, height: 900 });
+  await page.getByRole("button", { name: "Close the welcome bar" }).click();
+  await expect(page.getByRole("region", { name: "Welcome" })).toHaveCount(0);
   // Spec cemetery-undead, Deliberate test change 27 (no assertion changes): drop the focus and the hover that the
   // download clicks left on the JSON link.
   await page.evaluate(() => {
@@ -79,16 +83,8 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
   });
   await page.mouse.move(1, 899);
   await waitForFirstPaint(page);
-  // K2d fix 1, item 8: the picture shows a tooltip open with its epitaph, as in the mockup. Spec cemetery-undead-2,
-  // Deliberate test change 9: the tooltip is event-stream's, so left-padder is not hovered and shows its Halo.
-  const hovered = page.locator('button[data-grave-index][aria-label^="event-stream"]');
-  await hovered.hover();
-  const tip = page.getByRole("tooltip");
-  await expect(tip).toContainText("Here lies event-stream");
-  await expect(tip.locator(".epitaph-punchline")).toBeVisible();
-  // Spec cemetery-undead-2, Deliberate test change 7 (an addition): the picture shows two speech Bubbles, so wait for
-  // a show window in which both are placed (a slot is 6 s).
-  await expect(page.locator(".bubble")).toHaveCount(2, { timeout: 30_000 });
+  // Spec clean-site, task 2: the tooltip and the speech Bubbles are gone (4.1), so the picture shows neither.
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   await page.screenshot({ path: SCREENSHOT });
   await page.mouse.move(1, 899);
@@ -179,41 +175,49 @@ test("the axios replay at its Possessed stop, for the README", async ({ page, ba
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/?replay=axios");
+  // Spec clean-site, task 12.2 (18.1): as the cemetery picture, the Welcome bar is closed.
+  await page.getByRole("button", { name: "Close the welcome bar" }).click();
   const grave = page.locator("button[data-grave-index]").first();
   await expect(grave).toHaveAttribute("aria-label", "axios 1.14.0, Alive");
-  const scrubber = page.getByRole("slider", { name: "History date" });
-  await scrubber.focus();
-  await scrubber.press("ArrowRight");
+  // Spec clean-site, task 6.3: the Replay moves by "Next step" and its Why card holds the sources (8.12).
+  const next = page.getByRole("button", { name: "Next step" });
+  await next.click();
   await expect(grave).toHaveAttribute("aria-label", "axios 1.14.1, Possessed");
-  await expect(page.locator('[role="note"]')).toBeVisible();
+  await expect(page.locator(".why-card")).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   // A replay names itself in the header and shows no policy line (its policy is for the replay's end time).
-  await expect(page.locator(".repo-text")).toHaveText("Replay: axios npm compromise, 31 March 2026");
-  await expect(page.locator(".header-policy")).toHaveCount(0);
-  // K2d fix 1, item 4: the story is a card over the scene, the Stops are three dated cards in the Footer bar, and the
-  // header keeps its normal height.
-  const card = page.locator("main .replay-card");
+  await expect(page.locator(".headline")).toHaveText("Watch the axios attack unfold");
+  await expect(page.locator(".footer-policy")).toHaveCount(0);
+  // Spec clean-site, task 6.3: the Step panel and the Why card in the Panel, three Step cards in the Footer bar, and
+  // the header keeps its normal height.
+  const card = page.locator("main .why-card");
   await expect(card).toBeVisible();
   await expect(card).toContainText("Reconstructed from public reports. Not a live scan.");
   await expect(card.locator("a")).toHaveCount(4);
-  await expect(page.locator("footer .stop-card")).toHaveCount(3);
-  await expect(page.locator('footer .stop-card[aria-current="step"]')).toContainText("axios 1.14.1");
-  const canvasBox = await page.locator("canvas").boundingBox();
+  await expect(page.locator("footer .step-card")).toHaveCount(3);
+  await expect(page.locator('footer .step-card[aria-current="step"]')).toContainText("A poisoned release appears");
+  // Spec clean-site, task 12.2: the Replay page puts its breadcrumb, headline and sub-line above the stage (8.1), so
+  // the old bound of 120 px became: the whole stage, the Step panel and the Footer bar lie inside the 900 px picture.
+  const canvasBox = await page.locator("canvas.scene-canvas").boundingBox();
   console.log(`axios replay canvas top ${String(canvasBox?.y)}`);
-  expect(canvasBox?.y ?? 999).toBeLessThanOrEqual(120);
-  // Move focus off the slider so no focus ring is in the picture, then wait two frames for the repaint.
-  await scrubber.blur();
+  expect(canvasBox?.y ?? 999).toBeLessThanOrEqual(260);
+  for (const part of ["canvas.scene-canvas", ".step-panel", ".replay-foot"]) {
+    const box = await page.locator(part).boundingBox();
+    expect((box?.y ?? 999) + (box?.height ?? 999), part).toBeLessThanOrEqual(900);
+  }
+  // Move focus off the button so no focus ring is in the picture, then wait two frames for the repaint.
+  await next.blur();
   await waitForFirstPaint(page);
   // Spec cemetery-undead-2, Deliberate test change 10: the picture is taken at the 00:21 UTC Stop with nothing
-  // hovered (K2d fix 1, item 8 opened the axios tooltip here), so the grave shows its Halo with the Burst caption.
+  // hovered (an earlier version of this test opened the axios tooltip here), so the grave shows its Halo.
   await page.mouse.move(1, 899);
   await expect(page.getByRole("tooltip")).toHaveCount(0);
-  // Spec cemetery-undead-2, Deliberate test change 7 (an addition): the Burst's caption shows, and under Reduced
-  // motion its final pose, the still open grave with the zombie standing, is drawn at once.
-  await expect(page.locator(".burst-caption")).toHaveText("The wind stops. A grave opens.");
+  // Spec cemetery-undead-2, Deliberate test change 7: under Reduced motion the Burst's final pose, the still open
+  // grave with the zombie standing, is drawn at once. Spec clean-site, task 2.2: with no caption (4.5).
+  await expect(page.locator(".burst-caption")).toHaveCount(0);
   const graveBox = await grave.boundingBox();
   const skin = await page.evaluate((b) => {
-    const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+    const canvas = document.querySelector<HTMLCanvasElement>("canvas.scene-canvas") as HTMLCanvasElement;
     const r = canvas.getBoundingClientRect();
     const k = canvas.width / r.width;
     const data = (canvas.getContext("2d") as CanvasRenderingContext2D).getImageData(Math.round((b.x - r.left) * k), Math.round((b.y - r.top) * k), Math.round(b.width * k), Math.round(b.height * k)).data;
@@ -242,10 +246,10 @@ test("loads the fonts from /fonts on the page origin and makes no request to ano
   const fonts = requests.filter((u) => u.endsWith(".woff2")).map((u) => new URL(u).pathname);
   expect(fonts.length).toBeGreaterThan(0);
   for (const f of fonts) expect(f).toMatch(/^\/fonts\/[a-z0-9-]+\.woff2$/);
-  expect(await page.evaluate(() => document.fonts.check('16px "Instrument Sans"'))).toBe(true);
+  expect(await page.evaluate(() => document.fonts.check("16px Inter"))).toBe(true);
 });
 
-// K2d fix 1, item 7: a Character is drawn on a Possessed and on a Dead grave (spec cemetery-undead, requirement 3).
+// A Character is drawn on a Possessed and on a Dead grave (spec cemetery-undead, requirement 3).
 test("draws the zombie on the Possessed grave and the skeleton on a Dead grave", async ({ page, baseURL }) => {
   const origin = new URL(baseURL ?? "http://localhost:4173").origin;
   await page.route("**/*", async (route) => {
@@ -263,7 +267,7 @@ test("draws the zombie on the Possessed grave and the skeleton on a Dead grave",
     expect(box).not.toBeNull();
     return page.evaluate(
       ({ b, hex }) => {
-        const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+        const canvas = document.querySelector<HTMLCanvasElement>("canvas.scene-canvas") as HTMLCanvasElement;
         const r = canvas.getBoundingClientRect();
         const k = canvas.width / r.width;
         const x = Math.round((b.x - r.left) * k);

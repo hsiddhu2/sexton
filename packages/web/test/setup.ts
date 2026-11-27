@@ -1,7 +1,6 @@
 // jsdom stubs: canvas 2D context, Path2D, matchMedia, ResizeObserver, requestAnimationFrame.
 import { afterEach, beforeEach } from "vitest";
 import { setLoadMomentPlayedForTests } from "../src/scene/load-moment.js";
-import { setGuideAllowedForTests } from "../src/guide/guide-pref.js";
 
 export interface CanvasCall {
   readonly method: string;
@@ -132,14 +131,20 @@ beforeEach(() => {
   // The Load moment (spec cemetery-undead-2, B5) counts as played, so existing tests see the scene at rest. Its own
   // tests clear this.
   setLoadMomentPlayedForTests(true);
-  // The Guide (spec judge-path, requirement 1) never opens by itself, so existing tests see the page without it. Its
-  // own tests allow it.
-  setGuideAllowedForTests(false);
   install();
 });
 
-afterEach(() => {
+afterEach(async () => {
   reset();
+  // A Back step the page took (a Drawer close, spec clean-site 10.17) lands a task later. Let it land here, after the
+  // case has unmounted, then start the next case on "/", so no popstate reaches the next case's page.
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  try {
+    window.history.replaceState(null, "", "/");
+  } catch {
+    // A case that replaced the history API keeps its own.
+  }
 });
 
 install();

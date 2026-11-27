@@ -12,7 +12,8 @@ describe("web smoke", () => {
         pageOrigin="http://localhost"
       />,
     );
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Sexton cemetery");
+    // Spec clean-site, task 3: the wordmark is a link home; the page's one h1 is the Home headline.
+    expect(screen.getByRole("link", { name: "Sexton, back to the cemetery" }).textContent).toBe("Sexton");
   });
 
   it("installs the setup stubs", () => {

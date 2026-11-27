@@ -1,4 +1,5 @@
-// Spec cemetery-polish, task 10.1: browser checks that jsdom cannot make.
+// Spec cemetery-polish, task 10.1: browser checks that jsdom cannot make. Spec clean-site, task 2.1: the tooltip case
+// went with the tooltip (4.1).
 // Every request to a host other than the local server is aborted, so nothing here reaches a network.
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -17,15 +18,23 @@ function originOf(baseURL: string | undefined): string {
   return new URL(baseURL ?? "http://localhost:4173").origin;
 }
 const scrollWidth = (page: Page): Promise<number> => page.evaluate(() => document.documentElement.scrollWidth);
-test("at 360 px the page does not scroll sideways and the canvas is full-bleed", async ({ page, baseURL }) => {
+// Spec clean-site, task 11: the design the owner approved keeps a 14 px gutter around the Scene card on a phone, so
+// the canvas is no longer full-bleed; it spans the content width inside that gutter.
+test("at 360 px the page does not scroll sideways and the canvas spans the content width", async ({ page, baseURL }) => {
   await blockForeignOrigins(page, originOf(baseURL));
   await page.setViewportSize(NARROW);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
   const closed = await scrollWidth(page);
-  const canvas = await page.locator("canvas").first().boundingBox();
-  expect(canvas?.x).toBe(0);
+  const canvas = await page.locator("canvas.scene-canvas").first().boundingBox();
+  expect(canvas?.x ?? 99).toBeLessThanOrEqual(16);
+  // The canvas takes its width once the Scene card is measured, so its right edge is read until it has.
+  const right = async (): Promise<number> => {
+    const b = await page.locator("canvas.scene-canvas").first().boundingBox();
+    return b === null ? 0 : b.x + b.width;
+  };
+  await expect.poll(right, { timeout: 2000 }).toBeGreaterThanOrEqual(NARROW.width - 16);
   await page.getByRole("button", { name: "Legend" }).click();
   await expect(page.locator("#legend-panel")).toBeVisible();
   const legend = await scrollWidth(page);
@@ -42,31 +51,6 @@ test("at 360 px the page does not scroll sideways and the canvas is full-bleed",
   expect(legend).toBeLessThanOrEqual(NARROW.width);
   expect(box?.width).toBe(NARROW.width);
 });
-test("the tooltip shows on hover, survives a move onto it, hides on Escape and shows on focus", async ({ page, baseURL }) => {
-  await blockForeignOrigins(page, originOf(baseURL));
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/");
-  await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
-  const grave = page.locator(GRAVE);
-  const tooltip = page.locator('[role="tooltip"]');
-  await grave.hover();
-  await expect(tooltip).toBeVisible();
-  await expect(tooltip).toContainText("left-padder");
-  await expect(tooltip).toContainText("maintainer change in the last 90 days");
-  const tip = await tooltip.boundingBox();
-  expect(tip).not.toBeNull();
-  if (tip === null) return;
-  await page.mouse.move(tip.x + tip.width / 2, tip.y + tip.height / 2);
-  // Wait longer than the 150 ms grace period: the tooltip must still be there.
-  await page.waitForTimeout(400);
-  await expect(tooltip).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(tooltip).toHaveCount(0);
-  await page.mouse.move(2, 2);
-  await grave.focus();
-  await expect(tooltip).toBeVisible();
-  await expect(tooltip).toContainText("left-padder");
-});
 for (const width of [1280, 1440]) test(`a press on the Repository URL box closes the drawer and focuses the box at ${String(width)} px`, async ({ page, baseURL }) => {
   const origin = originOf(baseURL);
   const demo: unknown = JSON.parse(readFileSync(DEMO, "utf8"));
@@ -81,7 +65,7 @@ for (const width of [1280, 1440]) test(`a press on the Repository URL box closes
   await page.setViewportSize({ width, height: 800 });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
-  const field = page.getByLabel("Repository URL");
+  const field = page.getByLabel("GitHub repository to scan");
   await field.fill("https://github.com/hsiddhu2/sexton-demo");
   await field.press("Enter");
   await page.locator(GRAVE).click();
@@ -104,6 +88,9 @@ test("the pull request table of lodash is visible in the drawer", async ({ page,
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await page.locator('button[data-grave-index][aria-label^="lodash"]').first().click();
+  // Spec clean-site, 7.16: the body is on the fix tab, in a closed disclosure.
+  await page.getByRole("dialog").getByRole("tab", { name: "The fix" }).click();
+  await page.getByRole("dialog").getByText("Read the pull request text").click();
   const table = page.getByRole("dialog").locator(".pr-preview table");
   await expect(table).toBeVisible();
   // Spec new-signals counts twelve signals, one row each (its design.md "Deliberate test changes"); this e2e still said

@@ -308,7 +308,7 @@ describe("useScanLoader examples", () => {
     act(() => {
       message = plain.result.current.submitRepo("a/b");
     });
-    expect(message).toBe("hosted scan arrives with release 0.1 infra");
+    expect(message).toBe("Scanning is off in this build.");
   });
 
   it("submits against a path base as one same-origin GET", async () => {

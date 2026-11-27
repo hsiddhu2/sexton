@@ -3,7 +3,7 @@ import { act, renderHook } from "@testing-library/react";
 import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
 import { ART_BOX } from "../src/scene/art-box.js";
-import { bellKey, drawPriest, PRIEST_PARTS, PRIEST_AT_X, PRIEST_BOX, PRIEST_FROM_X, PRIEST_H, PRIEST_W, priestPose, WALK_END } from "../src/scene/characters/priest.js";
+import { drawPriest, PRIEST_PARTS, PRIEST_AT_X, PRIEST_BOX, PRIEST_FROM_X, PRIEST_H, PRIEST_W, priestPose, WALK_END } from "../src/scene/characters/priest.js";
 import { BURIAL_CUT_STEPS, buryingRegions } from "../src/scene/halo.js";
 import { FORM_PARTS } from "../src/scene/art-box.js";
 import { BURIAL_SINK_PX, burialFrame } from "../src/time/burial.js";
@@ -127,17 +127,6 @@ describe("the burial's regions (spec cemetery-undead-fixes, bug 1)", () => {
         }
       }
     }
-  });
-});
-
-describe("the bell (requirement 10.2)", () => {
-  it("rings once per burial, from the phase the Priest reads, and once at each Vigil's start", () => {
-    expect(bellKey({ name: "a", phase: 0.1 }, null)).toBeNull();
-    const keys = [0.4, 0.5, 0.9, 1].map((phase) => bellKey({ name: "a", phase }, null));
-    expect(new Set(keys).size).toBe(1);
-    expect(keys[0]).not.toBeNull();
-    expect(bellKey(null, { name: "a", startMs: 1 })).not.toBe(bellKey(null, { name: "a", startMs: 2 }));
-    expect(bellKey(null, null)).toBeNull();
   });
 });
 

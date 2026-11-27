@@ -339,7 +339,10 @@ describe("timelines, pull requests and replay", () => {
   });
 
   it("checks replay", () => {
-    const replay = { id: "axios", title: "t", summary: "s", sources: [{ label: "l", url: "http://not-https.example" }] };
+    // A replay's base is a replay file: the demo has more Stops than a Replay may have Steps.
+    const base = (): Record<string, unknown> => structuredClone(readReplay("axios")) as Record<string, unknown>;
+    const steps = (readReplay("axios") as ScanResponse).replay?.steps ?? [];
+    const replay = { id: "axios", title: "t", summary: "s", sources: [{ label: "l", url: "http://not-https.example" }], steps, why: "w" };
     expect(validateScanResponse({ ...base(), replay }).ok).toBe(true);
     expect(paths({ ...base(), replay: { ...replay, id: "other" } })).toEqual(["/replay/id"]);
     expect(paths({ ...base(), replay: { ...replay, title: "t".repeat(121) } })).toEqual(["/replay/title"]);
@@ -347,6 +350,48 @@ describe("timelines, pull requests and replay", () => {
     expect(paths({ ...base(), replay: { ...replay, sources: [] } })).toEqual(["/replay/sources"]);
     expect(errorsOf({ ...base(), replay: { ...replay, sources: Array.from({ length: 7 }, () => replay.sources[0]) } }).map((e) => e.code)).toEqual(["TOO_MANY_ITEMS"]);
     expect(paths({ ...base(), replay: { ...replay, sources: [{ label: "l".repeat(121), url: "u" }] } })).toEqual(["/replay/sources/0/label"]);
+  });
+
+  // Spec clean-site, 8.13 and 8.15.
+  it("checks the Step texts, the why text and the Step count against stopsFor", () => {
+    const base = (): Record<string, unknown> => structuredClone(readReplay("axios")) as Record<string, unknown>;
+    const stops = stopsFor(readReplay("axios") as ScanResponse).stops.length;
+    expect(stops).toBe(3);
+    const step = (i: number): Record<string, string> => ({ title: `t${String(i)}`, happened: `h${String(i)}`, shows: `s${String(i)}` });
+    const steps = Array.from({ length: stops }, (_, i) => step(i));
+    const replay = { id: "axios", title: "t", summary: "s", sources: [{ label: "l", url: "https://x.example" }], steps, why: "w" };
+    const codes = (input: unknown): string[] => errorsOf(input).map((e) => `${e.path}:${e.code}`);
+    expect(validateScanResponse({ ...base(), replay }).ok).toBe(true);
+    expect(codes({ ...base(), replay: { ...replay, steps: steps.slice(1) } })).toEqual(["/replay/steps:MISSING_FIELD"]);
+    expect(codes({ ...base(), replay: { ...replay, steps: [...steps, step(99)] } })).toEqual(["/replay/steps:TOO_MANY_ITEMS"]);
+    expect(codes({ ...base(), replay: { ...replay, steps: [] } })).toEqual(["/replay/steps:MISSING_FIELD"]);
+    for (const field of ["title", "happened", "shows"]) {
+      const same = steps.map((s, i) => (i === 1 ? { ...s, [field]: steps[0]?.[field] ?? "" } : s));
+      expect(codes({ ...base(), replay: { ...replay, steps: same } })).toEqual([`/replay/steps/1/${field}:DUPLICATE`]);
+      const empty = steps.map((s, i) => (i === 0 ? { ...s, [field]: "" } : s));
+      expect(codes({ ...base(), replay: { ...replay, steps: empty } })).toEqual([`/replay/steps/0/${field}:WRONG_TYPE`]);
+      const { [field]: _gone, ...rest } = steps[0] ?? {};
+      expect(_gone).toBeDefined();
+      expect(codes({ ...base(), replay: { ...replay, steps: [rest, ...steps.slice(1)] } })).toEqual([`/replay/steps/0/${field}:MISSING_FIELD`]);
+    }
+    expect(codes({ ...base(), replay: { ...replay, steps: steps.map((s, i) => (i === 0 ? { ...s, title: "t".repeat(81) } : s)) } })).toEqual(["/replay/steps/0/title:WRONG_TYPE"]);
+    expect(codes({ ...base(), replay: { ...replay, steps: steps.map((s, i) => (i === 0 ? { ...s, shows: "s".repeat(401) } : s)) } })).toEqual(["/replay/steps/0/shows:WRONG_TYPE"]);
+    expect(codes({ ...base(), replay: { ...replay, steps: [7, ...steps.slice(1)] } })).toEqual(["/replay/steps/0:NOT_OBJECT"]);
+    expect(codes({ ...base(), replay: { ...replay, steps: Array.from({ length: 9 }, (_, i) => step(i)) } })).toEqual(["/replay/steps:TOO_MANY_ITEMS"]);
+    // The demo's Stops are more than a Replay may hold, so a replay block on it is refused.
+    expect(validateScanResponse({ ...structuredClone(demo), replay }).ok).toBe(false);
+    expect(codes({ ...base(), replay: { ...replay, why: "w".repeat(801) } })).toEqual(["/replay/why:WRONG_TYPE"]);
+    expect(codes({ ...base(), replay: { ...replay, why: "" } })).toEqual(["/replay/why:WRONG_TYPE"]);
+    const { why: _w, ...noWhy } = replay;
+    expect(_w).toBe("w");
+    expect(codes({ ...base(), replay: noWhy })).toEqual(["/replay/why:MISSING_FIELD"]);
+    // A shipped replay file with one Step too few or too many is refused.
+    for (const id of ["axios", "keyv"] as const) {
+      const doc = structuredClone(readReplay(id)) as { replay: { steps: unknown[] } };
+      expect(validateScanResponse(doc).ok).toBe(true);
+      doc.replay.steps.pop();
+      expect(validateScanResponse(doc).ok).toBe(false);
+    }
   });
 });
 

@@ -1,6 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { moveSelection, reduceSelection } from "../src/selection/selection.js";
+import { moveSelection, reduceSelection, stepWrap } from "../src/selection/selection.js";
 import { arbArrowKey, arbKeyEvent } from "./arbitraries.js";
 
 const NO_MOD = { ctrlKey: false, altKey: false, metaKey: false };
@@ -26,7 +26,8 @@ describe("selection", () => {
               expect(Number.isInteger(outcome.index)).toBe(true);
               expect(outcome.index as number).toBeGreaterThanOrEqual(0);
               expect(outcome.index as number).toBeLessThanOrEqual(count - 1);
-              const arrow = event.key.startsWith("Arrow");
+              // Spec clean-site, 3.23: Left and Right leave the reducer (the page moves the Selected grave with wrap).
+              const arrow = event.key === "ArrowUp" || event.key === "ArrowDown";
               const modified = event.ctrlKey || event.altKey || event.metaKey;
               if (modified || !arrow) {
                 expect(outcome.index).toBe(before);
@@ -75,8 +76,9 @@ describe("selection", () => {
           const other = reduceSelection(i, { key: "Shift", ...NO_MOD }, after, count);
           expect(other.index).toBe(reduceSelection(i, { key: "Shift", ...NO_MOD }, before, count).index);
           expect(other.index).toBe(i);
-          // the next arrow uses the new column count
-          expect(reduceSelection(i, { key, ...NO_MOD }, after, count).index).toBe(moveSelection(i, key, after, count));
+          // the next Up or Down uses the new column count; Left and Right leave the reducer (spec clean-site, 3.23)
+          const expected = key === "ArrowUp" || key === "ArrowDown" ? moveSelection(i, key, after, count) : i;
+          expect(reduceSelection(i, { key, ...NO_MOD }, after, count).index).toBe(expected);
         },
       ),
       { numRuns: 100 },
@@ -88,6 +90,16 @@ describe("selection", () => {
       const outcome = reduceSelection(3, { key: "ArrowLeft", ...NO_MOD, [mod]: true }, 4, 10);
       expect(outcome).toEqual({ index: 3, handled: false, preventDefault: false });
     }
+  });
+
+  it("leaves Left and Right to the page, which wraps at the ends in triage order (spec clean-site, 3.23)", () => {
+    expect(reduceSelection(3, { key: "ArrowLeft", ...NO_MOD }, 4, 10)).toEqual({ index: 3, handled: false, preventDefault: false });
+    expect(reduceSelection(3, { key: "ArrowRight", ...NO_MOD }, 4, 10)).toEqual({ index: 3, handled: false, preventDefault: false });
+    expect(stepWrap(0, "ArrowLeft", 10)).toBe(9);
+    expect(stepWrap(9, "ArrowRight", 10)).toBe(0);
+    expect(stepWrap(4, "ArrowRight", 10)).toBe(5);
+    expect(stepWrap(null, "ArrowRight", 10)).toBe(1);
+    expect(stepWrap(3, "ArrowLeft", 0)).toBeNull();
   });
 
   it("does not handle non-arrow keys", () => {

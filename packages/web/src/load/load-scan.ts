@@ -1,4 +1,5 @@
-import type { ScanResponse } from "@sexton/api";
+import type { ApiErrorCode, ScanResponse } from "@sexton/api";
+import { errorCodeOf, MAX_ERROR_BODY_BYTES } from "./error-code.js";
 import { makeLoadError, type LoadError } from "./load-error.js";
 import { validateScanResponse } from "./validate-scan-response.js";
 
@@ -53,6 +54,26 @@ async function readBounded(response: Response, maxBytes: number): Promise<Uint8A
   return bytes;
 }
 
+/**
+ * Spec clean-site, 12.3 and 12.4: the code field of an error body of at most MAX_ERROR_BODY_BYTES, kept only when it
+ * is one of the API's error codes. No other text of the body is kept, shown or logged. Never rejects.
+ */
+async function readErrorCode(response: Response): Promise<ApiErrorCode | null> {
+  try {
+    const declared = response.headers.get("content-length");
+    if (declared !== null && /^\d+$/.test(declared) && Number(declared) > MAX_ERROR_BODY_BYTES) {
+      discard(response);
+      return null;
+    }
+    const bytes = await readBounded(response, MAX_ERROR_BODY_BYTES);
+    if (bytes === null) return null;
+    return errorCodeOf(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+  } catch {
+    discard(response);
+    return null;
+  }
+}
+
 async function run(url: string, options: LoadScanOptions, cache?: RequestCache): Promise<LoadResult> {
   const { fetchFn, signal } = options;
   const maxBytes = options.maxBytes ?? MAX_SCAN_BYTES;
@@ -67,8 +88,8 @@ async function run(url: string, options: LoadScanOptions, cache?: RequestCache):
   });
   if (signal.aborted) return fail("fetch-failed");
   if (response.status < 200 || response.status > 299) {
-    discard(response);
-    return fail("fetch-failed", response.status);
+    const apiCode = await readErrorCode(response);
+    return { ok: false, error: makeLoadError("fetch-failed", apiCode === null ? { status: response.status } : { status: response.status, apiCode }) };
   }
   const declared = response.headers.get("content-length");
   if (declared !== null && /^\d+$/.test(declared) && Number(declared) > maxBytes) {

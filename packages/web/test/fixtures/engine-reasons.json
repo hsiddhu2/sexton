@@ -1,0 +1,14 @@
+[
+  { "family": "maintainer", "reason": "maintainer change in the last 90 days" },
+  { "family": "provenance", "reason": "provenance regression: 1.14.1 has no provenance, 1.14.0 had it" },
+  { "family": "install-script", "reason": "install script added in 6.0.0" },
+  { "family": "new-dependency", "reason": "new dependency in 1.14.1: plain-crypto-js" },
+  { "family": "publisher", "reason": "publisher changed in 1.14.1: github-actions to jasonsaayman" },
+  { "family": "deprecated", "reason": "installed version is deprecated" },
+  { "family": "stale-advisory", "reason": "no release in 24 months and an open advisory" },
+  { "family": "high", "reason": "advisory of severity High or Critical" },
+  { "family": "stale", "reason": "no release in 24 months" },
+  { "family": "low", "reason": "advisory of severity Moderate or Low" },
+  { "family": "unavailable", "reason": "all state signals unavailable" },
+  { "family": "none", "reason": "no rule matched" }
+]

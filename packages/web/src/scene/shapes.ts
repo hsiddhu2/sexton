@@ -12,7 +12,7 @@ export interface ShapeDef {
 
 /**
  * Four distinct outlines in a 64 by 64 box, every stone standing on y 60. The stones are tall, as in the approved
- * mockup (K2d fix 1). The tilt is a constant of the shape, never per package.
+ * design. The tilt is a constant of the shape, never per package.
  */
 export const SHAPES: Record<ShapeId, ShapeDef> = {
   // Alive: a tall rounded stone, upright (a party hat and flowers are its Costume). Spec cemetery-undead, 3.5.
@@ -111,7 +111,7 @@ export const SPECKS: Record<ShapeId, readonly Speck[]> = {
   ],
 };
 
-/** The lit edge of the open grave's pit, in shape units: the pit ellipse's outline (K2d fix 1). */
+/** The lit edge of the open grave's pit, in shape units: the pit ellipse's outline. */
 export const PIT_EDGE_PATH = "M9 53.5 A23 5.5 0 1 0 55 53.5 A23 5.5 0 1 0 9 53.5 Z";
 let pitEdgeCache: Path2D | null = null;
 export function pitEdgePath(): Path2D {

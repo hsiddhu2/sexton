@@ -46,12 +46,23 @@ export interface KeyOutcome {
   readonly preventDefault: boolean;
 }
 
+/**
+ * Up and Down on a grave button. Left and Right are handled by the page (spec clean-site, 3.23): they move the
+ * Selected grave in triage order with wrap, so they leave this reducer.
+ */
 export function reduceSelection(index: number | null, event: KeyEvent, columns: number, count: number): KeyOutcome {
   if (count <= 0) return { index: null, handled: false, preventDefault: false };
   const current = normalise(index, count);
-  if (!isArrowKey(event.key)) return { index: current, handled: false, preventDefault: false };
+  if (!isArrowKey(event.key) || event.key === "ArrowLeft" || event.key === "ArrowRight") return { index: current, handled: false, preventDefault: false };
   if (event.ctrlKey || event.altKey || event.metaKey) {
     return { index: current, handled: false, preventDefault: false };
   }
   return { index: moveSelection(current, event.key, columns, count), handled: true, preventDefault: true };
+}
+
+/** Pure. Left and Right on the page (spec clean-site, 3.23): the previous or next index, wrapping at the ends. */
+export function stepWrap(index: number | null, key: "ArrowLeft" | "ArrowRight", count: number): number | null {
+  if (count <= 0) return null;
+  const current = normalise(index, count);
+  return (current + (key === "ArrowRight" ? 1 : -1) + count) % count;
 }

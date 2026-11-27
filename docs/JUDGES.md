@@ -9,13 +9,13 @@ One page. Everything named here is on `main`. The hosted site is deployed by han
 
 ## Click
 
-1. Hover a grave, or move to it with Tab. The tooltip gives its name, version, state, reason and advisory count.
-2. Click it, or press Enter. The drawer opens with the state, the reason, every signal with its source and the time it was read, and the remediation preview: the plan and the pull request body Sexton would open. Escape closes it.
-3. In the "Replay an attack" group in the footer, press "axios, Mar 2026" or "keyv, Aug 2026". Press Play to step through the history, or move the history slider yourself.
-4. Legend explains each grave. "Serious mode" drops the jokes from tooltips and the drawer. "Sound off" turns sound on. Sound is off by default.
-5. The header links download the evidence pack as JSON and as Markdown.
+1. Hover a grave, or move to it with Tab and the arrow keys. The details panel shows its name, version, state, a plain sentence of why, and three of its signals. "Fix in this order" lists the packages to fix first. A chip over the cemetery picks one state and dims the rest, and "List" shows the packages as a table.
+2. Click a grave, or press Enter. The drawer opens with three tabs: Evidence (the state, the reason and every signal with its source and the time it was read), The fix (the plan when there is one, its change to package.json and the pull request body Sexton would open) and History. Escape closes it.
+3. Press "Watch a real attack" under the cemetery and pick axios or keyv. Each step says what happened and what Sexton shows. Press "Next step" to move on, or "Play all".
+4. "What is Sexton?" opens a two-minute guide. Legend explains each grave. Tour points out the three main parts of the page. Music is off until you press it; then a recorded track plays and the characters dance to its beat.
+5. The links in the site footer download the evidence pack as JSON and as Markdown.
 
-Type a public GitHub repository URL in the header field and press Scan for a live scan. The "Open pull request" button in the drawer appears only on a live scan of the demo repository `https://github.com/hsiddhu2/sexton-demo`, and it opens a real pull request there.
+Type a public GitHub repository, as owner/name or a github.com link, in the header field and press Scan for a live scan. The "Open pull request" button on the drawer's fix tab appears only on a live scan of the demo repository `https://github.com/hsiddhu2/sexton-demo`, and it opens a real pull request there.
 
 ## The five states
 

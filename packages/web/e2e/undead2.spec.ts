@@ -1,4 +1,5 @@
-// Spec cemetery-undead-2: browser checks of the name labels, the Bubbles, Sound, the Burst and its budget.
+// Spec cemetery-undead-2: browser checks of the name labels, the Burst and its budget. Spec clean-site, task 2: the
+// Bubble and Sound cases went with those features; no AudioContext is ever made (4.3).
 import { existsSync } from "node:fs";
 import { chromium, expect, test, type Page } from "@playwright/test";
 import { BUDGET_MS } from "./budget.js";
@@ -48,7 +49,7 @@ for (const [width, height] of [
     // With the clock still, paint once with every Ghost and once with none, and compare each label's pixels.
     const result = await page.evaluate(() => {
       const hook = (window as unknown as HookWindow).__sextonTiming;
-      const canvas = document.querySelector("canvas");
+      const canvas = document.querySelector<HTMLCanvasElement>("canvas.scene-canvas");
       const ctx = canvas?.getContext("2d");
       if (hook === undefined || canvas === null || ctx === null || ctx === undefined) return { labels: 0, differing: -1, ghosts: 0 };
       const k = canvas.width / canvas.getBoundingClientRect().width;
@@ -94,33 +95,24 @@ async function countAudioContexts(page: Page): Promise<void> {
 }
 const audioContexts = (page: Page): Promise<number> => page.evaluate(() => (window as unknown as { __audioContexts: number }).__audioContexts);
 
-test("no AudioContext exists before Sound is turned on, and a remembered on waits for a key press", async ({ page, baseURL }) => {
+test("no AudioContext is made by hover, focus, a key press or a replay", async ({ page, baseURL }) => {
   await sameOriginOnly(page, baseURL);
   await countAudioContexts(page);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
-  // Scroll, hover and focus graves: still none.
   await page.mouse.wheel(0, 300);
   const graves = page.locator("button[data-grave-index]");
   await graves.nth(1).hover();
-  await graves.nth(2).hover();
   await graves.first().focus();
-  expect(await audioContexts(page)).toBe(0);
-  const toggle = page.getByRole("button", { name: "Sound off" });
-  await expect(toggle).toHaveAttribute("aria-pressed", "false");
-  await toggle.click();
-  const on = page.getByRole("button", { name: "Sound on" });
-  await expect(on).toHaveAttribute("aria-pressed", "true");
-  await expect.poll(() => audioContexts(page)).toBe(1);
-  // Reload with on remembered: none until the first key press, then one.
-  await page.reload();
-  await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
-  await expect(page.getByRole("button", { name: "Sound on" })).toHaveAttribute("aria-pressed", "true");
-  await graves.nth(1).hover();
-  expect(await audioContexts(page)).toBe(0);
   await page.keyboard.press("Shift");
-  await expect.poll(() => audioContexts(page)).toBe(1);
+  await page.getByRole("button", { name: "Watch a real attack" }).click();
+  await page.getByRole("button", { name: /^axios/ }).click();
+  await expect(page.locator("button[data-grave-index]")).toHaveCount(1);
+  // Spec clean-site, task 6.3: a Replay moves by "Next step"; it has no scrubber.
+  await page.getByRole("button", { name: "Next step" }).click();
+  expect(await audioContexts(page)).toBe(0);
+  expect(await page.locator("audio").count()).toBe(0);
 });
 
 test("300 graves repaint within budget during a Burst", async ({ page, baseURL }) => {
@@ -152,24 +144,23 @@ test("300 graves repaint within budget during a Burst", async ({ page, baseURL }
   expect(median).toBeLessThanOrEqual(BUDGET_MS);
 });
 
-test("under Reduced motion the axios replay shows the Burst's final pose and caption at once", async ({ page, baseURL }) => {
+test("under Reduced motion the axios replay shows the Burst's final pose at once, with no caption", async ({ page, baseURL }) => {
   await sameOriginOnly(page, baseURL);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/?replay=axios");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(1);
-  const slider = page.getByRole("slider", { name: "History date" });
-  await slider.focus();
-  await slider.press("ArrowRight");
-  await expect(page.locator(".burst-caption")).toHaveText("The wind stops. A grave opens.");
+  // Spec clean-site, task 6.3: a Replay moves by "Next step"; it has no scrubber.
+  await page.getByRole("button", { name: "Next step" }).click();
+  await expect(page.locator(".burst-caption")).toHaveCount(0);
   // The final pose is the still open grave: the zombie stands, so its skin shows inside the grave's box.
   const box = await page.locator("button[data-grave-index]").boundingBox();
   expect(box).not.toBeNull();
-  // Spec judge-path, Deliberate test change 8: the caption is DOM text and shows before the canvas paints the Stop,
-  // so the skin count is read until the next frames have painted, not once at once. The assertion is unchanged.
+  // Spec judge-path, Deliberate test change 8: the skin count is read until the next frames have painted, not once
+  // at once. The assertion is unchanged.
   const skin = (): Promise<number> =>
     page.evaluate((b) => {
-      const canvas = document.querySelector("canvas") as HTMLCanvasElement;
+      const canvas = document.querySelector<HTMLCanvasElement>("canvas.scene-canvas") as HTMLCanvasElement;
       const r = canvas.getBoundingClientRect();
       const k = canvas.width / r.width;
       const data = (canvas.getContext("2d") as CanvasRenderingContext2D).getImageData(Math.round((b.x - r.left) * k), Math.round((b.y - r.top) * k), Math.round(b.width * k), Math.round(b.height * k)).data;
@@ -179,43 +170,6 @@ test("under Reduced motion the axios replay shows the Burst's final pose and cap
     }, box ?? { x: 0, y: 0, width: 0, height: 0 });
   await expect.poll(skin, { timeout: 2000 }).toBeGreaterThan(500);
 });
-
-for (const [width, height] of [
-  [1440, 900],
-  [390, 844],
-] as const) {
-  test(`speech Bubbles never cover a name label at ${String(width)} by ${String(height)}, and Serious mode hides them`, async ({ page, baseURL }) => {
-    await sameOriginOnly(page, baseURL);
-    await page.clock.install({ time: new Date("2026-11-24T12:00:00Z") });
-    await page.setViewportSize({ width, height });
-    await page.goto("/");
-    await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
-    await page.waitForFunction(() => (window as unknown as HookWindow).__sextonTiming !== undefined);
-    let seen = 0;
-    for (let slot = 0; slot < 6; slot += 1) {
-      await page.clock.runFor(slot === 0 ? 1_000 : 6_000);
-      const overlaps = await page.evaluate(() => {
-        const hook = (window as unknown as HookWindow).__sextonTiming;
-        const canvas = document.querySelector("canvas");
-        if (hook === undefined || canvas === null) return { bubbles: -1, overlaps: -1 };
-        const c = canvas.getBoundingClientRect();
-        const labels = hook.labels().map((r) => ({ x: r.x + c.left, y: r.y + c.top, w: r.w, h: r.h }));
-        const bubbles = Array.from(document.querySelectorAll(".bubble, .bubble-tail")).map((b) => b.getBoundingClientRect());
-        let hits = 0;
-        for (const b of bubbles) for (const l of labels) if (b.left < l.x + l.w && l.x < b.right && b.top < l.y + l.h && l.y < b.bottom) hits += 1;
-        return { bubbles: document.querySelectorAll(".bubble").length, overlaps: hits };
-      });
-      expect(overlaps.overlaps).toBe(0);
-      expect(overlaps.bubbles).toBeLessThanOrEqual(2);
-      seen += overlaps.bubbles;
-    }
-    expect(seen).toBeGreaterThan(0);
-    await page.getByRole("button", { name: "Serious mode" }).click();
-    await page.clock.runFor(6_000);
-    await expect(page.locator(".bubble")).toHaveCount(0);
-    expect(await page.locator(".bubble-layer").count()).toBe(0);
-  });
-}
 
 for (const [width, height] of [
   [1440, 900],
@@ -235,7 +189,7 @@ for (const [width, height] of [
     await page.evaluate(() => document.fonts.ready.then(() => undefined));
     const result = await page.evaluate(() => {
       const hook = (window as unknown as HookWindow).__sextonTiming;
-      const canvas = document.querySelector("canvas");
+      const canvas = document.querySelector<HTMLCanvasElement>("canvas.scene-canvas");
       const ctx = canvas?.getContext("2d");
       if (hook === undefined || canvas === null || ctx === null || ctx === undefined) return { total: 0, far: -1 };
       const at = Date.now();
@@ -271,7 +225,7 @@ test("a rising grave in the Load moment is drawn directly, not from a sprite", a
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
   const result = await page.evaluate(() => {
     const hook = (window as unknown as HookWindow).__sextonTiming;
-    const canvas = document.querySelector("canvas");
+    const canvas = document.querySelector<HTMLCanvasElement>("canvas.scene-canvas");
     const ctx = canvas?.getContext("2d");
     if (hook === undefined || canvas === null || ctx === null || ctx === undefined) return -1;
     // 300 ms in, most graves are part-way up; with and without sprites the frame must be the same, pixel for pixel.

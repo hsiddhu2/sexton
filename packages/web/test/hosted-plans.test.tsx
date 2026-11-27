@@ -3,12 +3,12 @@
 // and none for a package with no safe version. The web app needs no code change for it.
 
 import type { PackageHealth, ScanResponse } from "@sexton/api";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { Drawer } from "../src/drawer/Drawer.js";
-import { drawerModel } from "../src/drawer/drawer-model.js";
 import { validateScanResponse } from "../src/load/validate-scan-response.js";
 import { cheapScan } from "./arbitraries.js";
+import { drawerProps } from "./support/drawer-props.js";
 
 afterEach(cleanup);
 
@@ -57,15 +57,18 @@ describe("hosted scan response with remediations (9.3)", () => {
 
   it("renders the proposed plan and its PR body in the drawer", () => {
     const { response, bumped } = hosted();
-    render(<Drawer model={drawerModel(response, bumped)} onClose={() => undefined} />);
+    render(<Drawer {...drawerProps(response, bumped)} onClose={() => undefined} />);
     const dialog = screen.getByRole("dialog");
+    fireEvent.click(screen.getByRole("tab", { name: "The fix" }));
+    expect(dialog.querySelector(".diff-add")?.textContent).toBe(`+ Added: "${bumped.name}": "^9.9.9"`);
     expect(dialog.textContent).toContain(`Sexton: bump ${bumped.name} to 9.9.9`);
     expect(dialog.querySelector(".pr-preview h5")?.textContent).toBe(`Sexton: bump ${bumped.name}`);
   });
 
   it("renders the no-change plan for the other package", () => {
     const { response, stuck } = hosted();
-    render(<Drawer model={drawerModel(response, stuck)} onClose={() => undefined} />);
+    render(<Drawer {...drawerProps(response, stuck)} onClose={() => undefined} />);
+    fireEvent.click(screen.getByRole("tab", { name: "The fix" }));
     expect(screen.getByRole("dialog").textContent).toContain(`Sexton: no change proposed for ${stuck.name}`);
   });
 });
