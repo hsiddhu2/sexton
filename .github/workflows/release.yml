@@ -1,7 +1,8 @@
 # Sexton release. Spec: .kiro/specs/release, requirement 3.
-# On a pushed tag vMAJOR.MINOR.PATCH: run the gates, then publish @sexton/engine, @sexton/cli and @sexton/mcp to npm
-# in that order with npm trusted publishing (OIDC). No npm token and no secret: npm exchanges the job's OIDC token
-# for a short-lived publish token, and generates provenance for a public package from a public repository.
+# On a pushed tag vMAJOR.MINOR.PATCH: run the gates, then publish sexton (the CLI) and sexton-mcp (the MCP server) to npm,
+# in that order, with npm trusted publishing (OIDC). Each is one bundled file with the engine inside, built by
+# scripts/build-release.mjs. No npm token and no secret: npm exchanges the job's OIDC token for a short-lived publish
+# token, and generates provenance for a public package from a public repository.
 # Third-party actions are pinned to full commit SHAs. No cache in a release build.
 
 name: release
@@ -58,20 +59,20 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
           package-manager-cache: false
-      # No install scripts while this job holds an OIDC token. The build is tsc only and needs none.
+      # No install scripts while this job holds an OIDC token. The build is tsc and esbuild, and needs none.
       - run: npm ci --ignore-scripts
+      - run: npm run build -w @sexton/engine -w @sexton/cli -w @sexton/mcp
+      - run: node scripts/build-release.mjs
       - name: Check the tag against the packages
         run: node scripts/release-check.mjs "$GITHUB_REF_NAME"
-      - run: npm run build -w @sexton/engine -w @sexton/cli -w @sexton/mcp
-      - name: Publish in dependency order
-        # A version already on npm is skipped, so a release that bumps only the CLI and the server leaves the engine as it is.
+      - name: Publish in order
+        # A version already on npm is skipped, so a re-run after a failure publishes only what is missing.
         run: |
-          for dir in packages/engine packages/cli packages/mcp; do
-            name=$(node -p "require('./$dir/package.json').name")
-            version=$(node -p "require('./$dir/package.json').version")
+          for name in sexton sexton-mcp; do
+            version=$(node -p "require('./build/release/$name/package.json').version")
             if npm view "$name@$version" version > /dev/null 2>&1; then
               echo "$name@$version is already on npm, skipped"
             else
-              npm publish -w "$dir"
+              npm publish "./build/release/$name"
             fi
           done

@@ -14,7 +14,7 @@
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
-      "identifier": "@sexton/mcp",
+      "identifier": "sexton-mcp",
       "version": "0.1.0",
       "runtimeHint": "npx",
       "transport": {

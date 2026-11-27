@@ -70,9 +70,14 @@ The last command calls the npm registry, OSV and deps.dev, so it needs network. 
 
 ## Install (coming with release 0.1)
 
-Nothing is on npm yet. With release 0.1, the CLI and the MCP server will be published to npm from GitHub Actions, each with npm provenance that links the package to the commit and workflow that built it. The server will also be listed in the official MCP Registry. The install commands will go here once they work.
+Nothing is on npm yet. With release 0.1, two packages will be published to npm from GitHub Actions, each with npm provenance that links it to the commit and workflow that built it:
 
-Until then, run the CLI from a clone (see "CLI" below), and use the MCP server through the Kiro Power (see "Ask Sexton from Kiro"). Both run on Node.js 20.19 or later; building from a clone needs Node.js 22. The release plan is `.kiro/specs/release`.
+- `sexton`, the command line, with the `sexton` command;
+- `sexton-mcp`, the MCP server, with the `sexton-mcp` command. It will also be listed in the official MCP Registry as `io.github.hsiddhu2/sexton`.
+
+Each is one file with no dependencies, and runs on Node.js 20.19 or later. The install commands will go here once they work.
+
+Until then, run the CLI from a clone (see "CLI" below), and use the MCP server through the Kiro Power (see "Ask Sexton from Kiro"). Building from a clone needs Node.js 22. The release plan is `.kiro/specs/release`.
 
 ## CLI
 

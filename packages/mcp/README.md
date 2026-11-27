@@ -1,4 +1,4 @@
-# @sexton/mcp
+# sexton-mcp
 
 A read-only MCP server for Sexton. It lets an MCP client ask about the npm dependencies of a project on your machine, and get the same states, reasons and fix plans the Sexton CLI gives.
 
@@ -14,7 +14,7 @@ Add it to your client's MCP configuration as a stdio server:
 ```json
 {
   "mcpServers": {
-    "sexton": { "command": "npx", "args": ["-y", "@sexton/mcp"] }
+    "sexton": { "command": "npx", "args": ["-y", "sexton-mcp"] }
   }
 }
 ```
@@ -23,6 +23,8 @@ What it touches. It reads `package.json`, `package-lock.json`, `sexton.policy.ym
 
 Residual risk. The server accepts any real directory that holds a `package.json`. If a model passes another directory and you approve the call, Sexton scans that directory and sends its dependency names and versions to the three services above. Approve each call and check its `projectDir`.
 
+- One file, no dependencies: the engine, the CLI's scan and the MCP library are bundled in `sexton-mcp.mjs`, and their licences are in `THIRD-PARTY-NOTICES.md`.
+- Its name in the MCP Registry is `io.github.hsiddhu2/sexton`.
 - Node.js 20.19 or later.
 - Source, specs and the full documentation: https://github.com/hsiddhu2/sexton
 

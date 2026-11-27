@@ -1,43 +1,15 @@
 {
   "name": "@sexton/cli",
+  "private": true,
   "version": "0.1.0",
   "description": "Sexton command line: scan, check and evidence.",
-  "keywords": [
-    "supply-chain",
-    "npm",
-    "dependencies",
-    "security",
-    "cli"
-  ],
   "license": "Apache-2.0",
-  "author": "Harpreet Singh Siddhu",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/hsiddhu2/sexton.git",
-    "directory": "packages/cli"
-  },
-  "homepage": "https://github.com/hsiddhu2/sexton/tree/main/packages/cli#readme",
-  "bugs": {
-    "url": "https://github.com/hsiddhu2/sexton/issues"
-  },
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "bin": {
     "sexton": "dist/bin.js"
   },
-  "files": [
-    "dist/**/*.js",
-    "dist/**/*.d.ts",
-    "NOTICE"
-  ],
-  "engines": {
-    "node": ">=20.19.0"
-  },
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
-  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "dependencies": {
     "@sexton/engine": "0.2.0"
   },
