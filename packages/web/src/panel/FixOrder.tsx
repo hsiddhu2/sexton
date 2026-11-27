@@ -1,7 +1,9 @@
 // The Fix order card (spec clean-site, design C3, requirements 3.18 to 3.22): up to five numbered rows; a row press
-// makes its package the Selected grave and opens nothing.
+// makes its package the Selected grave and opens nothing. The card holds five rows at one height at each layout, each
+// name clamped to its row (3.26).
 import type { FixRow } from "./fix-order.js";
 import { NOTHING_TO_FIX } from "./fix-order.js";
+import { Clamped } from "./Clamped.js";
 
 export const FIX_ORDER_HEADING = "Fix in this order";
 
@@ -36,7 +38,7 @@ export function FixOrder({ rows, current, onPick }: FixOrderProps) {
                   <span className="fix-number" aria-hidden="true">
                     {i + 1}
                   </span>
-                  {row.name}
+                  <Clamped as="span" className="fix-name-text" text={row.name} />
                 </span>
                 <span className="fix-line">{row.line}</span>
               </button>

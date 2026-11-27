@@ -147,6 +147,8 @@ Run-time notes:
     - _Requirements: 1.5, 1.6, 1.13, 1.14, 3.15, 12.1_
 
 - [x] 15. Owner decisions and the cold look, 26 Nov
-  - _Requirements: 13.1, 13.3, 17.5, 18.8, 19.1, 19.10_
+  - _Requirements: 3.5, 3.26, 3.27, 13.1, 13.3, 17.5, 18.8, 19.1, 19.10_
   - [x] 15.1 Add the README sentence on the order of the graves; rest the Tour's first step and the Legend's fix order line on it in the Claim registry; change the stale and stale-advisory Epitaph lines in `copy/mischief.ts` and C16
     - _Requirements: 13.1, 13.3, 17.5, 18.8, 19.1, 19.10_
+  - [x] 15.2 Give the Inspector, the Fix order card and the Step panel one height at each layout with clamped lines and `panel/Clamped.tsx`; keep the Scene card from stretching; e2e check that no box moves on hover, select, List rows and Replay Steps at 1440 by 900 and 390 by 844
+    - _Requirements: 3.5, 3.26, 3.27_

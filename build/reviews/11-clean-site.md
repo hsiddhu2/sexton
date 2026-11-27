@@ -261,3 +261,22 @@ Notes:
 7. The review checked the lane, secrets, network in tests and the CSS weights, and found nothing.
 
 Gates: typecheck, lint (zero warnings) and test pass. 2381 tests across 6 workspaces. Playwright, from packages/web on its own port: 68 passed. Repaint medians at 300 graves at 1440 by 900: 1.40 ms at rest, 0.90 ms with the Dead filter, 0.90 ms with the hover ring.
+
+## Owner decisions and cold look
+
+Task 15: the README sentence on the order of the graves with the Claim registry resting on it, two Epitaph lines, and one height per layout for the Inspector, the Fix order card and the Step panel so that pointing at or selecting a grave, a List row or a Replay Step moves no box.
+
+Independent review before the commits. Verdict: ready. No defect found: every changed file is in the lane, no new dependency, no network in the tests, the README sentence matches the Claim word for word and the order it states matches the triage order (State, then severity, then reach), and the Epitaph lines match C16.
+
+Notes:
+
+1. Requirement 3.26 joined two behaviours in one criterion, the second with no subject. Split: 3.26 keeps the boxes still, 3.27 (IF ... THEN) ends a long line in an ellipsis with its whole text kept.
+2. A cut box's `title` is a native tooltip. It sits on Panel text, never over a grave, and shows only on text that is cut; recorded in design.md.
+3. A one-line box of fixed width would not resize when the fonts arrive, so its title could be stale. `Clamped` now checks again once the fonts have loaded.
+4. The cards cut what passes their height. Every line that follows the grave or the Step is clamped, so the buttons are never cut; the heights were checked with every line overfilled.
+5. `.signals b` keeps `overflow-wrap: anywhere` beside `white-space: nowrap`; harmless, and it applies in the Narrow layout where the value wraps.
+6. The Legend's Restless meaning says "no release in two years". It is a Claim, outside the two Epitaph lines the owner changed; left as it is.
+7. The Replay e2e case waits 100 ms after each Step before reading the boxes; the boxes were the same across repeat runs.
+8. The task 15 requirement list was checked: 3.5 (the Panel does not move), 17.5 (Claims from the registry) and 19.10 (the C16 texts) apply.
+
+Gates: typecheck, lint (zero warnings) and test pass, 2386 tests across 6 workspaces. Playwright, from packages/web on its own port: 72 passed, the four new cases among them, each failing on the build before the change. Repaint medians at 300 graves at 1440 by 900: 2.55 ms at rest, 1.60 ms with the Dead filter, 1.60 ms with the hover ring.

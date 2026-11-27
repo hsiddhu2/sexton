@@ -139,6 +139,24 @@ describe("styles.css static checks", () => {
     expect(disabled).toMatch(/color:\s*var\(--ui-faint\)/);
   });
 
+  // Spec clean-site, 3.26: the Inspector, the Fix order and the Step panel keep one height at each layout, and the boxes
+  // inside them that follow the grave or the Step are clamped, so nothing outside them moves.
+  it("gives the Inspector, the Fix order card and the Step panel a fixed height, with their lines clamped", () => {
+    for (const selector of [".inspector", ".fix-order", ".step-panel"]) {
+      const heights = rulesFor(selector).flatMap((r) => [...r.body.matchAll(/(?:^|[;\s])height:\s*(\d+)px/g)].map((m) => m[1]));
+      expect(heights.length, selector).toBeGreaterThanOrEqual(2);
+      expect(rulesFor(selector).some((r) => /overflow:\s*hidden/.test(r.body)), selector).toBe(true);
+    }
+    for (const selector of [".inspector-epitaph", ".inspector-why", ".step-title", ".step-text"]) {
+      expect(rulesFor(selector).some((r) => /-webkit-line-clamp:\s*\d/.test(r.body) && /overflow:\s*hidden/.test(r.body)), selector).toBe(true);
+    }
+    for (const selector of [".inspector-name", ".inspector-version", ".fix-name-text"]) {
+      expect(rulesFor(selector).some((r) => /text-overflow:\s*ellipsis/.test(r.body) && /white-space:\s*nowrap/.test(r.body)), selector).toBe(true);
+    }
+    expect(rulesFor(".inspector > .button-wide").some((r) => /margin-top:\s*auto/.test(r.body))).toBe(true);
+    expect(rulesFor(".date-badge").some((r) => /font-variant-numeric:\s*tabular-nums/.test(r.body))).toBe(true);
+  });
+
   it("colours each History dot by its State, above the plain dot rule", () => {
     const plain = css.indexOf(".history li::before");
     expect(plain).toBeGreaterThan(-1);

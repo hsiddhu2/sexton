@@ -135,6 +135,8 @@ Out of scope: GitHub sign-in, any change to the engine's state rules, the canvas
 23. WHEN Left or Right is pressed with focus on the page body, a grave button or a Fix order row, and with no View owner or Pop-over open, THE Site SHALL move the Selected grave to the previous or next grave in triage order, wrapping at the ends, and SHALL move focus to that grave's button when focus was on a grave button.
 24. WHEN Enter is pressed with focus on the page body and no View owner or Pop-over open THE Site SHALL open the Drawer of the Selected grave.
 25. IF a chosen signal is unavailable THEN THE Inspector SHALL show its value as "not available".
+26. WHEN the pointer moves onto or off any grave or List row, any grave or List row is pressed or selected, or a Replay moves to another Step, THE Site SHALL leave the position and size of every box on the page unchanged, other than what the Inspector and the Step panel hold, at every viewport width of 360 px and more.
+27. IF a line is longer than its share of the Inspector, a Fix order row or the Step panel THEN THE Site SHALL end it in an ellipsis and keep its whole text for assistive technology and in the Drawer.
 
 ### Requirement 4: What is removed
 

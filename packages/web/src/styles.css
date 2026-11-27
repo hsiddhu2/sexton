@@ -554,9 +554,12 @@ a {
   margin: 0 auto;
 }
 
+/* The columns keep their own heights (3.26): a Panel taller than the left column, as under the Welcome bar at 1440 by
+   900, makes the page longer but never stretches the Scene card. */
 .home {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 372px;
+  align-items: start;
   gap: 24px;
   box-sizing: border-box;
   padding: 20px 28px 14px;
@@ -709,6 +712,7 @@ a {
   line-height: 18px;
   text-transform: uppercase;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
   transform: translateX(-50%);
   pointer-events: none;
 }
@@ -985,7 +989,45 @@ a {
   color: var(--state-alive);
 }
 
+/* Clamped boxes (3.26). One line, cut short with an ellipsis. */
+.inspector-name,
+.inspector-version,
+.fix-name-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* A few lines, cut short with an ellipsis; the line count is set per box and per layout. */
+.inspector-epitaph,
+.inspector-why,
+.step-title,
+.step-text {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+/* The Step panel keeps one height at each layout through every Step of both Replays (3.26): the title takes one line
+   (two in the Narrow layout), "What happened" six (three in the Middle layout) and "What Sexton shows" three (two in
+   the Middle layout, four in the Narrow one), and the buttons sit at the foot. */
+.step-panel {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 476px;
+  overflow: hidden;
+}
+
+.step-panel > * {
+  flex-shrink: 0;
+}
+
 .step-title {
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
   margin: 10px 0 2px;
   font-size: 22px;
   font-weight: 600;
@@ -1018,10 +1060,21 @@ a {
   font-size: 13.5px;
 }
 
+.step-happened {
+  -webkit-line-clamp: 6;
+  line-clamp: 6;
+}
+
+.step-shows {
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
 .step-buttons {
   display: flex;
   gap: 10px;
-  margin-top: 18px;
+  margin-top: auto;
+  padding-top: 18px;
 }
 
 .step-next {
@@ -1081,6 +1134,26 @@ a {
 .eyebrow-mark {
   color: var(--ui-accent);
   letter-spacing: 0.04em;
+}
+
+/* The Inspector keeps one height at each layout, whatever grave it shows (3.26): the name and version take one line,
+   the Epitaph line and the sentence two (one in the Middle layout), each signal value one (two in the Narrow layout),
+   each cut short with an ellipsis, and the gold button sits at the foot. The heights hold the longest real text of the
+   demo scan, both Replays and the 300-package fixture, down to 360 px wide. */
+.inspector {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 457px;
+  overflow: hidden;
+}
+
+.inspector > * {
+  flex-shrink: 0;
+}
+
+.inspector > .button-wide {
+  margin-top: auto;
 }
 
 .inspector-name {
@@ -1153,15 +1226,22 @@ a {
   padding: 9px 0;
   border-bottom: 1px solid var(--ui-line);
   font-size: 13px;
+  line-height: 20px;
 }
 
 .signal-label {
+  flex: 0 0 auto;
   color: var(--ui-muted);
+  white-space: nowrap;
 }
 
 .signals b {
+  min-width: 0;
+  overflow: hidden;
   font-weight: 500;
   text-align: right;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   overflow-wrap: anywhere;
 }
 
@@ -1185,10 +1265,19 @@ a {
   list-style: none;
 }
 
+/* The Fix order card holds five rows at one height at each layout (3.26): a name takes one line (two in the Narrow
+   layout), cut short with an ellipsis, and the fix line never wraps. */
+.fix-order {
+  box-sizing: border-box;
+  height: 261px;
+  overflow: hidden;
+}
+
 .fix-row {
   display: flex;
   justify-content: space-between;
   gap: 12px;
+  line-height: 20px;
   width: 100%;
   padding: 6px 8px;
   border: 0;
@@ -1206,11 +1295,15 @@ a {
 }
 
 .fix-name {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
   font-weight: 500;
   overflow-wrap: anywhere;
 }
 
 .fix-number {
+  flex: 0 0 auto;
   display: inline-grid;
   place-items: center;
   width: 20px;
@@ -1228,8 +1321,10 @@ a {
 }
 
 .fix-line {
+  flex: 0 0 auto;
   color: var(--ui-muted);
   text-align: right;
+  white-space: nowrap;
 }
 
 .fix-none {
@@ -1611,6 +1706,26 @@ a {
   .home {
     grid-template-columns: minmax(0, 1fr);
   }
+  /* The Middle layout's Panel is the page's width, so its lines are fewer (3.26). */
+  .inspector {
+    height: 416px;
+  }
+  .inspector-epitaph,
+  .inspector-why {
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+  }
+  .step-panel {
+    height: 386px;
+  }
+  .step-happened {
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+  .step-shows {
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
   .ib-text {
     position: absolute;
     width: 1px;
@@ -1653,6 +1768,44 @@ a {
   }
   .scene-help {
     display: none;
+  }
+  /* The Narrow layout's lines (3.26). */
+  .inspector {
+    height: 514px;
+  }
+  .inspector-epitaph,
+  .inspector-why,
+  .signals b {
+    display: -webkit-box;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+  .fix-order {
+    height: 351px;
+  }
+  .fix-name-text {
+    display: -webkit-box;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+  .step-panel {
+    height: 525px;
+  }
+  .step-title {
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+  .step-happened {
+    -webkit-line-clamp: 6;
+    line-clamp: 6;
+  }
+  .step-shows {
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
   }
   .welcome {
     padding: 10px 14px;

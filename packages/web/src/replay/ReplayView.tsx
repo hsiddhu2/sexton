@@ -13,6 +13,7 @@ import { TermText } from "../glossary/TermText.js";
 import { BACK_TO_SAMPLE, FailureCard, TRY_AGAIN } from "../home/FailureCard.js";
 import { useReserve } from "../home/use-reserve.js";
 import { LOAD_FAILED_CARD } from "../load/scan-failure.js";
+import { Clamped } from "../panel/Clamped.js";
 import type { LoadState } from "../load/use-scan-loader.js";
 import type { Theme } from "../scene/layout.js";
 import type { Beat } from "../scene/motion.js";
@@ -175,7 +176,7 @@ function Story({ hero, response, loadId, steps, theme, reducedMotion, repoFieldR
             </span>
             <span className="eyebrow-time">{step.time}</span>
           </h2>
-          <p className="step-title">{step.title}</p>
+          <Clamped className="step-title" text={step.title} />
           <p className="inspector-badge">
             <span className={`badge badge-${tone}`}>
               <span className="badge-dot" aria-hidden="true" />
@@ -183,13 +184,13 @@ function Story({ hero, response, loadId, steps, theme, reducedMotion, repoFieldR
             </span>
           </p>
           <h3 className="eyebrow step-label">What happened</h3>
-          <p className="step-text">
+          <Clamped className="step-text step-happened" text={step.happened}>
             <TermText text={step.happened} {...termProp} />
-          </p>
+          </Clamped>
           <h3 className="eyebrow step-label">What Sexton shows</h3>
-          <p className="step-text">
+          <Clamped className="step-text step-shows" text={step.shows}>
             <TermText text={step.shows} {...termProp} />
-          </p>
+          </Clamped>
           <div className="step-buttons">
             <button
               type="button"

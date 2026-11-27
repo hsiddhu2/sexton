@@ -1360,6 +1360,147 @@ for (const size of SIZES) {
   });
 }
 
+/**
+ * Requirement 3.26: the boxes of the page, each in page coordinates so a scroll does not count as a move, except the
+ * sticky header, which is read where it shows in the viewport.
+ */
+async function layoutBoxes(page: Page, selectors: readonly string[]): Promise<string> {
+  return page.evaluate((sels) => {
+    const out: Record<string, number[] | null> = {};
+    for (const sel of sels) {
+      const el = document.querySelector(sel);
+      if (el === null) {
+        out[sel] = null;
+        continue;
+      }
+      const r = el.getBoundingClientRect();
+      const dy = sel === ".site-header" ? 0 : window.scrollY;
+      out[sel] = [r.left + window.scrollX, r.top + dy, r.width, r.height];
+    }
+    return JSON.stringify(out);
+  }, selectors);
+}
+
+/** Waits until two samples 400 ms apart agree, so the Scene card's one settle after the first paint is over. */
+async function settledBoxes(page: Page, selectors: readonly string[]): Promise<string> {
+  let before = "";
+  await expect
+    .poll(async () => {
+      const now = await layoutBoxes(page, selectors);
+      const same = now === before;
+      before = now;
+      return same;
+    }, { intervals: [400, 400, 400, 400, 400, 400, 400, 400] })
+    .toBe(true);
+  return before;
+}
+
+const HOME_BOXES = [".site-header", ".inspector", ".fix-order", ".scene-card", ".foot-bar", ".site-footer"] as const;
+const REPLAY_BOXES = [".site-header", ".step-panel", ".why-card", ".replay-stage", ".replay-stage .date-badge", ".foot-bar", ".site-footer"] as const;
+
+for (const size of SIZES) {
+  test(`requirement 3.26 at ${size.name}: pointing at or selecting a grave or a List row moves no box`, async ({ browser, baseURL }) => {
+    const origin = new URL(baseURL ?? "http://localhost:4173").origin;
+    const context = await browser.newContext();
+    const page = await freshPage(context, size);
+    const g = await guard(page, origin);
+    await page.goto("/");
+    await expect(grave(page, "left-padder")).toHaveCount(1);
+    await scenePainted(page);
+    await page.evaluate(() => document.fonts.ready.then(() => undefined));
+    const names = DEMO.report.packages.map((p) => p.name);
+    expect(names.length).toBeGreaterThan(5);
+    const home = await settledBoxes(page, HOME_BOXES);
+    const unchanged = async (what: string): Promise<void> => {
+      expect(await layoutBoxes(page, HOME_BOXES), `the boxes after ${what}`).toBe(home);
+    };
+
+    // Hover every grave of the demo in turn: the Inspector shows each, and no box moves.
+    for (const name of names) {
+      await grave(page, name).hover();
+      await expect(page.locator(".inspector-name")).toHaveText(name);
+      await unchanged(`hovering ${name}`);
+    }
+    // Select by the Fix order rows (3.21), then walk every grave with the keys (3.23).
+    await pressOutside(page);
+    const rows = page.locator(".fix-order .fix-row");
+    for (let i = 0; i < (await rows.count()); i += 1) {
+      await rows.nth(i).click();
+      await expect(rows.nth(i)).toHaveClass(/fix-row-current/);
+      await unchanged(`pressing Fix order row ${String(i + 1)}`);
+    }
+    await page.locator("h1.headline").click();
+    for (let i = 0; i < names.length; i += 1) {
+      await page.keyboard.press("ArrowRight");
+      await unchanged(`Right ${String(i + 1)} times`);
+    }
+    // A grave pressed opens its Drawer; it closes, and the Selected grave it leaves moves nothing.
+    for (const name of names.slice(0, 4)) {
+      await grave(page, name).click();
+      await expect(page.getByRole("dialog")).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      await pressOutside(page);
+      await expect(page.locator(".inspector-name")).toHaveText(name);
+      await unchanged(`selecting ${name}`);
+    }
+
+    // The List: hovering and pressing its rows moves no box either.
+    await page.getByRole("button", { name: "List", exact: true }).click();
+    await expect(page.locator(".list-table tbody .list-open")).toHaveCount(names.length);
+    const list = await settledBoxes(page, HOME_BOXES);
+    const open = page.locator(".list-table tbody .list-open");
+    for (let i = 0; i < names.length; i += 1) {
+      await open.nth(i).hover();
+      expect(await layoutBoxes(page, HOME_BOXES), `the boxes hovering List row ${String(i + 1)}`).toBe(list);
+    }
+    for (let i = 0; i < names.length; i += 3) {
+      const name = (await open.nth(i).textContent()) ?? "";
+      await open.nth(i).click();
+      await expect(page.getByRole("dialog")).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      await pressOutside(page);
+      await expect(page.locator(".inspector-name")).toHaveText(name);
+      expect(await layoutBoxes(page, HOME_BOXES), `the boxes after pressing List row ${name}`).toBe(list);
+    }
+    await checkProbe(page, origin, g);
+    await context.close();
+  });
+
+  test(`requirement 3.26 at ${size.name}: no box moves across the Steps of either Replay`, async ({ browser, baseURL }) => {
+    const origin = new URL(baseURL ?? "http://localhost:4173").origin;
+    const context = await browser.newContext();
+    const page = await freshPage(context, size);
+    const g = await guard(page, origin);
+    for (const id of ["axios", "keyv"]) {
+      await page.goto(`/?replay=${id}`);
+      const panel = page.locator(".step-panel");
+      await expect(panel.locator("#step-heading")).toContainText("Step 1 of");
+      await scenePainted(page);
+      await page.evaluate(() => document.fonts.ready.then(() => undefined));
+      const first = await settledBoxes(page, REPLAY_BOXES);
+      const count = await page.locator(".step-cards .step-card").count();
+      expect(count).toBeGreaterThan(1);
+      for (let k = 2; k <= count; k += 1) {
+        await panel.getByRole("button", { name: "Next step" }).click();
+        await expect(panel.locator("#step-heading")).toContainText(`Step ${String(k)} of ${String(count)}`);
+        await page.waitForTimeout(100);
+        expect(await layoutBoxes(page, REPLAY_BOXES), `the ${id} boxes at Step ${String(k)}`).toBe(first);
+      }
+      await panel.getByRole("button", { name: "Back", exact: true }).click();
+      expect(await layoutBoxes(page, REPLAY_BOXES), `the ${id} boxes after Back`).toBe(first);
+      for (let k = 0; k < count; k += 1) {
+        await page.locator(".step-cards .step-card").nth(k).click();
+        await expect(panel.locator("#step-heading")).toContainText(`Step ${String(k + 1)} of`);
+        expect(await layoutBoxes(page, REPLAY_BOXES), `the ${id} boxes at Step card ${String(k + 1)}`).toBe(first);
+      }
+    }
+    await checkProbe(page, origin, g);
+    await context.close();
+  });
+}
+
 test("requirement 16.2: 300 graves repaint within the frame budget at 1440 by 900, with and without a filter", async ({ browser, baseURL }) => {
   const origin = new URL(baseURL ?? "http://localhost:4173").origin;
   const context = await browser.newContext();
