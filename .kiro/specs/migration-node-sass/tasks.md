@@ -81,5 +81,5 @@ Fills the `migrate` kind with the node-sass to sass recipe: Recipe and Edit type
   - _Requirements: 7.3_
 
 - [x] 10. Close
-  - Root gates, independent reviews before each commit in build/reviews/06-migration-node-sass.md, merge to main with --no-ff, gates on main, PROGRESS, TRACKER, the report for 06 (kept outside the repository).
+  - Root gates, independent reviews before each commit in build/reviews/06-migration-node-sass.md, merge to main with --no-ff, gates on main.
   - _Requirements: 1.2_

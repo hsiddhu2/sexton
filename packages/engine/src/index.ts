@@ -332,3 +332,4 @@ export type { GithubFileSourceOptions, GithubSourceCounts } from "./clients/gith
 // Spec remediate: structured package.json edits for the Executor.
 export { applyPackageJsonEdits, detectIndent, DEPENDENCY_SECTIONS } from "./remediation/apply-edits.js";
 export type { ApplyFailure, ApplyResult } from "./remediation/apply-edits.js";
+export { compareTriage, triageOrder } from "./triage.js";

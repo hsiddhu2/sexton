@@ -44,6 +44,7 @@ In scope:
 - CLI with scan, check and evidence commands.
 - GitHub Action wrapping the CLI.
 - Kiro Crew app that re-scans on a cron and judges whether a change crosses a policy line.
+- A read-only MCP server (`packages/mcp`) and a Kiro Power (`powers/sexton`) that let Kiro ask Sexton about a project's direct dependencies: four tools over the same scan the CLI runs. Spec sexton-power.
 
 Out of scope for 0.1, on the public roadmap:
 - Other ecosystems (PyPI, Maven, Go, Cargo).
@@ -158,7 +159,7 @@ R-AG-3. The agent SHALL NOT open PRs on its own. It proposes. A human requests.
 
 ## 6. Non-functional requirements
 
-N-1. Security. No secrets in the repository. GitHub credentials held in AWS Secrets Manager. Least-privilege IAM. Public endpoints behind WAF. Private folder gitignored and verified by a pre-commit hook.
+N-1. Security. No secrets in the repository. GitHub credentials held in AWS Secrets Manager. Least-privilege IAM. Public endpoints behind WAF. Local working files are gitignored.
 N-2. Privacy. Sexton reads only public repositories in release 0.1. It stores package metadata, never source code.
 N-3. Performance. A scan of 50 direct dependencies completes in under 20 seconds with a warm cache and under 60 seconds cold.
 N-4. Reliability. An upstream outage degrades one signal, never the whole scan.
@@ -209,4 +210,5 @@ Every Kiro spec names the requirements it implements. Every PR names the spec. T
 0.8, 25 Nov 2026. R-SG-10 publisher change and R-SG-11 new dependency signals. R-ST-2: two Possessed conditions added after the existing three.
 0.9, 25 November 2026. Section 2: the packument fields Sexton reads are named, and Socket, npq and Renovate are named as partial overlaps in place of the claim that no tool combines these parts. Release 0.1 lists seven signals.
 1.0, 25 November 2026. R-RM-2: a bump is never proposed over a declared range that is not a registry semver range, and the node-sass migration never raises sass-loader over one. R-RM-3: no remove for @types/* or compiler helper runtimes. R-RM-6: a migration body says when its scan was incomplete. Spec remediation-safety.
+1.1, 26 November 2026. Section 4.1: the MCP server and the Kiro Power. Spec sexton-power.
 1.1, 26 November 2026. R-UI-4: a fixed panel shows the grave pointed at, and the drawer has the tabs Evidence, The fix and History. R-UI-8: no generated sound, tooltip or speech bubble; one recorded music track at most, off until the user turns it on. Spec clean-site.

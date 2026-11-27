@@ -1,4 +1,4 @@
-// The remediation log over DynamoDB. Spec: .kiro/specs/remediate, Requirement 5, handoff decision 7.
+// The remediation log over DynamoDB. Spec: .kiro/specs/remediate, Requirement 5, decision 7.
 // Append-only: one put per entry with a not-exists condition, and a partition read. Every entry passes isValidLogEntry.
 
 import { isValidLogEntry, type RemediationLogEntry } from "@sexton/engine";

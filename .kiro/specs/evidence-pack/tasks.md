@@ -23,7 +23,7 @@ Builds the evidence pack: canonical JSON and SHA-256, purl and the CycloneDX 1.5
   - [x] 3.1 src/evidence/purl.ts with property 37 and the @types/node example
     - _Requirements: 2.8_
 
-  - [x] 3.2 test/fixtures/cyclonedx copied from the handoff assets; src/evidence/sbom.ts with the schema test and properties 35, 36 and 38
+  - [x] 3.2 test/fixtures/cyclonedx copied from the assets the owner supplied; src/evidence/sbom.ts with the schema test and properties 35, 36 and 38
     - _Requirements: 2.1 to 2.7, 9.3_
 
 - [x] 4. Intake manifest texts
@@ -66,5 +66,5 @@ Builds the evidence pack: canonical JSON and SHA-256, purl and the CycloneDX 1.5
   - _Requirements: 8.1 to 8.4_
 
 - [x] 10. Close
-  - docs/architecture.md, docs/threat-model.md, README.md, ROADMAP.md; root gates; independent reviews before each commit in build/reviews/07-evidence-pack.md; merge to main with --no-ff; gates on main; PROGRESS, TRACKER, the report for 07 (kept outside the repository).
+  - docs/architecture.md, docs/threat-model.md, README.md, ROADMAP.md; root gates; independent reviews before each commit in build/reviews/07-evidence-pack.md; merge to main with --no-ff; gates on main.
   - _Requirements: 9.4_

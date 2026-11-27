@@ -6,7 +6,7 @@ A judge who has watched the video opens the hosted demo. In five seconds the fir
 
 Nothing here changes what a grave means, the triage order, a colour, an accessible name of an existing control, or the API.
 
-### Decisions already made (handoff, 25 Nov 2026)
+### Decisions already made (25 Nov 2026)
 
 1. **Paths.** packages/web, the README section "Try it in two minutes" only, docs/cemetery.png and docs/replay-axios.png, .kiro/steering/web.md, this folder. No dependency.
 2. **Guide.** Four steps on the demo, each pointing at the real control: hover a grave, open its drawer, read the evidence and the pull request preview, press "Replay an attack". Closable, remembered per browser with a guarded read, reachable again from the header, fully keyboard operable, never over a grave's name, no movement under Reduced motion.

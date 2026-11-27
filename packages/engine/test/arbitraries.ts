@@ -631,3 +631,15 @@ export const arbScanMetadata: fc.Arbitrary<ScanMetadata> = fc
     skipped,
     unresolved: unlockedPackages.slice(0, k),
   }));
+/** Packages for the triage order: any state, advisories or none or unavailable, any reach or unavailable. Spec sexton-power. */
+export function arbTriageList(maxLength: number): fc.Arbitrary<PackageHealth[]> {
+  const item = fc
+    .record({
+      base: arbPackage,
+      advisories: fc.oneof(advisoriesArb.map((list) => available(list, FIXED_SOURCE, FIXED_AT)), fc.constant(unavailable("down", FIXED_SOURCE, FIXED_AT))),
+      reach: fc.oneof(fc.nat(50).map((reach) => available({ reach, graphsMissing: 0 }, FIXED_SOURCE, FIXED_AT)), fc.constant(unavailable("down", FIXED_SOURCE, FIXED_AT))),
+      name: fc.stringMatching(/^[a-z@][a-z0-9/_-]{0,8}$/),
+    })
+    .map((r): PackageHealth => ({ ...r.base, name: r.name, signals: { ...r.base.signals, advisories: r.advisories, transitiveReach: r.reach } }));
+  return fc.uniqueArray(item, { maxLength, selector: (p) => p.name });
+}

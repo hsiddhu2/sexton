@@ -8,7 +8,7 @@ Every other repository is refused before any request. The token HP stored can wr
 
 ### Research findings that shape the design
 
-GitHub REST pages read on 21 Nov 2026. The fine-grained permission boxes did not appear in the fetched pages; the permissions come from the handoff's verified facts (Create an issue comment accepts Issues write or Pull requests write, https://docs.github.com/en/rest/issues/comments; the stored token has Contents read and write, Pull requests read and write, Metadata read, only on sexton-demo).
+GitHub REST pages read on 21 Nov 2026. The fine-grained permission boxes did not appear in the fetched pages; the permissions come from verified facts (Create an issue comment accepts Issues write or Pull requests write, https://docs.github.com/en/rest/issues/comments; the stored token has Contents read and write, Pull requests read and write, Metadata read, only on sexton-demo).
 
 | Shape | Page | Success | Notes |
 |---|---|---|---|
@@ -21,7 +21,7 @@ GitHub REST pages read on 21 Nov 2026. The fine-grained permission boxes did not
 | POST /repos/{o}/{r}/pulls | https://docs.github.com/en/rest/pulls/pulls#create-a-pull-request | 201 | `title`, `head`, `base`, `body`, `draft`; 403, 422 |
 | POST /repos/{o}/{r}/issues/{n}/comments | https://docs.github.com/en/rest/issues/comments#create-an-issue-comment | 201 | `body`; 403, 404, 410, 422 |
 
-- Permissions per shape: the fetched pages showed no fine-grained permission box. Expected from the token's scopes: GET repository, Metadata read; matching-refs and contents GET, Contents read; pulls GET, Pull requests read; create ref and contents PUT, Contents write; create pull, Pull requests write; issue comment on a pull request, Pull requests write (handoff fact). Deploy smoke check 2 exercises every shape against the real token.
+- Permissions per shape: the fetched pages showed no fine-grained permission box. Expected from the token's scopes: GET repository, Metadata read; matching-refs and contents GET, Contents read; pulls GET, Pull requests read; create ref and contents PUT, Contents write; create pull, Pull requests write; issue comment on a pull request, Pull requests write (verified fact). Deploy smoke check 2 exercises every shape against the real token.
 - Review comments, https://docs.github.com/en/rest/pulls/comments: "Pull request review comments are comments made on a portion of the unified diff during a pull request review." The migration changes package.json only, so a stylesheet line is not in the diff and cannot take one. Decision 3 amends R-RM-7 accordingly.
 - CloudFront OAC with a Lambda function URL, https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-lambda.html: "If you use PUT or POST methods with your Lambda function URL, your users must compute the SHA256 of the body and include the payload hash value of the request body in the x-amz-content-sha256 header when sending the request to CloudFront. Lambda doesn't support unsigned payloads."
 - Origin request policies, https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/controlling-origin-requests.html: viewer headers are "not included in the origin request by default". No page states whether a policy may list an `x-amz-` header; the denylist at https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/add-origin-custom-headers.html covers origin custom headers only. Decision 2.
@@ -44,7 +44,7 @@ flowchart TD
   SF -->|evidence: log entries| EV[evidence pack]
 ```
 
-Execution for one request (handoff decision 5): allowlist, scan with token, entry lookup, branch check, read package.json at the commit, apply edits, create branch at the commit, put package.json, open the pull request, review-site comment, log entry. A failure after the branch exists answers failed with the step and leaves the branch.
+Execution for one request (decision 5): allowlist, scan with token, entry lookup, branch check, read package.json at the commit, apply edits, create branch at the commit, put package.json, open the pull request, review-site comment, log entry. A failure after the branch exists answers failed with the step and leaves the branch.
 
 ## Components and Interfaces
 
@@ -217,13 +217,13 @@ For any review comments and tree, every link in the posted comment is to a Safe 
 ## Decisions made during implementation
 
 1. **The allowlist refusal answers 422, not 403.** The distribution maps origin 403 and 404 to `index.html` with 200 (spec infra), so a 403 would reach the browser as HTML. The same reason gave the missing-package.json 422 and the WAF 429. The smoke check expects 422.
-2. **The handler does not require the `x-amz-content-sha256` header.** Correction after deploy 3 (22 Nov 2026): CloudFront refused the header in the origin request policy, "The parameter Headers contains x-amz-content-sha256 that is not allowed" (CREATE_FAILED, the Edge update rolled back with nothing changed). The remediate policy now forwards `content-type` only. The viewer still sends the header to CloudFront, which is what the OAC page requires. The original text follows. Lambda rejects a POST through OAC without a payload hash before the handler runs ("Lambda doesn't support unsigned payloads"), and no page says whether the header reaches the function event. The behaviour still forwards it in its origin request policy, as the handoff says, and the handler logs `bodyHash: true|false` so the first deploy shows it. If CloudFormation refuses an `x-amz-` header in the policy, the deploy rolls back; the runbook says to remove it from the policy and deploy again.
+2. **The handler does not require the `x-amz-content-sha256` header.** Correction after deploy 3 (22 Nov 2026): CloudFront refused the header in the origin request policy, "The parameter Headers contains x-amz-content-sha256 that is not allowed" (CREATE_FAILED, the Edge update rolled back with nothing changed). The remediate policy now forwards `content-type` only. The viewer still sends the header to CloudFront, which is what the OAC page requires. The original text follows. Lambda rejects a POST through OAC without a payload hash before the handler runs ("Lambda doesn't support unsigned payloads"), and no page says whether the header reaches the function event. The behaviour still forwards it in its origin request policy, and the handler logs `bodyHash: true|false` so the first deploy shows it. If CloudFormation refuses an `x-amz-` header in the policy, the deploy rolls back; the runbook says to remove it from the policy and deploy again.
 3. **R-RM-7 on the hosted path.** GitHub takes review comments only on lines of the pull request diff (https://docs.github.com/en/rest/pulls/comments), and the migration changes only package.json, so review sites are posted as one issue comment with links to the lines at the commit.
 4. **`PutOptions.conditionKey`** names the partition key for the not-exists condition; the default stays `pk`, so the cache and snapshot stores are unchanged.
 5. **The tree for review-site validation** is read with the engine's `listTree` (a Read shape from spec hosted-plans), cached under the commit.
 6. **No log entry for existing.** Only a newly opened pull request is appended, so the log holds one entry per pull request.
 7. **Reserved concurrency now totals 13** (scan 10, snapshotter 1, remediate 2): the first deploy of this spec needs unreserved concurrency of at least 102 before it (100 kept plus 2 new); the account showed 979.
-8. **`isValidLogEntry` is a public engine export.** The API log store checks every entry with it before the write (handoff decision 7); the engine index test drops it from the "kept internal" list.
+8. **`isValidLogEntry` is a public engine export.** The API log store checks every entry with it before the write (decision 7); the engine index test drops it from the "kept internal" list.
 9. **The repository URL is lower-cased** after the allowlist check, so the scan, GitHub requests and log partition use one form; the evidence read uses the lower-cased URL too (spec review 1, note 3).
 10. **A 20 second time check before create-branch** (spec review 1, note 7): a timeout after the branch exists would leave a branch that refuses every later request until deleted by hand.
 11. **Steering file patterns.** pr-safety.md and api-etiquette.md gain `packages/api/src/remediate/**/*.ts` in their fileMatchPattern, so the rules load for the Executor (spec review 1, note 6).

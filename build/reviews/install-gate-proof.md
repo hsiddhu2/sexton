@@ -1,4 +1,5 @@
 # Install gate proof
+Machine paths are replaced by placeholders. Nothing else in the recorded output is changed.
 
 Date: 25 Nov 2026. Branch kiro/depth. Hook: .kiro/hooks/supply-chain.json. Script: .kiro/hooks/scripts/install-gate.mjs.
 
@@ -14,13 +15,13 @@ Date: 25 Nov 2026. Branch kiro/depth. Hook: .kiro/hooks/supply-chain.json. Scrip
 The repository as committed. Payload on STDIN:
 
 ```
-{"cwd":"/Users/harpreetsiddhu/Documents/Personal/Projects/Kiroween2026/sexton-kiro","tool_input":{"command":"npx npm@11 ci"}}
+{"cwd":"<workspace root>","tool_input":{"command":"npx npm@11 ci"}}
 ```
 
 Output:
 
 ```
-sexton install gate: policy passed for /Users/harpreetsiddhu/Documents/Personal/Projects/Kiroween2026/sexton-kiro, install allowed.
+sexton install gate: policy passed for <workspace root>, install allowed.
 exit=0
 ```
 
@@ -90,7 +91,7 @@ Added 25 Nov 2026 after the merge of main. The script takes the directory to che
 Payload:
 
 ```
-{"cwd":"/Users/harpreetsiddhu/Documents/Personal/Projects/Kiroween2026/sexton-kiro","tool_input":{"command":"npm install left-pad","cwd":"/tmp/sexton-scratch"}}
+{"cwd":"<workspace root>","tool_input":{"command":"npm install left-pad","cwd":"/tmp/sexton-scratch"}}
 ```
 
 Output:
@@ -114,13 +115,13 @@ exit=2
 Payload:
 
 ```
-{"cwd":"/tmp/sexton-scratch","tool_input":{"command":"npm install left-pad","cwd":"/Users/harpreetsiddhu/Documents/Personal/Projects/Kiroween2026/sexton-kiro"}}
+{"cwd":"/tmp/sexton-scratch","tool_input":{"command":"npm install left-pad","cwd":"<workspace root>"}}
 ```
 
 Output:
 
 ```
-sexton install gate: policy passed for /Users/harpreetsiddhu/Documents/Personal/Projects/Kiroween2026/sexton-kiro, install allowed.
+sexton install gate: policy passed for <workspace root>, install allowed.
 exit=0
 ```
 
@@ -159,7 +160,7 @@ Payload:
 Output:
 
 ```
-sexton install gate: policy passed for /Users/harpreetsiddhu/Documents/Personal/Projects/Kiroween2026/sexton-kiro, install allowed.
+sexton install gate: policy passed for <workspace root>, install allowed.
 exit=0
 ```
 
@@ -183,7 +184,7 @@ npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install
 When a PreToolUse hook exits 0, this IDE does not show its stdout to the agent, so the "install allowed" line does not appear in the tool result. The session record shows that the hook ran and completed for the call. The record is from `~/.kiro/sessions/<workspace>/<session>/messages.jsonl`; there were 88 install-gate records before the call and 90 after: one for this command and one for the count command just before it.
 
 ```
-{"type":"ContextualHookInvoked","hookId":".../sexton-kiro/.kiro/hooks/supply-chain.json#hook-0","operationId":"2b8f2a2b-2628-4b1e-b621-bd7f31789e9e","name":"install-gate","hookActionType":"runCommand","status":"completed",...}
+{"type":"ContextualHookInvoked","hookId":".../.kiro/hooks/supply-chain.json#hook-0","operationId":"2b8f2a2b-2628-4b1e-b621-bd7f31789e9e","name":"install-gate","hookActionType":"runCommand","status":"completed",...}
 ```
 
 ### Live run 2: an install that is blocked
@@ -202,7 +203,7 @@ Command: `npm install left-pad --dry-run`. The hook blocked it, and npm never ra
 ```
 Tool "execute_bash" was intercepted by PreToolUse hooks before execution.
 
-sexton install gate: sexton check exited 1 for /Users/harpreetsiddhu/Documents/Personal/Projects/Kiroween2026/sexton-kiro, install blocked.
+sexton install gate: sexton check exited 1 for <workspace root>, install blocked.
 FAIL  Temporary scratch rule, no living dependencies
       fail: @eslint/js@10.0.1  state is Alive: no rule matched
       fail: @types/node@22.10.2  state is Alive: no rule matched

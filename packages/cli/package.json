@@ -7,8 +7,8 @@
   "bin": {
     "sexton": "dist/bin.js"
   },
-  "main": "dist/run-cli.js",
-  "types": "dist/run-cli.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "dependencies": {
     "@sexton/engine": "0.2.0"
   },

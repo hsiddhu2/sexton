@@ -2,7 +2,7 @@
 
 ## Introduction
 
-cemetery-undead-2 is Phase 2 of the "Night of the Living Deps" art pass. Phase 1 (cemetery-undead) merged to main at b513514 on 25 Nov 2026. The visual target is still the approved mockups, mockup-night.html and mockup-nightreplay.html, with their screenshots, all kept with the owner's notes outside the repository.
+cemetery-undead-2 is Phase 2 of the "Night of the Living Deps" art pass. Phase 1 (cemetery-undead) merged to main at b513514 on 25 Nov 2026. The visual target is still the approved design of the cemetery and the replay, with its pictures.
 
 It has two parts:
 
@@ -13,7 +13,7 @@ It has two parts:
   - A4. The pit edge colour stands apart from the selection ring.
   - A5. The middle and back rows spread wider.
   - A6. The replay story card puts its sources on one line.
-  - A7. The fresh-clone run that fix 1 skipped.
+  - A7. The fresh-clone run that the cemetery-undead fix round skipped.
   - A8. The footer height hook watches every footer node.
 - **Part B** is Phase 2:
   - B1. Sound, made in code, off by default.
@@ -80,7 +80,7 @@ Paths: this spec changes `packages/web`, `README.md`, `CREDITS.md`, `docs/cemete
 
 ### Requirement 3: A strong Possessed glow that keeps the contrast check
 
-**User Story:** As a viewer, I want the Possessed grave to glow as in the mockup, so that the most urgent grave draws the eye.
+**User Story:** As a viewer, I want the Possessed grave to glow as in the approved design, so that the most urgent grave draws the eye.
 
 **Traces to:** A3; R-UI-7; cemetery-undead requirement 1.4
 
@@ -105,18 +105,18 @@ Paths: this spec changes `packages/web`, `README.md`, `CREDITS.md`, `docs/cemete
 
 ### Requirement 5: Wider middle and back rows
 
-**User Story:** As a viewer, I want the rows to fill the cemetery, so that it looks like the mockup.
+**User Story:** As a viewer, I want the rows to fill the cemetery, so that it looks like the approved design.
 
 **Traces to:** A5; R-UI-1
 
 #### Acceptance Criteria
 
 1. THE middle and back Tier rows SHALL spread up to the front Tier pitch: PITCH_CAP middle 1.334 and back 1.667, so that floor(cell width × cap) is 205 px in every Tier, and a middle or back row with no more graves than a full front row lines up with the front columns.
-2. THE layout SHALL keep cemetery-undead Property 1 (`test/tiers.test.ts`) and Property 7 (`test/fit.test.tsx`) passing unedited, and requirement 1.1 of this spec. The independent Tier model in `test/layout.test.ts` changes under Deliberate test change 5. (The handoff says "Properties 6 and 7"; Property 6 of cemetery-undead is the contrast property, so the layout pair is 1 and 7.)
+2. THE layout SHALL keep cemetery-undead Property 1 (`test/tiers.test.ts`) and Property 7 (`test/fit.test.tsx`) passing unedited, and requirement 1.1 of this spec. The independent Tier model in `test/layout.test.ts` changes under Deliberate test change 5. (The decisions say "Properties 6 and 7"; Property 6 of cemetery-undead is the contrast property, so the layout pair is 1 and 7.)
 
 ### Requirement 6: The replay story card
 
-**User Story:** As a reviewer, I want the sources in one tidy line, so that the card reads like the mockup.
+**User Story:** As a reviewer, I want the sources in one tidy line, so that the card reads like the approved design.
 
 **Traces to:** A6; cemetery-undead requirement 9.8
 
@@ -248,13 +248,13 @@ Paths: this spec changes `packages/web`, `README.md`, `CREDITS.md`, `docs/cemete
 
 ### Requirement 15: The screenshot loop
 
-**User Story:** As the owner, I want the result to match the mockups, so that the approved art direction is what ships.
+**User Story:** As the owner, I want the result to match the approved design, so that the approved art direction is what ships.
 
 **Traces to:** A1 to A6, B2, B3; cemetery-undead requirement 14
 
 #### Acceptance Criteria
 
-1. AFTER every visual change, THE Orchestrator SHALL take screenshots of the demo and of the axios replay at 1440 by 900 and at 390 by 844, with the Burst captured mid-animation and at its final pose, and compare them with the mockup PNGs kept with the owner's notes.
+1. AFTER every visual change, THE Orchestrator SHALL take screenshots of the demo and of the axios replay at 1440 by 900 and at 390 by 844, with the Burst captured mid-animation and at its final pose, and compare them with the approved design pictures.
 2. THE Visual critic SHALL answer READY or list what is off. THE Orchestrator SHALL fix and repeat until the Visual critic answers READY at both sizes.
 3. THE Orchestrator SHALL record the findings of each round in tasks.md notes in plain words.
 
@@ -266,7 +266,7 @@ Paths: this spec changes `packages/web`, `README.md`, `CREDITS.md`, `docs/cemete
 
 #### Acceptance Criteria
 
-1. THE spec tasks SHALL change only the paths listed in the Introduction, plus the owner's notes outside the repository, which git ignores (the report and the trackers).
+1. THE spec tasks SHALL change only the paths listed in the Introduction.
 2. THE spec tasks SHALL add no runtime dependency, no audio file and no request to another origin at run time.
 3. THE spec tasks SHALL keep the 16 ms budget, skip no test, lower no `numRuns` and weaken no check, and SHALL change an existing test only as design.md "Deliberate test changes" lists.
 4. WHEN the gates run on the final tree, THE root `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:e2e -w @sexton/web` and the fresh-clone run SHALL exit with code 0.

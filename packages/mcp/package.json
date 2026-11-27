@@ -1,0 +1,23 @@
+{
+  "name": "@sexton/mcp",
+  "version": "0.1.0",
+  "description": "Sexton MCP server: ask about the dependencies of the open project from Kiro. Read-only.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "sexton-mcp": "dist/bin.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.4.0",
+    "@sexton/cli": "0.1.0",
+    "@sexton/engine": "0.2.0"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "pretest": "tsc -b",
+    "test": "vitest run"
+  }
+}

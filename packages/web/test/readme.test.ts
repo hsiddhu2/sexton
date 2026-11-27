@@ -18,6 +18,7 @@ const ORIGINAL_HEADINGS: readonly string[] = [
   "## Quick start",
   "## CLI",
   "## GitHub Action",
+  "## Ask Sexton from Kiro",
   "## Sexton scans itself",
   "## How Sexton is different",
   "## Replay",

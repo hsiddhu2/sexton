@@ -1,0 +1,149 @@
+# Implementation Plan: sexton-power
+
+## Overview
+
+Adds `@sexton/mcp`, a read-only MCP server over the CLI's scan, and the Kiro Power that packages it. Order: baseline and the one dependency, a spike that settles how Kiro starts the server, the Engine's `triageOrder`, the CLI's exports, the server, the tests, the Bundle and Power files, the docs, then the recorded proof. Gates (`./node_modules/.bin/tsc -b`, `./node_modules/.bin/eslint . --max-warnings=0`, and each package's vitest run, zero warnings) and an independent review run before every commit. Nothing is pushed, merged or run on `main`. Work starts only on the owner's `go`.
+
+Stop conditions, from the brief: if `sexton check` fails on the repository after the dependency is added (task 1.2), if the SDK or Kiro's client cannot work with the chosen library and schemas (task 2), or if the working directory problem cannot be solved (task 2), stop and report.
+
+- [x] 1. Baseline and the one new dependency
+  - [x] 1.1 Confirm the starting point
+    - Branch `kiro/power` from origin/main 8952877. Root gates green before any change; record the test count. `.kiro/agents/impl.md` unchanged against origin/main before every commit.
+    - _Requirements: 12.3, 13.5_
+  - [x] 1.2 Create `packages/mcp/package.json` and add `@modelcontextprotocol/server` 2.4.0
+    - Package `@sexton/mcp` 0.1.0, `type: module`, Apache-2.0, `engines.node >=22`, scripts `build` (`tsc -b`), `pretest` (`tsc -b`), `test` (`vitest run`), dependencies `@sexton/engine`, `@sexton/cli` (the versions in their package.json) and `@modelcontextprotocol/server` pinned to `2.4.0`, no range, no other dependency. Run the install through the install gate. Record the gate's output and `sexton check` on the repository (exit 0 expected). Commit the lockfile change. If the gate or `sexton check` fails: stop and report, do not edit `sexton.policy.yml`.
+    - Add a one-line justification for the dependency to the PR body notes in design.md ("Notes and open items", appended at the end of the work).
+    - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 13.1, 13.2_
+- [x] 2. Spike: how Kiro starts a Power's server
+  - Settles the unknowns of design.md Decision 10 before any server code exists. Result: the Power's server cannot learn the workspace; the owner chose a `projectDir` argument (Decision 10). Output goes into the appendix of the proof file.
+  - [x] 2.1 Stub server
+    - In a scratch directory outside the repository, a one-file server on `@modelcontextprotocol/server` with one tool `where` that returns `process.cwd()`, `process.argv`, `import.meta.url` and whether `SEXTON_PROJECT_DIR` is set, with a hand-written Standard Schema for no arguments. Bundle it with the esbuild already in `infra` into one `.mjs`.
+    - Settles: the SDK takes hand-written Standard Schemas with no Zod (design Decision 7).
+    - _Requirements: 12.5, 12.6_
+  - [x] 2.2 Stub Power
+    - A scratch folder with `plugin.json` (the draft from design.md), `mcp.json` with `node` and a relative path to the bundled stub, and one skill. Install it in this workspace through Powers, Add Custom Power, Import power from a folder. Ask Kiro to call `where`. Record: the working directory, whether the relative `args` path resolved, whether an environment variable set in `mcp.json` arrives, whether `${...}` expands in `args`, whether Kiro's client connects to a v2 server, the Kiro version. If it did not run, say so.
+    - Choose among the three outcomes of Decision 10 and write the choice and its evidence into design.md "Notes and open items". If none reaches the project directory, or the client will not connect: stop and report.
+    - _Requirements: 2.1, 14.3, 15.2, 15.3_
+  - [x] 2.3 Remove the stub Power from this workspace
+    - Uninstall it in the Powers panel; delete the scratch directory. Nothing from the spike is committed.
+    - _Requirements: 15.2_
+- [x] 3. Engine: triageOrder
+  - [x] 3.1 `packages/engine/src/triage.ts` and the index export
+    - `compareTriage` and `triageOrder` as in design.md. A pure copy of the rules of `packages/web/src/triage/triage.ts`; no I/O.
+    - _Requirements: 8.4_
+  - [x] 3.2 `packages/engine/test/triage.test.ts`
+    - Examples: the five states, ties on severity and reach, unavailable advisories and reach, equal names impossible. Property 3 (a), (c), (d), 100 runs. A test pins `STATE_ORDER`.
+    - _Requirements: 8.4_
+  - [x] 3.3 Parity test with the web copy
+    - `packages/mcp/test/triage-parity.test.ts` (created with task 5.1's package files): Property 3 (b) with generated lists of up to 300 packages. Imports the web file by relative path; if that pulls `@sexton/api` at run time, copies only the needed list as design.md Decision 2 says.
+    - _Requirements: 5.5, 8.5_
+- [x] 4. CLI: exports only
+  - [x] 4.1 `packages/cli/src/real-deps.ts` and `bin.ts`
+    - Move the inline port construction into `createRealDeps(cwd)`. `bin.ts` calls it. A test shows the port set is unchanged. All existing CLI tests pass with no edit.
+    - _Requirements: 8.2_
+  - [x] 4.2 `packages/cli/src/index.ts` and `package.json`
+    - Exports of Requirement 8.2 plus `renderCheck`; `main` and `types` point at `dist/index.js` and `dist/index.d.ts`. A test lists the exported names. `packages/action` and `.kiro/hooks/scripts/install-gate.mjs` still run `dist/bin.js`; the install-gate proof is re-run to show it.
+    - _Requirements: 8.2, 13.6_
+- [x] 5. The server core (`packages/mcp/src`)
+  - [x] 5.1 Package files: `tsconfig.json` (references `../engine` and `../cli`), `vitest.config.ts`, root `tsconfig` references if the repository keeps a list
+    - Zero warnings from `tsc -b` and eslint on an empty package.
+    - _Requirements: 13.1, 13.5_
+  - [x] 5.2 `schemas.ts` and `result.ts`
+    - The two Standard Schemas (`projectArguments`, `packageArguments`); `DATA_HEADER`, the fifteen codes with their fixed messages, `ok()` and `fail()`. Example tests: each schema accepts and rejects the documented values and requires `projectDir`; the codes equal Requirement 11.2; the header text is exact.
+    - _Requirements: 1.4, 2.1, 2.3, 4.6, 10.4, 11.1, 11.2, 12.6_
+  - [x] 5.2a `project-dir.ts`
+    - `checkProjectDir` with an injected fs (`realpath`, `stat`, `lstat`). Examples for every refusal and code: not a string, empty, relative, `~`, NUL, 4097 characters, missing path, a file, a directory without `package.json`, `package.json` as a directory, `package.json` as a symbolic link, a symbolic link to a project (accepted, real path returned), `a/../b` (normalised). A test on a real temporary directory (read-only checks) with a symbolic link. Property 6 on the module alone, 1000 runs.
+    - _Requirements: 2.2, 2.4, 2.7_
+  - [x] 5.3 `bound.ts`
+    - `clean(value, max)` over `safe`; `capList`; `boundValue` (depth 4, strings, numbers, booleans, null, arrays cut at 20, object keys that match the pattern, at most 30 keys); `limitResult` (100 KiB). Property 4 on the module alone, 1000 runs.
+    - _Requirements: 10.1, 10.2, 10.3, 10.5, 10.6, 10.7_
+  - [x] 5.4 `error-map.ts`
+    - PipelineError to code by `MSG` constants, the 20-entry `policy-invalid` detail. A test iterates every `MSG` key and fails on an unmapped one.
+    - _Requirements: 6.4, 11.2, 11.3_
+  - [x] 5.5 `read-only-files.ts`
+    - Wraps a `FilePort`; `writeText` throws. Test: throws; reads pass through.
+    - _Requirements: 7.1, 7.7_
+  - [x] 5.6 `project-target.ts`
+    - Takes the Project root. Origin remote to `RepoRef` by `repoFromRemote`; the placeholder otherwise, with the directory name cleaned and cut. Examples: github https, ssh, no remote, a directory name with spaces, quotes and 300 characters.
+    - _Requirements: 2.8, 2.9_
+  - [x] 5.7 `scan-cache.ts`
+    - Key is the Project root plus the manifests digest; shared in-flight promise, 15 minute keep time by the injected clock, 55 second race with the scan left running, a rejected pipeline not stored. Property 9 with a counting transport and a fake clock.
+    - _Requirements: 9.3, 9.4, 9.5_
+- [x] 6. The views, the server and the entry
+  - [x] 6.1 `views/scan.ts` and `views/fix-order.ts`
+    - Pure projections; both call the Engine's `triageOrder`. Examples on the recorded fixture scan: counts, `hasPlan`, `highestAdvisory`, the capped and unlocked facts, the 300 cap.
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 5.1, 5.2, 5.3, 5.4_
+  - [x] 6.2 `views/explain.ts`
+    - All twelve signals with source and fetchedAt, the policy failures for the package, the plan with a 4000-character preview. Property 7.
+    - _Requirements: 4.1, 4.2, 4.3, 4.4_
+  - [x] 6.3 `views/check.ts`
+    - Policy result as data, `exitCode`, caps. Property 2 (a) against `checkCommand`.
+    - _Requirements: 6.1, 6.2, 6.3, 6.5_
+  - [x] 6.4 `server.ts`
+    - `createServer(deps)`: four tools, names, descriptions of at most 400 characters, annotations, handler wrapper (arguments, cache, error map, `internal-error` catch, `limitResult`, `structuredContent` and text). `package-not-in-scan` before any further work. Test `tools/list` through an in-memory client: names, order, annotations, JSON Schemas, no resources, no prompts.
+    - _Requirements: 1.1, 1.2, 1.3, 1.4, 4.5, 4.7, 11.1, 11.4, 11.5_
+  - [x] 6.5 `bin.ts`
+    - No root, no environment variable and no working directory used to find a project. Real deps with the read-only file port, stdio transport, stderr logging only, no I/O before the first call. Smoke test: spawn it, `initialize`, `tools/list`, four names, each schema requires `projectDir`, nothing on stdout but MCP.
+    - _Requirements: 1.5, 1.6, 2.1, 2.7_
+- [x] 7. Properties and static tests
+  - [x] 7.1 Properties 1, 5, 6 and 8 through `createServer` and an in-memory transport
+    - 1000 runs for 1, 5 and 6. Fakes for the ports from the CLI's `test/support.ts` pattern; tree digest helper; failing-port generators; Property 6 with a recording file port (no read outside the real path, none through a link). The SDK exports `InMemoryTransport`; a small test client sends the JSON-RPC messages.
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 4.5, 4.6, 4.7, 7.1, 7.2, 7.6, 7.7, 11.1, 11.2, 11.4, 11.5, 11.6_
+  - [x] 7.2 Properties 2 (b), (c), 3 (e), 10 and 11
+    - Parity with `scanCommand`'s `scan.json`; both tools in the same order; byte-identical repeat calls; hosts and methods.
+    - _Requirements: 3.2, 3.3, 5.4, 7.4, 8.3, 9.1, 9.2_
+  - [x] 7.3 Property 4 end to end
+    - Hostile strings injected into the recorded fixtures' names, advisory summaries, maintainers, URLs and policy text; 1000 runs.
+    - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7_
+  - [x] 7.4 Static and setup tests
+    - Import list of `packages/mcp/src` (no `@sexton/api`, no `node:child_process`, no write function names); dependencies equal Requirement 12.1; `globalThis.fetch` replaced by a thrower in the vitest setup; no `local/` in any result; the one-implementation check (no exported function name of `@sexton/engine` or `@sexton/cli` redefined in `packages/mcp/src`).
+    - _Requirements: 7.2, 7.5, 8.6, 9.6, 12.1, 12.5, 13.2_
+- [x] 8. The Power
+  - [x] 8.1 `scripts/build-power.mjs` and the root script `build:power`
+    - esbuild options from Decision 8, with `target: node20`; writes `powers/sexton/server/sexton-mcp.mjs`; fails with a clear message when the build output or esbuild is missing. Run `npm run build -w @sexton/mcp` first.
+    - _Requirements: 14.5_
+  - [x] 8.2 `powers/sexton/plugin.json`, `mcp.json` and `skills/sexton/SKILL.md`
+    - As in design.md: `node` and `server/sexton-mcp.mjs`, no `env`, no `autoApprove`. The skill tells Kiro to pass the workspace root as `projectDir`. No token, no secret.
+    - _Requirements: 2.11, 14.1, 14.2, 14.3, 14.4_
+  - [x] 8.3 Power tests
+    - Bundle freshness (rebuild to a temp file, compare bytes); `plugin.json`, `mcp.json` and the SKILL front matter parse and carry the required fields and keywords; the Bundle runs under Node 20 and Node 22 (`~/.nvm/versions/node`) from an empty directory with no `node_modules` (smoke test, `tools/list` only; skipped with a message when a version is not installed); the Bundle holds no `sk-`, token or `ghp_` strings.
+    - _Requirements: 14.1, 14.2, 14.3, 14.5, 14.6_
+- [x] 9. Documentation
+  - [x] 9.1 `structure.md` and `tech.md`
+    - Add `packages/mcp` (the server, what it depends on), `powers/sexton`, `scripts/build-power.mjs`, the `build:power` command, and `infra/scripts` (the cache-header check). `tech.md`: the package list, the one runtime dependency with its justification line. Update the "Dependencies between packages" lines. Update `AGENTS.md` only if it names packages (it does not today).
+    - _Requirements: 13.3, 13.4_
+  - [x] 9.2 `CREDITS.md` and `NOTICE`
+    - Name the third-party code in the Bundle (the MCP library and Zod, which the library depends on, plus the Engine's runtime dependencies) with licences, as `docs/adr/0001` and the existing files do. The spike's esbuild is a development tool, already recorded.
+    - _Requirements: 14.5_
+  - [x] 9.3 `docs/requirements.md` 1.1 (owner approved 26 Nov 2026)
+    - One line under 4.1 and one change-log line. Owner approved.
+    - _Requirements: 13.3_
+  - [x] 9.4 README section "Ask Sexton from Kiro"
+    - Install in under two minutes: the repository URL that points to `powers/sexton` (branch URL until merged), or Add Custom Power with the folder; one question to ask; what the four tools return; the read-only guarantee; the residual risk of Decision 5 in two sentences; a link to the proof; the residual risk of `projectDir` in plain words (design.md Decision 10); a note that Kiro asks before a call and shows `projectDir`. Add the heading to `ORIGINAL_HEADINGS` in `packages/web/test/readme.test.ts` in README order.
+    - _Requirements: 2.10, 14.7, 14.8, 15.4_
+- [x] 10. The proof
+  - [x] 10.1 Install the Power in this workspace
+    - From the folder (install name `sexton`), as the README says; the branch URL goes in the proof file only. Record the Kiro version, the date, the Power version and `shasum -a 256` of the Bundle.
+    - _Requirements: 15.1, 15.3_
+  - [x] 10.2 Ask one real question
+    - "Which of this repository's own dependencies should I fix first, and why?" in Kiro chat, with real network. Copy the tool calls, their arguments and Kiro's answer into `build/reviews/sexton-power-proof.md`. Any step that did not run is marked "did not run".
+    - _Requirements: 15.1, 15.2_
+  - [x] 10.3 Record the gate results
+    - `sexton check` and the install gate for the added dependency (from task 1.2), the root gates, `npm run scan:self`. Cross-check one answer against `sexton scan .` output on the same commit and note any difference.
+    - _Requirements: 8.3, 12.2, 12.3, 15.5_
+- [x] 11. Gates, review, commit
+  - [x] 11.1 Root gates and the self-scan
+    - `tsc -b`, eslint with `--max-warnings=0`, every package's tests, `npm run scan:self` (it covers `packages/*`, so the new package's three dependencies are scanned and must pass Sexton's policy), `npm run synth -w sexton-infra` unchanged.
+    - _Requirements: 12.4, 13.5_
+  - [x] 11.2 Independent review
+    - A reviewer who has not seen the work checks Requirements 7, 8, 10 and 12 against the code, and the Bundle against a fresh build. Findings fixed or recorded in design.md "Notes and open items".
+    - _Requirements: 7.1, 7.2, 7.4, 8.1, 8.6, 10.1, 12.5_
+  - [x] 11.3 Commit
+    - `.kiro/agents/impl.md` unchanged against origin/main. Commits under the configured identity, no trailers. No push, no merge. PR body, when asked for, names the spec, the requirements and the dependency justification line.
+    - _Requirements: 12.1, 13.5_
+
+## Notes
+
+- 11.2 was reviewed by the `security-reviewer` agent (read-only subagent) on 26 Nov 2026: 8 findings (0 defects, 8 notes), 8 handled (3 code, 4 test, 1 spec wording). Details in design.md "Notes and open items: review of task 11.2".
+- 10.2: the first live session's question was posed by the building agent. The owner's fresh chat, on the current Bundle, observed both Kiro choosing the Power from keywords and Kiro loading the skill on its own. The proof file records both ("Fresh chat by the owner").
+- Task 11.1 ran the root gates and `npm run scan:self`; counts are in the final report.

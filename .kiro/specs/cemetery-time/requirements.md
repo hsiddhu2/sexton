@@ -127,7 +127,7 @@ This spec does NOT add a runtime dependency, a web font, an image file, an audio
 
 ### Requirement 6: ESLint ignores the build folder
 
-**User Story:** As a developer, I want scratch files under `build/` to stay out of lint, so that a throwaway script cannot fail the pre-commit lint.
+**User Story:** As a developer, I want scratch files under `build/` to stay out of lint, so that a throwaway script cannot fail the lint gate.
 
 **Traces to:** Part A item A6
 

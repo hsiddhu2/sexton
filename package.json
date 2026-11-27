@@ -17,7 +17,8 @@
     "test": "npm run test --workspaces --if-present",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc -b",
-    "scan:self": "node scripts/self-scan.mjs"
+    "scan:self": "node scripts/self-scan.mjs",
+    "build:power": "npm run build -w @sexton/mcp && node scripts/build-power.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

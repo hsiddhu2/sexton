@@ -30,7 +30,7 @@ Paths: `packages/web`, `docs/cemetery.png`, `docs/replay-axios.png`, the README 
 
 2.1 WHEN the Halo is drawn THEN the system SHALL cut it only where a checked token can sit: each grave's drawn parts (stone, Character, Costume, Ghost, pennant), each name label, the selection ring's line and the Lantern grave's focus outline, and the Art box of a grave whose burial, Vigil or Burst plays; and SHALL NOT cut the empty rest of a cell
 
-2.2 WHEN the Halo meets a cut THEN the system SHALL fade it through a blurred, rounded copy of the cut, so no hard edge or square corner shows; the Halo SHALL be uncut at every point farther than its soft edge from every region of 2.1; and the visual critic, comparing the pictures with the mockup PNGs, SHALL find no rectangle edge in the Halo
+2.2 WHEN the Halo meets a cut THEN the system SHALL fade it through a blurred, rounded copy of the cut, so no hard edge or square corner shows; the Halo SHALL be uncut at every point farther than its soft edge from every region of 2.1; and the visual critic, comparing the pictures with the approved design pictures, SHALL find no rectangle edge in the Halo
 
 2.3 WHEN the Halo is drawn THEN its alpha SHALL be exactly 0 at every point of every region of 2.1, and the existing glow contrast check SHALL pass unedited
 

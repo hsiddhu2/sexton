@@ -1,12 +1,12 @@
 # Reviews: spec 10b hosted-plans
 
-Each review was run by an independent reviewer that had not seen the implementation, with the spec folder, the diff against main, docs/requirements.md, the handoff and the steering files.
+Each review was run by an independent reviewer that had not seen the implementation, with the spec folder, the diff against main, docs/requirements.md and the steering files.
 
 ## Review 1: spec (requirements, design, tasks), 21 Nov 2026
 
 Verdict: NOT READY, 3 defects, all fixed before the spec commit.
 
-1. A capped tree made the GitHub File source reject, which contradicted handoff decision 8 ("a capped tree is reported through a counts method like the working-tree source"). Fixed: the source lists the paths of the first 20000 raw entries and `counts()` reports capped; Requirement 3.2 and design decision 1. The edge case where a tree capped mostly by ignored directories shows capped false is recorded for HP.
+1. A capped tree made the GitHub File source reject, which contradicted decision 8 ("a capped tree is reported through a counts method like the working-tree source"). Fixed: the source lists the paths of the first 20000 raw entries and `counts()` reports capped; Requirement 3.2 and design decision 1. The edge case where a tree capped mostly by ignored directories shows capped false is recorded for HP.
 2. Property 52 claimed to prove Requirement 4.5, which it does not cover. Fixed: 4.5 is proven by Property 53; traceability updated.
 3. Property 57 included manifest and policy reads among "failing raw reads", which give 502 or 422 by design, and planStage had no seam through which a step could throw. Fixed: the property covers File-source reads with the manifest and policy reads succeeding; planStage takes injectable steps and a File-source thunk, every step is guarded, and scan.ts wraps the call.
 

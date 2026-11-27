@@ -10,9 +10,9 @@ Implements requirements 1 to 10 of this spec, which cover R-SG-4, R-SG-5, R-SG-6
 
 Out of scope: any database store, any scheduler, UI, CLI, policy, remediation, evidence pack, agent, and any signal beyond the ten.
 
-### Names in the source that differ from the brief
+### Names in the source that differ from the instructions
 
-The brief's names all exist except where noted here.
+The names in the instructions all exist except where noted here.
 
 - The cache helper is `cacheKey(source, pkg, version)` in `cache.ts`. `ClientContext` is in `clients/context.ts`, with `cachedJson`, `describeFailure` and `isRecord`.
 - `mapWithConcurrency` and `PACKAGE_CONCURRENCY` (8) are exported from `score.ts`. The snapshotter imports them from there.
