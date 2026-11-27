@@ -42,7 +42,7 @@ export const API_PATH_PREFIX = "/api/";
 export const LOG_RETENTION_DAYS = 30;
 
 /**
- * Repositories that may receive a Sexton pull request (spec remediate, handoff decision 1). Lower-case owner/repo.
+ * Repositories that may receive a Sexton pull request (spec remediate, decision 1). Lower-case owner/repo.
  * Changing it is a code change and a deploy.
  */
 export const REMEDIATE_ALLOWLIST: readonly string[] = ["hsiddhu2/sexton-demo"];

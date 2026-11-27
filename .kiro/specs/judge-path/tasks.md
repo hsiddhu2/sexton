@@ -66,7 +66,7 @@ Run-time notes:
     - _Requirements: 7.3, 7.4, 7.5, 8.4_
   - [x] 6.5 Independent review of the branch; fix every defect; record the notes
     - _Requirements: 8.5_
-  - [x] 6.6 Write private/reports/K6a-judge-path.md, update private/PROGRESS.md and private/TRACKER.md, print the report and stop
+  - [x] 6.6 Summarise the work and stop
     - _Requirements: 8.4, 8.5_
 
 ## Notes

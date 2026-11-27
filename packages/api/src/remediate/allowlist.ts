@@ -1,4 +1,4 @@
-// The remediate allowlist. Spec: .kiro/specs/remediate, glossary "Allowlist", handoff decision 1.
+// The remediate allowlist. Spec: .kiro/specs/remediate, glossary "Allowlist", decision 1.
 // Lower-cased exact owner/repo names. Empty or missing allows nothing. Pure.
 
 import { isValidOwner, isValidRepo, type RepoRef } from "@sexton/engine";

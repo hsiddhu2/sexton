@@ -1,6 +1,6 @@
 # Reviews: spec 09 cli-and-action
 
-Each review was run by an independent reviewer that had not seen the implementation, with the spec folder, the diff against main, docs/requirements.md, the handoff and the steering files.
+Each review was run by an independent reviewer that had not seen the implementation, with the spec folder, the diff against main, docs/requirements.md and the steering files.
 
 ## Review 1: spec (requirements, design, tasks), 21 Nov 2026
 
@@ -16,7 +16,7 @@ Verdict: NOT READY, 9 defects, all fixed before the spec commit.
 8. Requirement 1.2 could not hold for texts over 5 MiB or with a byte order mark. Fixed: domain named, decision 15.
 9. Two wrong statements about existing code (`POLICY_FILE` location, `planRemediation` signature). Fixed.
 
-Notes acted on: output safety covers stdout and stderr of every command and no colour; handoff points 1, 11, 16, 23 stated (decision 14); `--repo` errors, the evidence default target, missing or large verify files and the edited copy defined; token in env of the comment step only, `--` before the path, exit code flow (decision 12); links and vanished files dropped, not skipped (decision 11); reads stop at maxBytes + 1; no YAML library in the action tests; API version as documented (decision 13); 5.5 reworded to examples. Notes kept: EARS bundling in several criteria (each tested by examples); task 1 trace.
+Notes acted on: output safety covers stdout and stderr of every command and no colour; points 1, 11, 16, 23 stated (decision 14); `--repo` errors, the evidence default target, missing or large verify files and the edited copy defined; token in env of the comment step only, `--` before the path, exit code flow (decision 12); links and vanished files dropped, not skipped (decision 11); reads stop at maxBytes + 1; no YAML library in the action tests; API version as documented (decision 13); 5.5 reworded to examples. Notes kept: EARS bundling in several criteria (each tested by examples); task 1 trace.
 
 ## Review 1b: spec re-review
 

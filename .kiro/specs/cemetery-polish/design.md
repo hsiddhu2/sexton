@@ -620,13 +620,13 @@ Each item is the question, the call, and the reason.
 12. **What does a non-https link show?** Call: its text only, without the address. Reason: the instruction was to show its text as plain text. Showing the address would let a reader copy a `javascript:` address.
 13. **The `Theme` alias.** Call: keep it (audit 16). Reason: about 40 tests import it and no viewer sees it.
 14. **Time format.** Call: minute precision, no seconds, a fixed English month table, no `Intl`. Reason: the same text in every browser and locale. The full instant stays in the `dateTime` attribute.
-15. **Also format `fetchedAt` in the drawer, and show single values inline?** Call: yes, both (audit 10 and 11). Reason: the brief listed them as candidates and the code confirmed both.
+15. **Also format `fetchedAt` in the drawer, and show single values inline?** Call: yes, both (audit 10 and 11). Reason: the instructions listed them as candidates and the code confirmed both.
 16. **Loading text.** Call: "Loading the scan" in place of "loading scan". Reason: sentence case reads as finished. It changes one pinned test (change 1).
 17. **h1 text.** Call: the Wordmark keeps the h1 text content "Sexton cemetery". Reason: `test/smoke.test.tsx` and the page title agree, and the change costs nothing.
 18. **A new e2e file.** Call: `e2e/polish.spec.ts` holds the new browser checks, and `smoke.spec.ts` keeps its one test. Reason: one test per concern, and the smoke test keeps the 16 ms budget alone.
 19. **Where does the README test live?** Call: `packages/web/test/readme.test.ts`, reading `../../README.md`. Reason: the spec may change only `packages/web` and the named docs. A test in `packages/web` is inside the scope.
 20. **Breakpoint.** Call: the header stacks at 600 CSS pixels and below. Reason: the drawer is already full width below 512 pixels, and 600 leaves room for the pill field and the downloads on one row above it.
-21. **README placement.** Call: the Dependabot section goes after "How Sexton is different". Reason: that section already compares the tools, and the new one adds the facts. The old bullet stays, as the brief allowed only the section and the image to change.
+21. **README placement.** Call: the Dependabot section goes after "How Sexton is different". Reason: that section already compares the tools, and the new one adds the facts. The old bullet stays, as the instructions allowed only the section and the image to change.
 22. **Security review mechanics.** Call: each top-level task ends with an invocation of the security-reviewer agent, which reads `git diff`. Reason: the agent has no write tools and runs only `git diff`, `git status` and `git log`. The task notes record the findings. Findings of kind "defect" are fixed in the same task.
 
 ## Notes and open items

@@ -179,7 +179,7 @@ Run-time notes:
   - [x] 9.6 Independent code review of the whole branch
     - _Requirements: 16.5_
   - [x] 9.7 Report and stop
-    - Write the K2e report in the K2d report format, update the owner's progress notes and tracker (kept outside the repository), print the report and stop. Nothing is pushed. On the owner's `push`, follow the handoff's merge steps.
+    - Summarise the work and stop. Nothing is pushed. On the owner's `push`, merge as decision 9 says.
     - _Requirements: 16.1_
 
 ## Notes
@@ -198,7 +198,7 @@ Run-time notes:
   - Round 2: NOT READY with 2 defects, both fixed: a stale cap value in change 5, and the selection ring and focus outline of a neighbour could sit on the Halo. The selected and Lantern cells are now cut.
   - Round 3: NOT READY with 1 defect, fixed: the Vigil's standing Priest was not cut.
   - Round 4: READY.
-- Baseline (task 1.2), build/undead-2/round-0: Canvas top at 1440 by 900 is 119.7 px on the demo and 72.6 px on the axios replay; at 390 by 844 it is 323.5 px on the demo. Repaint medians at 300 graves 2.90 ms idle and 2.70 ms after a scrubber move, e2e 26 passed (the K2d fix 1 numbers; packages/web is unchanged since).
+- Baseline (task 1.2), build/undead-2/round-0: Canvas top at 1440 by 900 is 119.7 px on the demo and 72.6 px on the axios replay; at 390 by 844 it is 323.5 px on the demo. Repaint medians at 300 graves 2.90 ms idle and 2.70 ms after a scrubber move, e2e 26 passed (the numbers of the cemetery-undead fix round; packages/web is unchanged since).
 - Critic round 1 (tasks 2.5 and 3.3 together, build round-2): NOT READY at both sizes. Labels, pit edge and rows pass. The Halo read as a dim box with hard edges. The Halo centre moved above the zombie's head and its radius grew.
 - Critic round 2 (round-3): NOT READY at both sizes. The Halo reads pink, but the cuts around whole Forms left dark boxes round lodash and event-stream, and pink stripes in the 390 gutters. The replay header labels and the Sources line pass. The Form box was split into a core box, a Ghost box and a pennant box.
 - Critic round 3 (round-4): READY at both sizes. Minor, left as they are: a faint soft box round lodash; one pink beam in a 390 gutter; the 390 demo capture does not show the Possessed grave, so the 390 Halo was judged on the axios replay.

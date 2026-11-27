@@ -1,6 +1,6 @@
 # Reviews: spec 06 migration-node-sass
 
-Each review was run by an independent reviewer that had not seen the implementation, with the spec folder, the diff against main, docs/requirements.md, the handoff and the steering files.
+Each review was run by an independent reviewer that had not seen the implementation, with the spec folder, the diff against main, docs/requirements.md and the steering files.
 
 ## Review 1: spec (requirements, design, tasks), 21 Nov 2026
 
@@ -14,7 +14,7 @@ Notes acted on: 3.7 scoped to "sass not listed"; property 24 matches 1.7 on the 
 
 ## Review 1b: spec re-review
 
-Verdict: READY. Notes fixed: task 7 lists all seven amended criteria; 9.2 names 2.22; Requirement 9 story mentions the body amendment. Note kept: 4.11 needs node-sass and sass-loader both in devDependencies in the sample package.json (handoff says so).
+Verdict: READY. Notes fixed: task 7 lists all seven amended criteria; 9.2 names 2.22; Requirement 9 story mentions the body amendment. Note kept: 4.11 needs node-sass and sass-loader both in devDependencies in the sample package.json.
 
 ## Review 2: implementation (engine, api, web, fixtures, demo), 21 Nov 2026
 
@@ -24,6 +24,6 @@ Notes acted on before commit:
 1. `runRecipe` now keeps only package.json Edits and sites on package.json or a listed Safe path, for injected recipes (test with a rogue recipe). Design decision 18.
 2. Excerpts were up to 121 code points (120 plus ellipsis); now 119 plus ellipsis. Decision 19.
 3. The migrate body now prints the remove-scope line (remediation HP decision 7) after a remove Edit.
-4. The review list says "Stylesheets and scripts: not scanned." when there was no scan (handoff decision 9). Decision 20.
+4. The review list says "Stylesheets and scripts: not scanned." when there was no scan (decision 9). Decision 20.
 
 Notes kept: O(n) path filtering before the 500 cap (a raw-entry limit belongs with the 09 and 10b sources); the validator checks `reviewComments` is a list, not each element (7.2 asks no more); a re-scan before `npm install` would propose the sass-loader raise again because the lockfile is unchanged (the lockfile note covers it); only the demo calls `runMigrations` today, the hosted path comes with 10b.

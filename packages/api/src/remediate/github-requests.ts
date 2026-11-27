@@ -1,4 +1,4 @@
-// The one builder for every GitHub write-side request. Spec: .kiro/specs/remediate, Requirement 2, handoff decision 4.
+// The one builder for every GitHub write-side request. Spec: .kiro/specs/remediate, Requirement 2, decision 4.
 // Knows exactly eight shapes, each to https://api.github.com with the token in Authorization, no redirect followed.
 // Throws on any invalid part, so no request is ever built from one. No DELETE exists here.
 

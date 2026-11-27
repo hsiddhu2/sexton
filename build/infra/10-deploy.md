@@ -78,8 +78,8 @@ No role grants `dynamodb:UpdateItem`, `DeleteItem`, `BatchWriteItem`, PartiQL wr
 
 Stop if any check fails. Each one is read-only.
 
-1. **The engine fix is on main.** Kiro's `version.ts` Bugfix spec (to-kiro.md item 7) is merged into `origin/main`, and HP has merged `main` into `spec/infra`. Agents do not merge. Without the fix, both bundled Lambdas fail on load with `Cannot find module '../package.json'`.
-2. **`parseApiBase` accepts `/api`.** The cemetery-ui change in to-kiro.md item 2 is on `origin/main` and merged in. Without it, the deployed web app shows the demo but treats the live API as not configured.
+1. **The engine fix is on main.** Kiro's `version.ts` Bugfix spec (spec engine-version) is merged into `origin/main`, and HP has merged `main` into `spec/infra`. Agents do not merge. Without the fix, both bundled Lambdas fail on load with `Cannot find module '../package.json'`.
+2. **`parseApiBase` accepts `/api`.** The cemetery-ui change is on `origin/main` and merged in. Without it, the deployed web app shows the demo but treats the live API as not configured.
 3. **Gates pass** on the commit being deployed: typecheck, lint and test.
 4. **The engine is built** (`npm run build -w @sexton/engine`). The API bundle reads the engine from `packages/engine/dist`, so a stale `dist` would bundle old engine code.
 5. **The web app is built** with `VITE_SEXTON_API=/api`.
