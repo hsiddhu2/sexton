@@ -1,5 +1,6 @@
 import {
   ALPHA_ZERO_BYTE,
+  dimAlpha,
   FOG_PEAK_ALPHA_BYTE,
   GLOW_ALPHA_BYTE,
   HALO_ALPHA_BYTE,
@@ -11,7 +12,7 @@ import {
   SHADOW_ALPHA_BYTE,
   STONE_ALPHA_BYTE,
 } from "./palette.js";
-import { GRAVE_GEOMETRY, BOTTOM_LINE_MIN_GAP, BOTTOM_LINE_OFFSET, CELL_WIDTH, MAX_BACKING, PADDING, type GravePlan, type Rect, type ScenePlan, type Star, type Tuft } from "./layout.js";
+import { GRAVE_GEOMETRY, BOTTOM_LINE_MIN_GAP, BOTTOM_LINE_OFFSET, CELL_WIDTH, ghostOffset, MAX_BACKING, PADDING, type GravePlan, type Rect, type ScenePlan, type Star, type Tuft } from "./layout.js";
 import { inDanceWindow, poseAt, seedOf } from "./motion.js";
 import { CHURCH_PATH, TREE_PATH, batWing, churchPath, treePath } from "./silhouettes.js";
 import { POSE_COUNT, type ClipId } from "./characters/vector.js";
@@ -34,6 +35,8 @@ export interface PaintContext2D {
   fillStyle: string | CanvasGradient | CanvasPattern;
   strokeStyle: string | CanvasGradient | CanvasPattern;
   lineWidth: number;
+  /** Set only around the draws of a grave dimmed by a filter (spec clean-site, 2.7). */
+  globalAlpha?: number;
   font: string;
   textAlign: CanvasTextAlign;
   setTransform(a: number, b: number, c: number, d: number, e: number, f: number): void;
@@ -74,8 +77,12 @@ const LANTERN_RADIUS = 0.6;
 const GHOST_DRAW_SCALE = 2;
 const MIN_NAME_PX = 12;
 const INSCRIPTION_UNITS_PX = 15;
-/** The family part of the inscription font, so the name has one source. */
-const NAME_FAMILY = GRAVE_GEOMETRY.inscription.font.replace(/^\d+px /, "");
+/**
+ * The narrowest a name may be squeezed on screen: its 96-unit width at the back Tier and the old smallest fit scale,
+ * 96 x 0.64 x 0.6 px. Below that scale the name's width in units grows, so the lower fit floor squeezes no name more
+ * than before (spec clean-site, 3.29); at and above it nothing changes.
+ */
+const MIN_NAME_WIDTH_PX = 96 * 0.64 * 0.6;
 /** The side face of a stone: its outline again, this far right and up in shape units, shaded with SHADOW_ALPHA_BYTE. */
 /** The ghost is drawn this far from its planned point, in cell units, so it floats over the top of its stone. */
 const GHOST_SHIFT_X = -4;
@@ -113,7 +120,7 @@ const MARKER_BASE_Y = 168;
 const MOUND_RX = 60;
 const MOUND_RY = 14;
 const GLOW_RADIUS = 200;
-/** The Possessed glow is centred over the pit, at this cell y (K2d fix 1). */
+/** The Possessed glow is centred over the pit, at this cell y. */
 const GLOW_CY = 104;
 /** The pennant at fixed Cell offsets: pole, then three flag rows. Right of every stone box, above the Plinth top. */
 const MARKER_RECTS: readonly (readonly [number, number, number, number])[] = [
@@ -279,7 +286,7 @@ function drawScenery(ctx: PaintContext2D, plan: ScenePlan, nowMs: number): void 
   ctx.fillRect(0, s.horizonY - FENCE_HEIGHT + 4, plan.width, 1);
   ctx.fillRect(0, s.horizonY - 6, plan.width, 1);
 
-  // The ground: a low hill in front of the fence, lit along its top edge, darker towards the front (K2d fix 1).
+  // The ground: a low hill in front of the fence, lit along its top edge, darker towards the front.
   const hillTop = s.horizonY - HILL_RISE;
   const ground = ctx.createLinearGradient(0, hillTop, 0, hillTop + Math.max(s.groundFade / 3, (plan.groundHeight - hillTop) * 0.55));
   ground.addColorStop(0, colours.groundTop);
@@ -376,12 +383,12 @@ function clipAndPose(grave: GravePlan, plan: ScenePlan, clips: readonly ClipId[]
   const own = clips[0] ?? "dance";
   const clip: ClipId = own === "lounge" && plan.dancers.has(grave.name) && !plan.reducedMotion && inDanceWindow(grave.name, nowMs) ? "dance" : own;
   const count = POSE_COUNT[clip];
-  return { clip, pose: poseAt(nowMs, count, plan.reducedMotion, seedOf(grave.name) % count) };
+  return { clip, pose: poseAt(nowMs, count, plan.reducedMotion, seedOf(grave.name) % count, plan.beat ?? null) };
 }
 
 /**
  * At most one glow under a grave: the Lantern glow on the hovered or focused grave, else the Possessed glow. All glows
- * are drawn on the ground before any grave, so a wide glow never tints a neighbouring stone (K2d fix 1).
+ * are drawn on the ground before any grave, so a wide glow never tints a neighbouring stone.
  */
 function drawGlow(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan): void {
   const lantern = plan.lantern === grave.index;
@@ -728,7 +735,7 @@ function drawBody(
   ctx.translate(-SHAPE_HALF * g.shapeScale, -SHAPE_HALF * g.shapeScale);
   ctx.scale(g.shapeScale, g.shapeScale);
   if (def.pit !== null) {
-    // The mound of dug earth, then the dark mouth of the pit in it (K2d fix 1).
+    // The mound of dug earth, then the dark mouth of the pit in it.
     const rim = pitRimPath(grave.shape);
     if (rim !== null) {
       ctx.fillStyle = colours.surface;
@@ -843,6 +850,47 @@ let paintBacking = 1;
 /** True while a grave is drawn rising in the Load moment: it is drawn directly, never from a sprite (review note). */
 let paintDirect = false;
 
+/** The ghost's own size in ghost units (scene/shapes.ts, GHOST_PATH). */
+const GHOST_W = 24;
+const GHOST_H = 28;
+
+/**
+ * The ghost of a grave with an advisory (spec clean-site, design C16), lifted from drawGrave: at its planned point
+ * (x, y) in the caller's units, `size` caller units per ghost unit, moved by the drift offset of `phase`. drawGrave
+ * calls it with the planned point, which holds the drift already, at phase 0; scene/GhostPicture.tsx calls it once,
+ * still, for the Guide ghost. A still ghost is drawn from a sprite on a real canvas, at the transform's own scale.
+ * Both themes share one palette, so the ghost takes the dark one's colours.
+ */
+export function drawGhost(ctx: PaintContext2D, x: number, y: number, size: number, phase: number): void {
+  const colours = PALETTE.dark;
+  ctx.save();
+  ctx.translate(x, y + ghostOffset(phase));
+  // Drawn larger and higher than its planned point, floating over the top of its stone, as in the approved design.
+  ctx.translate(GHOST_SHIFT_X, GHOST_SHIFT_Y);
+  ctx.scale(size, size);
+  const paintGhost = (c: PaintContext2D): void => {
+    c.fillStyle = colours.ghost;
+    c.fill(ghostPath());
+    drawOvals(c, GHOST_EYES, colours.ink);
+    drawOvals(c, GHOST_BLUSH, colours.costume.blush);
+  };
+  if (canSprite(ctx)) {
+    // The device pixels per ghost unit: in the Scene, the backing scale times the Tier scale times the ghost's size.
+    const m = ctx.getTransform();
+    const gk = Math.hypot(m.a, m.b);
+    const image = sprite(`ghost|${colours.ghost}`, GHOST_SPRITE_BOX, gk, paintGhost);
+    if (image !== null) drawSprite(ctx, image, GHOST_SPRITE_BOX, gk);
+    else paintGhost(ctx);
+  } else paintGhost(ctx);
+  ctx.restore();
+}
+
+/** Pure. The drawGhost arguments that fit the whole ghost, still, into a square of `side` caller units (19.7). */
+export function ghostPictureArgs(side: number): { readonly x: number; readonly y: number; readonly size: number } {
+  const size = side / GHOST_H;
+  return { x: (side - GHOST_W * size) / 2 - GHOST_SHIFT_X, y: -GHOST_SHIFT_Y, size };
+}
+
 /** One grave, drawn in its cell frame at its Tier scale: every number below is cell-relative. */
 export function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan, deco: DecorationColours, nowMs: number): void {
   const colours = PALETTE[plan.theme];
@@ -884,23 +932,8 @@ export function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan
   ctx.fill(plinthPath());
 
   if (grave.ghost !== null && grave.burial === null) {
-    ctx.save();
-    // The ghost position is planned in scene pixels; its drift is not scaled.
-    ctx.translate((grave.ghost.x - grave.rect.x) / scale, (grave.ghost.y - grave.rect.y) / scale);
-    // Drawn twice as large and higher, floating over the top of its stone, as in the mockup.
-    ctx.translate(GHOST_SHIFT_X, GHOST_SHIFT_Y);
-    ctx.scale(GHOST_DRAW_SCALE, GHOST_DRAW_SCALE);
-    const paintGhost = (c: PaintContext2D): void => {
-      c.fillStyle = colours.ghost;
-      c.fill(ghostPath());
-      drawOvals(c, GHOST_EYES, colours.ink);
-      drawOvals(c, GHOST_BLUSH, colours.costume.blush);
-    };
-    const gk = k * GHOST_DRAW_SCALE;
-    const image = canSprite(ctx) ? sprite(`ghost|${colours.ghost}`, GHOST_SPRITE_BOX, gk, paintGhost) : null;
-    if (image !== null && canSprite(ctx)) drawSprite(ctx, image, GHOST_SPRITE_BOX, gk);
-    else paintGhost(ctx);
-    ctx.restore();
+    // The ghost position is planned in scene pixels with its drift in it; the drift is not scaled, so phase 0 here.
+    drawGhost(ctx, (grave.ghost.x - grave.rect.x) / scale, (grave.ghost.y - grave.rect.y) / scale, GHOST_DRAW_SCALE, 0);
   }
 
   if (grave.marker) {
@@ -914,9 +947,9 @@ export function drawGrave(ctx: PaintContext2D, grave: GravePlan, plan: ScenePlan
   if (grave.inscription !== null) {
     ctx.fillStyle = colours.ink;
     // The name stays at least MIN_NAME_PX on screen whatever the Tier scale (critic round 5).
-    ctx.font = scale >= 1 ? g.inscription.font : `${String(Math.max(INSCRIPTION_UNITS_PX, Math.round(MIN_NAME_PX / scale)))}px ${NAME_FAMILY}`;
+    ctx.font = scale >= 1 ? g.inscription.font : g.inscription.font.replace(/\d+px/, `${String(Math.max(INSCRIPTION_UNITS_PX, Math.round(MIN_NAME_PX / scale)))}px`);
     ctx.textAlign = "center";
-    ctx.fillText(grave.inscription, g.inscription.x, g.inscription.baseline, g.inscription.maxWidth);
+    ctx.fillText(grave.inscription, g.inscription.x, g.inscription.baseline, Math.max(g.inscription.maxWidth, MIN_NAME_WIDTH_PX / scale));
   }
   ctx.restore();
 }
@@ -932,20 +965,31 @@ export function drawScene(ctx: PaintContext2D, plan: ScenePlan, scale: number, n
   // The Load moment: each grave rises out of the ground in triage order; the glows wait for the last one (B5).
   const rising = plan.riseStartMs !== null && nowMs - plan.riseStartMs < loadMomentMs(plan.graves.length);
   if (!rising) {
-    for (const grave of plan.graves) drawGlow(ctx, grave, plan);
+    for (const grave of plan.graves) {
+      if (grave.dimmed) dimmed(ctx, () => {
+        drawGlow(ctx, grave, plan);
+      });
+      else drawGlow(ctx, grave, plan);
+    }
     drawHalo(ctx, plan);
   }
   for (const index of plan.paintOrder) {
     const grave = plan.graves[index];
     if (grave === undefined) continue;
     if (!rising || plan.riseStartMs === null) {
-      drawGrave(ctx, grave, plan, deco, nowMs);
+      if (grave.dimmed) dimmed(ctx, () => {
+        drawGrave(ctx, grave, plan, deco, nowMs);
+      });
+      else drawGrave(ctx, grave, plan, deco, nowMs);
       continue;
     }
     const up = riseAt(nowMs - plan.riseStartMs - loadDelay(grave.index, plan.graves.length));
     if (up <= 0) continue;
     if (up >= 1) {
-      drawGrave(ctx, grave, plan, deco, nowMs);
+      if (grave.dimmed) dimmed(ctx, () => {
+        drawGrave(ctx, grave, plan, deco, nowMs);
+      });
+      else drawGrave(ctx, grave, plan, deco, nowMs);
       continue;
     }
     // Clipped to its cell and moved down by what is left to rise; its Ghost shows once it stands.
@@ -955,6 +999,7 @@ export function drawScene(ctx: PaintContext2D, plan: ScenePlan, scale: number, n
     ctx.clip();
     ctx.translate(0, (1 - up) * grave.rect.h);
     paintDirect = true;
+    if (grave.dimmed) ctx.globalAlpha = dimAlpha();
     try {
       drawGrave(ctx, grave.ghost === null ? grave : { ...grave, ghost: null }, plan, deco, nowMs);
     } finally {
@@ -962,19 +1007,48 @@ export function drawScene(ctx: PaintContext2D, plan: ScenePlan, scale: number, n
     }
     ctx.restore();
   }
-  if (plan.ring !== null) {
-    // The Ring casing: ink on each side of the gold line, so the gold sits on ink and never on the Halo (spec
-    // judge-path, requirement 4.1). Filled, so the ring stays one stroke and the last call.
-    const r = plan.ring;
-    const o = RING_LINE_WIDTH / 2 + RING_CASING;
-    const t = 2 * o;
-    ctx.fillStyle = colours.ink;
-    ctx.fillRect(r.x - o, r.y - o, r.w + t, t);
-    ctx.fillRect(r.x - o, r.y + r.h - o, r.w + t, t);
-    ctx.fillRect(r.x - o, r.y + o, t, r.h - t);
-    ctx.fillRect(r.x + r.w - o, r.y + o, t, r.h - t);
-    ctx.strokeStyle = colours.ring;
-    ctx.lineWidth = RING_LINE_WIDTH;
-    ctx.strokeRect(plan.ring.x, plan.ring.y, plan.ring.w, plan.ring.h);
+  // The hover ring (spec clean-site, 3.13) sits on the Ring casing like the selection ring, in ringHover.
+  if (plan.hoverRing !== null) drawRing(ctx, plan.hoverRing, colours.ink, colours.ringHover);
+  // The selection ring is the last call (spec judge-path, requirement 4.1).
+  if (plan.ring !== null) drawRing(ctx, plan.ring, colours.ink, colours.ring);
+}
+
+/**
+ * One grave as a still picture (spec clean-site, design C7): the same drawGrave call as the Scene, at `scale` device
+ * pixels per cell unit, moved right by `offsetX` cell units so the lid of the open grave fits. No scenery, glow or ring.
+ */
+export function drawPicture(ctx: PaintContext2D, plan: ScenePlan, grave: GravePlan, scale: number, offsetX: number): void {
+  const colours = PALETTE[plan.theme];
+  ctx.setTransform(scale, 0, 0, scale, scale * offsetX, 0);
+  paintBacking = scale > 0 && Number.isFinite(scale) ? scale : 1;
+  const deco: DecorationColours = { shadow: colours.pit + SHADOW_ALPHA_BYTE, stone: colours.ink + STONE_ALPHA_BYTE };
+  drawGrave(ctx, grave, plan, deco, 0);
+}
+
+/** Runs one grave's draws at the dim alpha and restores the context after (spec clean-site, 2.7). */
+function dimmed(ctx: PaintContext2D, draw: () => void): void {
+  ctx.save();
+  ctx.globalAlpha = dimAlpha();
+  try {
+    draw();
+  } finally {
+    ctx.restore();
   }
+}
+
+/**
+ * A ring on its Ring casing: ink on each side of the line, so the line sits on ink and never on the Halo (spec
+ * judge-path, requirement 4.1). Filled, so the ring stays one stroke.
+ */
+function drawRing(ctx: PaintContext2D, r: Rect, ink: string, line: string): void {
+  const o = RING_LINE_WIDTH / 2 + RING_CASING;
+  const t = 2 * o;
+  ctx.fillStyle = ink;
+  ctx.fillRect(r.x - o, r.y - o, r.w + t, t);
+  ctx.fillRect(r.x - o, r.y + r.h - o, r.w + t, t);
+  ctx.fillRect(r.x - o, r.y + o, t, r.h - t);
+  ctx.fillRect(r.x + r.w - o, r.y + o, t, r.h - t);
+  ctx.strokeStyle = line;
+  ctx.lineWidth = RING_LINE_WIDTH;
+  ctx.strokeRect(r.x, r.y, r.w, r.h);
 }

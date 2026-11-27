@@ -6,12 +6,10 @@ The web app serves these fonts from its own origin, under `packages/web/public/f
 
 | Family | Use | Source | Licence file |
 |---|---|---|---|
-| Pirata One | the Sexton wordmark | https://fonts.google.com/specimen/Pirata+One | `OFL-pirataone.txt` |
-| IM Fell English SC | grave names | https://fonts.google.com/specimen/IM+Fell+English+SC | `OFL-imfellenglishsc.txt` |
-| IM Fell English (italic) | epitaphs | https://fonts.google.com/specimen/IM+Fell+English | `OFL-imfellenglish.txt` |
-| Instrument Sans | the interface | https://fonts.google.com/specimen/Instrument+Sans | `OFL-instrumentsans.txt` |
+| Inter 5.3.0 (variable, Latin) | the interface and the grave name labels | https://www.npmjs.com/package/@fontsource-variable/inter, file `files/inter-latin-wght-normal.woff2`, upstream https://github.com/rsms/inter | `OFL-inter.txt` |
+| Cormorant Garamond 5.3.0 (600, Latin) | the wordmark and headlines | https://www.npmjs.com/package/@fontsource/cormorant-garamond, file `files/cormorant-garamond-latin-600-normal.woff2`, upstream https://github.com/CatharsisFonts/Cormorant | `OFL-cormorantgaramond.txt` |
 
-The files are the Latin subsets that Google Fonts serves, unchanged. Pirata One's licence reserves the font name "Pirata", so the font is used under its own name and is not modified here.
+The files are copied unchanged from the published Fontsource packages at version 5.3.0, renamed `inter-variable.woff2` and `cormorant-garamond-600.woff2`. No package is added as a dependency.
 
 ## Vendored files
 
@@ -44,6 +42,14 @@ The characters (the zombie, the skeleton, the hand, the priest), the costumes, t
 
 ## Sound
 
-Every sound is generated in code with the Web Audio API, from oscillators and from noise made from a fixed seed, in `packages/web/src/sound`. No audio file and no third-party sound is used. Sound is off by default.
+The site plays no generated sound. It ships one recorded music track, `packages/web/public/music/ghost-party.mp3`, which plays only after the visitor presses Music. Its credit, as its licence asks:
+
+Ghost Party by The Piano Says | https://soundcloud.com/thepianosays
+
+Royalty Free Music by https://www.free-stock-music.com
+
+Creative Commons / Attribution 3.0 Unported License (CC BY 3.0)
+
+https://creativecommons.org/licenses/by/3.0/deed.en_US
 
 The SIL Open Font License, Version 1.1: https://openfontlicense.org/

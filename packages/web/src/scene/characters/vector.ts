@@ -1,4 +1,4 @@
-// Vector Characters and Costumes, drawn in the 64 by 64 shape box of a grave, in the mockup's blocky style.
+// Vector Characters and Costumes, drawn in the 64 by 64 shape box of a grave, in a blocky pixel style.
 // Spec cemetery-undead, design.md "Characters" (Vector fallback) and requirement 3. Pure apart from the context calls:
 // every number is a constant of the Character, the Clip and the Pose, never of a package.
 import type { State } from "@sexton/api";

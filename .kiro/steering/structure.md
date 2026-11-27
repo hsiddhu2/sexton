@@ -16,9 +16,9 @@ inclusion: always
   - scripts/generate-demo-scan.mjs also writes the replay fixtures to packages/web/public/replay from scripts/lib/replay-facts.mjs.
 - packages/web: the cemetery. Reads from api. Never calls registries directly.
   - src/scene: canvas drawing, palette and characters. src/drawer and src/header: DOM. src/triage: ordering. src/load: API clients.
-  - src/time: scrubber, play and burial; form-at.ts only looks up Segments. src/replay: replay ids, buttons and banner. src/overlay: grave buttons and tooltip. src/epitaph: epitaphs and Serious mode.
-  - src/sound: the sound engine, voices made in code and the stored Sound choice. src/speech: speech bubbles, their schedule and placement.
-  - public/fonts: the self-hosted fonts. public/replay: the replay fixtures.
+  - src/time: scrubber, play and burial; form-at.ts only looks up Segments. src/replay: replay ids, the story model and the Replay view. src/overlay: grave buttons and their labels.
+  - src/home: Home, the List, the Footer bar and the site footer. src/panel: the Inspector, the Fix order and Clamped.tsx, the clamped text boxes they share with the Step panel. src/guide: the Guide page and the Welcome bar. src/tour: the Tour. src/glossary: the Terms and their meanings. src/copy: the Claim registry and mischief.ts, the Epitaph, Dry and Scanning lines. src/music: the Track slot for one music track.
+  - public/fonts: the self-hosted fonts. public/replay: the replay fixtures. public/music: the one music track of the Track slot.
 - packages/action: GitHub Action wrapping cli. action.yml is the composite action. src/post-comment.ts posts the comment.
 - packages/mcp: the read-only MCP server (@sexton/mcp). Four tools, scan_project, explain_package, fix_order and check_policy, each taking projectDir, over the CLI's scan.
   - src/server.ts registers the tools. src/project-dir.ts holds the bounds on projectDir. src/scan-cache.ts shares one scan per project root and manifests digest. src/views: pure projections. src/bound.ts: Outside text bounds. src/result.ts: results and error codes. src/schemas.ts: hand-written Standard Schemas, no schema library.

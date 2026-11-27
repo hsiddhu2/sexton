@@ -6,7 +6,7 @@ import { loadScan } from "./load-scan.js";
 import { parseReplayParam, replayAddress } from "../replay/replay-ids.js";
 
 export type LoadState =
-  | { readonly status: "loading"; readonly loadId: number }
+  | { readonly status: "loading"; readonly loadId: number; readonly source: LoadSource }
   | { readonly status: "error"; readonly loadId: number; readonly error: LoadError }
   | {
       readonly status: "ready";
@@ -24,10 +24,13 @@ export interface ScanLoader {
   readonly loadFrom: (address: string, source?: LoadSource) => void;
   /** Returns fixed text when no request started, or null when one did. */
   readonly submitRepo: (value: string) => string | null;
+  /** Shows a response already held in memory, with no request (a Live scan shown again on Back or Forward). */
+  readonly show: (response: ScanResponse, source: LoadSource) => void;
 }
 
 export const DEMO_ADDRESS = "/demo/scan.json";
-export const HOSTED_UNAVAILABLE_TEXT = "hosted scan arrives with release 0.1 infra";
+/** Spec clean-site, 1.13: the reason the Scan field is disabled with no API base. */
+export const HOSTED_UNAVAILABLE_TEXT = "Scanning is off in this build.";
 export const REPO_INPUT_TEXT = "Enter a repository URL of 1 to 200 characters.";
 const MAX_REPO_LENGTH = 200;
 
@@ -40,7 +43,7 @@ export interface ScanLoaderDeps {
 
 export function useScanLoader(deps: ScanLoaderDeps): ScanLoader {
   const { fetchFn, pageOrigin, apiBase, initialSearch } = deps;
-  const [state, setState] = useState<LoadState>({ status: "loading", loadId: 0 });
+  const [state, setState] = useState<LoadState>({ status: "loading", loadId: 0, source: "address" });
   const controllerRef = useRef<AbortController | null>(null);
   const idRef = useRef(0);
 
@@ -51,7 +54,7 @@ export function useScanLoader(deps: ScanLoaderDeps): ScanLoader {
       controllerRef.current?.abort();
       const controller = new AbortController();
       controllerRef.current = controller;
-      setState({ status: "loading", loadId });
+      setState({ status: "loading", loadId, source });
       const check = checkScanUrl(address, pageOrigin, apiBase);
       if (!check.ok) {
         setState({ status: "error", loadId, error: makeLoadError("scan-url-rejected") });
@@ -99,5 +102,12 @@ export function useScanLoader(deps: ScanLoaderDeps): ScanLoader {
     [apiBase, start],
   );
 
-  return { state, loadFrom: start, submitRepo };
+  const show = useCallback((response: ScanResponse, source: LoadSource): void => {
+    idRef.current += 1;
+    controllerRef.current?.abort();
+    controllerRef.current = null;
+    setState({ status: "ready", loadId: idRef.current, response, isDemo: false, source });
+  }, []);
+
+  return { state, loadFrom: start, submitRepo, show };
 }

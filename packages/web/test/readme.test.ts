@@ -77,11 +77,12 @@ describe("README", () => {
     const end = rest.findIndex((l) => l.startsWith("## "));
     const body = end === -1 ? rest : rest.slice(0, end);
     const image = body.filter((l) => /^!\[[^\]]+\]\(docs\/replay-axios\.png\)$/.test(l));
-    expect(image).toEqual(["![The axios replay at its Possessed stop. The banner says it is reconstructed from public reports.](docs/replay-axios.png)"]);
-    expect(body.join("\n")).toContain("Replay an attack");
-    expect(body.join("\n")).toContain("axios, Mar 2026");
-    expect(body.join("\n")).toContain("keyv, Aug 2026");
-    expect(body.join("\n")).toContain("Press Play");
+    // Spec clean-site, task 12.2 (18.2): the picture is the Replay story at Step 2, picked from "Watch a real attack"
+    // and moved by "Next step" or "Play all".
+    expect(image).toEqual(["![The axios replay at Step 2, when the grave turns Possessed.](docs/replay-axios.png)"]);
+    expect(body.join("\n")).toContain('"Watch a real attack"');
+    expect(body.join("\n")).toContain('"Next step"');
+    expect(body.join("\n")).toContain('"Play all"');
   });
 
   it("holds the three URLs exactly", () => {
@@ -135,7 +136,7 @@ describe("README: Try it in two minutes", () => {
     expect(steps.map((l) => l.slice(0, l.indexOf(".", 3) + 1))).toEqual([
       "1. Hover a grave.",
       "2. Open its drawer.",
-      "3. Read the evidence and the pull request preview.",
+      "3. Read the evidence and the fix.",
       "4. Replay an attack.",
     ]);
   });

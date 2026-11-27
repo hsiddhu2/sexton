@@ -12,7 +12,7 @@ export const PRIEST_W = 28 * PRIEST_SCALE;
 export const PRIEST_H = 76 * PRIEST_SCALE;
 export const PRIEST_FROM_X = 191;
 export const PRIEST_AT_X = 183;
-/** He walks over burial phases 0 to WALK_END, then reads. The bell sounds when he starts reading. */
+/** He walks over burial phases 0 to WALK_END, then reads. */
 export const WALK_END = 0.4;
 const FEET_Y = 198;
 const STEPS = 6;
@@ -109,16 +109,4 @@ export function drawPriest(ctx: PaintContext2D, c: PaletteTheme, phase: number |
   ctx.fillRect(bx + 5, by + 2, 2, 11);
   ctx.fillRect(bx + 2, by + 5, 8, 2);
   ctx.restore();
-}
-
-/**
- * Pure. What the bell rings for now: a burial once its Priest reads, or a Vigil from its start; null for neither. The
- * bell rings once each time this changes to a new value (requirement 10.2).
- */
-export function bellKey(
-  burial: { readonly name: string; readonly phase: number } | null,
-  vigil: { readonly name: string; readonly startMs: number } | null,
-): string | null {
-  if (burial !== null) return burial.phase >= WALK_END ? `burial:${burial.name}` : null;
-  return vigil === null ? null : `vigil:${vigil.name}:${String(vigil.startMs)}`;
 }

@@ -125,6 +125,8 @@ export function haloMask(plan: ScenePlan): HaloMask {
   for (const g of plan.graves) {
     // A grave has at most one glow: the Lantern grave shows the Lantern glow alone.
     if (STATE_BY_SHAPE[g.shape] !== "Possessed" || plan.lantern === g.index) continue;
+    // A dimmed Possessed grave is left out of the Halo while a filter is set (spec clean-site, design C3).
+    if (g.dimmed) continue;
     // A Burst throws Possessed shards across its Art box: its grave's Halo waits until the Burst ends
     // (spec cemetery-undead-fixes, bug 1). A Burst plays only on a replay, whose one grave is the only source.
     if (plan.burst !== null && plan.burst.startMs !== null && plan.burst.index === g.index) continue;

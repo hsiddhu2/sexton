@@ -1,7 +1,7 @@
 // The opening Stop and the Play stepping of the scrubber, as a pure reducer. Spec cemetery-time-fixes, requirements 3 and 4.
 
-/** One Play step every 1,500 ms. */
-export const PLAY_STEP_MS = 1500;
+/** One Play step every 5,000 ms: Play is a Replay's "Play all" (spec clean-site, 8.9); Home has no Play. */
+export const PLAY_STEP_MS = 5000;
 
 export interface PlayState {
   readonly index: number;

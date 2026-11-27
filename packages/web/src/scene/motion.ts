@@ -17,11 +17,30 @@ export function seedOf(name: string): number {
   return h >>> 0;
 }
 
-/** The Pose at an instant: STILL_POSE under Reduced motion, else one step per FRAME_MS from the phase offset. */
-export function poseAt(nowMs: number, poseCount: number, reducedMotion: boolean, phaseOffset: number): number {
+/** A music track's beat (spec clean-site, 14.3). */
+export interface Beat {
+  readonly beatMs: number;
+}
+
+/** The time between two Pose steps: half a beat while a beat is given, else FRAME_MS (12 Poses a second). */
+export function poseStepMs(beat: Beat | null): number {
+  return beat !== null && Number.isFinite(beat.beatMs) && beat.beatMs > 0 ? beat.beatMs / 2 : FRAME_MS;
+}
+
+/**
+ * The Pose clock (spec clean-site, design C12, 14.3 to 14.5): the number of Pose steps at an instant, one per half
+ * beat with a beat and one per FRAME_MS without; null under Reduced motion, when every Character holds still.
+ */
+export function poseClock(nowMs: number, beat: Beat | null, reducedMotion: boolean): number | null {
+  if (reducedMotion || !Number.isFinite(nowMs)) return null;
+  return Math.floor(Math.max(0, nowMs) / poseStepMs(beat));
+}
+
+/** The Pose at an instant: STILL_POSE under Reduced motion, else one step of the Pose clock from the phase offset. */
+export function poseAt(nowMs: number, poseCount: number, reducedMotion: boolean, phaseOffset: number, beat: Beat | null = null): number {
   if (poseCount <= 0) return 0;
-  if (reducedMotion || !Number.isFinite(nowMs)) return STILL_POSE;
-  const step = Math.floor(Math.max(0, nowMs) / FRAME_MS);
+  const step = poseClock(nowMs, beat, reducedMotion);
+  if (step === null) return STILL_POSE;
   return (((step + phaseOffset) % poseCount) + poseCount) % poseCount;
 }
 

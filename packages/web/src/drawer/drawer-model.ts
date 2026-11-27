@@ -1,5 +1,6 @@
 import type { PackageHealth, RemediationEntry, ScanResponse, State } from "@sexton/api";
 import { SIGNAL_NAMES } from "../load/lists.js";
+import { evidenceWords } from "../panel/pick-signals.js";
 import { formatSignalValue } from "./format-value.js";
 
 export const NOT_RECORDED = "not recorded";
@@ -10,6 +11,8 @@ export interface SignalRow {
   readonly fetchedAt: string;
   readonly available: boolean;
   readonly valueText: string | null;
+  /** The value in plain words, as the Inspector writes it (review against the approved design, D2); null when unavailable. */
+  readonly words: string | null;
   readonly reason: string | null;
 }
 
@@ -28,6 +31,11 @@ export interface FailingRuleRow {
 
 export interface DrawerModel {
   readonly title: string;
+  readonly name: string;
+  /** The installed version, or the Segment's version of a replay. */
+  readonly version: string;
+  /** The scan date, ISO (7.19). */
+  readonly scanDate: string;
   readonly state: State;
   readonly stateReason: string;
   readonly signals: readonly SignalRow[];
@@ -57,6 +65,7 @@ export function drawerModel(response: ScanResponse, pkg: PackageHealth, version?
       fetchedAt: text(env.fetchedAt, NOT_RECORDED),
       available,
       valueText: available ? formatSignalValue(env.value) : null,
+      words: available ? evidenceWords(name, env.value) : null,
       reason: available ? null : text(env.reason, NOT_RECORDED),
     };
   });
@@ -81,6 +90,9 @@ export function drawerModel(response: ScanResponse, pkg: PackageHealth, version?
 
   return {
     title: `${pkg.name} ${version ?? pkg.installedVersion}`,
+    name: pkg.name,
+    version: version ?? pkg.installedVersion,
+    scanDate: response.report.generatedAt,
     state: pkg.state,
     stateReason: pkg.stateReason,
     signals,

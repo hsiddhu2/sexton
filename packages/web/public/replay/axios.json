@@ -178,6 +178,24 @@
         "label": "npm registry: axios",
         "url": "https://registry.npmjs.org/axios"
       }
-    ]
+    ],
+    "steps": [
+      {
+        "title": "A normal day",
+        "happened": "axios 1.14.0 is the current release. It was published by GitHub Actions through npm's trusted publishing, so it carries provenance.",
+        "shows": "Nothing to flag. The grave is Alive."
+      },
+      {
+        "title": "A poisoned release appears",
+        "happened": "An attacker publishes axios 1.14.1 by hand from the lead maintainer's npm account, with a stolen access token. It adds a new dependency, plain-crypto-js 4.2.1, whose postinstall script installs a remote access trojan.",
+        "shows": "The grave turns Possessed. 1.14.0 had provenance and 1.14.1 has none. That drop is the warning."
+      },
+      {
+        "title": "npm removes the bad release",
+        "happened": "About three hours after it appeared, npm removes 1.14.1. A fresh install gets 1.14.0 again.",
+        "shows": "The grave is Alive again. A machine that installed 1.14.1 in those hours should still be treated as compromised."
+      }
+    ],
+    "why": "axios is a JavaScript HTTP client with over 100 million downloads a week on npm. An attacker who took over its lead maintainer's npm account published a version that exists only on npm, with no matching code on GitHub. The new dependency's install script left a remote access trojan on macOS, Windows and Linux machines, then erased its own traces. Anyone who installed it is told to assume compromise and rotate every credential."
   }
 }

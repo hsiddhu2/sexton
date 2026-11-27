@@ -4,7 +4,7 @@
 
 Adds `@sexton/mcp`, a read-only MCP server over the CLI's scan, and the Kiro Power that packages it. Order: baseline and the one dependency, a spike that settles how Kiro starts the server, the Engine's `triageOrder`, the CLI's exports, the server, the tests, the Bundle and Power files, the docs, then the recorded proof. Gates (`./node_modules/.bin/tsc -b`, `./node_modules/.bin/eslint . --max-warnings=0`, and each package's vitest run, zero warnings) and an independent review run before every commit. Nothing is pushed, merged or run on `main`. Work starts only on the owner's `go`.
 
-Stop conditions, from the brief: if `sexton check` fails on the repository after the dependency is added (task 1.2), if the SDK or Kiro's client cannot work with the chosen library and schemas (task 2), or if the working directory problem cannot be solved (task 2), stop and report.
+Stop conditions: if `sexton check` fails on the repository after the dependency is added (task 1.2), if the SDK or Kiro's client cannot work with the chosen library and schemas (task 2), or if the working directory problem cannot be solved (task 2), stop and report.
 
 - [x] 1. Baseline and the one new dependency
   - [x] 1.1 Confirm the starting point

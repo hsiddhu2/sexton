@@ -1,4 +1,5 @@
 import type { ScanResponse } from "@sexton/api";
+import { stopsFor } from "../time/stops.js";
 import { REMEDIATION_KINDS, REMEDIATION_STATUSES, RULE_TYPES, SEVERITIES, SIGNAL_NAMES, STATES } from "./lists.js";
 
 export const CONTRACT_ERROR_CODES = [
@@ -431,6 +432,7 @@ function checkReplay(w: Walk, root: Obj): void {
   w.oneOf(replay, "/replay", "id", REPLAY_IDS);
   cappedStr(w, replay, "/replay", "title", 120);
   cappedStr(w, replay, "/replay", "summary", 600);
+  checkReplayStory(w, replay);
   const sources = w.arr(replay, "/replay", "sources");
   if (sources === undefined) return;
   if (sources.length < 1) w.add("/replay/sources", "MISSING_FIELD");
@@ -448,6 +450,62 @@ function checkReplay(w: Walk, root: Obj): void {
     cappedStr(w, src, p, "label", 120);
     w.str(src, p, "url");
   }
+}
+
+/** The caps of a Replay's story (spec clean-site, 8.12, 8.13). */
+export const MAX_REPLAY_STEPS = 8;
+const MAX_STEP_TITLE = 80;
+const MAX_STEP_TEXT = 400;
+const MAX_WHY = 800;
+const STEP_FIELDS = [
+  ["title", MAX_STEP_TITLE],
+  ["happened", MAX_STEP_TEXT],
+  ["shows", MAX_STEP_TEXT],
+] as const;
+
+/**
+ * Spec clean-site, 8.13: the Step texts, each a non-empty string under its cap, and no two Steps of the Replay with
+ * the same title, "What happened" or "What Sexton shows". The value is never echoed.
+ */
+function checkReplayStory(w: Walk, replay: Obj): void {
+  const why = w.str(replay, "/replay", "why", true);
+  if (why !== undefined && why.length > MAX_WHY) w.add("/replay/why", "WRONG_TYPE");
+  const steps = w.arr(replay, "/replay", "steps");
+  if (steps === undefined) return;
+  if (steps.length < 1) w.add("/replay/steps", "MISSING_FIELD");
+  if (steps.length > MAX_REPLAY_STEPS) {
+    w.add("/replay/steps", "TOO_MANY_ITEMS");
+    return;
+  }
+  const seen = STEP_FIELDS.map(() => new Set<string>());
+  for (let k = 0; k < steps.length && !w.full; k += 1) {
+    const step = steps[k];
+    const p = `/replay/steps/${k}`;
+    if (!isObj(step)) {
+      w.add(p, "NOT_OBJECT");
+      continue;
+    }
+    STEP_FIELDS.forEach(([key, max], f) => {
+      const text = w.str(step, p, key, true);
+      if (text === undefined) return;
+      if (text.length > max) w.add(`${p}/${key}`, "WRONG_TYPE");
+      const set = seen[f];
+      if (set?.has(text) === true) w.add(`${p}/${key}`, "DUPLICATE");
+      set?.add(text);
+    });
+  }
+}
+
+/**
+ * Spec clean-site, 8.15: run only on an otherwise valid response. A Replay whose Step count differs from the number
+ * of Stops time/stops.ts finds is refused: too few Steps is MISSING_FIELD, too many is TOO_MANY_ITEMS.
+ */
+function checkStepCount(w: Walk, response: ScanResponse): void {
+  const replay = response.replay;
+  if (replay === undefined) return;
+  const stops = stopsFor(response).stops.length;
+  if (replay.steps.length < stops) w.add("/replay/steps", "MISSING_FIELD");
+  else if (replay.steps.length > stops) w.add("/replay/steps", "TOO_MANY_ITEMS");
 }
 
 function reportNames(input: Obj): Set<string> {
@@ -493,6 +551,7 @@ export function validateScanResponse(input: unknown): ValidationResult {
     }
     if (has(input, "replay")) checkReplay(w, input);
     if (has(input, "timelinesOmitted")) checkTimelinesOmitted(w, input);
+    if (w.errors.length === 0 && has(input, "replay")) checkStepCount(w, input as unknown as ScanResponse);
   }
   const [first, ...rest] = w.errors.slice().sort(compareErrors).slice(0, MAX_CONTRACT_ERRORS);
   if (first === undefined) return { ok: true, value: input as ScanResponse };

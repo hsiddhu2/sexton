@@ -33,10 +33,12 @@ test("a hosted scan of the demo repository opens a pull request from the drawer"
 
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
-  await page.getByLabel("Repository URL").fill("https://github.com/hsiddhu2/sexton-demo");
-  await page.getByLabel("Repository URL").press("Enter");
+  await page.getByLabel("GitHub repository to scan").fill("https://github.com/hsiddhu2/sexton-demo");
+  await page.getByLabel("GitHub repository to scan").press("Enter");
   await page.locator(`button[data-grave-index][aria-label^="${proposed?.packageName ?? ""}"]`).first().click();
   const dialog = page.getByRole("dialog");
+  // Spec clean-site, 7.4: the button is on the fix tab.
+  await dialog.getByRole("tab", { name: "The fix" }).click();
   await dialog.getByRole("button", { name: "Open pull request" }).focus();
   await page.keyboard.press("Enter");
   const link = dialog.getByRole("link", { name: "View the pull request on GitHub" });
