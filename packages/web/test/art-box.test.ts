@@ -14,8 +14,8 @@ import { BoundsContext, unionOf, type Box } from "./bounds-context.js";
 import { readDemoScan } from "./support/demo-scan.js";
 
 const NUM_RUNS = 100;
-/** Time limit for the Part box property: 60 s on CI, where it takes about 20 s, and the 20 s default locally. */
-const PART_BOX_TIMEOUT_MS = process.env["CI"] ? 60_000 : 20_000;
+/** Time limit for the Part box property: 60 s everywhere, since it takes about 20 s and more on a loaded machine. */
+const PART_BOX_TIMEOUT_MS = 60_000;
 const SHAPES: readonly ShapeId[] = ["rounded", "tilted", "cross", "cracked", "open", "unmarked"];
 /** The Tier scales and the replay scale (design.md A1). */
 export const PROBE_SCALES: readonly number[] = [0.64, 0.8, 1, REPLAY_SCALE];
