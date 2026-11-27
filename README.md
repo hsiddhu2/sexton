@@ -8,16 +8,6 @@ The web app draws the scan as a cemetery where each grave is one dependency. The
 
 ![The Sexton cemetery for the demo scan. Each grave is one dependency. Its shape and colour show its state.](docs/cemetery.png)
 
-The site plays no generated sound. Music is off until you press the Music button; it then plays one recorded track, Ghost Party, in a loop, and the characters dance to its beat. Under reduced motion they hold still. The track's credit:
-
-Ghost Party by The Piano Says | https://soundcloud.com/thepianosays
-
-Royalty Free Music by https://www.free-stock-music.com
-
-Creative Commons / Attribution 3.0 Unported License (CC BY 3.0)
-
-https://creativecommons.org/licenses/by/3.0/deed.en_US
-
 Status: pre-release. Release 0.1 is due on 4 December 2026. Each feature below says whether it is on `main` today, in progress, or planned.
 
 The hosted site, https://de1giv8lj8sfh.cloudfront.net, is deployed by hand, so it can lag `main`. It was last deployed on 26 November 2026.
@@ -30,6 +20,16 @@ Open the hosted demo at [https://de1giv8lj8sfh.cloudfront.net](https://de1giv8lj
 2. Open its drawer. Click the grave, or press Enter on it. "List" shows the same packages as a table you can search and sort.
 3. Read the evidence and the fix. The drawer's Evidence tab shows every signal with its source and date. The fix tab shows the change Sexton proposes, when there is one, with the text of its pull request. History shows how the package's state changed over time.
 4. Replay an attack. Press "Watch a real attack" under the cemetery and pick axios, or open [the axios replay](https://de1giv8lj8sfh.cloudfront.net/?replay=axios) directly. [The keyv replay](https://de1giv8lj8sfh.cloudfront.net/?replay=keyv) shows a second attack. Press "Next step" to follow it.
+
+The site plays no generated sound. Music is off until you press the Music button. It then plays one recorded track, Ghost Party, in a loop, and the characters dance to its beat. Under reduced motion they hold still. The track's credit:
+
+Ghost Party by The Piano Says | https://soundcloud.com/thepianosays
+
+Royalty Free Music by https://www.free-stock-music.com
+
+Creative Commons / Attribution 3.0 Unported License (CC BY 3.0)
+
+https://creativecommons.org/licenses/by/3.0/deed.en_US
 
 ## The problem
 
