@@ -34,7 +34,7 @@ The tests validate the CycloneDX SBOM against the published schemas, kept unchan
 
 The Bundle also contains Sexton's own Engine, CLI composition and MCP server (Apache License 2.0, see `LICENSE`). esbuild builds it and is not part of it. The Power's tool results carry package metadata from the npm registry, OSV and deps.dev at run time; none of it is stored in the repository.
 
-The npm packages `sexton` and `sexton-mcp` (spec release) are built with the same esbuild options. Each carries a `THIRD-PARTY-NOTICES.md` with the licence text of every package in its file, copied from the package at build time; `sexton` holds ajv, semver, yaml and the three ajv dependencies, and `sexton-mcp` holds the same packages as the Power's Bundle.
+The npm packages `sexton` and `sexton-mcp` (spec release) are built with the same esbuild options. Each carries a `THIRD-PARTY-NOTICES.md` with the licence text of every package in its file, copied from the package at build time. `sexton` holds ajv, semver, yaml and the three ajv dependencies, and `sexton-mcp` holds the same packages as the Power's Bundle.
 
 ## Characters and art
 

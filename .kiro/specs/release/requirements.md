@@ -48,7 +48,7 @@ The workspace packages keep their `@sexton/*` names and every import stays as it
 2. NO Pack SHALL hold a source map, a test, a test fixture, a source file, a file under a private folder or a machine path.
 3. NO Published package SHALL have a dependency of any kind, and no Bundle SHALL import an `@sexton/*` package.
 4. EACH Published package SHALL name `repository` (with `directory`), `homepage`, `bugs`, `author` "Harpreet Singh Siddhu", `publishConfig` with `access: public` and `provenance: true`, and `engines.node` `>=20.19.0`, the Node its Bundle is built for.
-5. THE Third-party notices SHALL list every third-party package in the Bundle with its version, its licence and its licence text, taken from the package itself; IF a bundled package has no licence file, THEN the build SHALL fail.
+5. THE Third-party notices SHALL list every third-party package in the Bundle with its version, its licence and its licence text, taken from the package itself. IF a bundled package has no licence file, THEN the build SHALL fail.
 6. THE Bundle of `sexton-mcp` SHALL be byte for byte the Kiro Power's server file.
 7. THE Release folders SHALL be built by one script from the committed sources and lockfile, so that the same commit gives the same folders.
 

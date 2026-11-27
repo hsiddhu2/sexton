@@ -2,9 +2,11 @@
 
 Sexton finds the dependencies that will hurt you, proves it, and opens the pull request that fixes it.
 
-![The Sexton cemetery for the demo scan. Each grave is one dependency. Its shape and colour show its state.](docs/cemetery.png)
+Sexton is an open-source supply-chain tool for npm projects. Give it a GitHub repository and it reads the public registry history of each direct dependency, up to 300, gives each one a state from Alive to Possessed, and proposes a fix where a safe one exists. Every finding links to its source and date.
 
-Characters are original vector art. The ghost is original art.
+The web app draws the scan as a cemetery where each grave is one dependency. The same engine runs as a command line, as a GitHub Action that fails CI when your policy breaks, and as an MCP server you can ask from Kiro.
+
+![The Sexton cemetery for the demo scan. Each grave is one dependency. Its shape and colour show its state.](docs/cemetery.png)
 
 The site plays no generated sound. Music is off until you press the Music button; it then plays one recorded track, Ghost Party, in a loop, and the characters dance to its beat. Under reduced motion they hold still. The track's credit:
 
@@ -80,7 +82,7 @@ The last command calls the npm registry, OSV and deps.dev, so it needs network. 
 
 Nothing is on npm yet. With release 0.1, two packages will be published to npm from GitHub Actions, each with npm provenance that links it to the commit and workflow that built it:
 
-- `sexton`, the command line, with the `sexton` command;
+- `sexton`, the command line, with the `sexton` command.
 - `sexton-mcp`, the MCP server, with the `sexton-mcp` command. It will also be listed in the official MCP Registry as `io.github.hsiddhu2/sexton`.
 
 Each is one file with no dependencies, and runs on Node.js 20.19 or later. The install commands will go here once they work.
@@ -289,4 +291,4 @@ Open-source packages are used as dependencies at the exact versions in `package-
 
 ## Licence
 
-Apache-2.0. See LICENSE and NOTICE.
+Apache-2.0. See LICENSE and NOTICE. Credits for the art, the fonts and the music are in CREDITS.md.

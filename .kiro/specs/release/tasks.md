@@ -2,41 +2,41 @@
 
 ## Overview
 
-Prepares release 0.1: two npm packages, `sexton` and `sexton-mcp`, each one bundled file; the release check; the release workflow; server.json; the `--version` fix; the README section and the steering line. Nothing is published, no secret is created and no account setting is changed. The owner's steps are in design.md "Owner steps". Branch `release/prep` from origin/main 581de6b.
+Prepares release 0.1: two npm packages, `sexton` and `sexton-mcp`, each one bundled file, the release check, the release workflow, server.json, the `--version` fix, the README section and the steering line. Nothing is published, no secret is created and no account setting is changed. The owner's steps are in design.md "Owner steps". Branch `release/prep` from origin/main 581de6b.
 
 - [x] 1. Names
   - [x] 1.1 Check the npm names, read-only
-    - `npm view` for each name; the registry's scope endpoint for `@sexton`, checked against a made-up scope. Result in design.md "Name check".
+    - `npm view` for each name. The registry's scope endpoint for `@sexton`, checked against a made-up scope. Result in design.md "Name check".
     - _Requirements: 1.1, 1.2_
   - [x] 1.2 Mark the Workspace packages private
-    - `private: true` in `packages/{engine,cli,mcp}/package.json`; names, versions and imports unchanged.
+    - `private: true` in `packages/{engine,cli,mcp}/package.json`. Names, versions and imports unchanged.
     - _Requirements: 1.3_
 - [x] 2. Published packages
   - [x] 2.1 Shared bundle options
-    - `scripts/lib/bundle.mjs`, used by `scripts/build-power.mjs` and the release build; the Power's Bundle is unchanged byte for byte.
+    - `scripts/lib/bundle.mjs`, used by `scripts/build-power.mjs` and the release build. The Power's Bundle is unchanged byte for byte.
     - _Requirements: 2.6, 2.7_
   - [x] 2.2 Release definitions and manifest
     - `scripts/lib/release.mjs`: `RELEASE_PACKAGES`, `publishedManifest`, `thirdPartyDirs`, `releaseProblems`.
     - _Requirements: 2.3, 2.4, 2.5, 3.5_
   - [x] 2.3 Release build
-    - `scripts/build-release.mjs`: one folder per package under `build/release` with the Bundle, package.json, README, LICENSE, NOTICE and Third-party notices; fails on a bundled package with no licence file.
+    - `scripts/build-release.mjs`: one folder per package under `build/release` with the Bundle, package.json, README, LICENSE, NOTICE and Third-party notices. Fails on a bundled package with no licence file.
     - _Requirements: 2.1, 2.3, 2.5, 2.6, 2.7_
   - [x] 2.4 Package READMEs
     - `packages/cli/README.md` and `packages/mcp/README.md` for `sexton` and `sexton-mcp`.
     - _Requirements: 2.1_
   - [x] 2.5 Pack and install both packages
-    - `npm pack --dry-run` and `npm pack`; install into empty folders under Node 20.19.5 and 22.23.4; `--version`, one real scan, `tools/list`. Results in design.md.
+    - `npm pack --dry-run` and `npm pack`. Install into empty folders under Node 20.19.5 and 22.23.4. `--version`, one real scan, `tools/list`. Results in design.md.
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
 - [x] 3. The CLI's version
   - [x] 3.1 `CLI_VERSION`
-    - `packages/cli/src/version.ts`, used by `runCli` for `--version`, not exported; test in `run-cli.test.ts`.
+    - `packages/cli/src/version.ts`, used by `runCli` for `--version`, not exported. Test in `run-cli.test.ts`.
     - _Requirements: 6.1_
 - [x] 4. Release check and workflow
   - [x] 4.1 Release check
-    - `scripts/release-check.mjs <tag> [--dir <dir>]` on the built folders and server.json; exit 0, 1 or 2.
+    - `scripts/release-check.mjs <tag> [--dir <dir>]` on the built folders and server.json. Exit 0, 1 or 2.
     - _Requirements: 3.5_
   - [x] 4.2 Release workflow
-    - `.github/workflows/release.yml`: version tag only; `contents: read` and `id-token: write`, gates job `contents: read`; actions at the SHAs of `ci.yml`; no cache; gates and self-scan on Node 22; `npm ci --ignore-scripts`, build, `build-release`, release check and publish `sexton` then `sexton-mcp` on Node 24 with trusted publishing; skip a version already on npm.
+    - `.github/workflows/release.yml`: Version tag only. `contents: read` and `id-token: write`, gates job `contents: read`. Actions at the SHAs of `ci.yml`. No cache. Gates and self-scan on Node 22. `npm ci --ignore-scripts`, build, `build-release`, release check and publish `sexton` then `sexton-mcp` on Node 24 with trusted publishing. Skip a version already on npm.
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.6, 3.7_
 - [x] 5. MCP Registry
   - [x] 5.1 server.json
@@ -48,15 +48,15 @@ Prepares release 0.1: two npm packages, `sexton` and `sexton-mcp`, each one bund
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 4.4, 6.1_
 - [x] 7. Documentation
   - [x] 7.1 README "Install (coming with release 0.1)"
-    - Names `sexton` and `sexton-mcp`; no command.
+    - Names `sexton` and `sexton-mcp`. No command.
     - _Requirements: 5.1, 5.2_
   - [x] 7.2 Steering `tech.md`
-    - Published packages need Node 20.19.0 or later; the workspace builds on Node 22; the release build.
+    - Published packages need Node 20.19.0 or later. The workspace builds on Node 22. The release build.
     - _Requirements: 5.4_
   - [x] 7.3 Sources in design.md
     - _Requirements: 5.3_
 - [x] 8. Gates and commit
-  - [x] 8.1 Typecheck, lint with `--max-warnings=0`, every package's tests; search the changed files for private terms and machine paths
+  - [x] 8.1 Typecheck, lint with `--max-warnings=0`, every package's tests. Search the changed files for private terms and machine paths
     - _Requirements: 2.2_
 - [ ] 9. Release (owner)
   - [ ] 9.1 Owner steps for npm, in design.md
