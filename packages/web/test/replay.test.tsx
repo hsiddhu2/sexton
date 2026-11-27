@@ -78,7 +78,7 @@ describe("opening a replay (requirement 18)", () => {
     expect(document.getElementById("attack-pop")).toBeNull();
   });
 
-  // Spec clean-site, task 6.3: the Replay's Footer bar has no attack picker (the prototype's), so the second Replay
+  // Spec clean-site, task 6.3: the Replay's Footer bar has no attack picker (the design's), so the second Replay
   // is picked after Exit replay.
   it("loads each fixture from the page origin when its picker button is pressed, the second one after Exit replay", async () => {
     const { urls, container } = mount("");

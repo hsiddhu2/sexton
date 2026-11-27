@@ -114,7 +114,7 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
   // The grave under the pointer, for the hover ring (spec clean-site, 3.13).
   const [hover, setHover] = useState<number | null>(null);
   // The Inspector is told in the same event as the hover ring, so a press on the Panel right after the pointer
-  // leaves a grave lands on the package the Panel now shows (review against the prototype, D5).
+  // leaves a grave lands on the package the Panel now shows (review against the approved design, D5).
   const look = useRef<{ hover: number | null; focus: number | null }>({ hover: null, focus: null });
   const onLook = page.onLook;
   const onHover = useCallback(

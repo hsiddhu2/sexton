@@ -6,7 +6,7 @@ export const EXAMPLES_HEADING = "Try one";
 export interface Example {
   readonly repo: string;
   readonly note: string;
-  /** The one example where Open pull request works; its note is set in the Alive colour, as in the prototype. */
+  /** The one example where Open pull request works; its note is set in the Alive colour, as in the approved design. */
   readonly good: boolean;
 }
 

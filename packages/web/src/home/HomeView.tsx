@@ -71,7 +71,7 @@ export interface HomeViewProps {
   readonly beat?: Beat | null;
   /**
    * The Home scan shown before this load, or null. While a load runs or after it fails, its page stays under the
-   * scanning or failure card, over a dimmed Scene, as in the prototype (review against the prototype).
+   * scanning or failure card, over a dimmed Scene, as in the approved design.
    */
   readonly previous?: PreviousScan | null;
 }

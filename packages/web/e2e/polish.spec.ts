@@ -18,7 +18,7 @@ function originOf(baseURL: string | undefined): string {
   return new URL(baseURL ?? "http://localhost:4173").origin;
 }
 const scrollWidth = (page: Page): Promise<number> => page.evaluate(() => document.documentElement.scrollWidth);
-// Spec clean-site, task 11: the prototype the owner approved keeps a 14 px gutter around the Scene card on a phone, so
+// Spec clean-site, task 11: the design the owner approved keeps a 14 px gutter around the Scene card on a phone, so
 // the canvas is no longer full-bleed; it spans the content width inside that gutter.
 test("at 360 px the page does not scroll sideways and the canvas spans the content width", async ({ page, baseURL }) => {
   await blockForeignOrigins(page, originOf(baseURL));

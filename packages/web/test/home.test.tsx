@@ -449,12 +449,12 @@ describe("the scanning card (1.14)", () => {
       "Reading each headstone",
     ]);
     expect(card.querySelector('[role="progressbar"], progress, .bar')).toBeNull();
-    // Review against the prototype (D6): the tag names the repository only once its scan is in.
+    // Review against the approved design (D6): the tag names the repository only once its scan is in.
     expect(container.querySelector("header .scan-tag")?.textContent).toBe("Sample scan");
   });
 });
 
-describe("review against the prototype: the page around a scan that loads or fails, and the scan tag (D5, D6)", () => {
+describe("review against the approved design: the page around a scan that loads or fails, and the scan tag (D5, D6)", () => {
   function mountScan(answer: "pending" | "missing" | "ok") {
     const fetchFn = ((input: RequestInfo | URL): Promise<Response> => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;

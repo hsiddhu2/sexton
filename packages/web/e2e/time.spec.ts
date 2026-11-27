@@ -42,7 +42,7 @@ for (const width of [360, 768, 1280, 1920]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
   });
 }
-// Spec clean-site, task 11: the Scene is a card above the Footer bar, as in the prototype the owner approved, so the
+// Spec clean-site, task 11: the Scene is a card above the Footer bar, as in the design the owner approved, so the
 // ground reaches the bottom of the Scene card (not of the viewport) and the Footer bar ends inside the viewport.
 test("at 1440 by 900 the canvas reaches the bottom of the Scene card, above the Footer bar", async ({ page, baseURL }) => {
   await blockForeignOrigins(page, originOf(baseURL));
@@ -199,7 +199,7 @@ test("Play all on the axios replay reaches the Possessed Step after 5,000 ms and
 });
 
 // Spec cemetery-time-fixes, task 5.4, rewritten for spec clean-site, task 11: at 1440 by 900 Home fits the viewport
-// as in the prototype the owner approved: the one-row header, the Welcome bar, the headline and chips, the Scene with
+// as in the design the owner approved: the one-row header, the Welcome bar, the headline and chips, the Scene with
 // every grave, the Footer bar and the Panel. The graves shrink together to fit (the fit scale), never overlapping.
 test("at 1440 by 900 on the demo Home fits the viewport, with every grave above the Footer bar", async ({ page, baseURL }) => {
   await blockForeignOrigins(page, originOf(baseURL));

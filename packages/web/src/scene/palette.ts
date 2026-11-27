@@ -40,8 +40,8 @@ export interface PaletteTheme {
   /** The hover ring on a grave that is not the Selected one (spec clean-site, 3.13). It sits on the Ring casing. */
   readonly ringHover: string;
   /**
-   * Spec clean-site, design C14: the chrome around the Scene, from the approved prototype. The `ui` prefix keeps the
-   * canvas tokens bg, text and muted as they are. uiFaint and uiAccent differ from the prototype (decisions in design.md).
+   * Spec clean-site, design C14: the chrome around the Scene, from the approved design. The `ui` prefix keeps the
+   * canvas tokens bg, text and muted as they are. uiFaint and uiAccent differ from the approved design (decisions in design.md).
    */
   readonly uiBg: string;
   readonly uiBg2: string;

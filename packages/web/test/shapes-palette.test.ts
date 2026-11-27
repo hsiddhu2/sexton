@@ -284,7 +284,7 @@ describe("palette contrast (WCAG 2.1 relative luminance)", () => {
     const css = readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
     const vars = (theme: "light" | "dark"): Record<string, string> => cssVariables(theme);
     // Spec clean-site, task 3: a chrome text token with no background in its rule sits on the chrome backgrounds; the
-    // chrome lines (--ui-line, --ui-line2) are decorative separators from the approved prototype. Every control they
+    // chrome lines (--ui-line, --ui-line2) are decorative separators from the approved design. Every control they
     // edge is named by its text or fill, so they are not held to 3:1.
     const canvasBackgrounds = ["--bg", "--surface"];
     const chromeBackgrounds = ["--ui-bg", "--ui-bg2", "--ui-panel", "--ui-panel2"];

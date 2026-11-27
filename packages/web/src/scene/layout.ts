@@ -289,7 +289,7 @@ export function tierCell(tier: TierId, fit = 1): { readonly w: number; readonly 
 export const MIN_FIT_SCALE = 0.6;
 /** The fit scales tried, largest first. */
 const FIT_STEP = 0.02;
-/** The front graves the Narrow layout stands in one row, as in the prototype. */
+/** The front graves the Narrow layout stands in one row, as in the approved design. */
 export const NARROW_FRONT_COLUMNS = 2;
 
 /** Pure. The height the graves of `counts` need at a fit scale: the Tiers' rows, the padding and the smallest sky. */

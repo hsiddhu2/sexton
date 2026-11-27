@@ -1,5 +1,5 @@
 // The height kept free under the Scene (spec clean-site): the Footer bar, the site footer and the gaps between them,
-// so the Scene fills the viewport and its graves stand at its bottom above the Footer bar, as in the prototype.
+// so the Scene fills the viewport and its graves stand at its bottom above the Footer bar, as in the approved design.
 import { useEffect, useState } from "react";
 
 /** The gap between the Scene card and the Footer bar, and the main area's bottom padding, in CSS pixels. */
@@ -13,7 +13,7 @@ const NOTES = ".foot-bar .scrub-note";
 
 /**
  * Pure. The reserve from the measured heights, less the height of the earlier date's notes, so the Scene and its fit
- * scale are the same at every date (review against the prototype, D1); 0 when nothing is measured (jsdom), so the
+ * scale are the same at every date (review against the approved design, D1); 0 when nothing is measured (jsdom), so the
  * Scene keeps its old rule.
  */
 export function reserveFor(heights: readonly number[], notes = 0): number {

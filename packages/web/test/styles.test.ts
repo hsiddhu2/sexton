@@ -72,7 +72,7 @@ describe("styles.css static checks", () => {
     expect(rulesFor(".scan-form input").some((r) => /min-width:\s*0/.test(r.body) && /flex:\s*1 1 auto/.test(r.body))).toBe(true);
   });
 
-  // Spec clean-site: the prototype's 680 px Drawer, full width under 700 px (15.4).
+  // Spec clean-site: the design's 680 px Drawer, full width under 700 px (15.4).
   it("sizes the drawer to min(680px, 100%), and full width under 700 px", () => {
     expect(rulesFor(".drawer").some((r) => /width:\s*min\(680px,\s*100%\)/.test(r.body))).toBe(true);
     expect(css).toMatch(/@media \(max-width: 699px\)\s*\{\s*\.drawer\s*\{\s*width:\s*100%/);
@@ -118,7 +118,7 @@ describe("styles.css static checks", () => {
     for (const r of rulesFor(".visually-hidden")) expect(r.body).not.toMatch(/color|background|#[0-9a-fA-F]{3,8}\b|rgba?\(/);
   });
 
-  // Review against the prototype (D3, D4, D7 and the History dots).
+  // Review against the approved design (D3, D4, D7 and the History dots).
   it("keeps whole words in the Evidence labels and the List, and lets the List scroll sideways inside its own box", () => {
     const has = (selector: string, pattern: RegExp): boolean => rulesFor(selector).some((r) => pattern.test(r.body));
     expect(has(".drawer-signal-label", /white-space:\s*nowrap/)).toBe(true);

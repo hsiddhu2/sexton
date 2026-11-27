@@ -1,4 +1,4 @@
-// Spec clean-site, task 12.1 (requirements 16.1, 16.2, 16.8 to 16.11, 16.13, 16.14, with the flows of the prototype the
+// Spec clean-site, task 12.1 (requirements 16.1, 16.2, 16.8 to 16.11, 16.13, 16.14, with the flows of the design the
 // owner approved): every flow of the site in a real browser, at 1440 by 900 and at 390 by 844, each case in a fresh
 // browser context (a fresh profile: no stored value, no history). The API is routed in the page, so no request leaves
 // the local server. During every flow the page is sampled for:
@@ -414,7 +414,7 @@ for (const size of SIZES) {
       await expect(card.locator(".scanning-lines li")).toHaveText(["Reading package.json and the lockfile", "Asking npm, OSV and deps.dev", "Reading each headstone"]);
       await expect(page.getByRole("progressbar")).toHaveCount(0);
       await expect(field).toHaveValue("hsiddhu2/sexton-demo");
-      // Review against the prototype: the card sits over the dimmed Scene of the scan shown before, whose headline,
+      // Review against the approved design: the card sits over the dimmed Scene of the scan shown before, whose headline,
       // chips, Panel and footers stay; the tag keeps "Sample scan" until the new scan is in (D6).
       await expect(page.locator(".scene-veil .scanning")).toBeVisible();
       await expect(page.locator("h1.headline")).toHaveText("1 of 12 dependencies needs you now.");
@@ -1093,7 +1093,7 @@ for (const size of SIZES) {
       await expect(page.locator("body")).not.toContainText("SECRET-DETAIL");
       expect(consoleText.join("\n")).not.toContain("SECRET-DETAIL");
       await expectInViewport(page, ".failure-card");
-      // Review against the prototype: the page of the Sample scan stays under the card, and so does its tag (D6).
+      // Review against the approved design: the page of the Sample scan stays under the card, and so does its tag (D6).
       await expect(page.locator(".scene-veil .failure-card")).toBeVisible();
       await expect(page.locator("h1.headline")).toHaveText("1 of 12 dependencies needs you now.");
       if (size.width >= 1300) await expect(page.locator(".scan-tag")).toHaveText("Sample scan");
@@ -1143,7 +1143,7 @@ for (const size of SIZES) {
       await page.goBack();
       await expect(dialog).toHaveCount(0);
       expect(new URL(page.url()).search).toBe("");
-      // Forward opens it again; the scrim covers the header, as in the prototype, so its breadcrumb is the way home,
+      // Forward opens it again; the scrim covers the header, as in the approved design, so its breadcrumb is the way home,
       // going back over the Drawer's entry (10.14, 10.17).
       await page.goForward();
       await expect(dialog).toBeVisible();
@@ -1282,7 +1282,7 @@ async function multiLine(locator: Locator): Promise<string[]> {
 }
 
 for (const size of SIZES) {
-  test(`review against the prototype at ${size.name}: an earlier date keeps the fit, and words stay whole`, async ({ browser, baseURL }) => {
+  test(`review against the approved design at ${size.name}: an earlier date keeps the fit, and words stay whole`, async ({ browser, baseURL }) => {
     const origin = new URL(baseURL ?? "http://localhost:4173").origin;
     const context = await browser.newContext();
     const page = await freshPage(context, size);

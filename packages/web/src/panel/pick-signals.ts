@@ -41,7 +41,7 @@ function list(names: readonly string[]): string {
   return names.length > MAX_LISTED ? `${shown} and ${String(names.length - MAX_LISTED)} more` : shown;
 }
 
-/** "29 Sep 2018": the site's one day format, the same in every browser locale (review against the prototype, D2). */
+/** "29 Sep 2018": the site's one day format, the same in every browser locale (review against the approved design, D2). */
 function day(iso: string): string {
   return dayText(Date.parse(iso));
 }
@@ -154,7 +154,7 @@ const FIXED_WORDS: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * Pure. A signal value for the Drawer's Evidence table (review against the prototype, D2): the Inspector's words, a
+ * Pure. A signal value for the Drawer's Evidence table (review against the approved design, D2): the Inspector's words, a
  * fixed word with a capital first letter, and names, versions and dates as they are.
  */
 export function evidenceWords(key: SignalName, value: unknown): string {

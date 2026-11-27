@@ -1,4 +1,4 @@
-// The header and Footer bar glyphs, from the prototype the owner approved. Decorative: every one is aria-hidden and
+// The header and Footer bar glyphs, from the design the owner approved. Decorative: every one is aria-hidden and
 // its button carries the name.
 import type { ReactElement } from "react";
 
