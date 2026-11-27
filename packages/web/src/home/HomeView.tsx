@@ -264,7 +264,8 @@ function ReadyHome({ response, loadId, screen, current = true, dispatch, theme, 
   }, [keysActive, order, openDrawer]);
 
   const counts = useMemo(() => countsAt(response, shownMs), [response, shownMs]);
-  const head = headline(counts.counts, counts.total, date);
+  const failingRules = response.replay === undefined ? response.policy.rules.filter((rule) => !rule.pass).length : 0;
+  const head = headline(counts.counts, counts.total, date, failingRules);
   const notes = useMemo(() => notices(response), [response]);
   const fixRows = useMemo(() => fixOrder(response.report.packages, response.remediations), [response]);
   const plans = useMemo(() => plansByName(response.remediations), [response]);

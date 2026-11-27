@@ -1712,3 +1712,88 @@ for (const size of SHORT_SIZES) {
     await context.close();
   });
 }
+
+// Spec clean-site, 3.29 (owner decision, 27 Nov): each Replay fits 1440 by 900 and the short laptop screens with no
+// page scroll, Welcome bar open and closed, at every Step; its one grave lies wholly in the Scene, and its Panel scrolls
+// inside itself exactly when its cards are taller than its box.
+for (const size of [SIZES[0] ?? { name: "1440 by 900", width: 1440, height: 900, narrow: false }, ...SHORT_SIZES]) {
+  test(`requirement 3.29 at ${size.name}: both Replays fit at every Step, Welcome bar open and closed, and the Panel scrolls only when it overflows`, async ({ browser, baseURL }) => {
+    const origin = new URL(baseURL ?? "http://localhost:4173").origin;
+    const context = await browser.newContext();
+    const page = await freshPage(context, size);
+    const g = await guard(page, origin);
+    for (const id of ["axios", "keyv"]) {
+      for (const closed of [false, true]) {
+        // The Welcome bar's close is stored, so an open pass clears the stored choice first.
+        if (!closed) await page.evaluate(() => localStorage.removeItem("sexton:welcome")).catch(() => undefined);
+        await page.goto(`/?replay=${id}`);
+        const panel = page.locator(".step-panel");
+        await expect(panel.locator("#step-heading")).toContainText("Step 1 of");
+        const bar = page.getByRole("region", { name: "Welcome" });
+        if (closed && (await bar.count()) > 0) {
+          await bar.getByRole("button", { name: "Close the welcome bar" }).click();
+          await expect(bar).toHaveCount(0);
+        }
+        if (!closed) await expect(bar).toBeVisible();
+        await scenePainted(page);
+        const when = `${id}, Welcome bar ${closed ? "closed" : "open"}`;
+        const count = await page.locator(".step-cards .step-card").count();
+        for (let k = 0; k < count; k += 1) {
+          await page.locator(".step-cards .step-card").nth(k).click();
+          await expect(panel.locator("#step-heading")).toContainText(`Step ${String(k + 1)} of`);
+          await settledBoxes(page, [".scene-canvas", ".foot-bar", "button.grave-button"]);
+          const at = `${when}, Step ${String(k + 1)}`;
+          const sizes = () => page.evaluate(() => ({ scroll: document.documentElement.scrollHeight, viewport: window.innerHeight }));
+          await expect.poll(sizes, `the page height, ${at}`).toEqual({ scroll: size.height, viewport: size.height });
+          const scene = await pageBox(page, ".scene-canvas");
+          const box = await pageBox(page, "button.grave-button");
+          expect(scene).not.toBeNull();
+          expect(box).not.toBeNull();
+          if (scene !== null && box !== null) {
+            expect(box.y, `the grave top, ${at}`).toBeGreaterThanOrEqual(scene.y);
+            expect(box.y + box.h, `the grave bottom, ${at}`).toBeLessThanOrEqual(scene.y + scene.h + 0.5);
+          }
+          await expectInViewport(page, ".foot-bar");
+          await expectInViewport(page, ".site-footer");
+          const aside = page.locator("aside.panel");
+          const fit = await aside.evaluate((el) => ({ content: el.scrollHeight, box: el.clientHeight, scroll: el.hasAttribute("data-scroll") }));
+          expect(fit.scroll, `the Panel scrolls exactly when it overflows, ${at}`).toBe(fit.content > fit.box + 0.5);
+        }
+      }
+    }
+    await checkProbe(page, origin, g);
+    await context.close();
+  });
+}
+
+// Spec clean-site, 2.16 (owner decision, 27 Nov): a recorded scan with no Possessed package but Dead ones never reads
+// the all-clear. The demo scan, read from the local server, with its one Possessed package made Alive; no API call.
+test("requirement 2.16: a scan with 0 Possessed and some Dead names the packages that need fixing", async ({ browser, baseURL }) => {
+  const origin = new URL(baseURL ?? "http://localhost:4173").origin;
+  const context = await browser.newContext();
+  const page = await freshPage(context, SIZES[0] ?? { name: "1440 by 900", width: 1440, height: 900, narrow: false });
+  const g = await guard(page, origin);
+  const scan = JSON.parse(JSON.stringify(DEMO)) as {
+    report: { packages: { name: string; state: string; stateReason?: string }[] };
+    timelines: Record<string, { segments: { from: string; state: string; reason: string; ghost: boolean }[] }>;
+  };
+  const padder = scan.report.packages.find((p) => p.name === "left-padder");
+  expect(padder?.state).toBe("Possessed");
+  if (padder !== undefined) {
+    padder.state = "Alive";
+    padder.stateReason = "no rule matched";
+  }
+  const segments = scan.timelines["left-padder"]?.segments ?? [];
+  if (segments.at(-1)?.state === "Possessed") segments.pop();
+  const path = "/test/scan-no-possessed.json";
+  await page.route((url) => url.pathname === path, (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(scan) }));
+  await page.goto(`/?scan=${path}`);
+  await expect(grave(page, "left-padder")).toHaveCount(1);
+  await expect(page.locator("h1.headline")).toHaveText("Nothing is possessed. 6 of 12 need fixing.");
+  await expect(page.locator("h1.headline .headline-count")).toHaveCount(0);
+  await expect(page.locator(".chip-possessed")).toContainText("0");
+  await expect(page.locator(".chip-dead")).toContainText("5");
+  expect(g.api, "no API call").toEqual([]);
+  await checkProbe(page, origin, g);
+  await context.close();
+});

@@ -240,6 +240,7 @@ Agents in `.kiro/agents/`:
 - The demo scan and the two replays are recorded data, not a live scan. The replays are reconstructed from public reports.
 - The demo leaves out per-version maintainer lists. The registry's lists for semver 7.8.5 and 7.8.6 differ by one name. Recording them would make the history scrubber show semver Possessed while the scan says Alive. Until that rule is settled, the recorded data leaves both sides out.
 - The new-dependency rule has no measurement on a real repository yet. In the Express scan of 25 November 2026 no package had added a dependency.
+- On the hosted site, a request that the firewall blocks, or an address that is not found, shows the general failure card, not its own card.
 
 ## Documentation
 

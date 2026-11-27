@@ -89,7 +89,7 @@ Out of scope: GitHub sign-in, any change to the engine's state rules, the canvas
 #### Acceptance Criteria
 
 1. WHILE Home shows the scan date and <n>, the number of Possessed packages, is above 0 THE headline SHALL read "<n> of <total> dependencies need you now.", with "needs" for an <n> of 1 and <n> in the Possessed colour.
-2. WHILE Home shows the scan date and no package is Possessed THE headline SHALL read "Nothing needs you now."
+2. WHILE Home shows the scan date, no package is Possessed, Dead or Haunted, and the policy passes THE headline SHALL read "Nothing needs you now."; it SHALL never read so while a package is Possessed, Dead or Haunted or the policy fails.
 3. WHILE Home shows an earlier date THE headline SHALL read "<n> of <total> dependencies needed you on <date>." or "Nothing needed you on <date>.", where <total> counts only the packages published on that date.
 4. THE chip row SHALL show one chip per State in the order Possessed, Dead, Haunted, Restless, Alive, each with its colour dot and its count at the shown date.
 5. WHEN a chip that is not pressed is pressed THE Site SHALL set the filter to its State and mark only that chip aria-pressed.
@@ -103,6 +103,8 @@ Out of scope: GitHub sign-in, any change to the engine's state rules, the canvas
 13. WHILE the scan has no lockfile THE Site SHALL show under the headline "No lockfile: versions were resolved from package.json ranges."
 14. WHILE the scan has a lockfile and some packages were resolved from declared ranges THE Site SHALL show under the headline "<n> packages were resolved from package.json ranges: <names>" ("1 package was" for one), with at most 5 names and "and <k> more".
 15. WHILE the scan is capped THE Site SHALL show under the headline "Showing <n> of <m> direct dependencies."
+16. WHILE Home shows the scan date, no package is Possessed and <k>, the number of Dead and Haunted packages, is above 0 THE headline SHALL read "Nothing is possessed. <k> of <total> need fixing.", with "needs" for a <k> of 1.
+17. WHILE Home shows the scan date, no package is Possessed, Dead or Haunted, and the policy fails on <r> rules THE headline SHALL read "Nothing is possessed. The policy fails on <r> rules.", with "rule" for an <r> of 1. On a Replay, whose policy result is not for the shown Step, the policy SHALL not change the headline.
 
 ### Requirement 3: The Panel, the Inspector and the Fix order
 
@@ -138,7 +140,7 @@ Out of scope: GitHub sign-in, any change to the engine's state rules, the canvas
 26. WHEN the pointer moves onto or off any grave or List row, any grave or List row is pressed or selected, or a Replay moves to another Step, THE Site SHALL leave the position and size of every box on the page unchanged, other than what the Inspector and the Step panel hold, at every viewport width of 360 px and more.
 27. IF a line is longer than its share of the Inspector, a Fix order row or the Step panel THEN THE Site SHALL end it in an ellipsis and keep its whole text for assistive technology and in the Drawer.
 28. WHILE Home shows the Sample at 1440 by 900 THE page SHALL not scroll, with the Welcome bar open and after it is closed, and no text SHALL be made smaller to fit.
-29. WHILE Home shows the Sample in the Wide layout at 1366 by 768 or 1280 by 800, with the Welcome bar open or closed, THE page SHALL not scroll, every grave SHALL lie wholly inside the Scene above the Footer bar, and THE Panel SHALL be no taller than the space under the header and SHALL scroll inside itself when its cards are taller, with the Inspector and Fix order keeping their fixed heights; graves MAY shrink to a fit scale of 0.4, name labels SHALL keep their minimum on-screen size, and no font size SHALL change.
+29. WHILE Home shows the Sample in the Wide layout at 1366 by 768 or 1280 by 800, with the Welcome bar open or closed, THE page SHALL not scroll, every grave SHALL lie wholly inside the Scene above the Footer bar, and THE Panel SHALL be no taller than the space under the header and SHALL scroll inside itself when its cards are taller, with the Inspector and Fix order keeping their fixed heights; graves MAY shrink to a fit scale of 0.4, name labels SHALL keep their minimum on-screen size, and no font size SHALL change. WHILE either Replay is shown at 1440 by 900, 1366 by 768 or 1280 by 800, with the Welcome bar open or closed, at every Step, THE page SHALL not scroll, its grave SHALL lie wholly inside the Scene, and its Panel SHALL scroll inside itself only when its cards are taller than its box; a Replay's grave MAY shrink to a scale of 0.8 when the Scene is short.
 
 ### Requirement 4: What is removed
 

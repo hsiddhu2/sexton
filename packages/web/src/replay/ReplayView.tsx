@@ -14,6 +14,7 @@ import { BACK_TO_SAMPLE, FailureCard, TRY_AGAIN } from "../home/FailureCard.js";
 import { useReserve } from "../home/use-reserve.js";
 import { LOAD_FAILED_CARD } from "../load/scan-failure.js";
 import { Clamped } from "../panel/Clamped.js";
+import { usePanelScroll } from "../panel/use-panel-scroll.js";
 import type { LoadState } from "../load/use-scan-loader.js";
 import type { Theme } from "../scene/layout.js";
 import type { Beat } from "../scene/motion.js";
@@ -111,6 +112,7 @@ function Story({ hero, response, loadId, steps, theme, reducedMotion, repoFieldR
   // The Play model opens a Replay at Step 1 and moves only on a press (8.2, 8.3, 8.9 to 8.11).
   const player = usePlay(stops, loadId, true);
   const reserve = useReserve(loadId);
+  const [panelRef, panelScroll] = usePanelScroll();
   const index = Math.min(player.index, steps.length - 1);
   const step = steps[index];
   if (step === undefined) return null;
@@ -168,7 +170,7 @@ function Story({ hero, response, loadId, steps, theme, reducedMotion, repoFieldR
           </p>
         </footer>
       </section>
-      <aside className="panel replay-panel" aria-label="Details">
+      <aside ref={panelRef} className="panel replay-panel" aria-label="Details" {...(panelScroll ? { "data-scroll": "" } : {})}>
         <section className="card step-panel" aria-labelledby="step-heading">
           <h2 id="step-heading" className="eyebrow">
             <span>

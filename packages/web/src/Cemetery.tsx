@@ -15,7 +15,7 @@ import { fitHeight, useFreeHeight, usePinnedFooterHeight } from "./hooks/use-fre
 import { useGhostPhase } from "./hooks/use-ghost-phase.js";
 import { scanTimeView } from "./header/format-scan-time.js";
 import { GraveButtons } from "./overlay/GraveButtons.js";
-import { hasGhost, planScene, type Theme } from "./scene/layout.js";
+import { hasGhost, planScene, REPLAY_MIN_SCENE_HEIGHT, type Theme } from "./scene/layout.js";
 import { Scene } from "./scene/Scene.js";
 import { formAt, timelineOf, type FormView } from "./time/form-at.js";
 import { useBurial } from "./time/use-burial.js";
@@ -150,7 +150,9 @@ export function Cemetery({ response, theme, reducedMotion, asOfMs = null, repoFi
   const reserve = page.reserve ?? 0;
   // With a reserve the Scene ends above the Footer bar and the site footer, and its graves stand at its bottom. The
   // free height is rounded up, so one pixel less keeps a fractional top from pushing the page past the viewport (3.28).
-  const minHeight = reserve > 0 ? Math.max(MIN_SCENE_HEIGHT, free - reserve - 1) : free;
+  // A replay's one grave fits a shorter Scene in the Wide and Middle layouts (3.29); the Narrow layout keeps the minimum.
+  const minScene = response.replay !== undefined && !frontFirst ? REPLAY_MIN_SCENE_HEIGHT : MIN_SCENE_HEIGHT;
+  const minHeight = reserve > 0 ? Math.max(minScene, free - reserve - 1) : free;
   const fit = reserve > 0 ? (free > 0 ? minHeight : 0) : fitHeight(free, footerHeight, footerHeight > 0);
   const anyGhost = useMemo(() => order.some(hasGhost), [order]);
   const phase = useGhostPhase(anyGhost, reducedMotion);

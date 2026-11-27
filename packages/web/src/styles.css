@@ -1111,22 +1111,22 @@ a {
   min-width: 0;
 }
 
-/* The Wide layout's Panel on Home (spec clean-site, 3.29; a Replay's Panel is unchanged): it adds nothing to the grid
+/* The Wide layout's Panel on Home and on a Replay (spec clean-site, 3.29): it adds nothing to the grid
    row's height, so the row takes the left column's height, which fits the viewport, and the Panel is never taller than
    that row or the space under the 64 px header. When its cards need more, the Panel scrolls inside itself; the cards
    keep their fixed heights, so hover and selection still move no box (3.26). */
 @media (min-width: 1100px) {
-  .panel:not(.replay-panel) {
+  .panel {
     contain: size;
     align-self: stretch;
     max-height: calc(100vh - 64px);
   }
-  .panel:not(.replay-panel) > * {
+  .panel > * {
     flex-shrink: 0;
   }
   /* Only a Panel whose cards are taller than its box scrolls (panel/use-panel-scroll.ts), so one that fits renders
      exactly as before. */
-  .panel:not(.replay-panel)[data-scroll] {
+  .panel[data-scroll] {
     overflow-y: auto;
     overscroll-behavior: contain;
   }

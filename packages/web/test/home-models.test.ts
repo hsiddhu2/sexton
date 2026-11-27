@@ -21,7 +21,34 @@ describe("headline", () => {
   it("counts only Possessed packages at the scan date (2.1, 2.2)", () => {
     expect(headline(counts({ Possessed: 1, Dead: 5 }), 12, null)).toEqual({ count: "1", text: " of 12 dependencies needs you now." });
     expect(join(headline(counts({ Possessed: 3 }), 12, null))).toBe("3 of 12 dependencies need you now.");
-    expect(headline(counts({ Dead: 5 }), 12, null)).toEqual({ count: null, text: "Nothing needs you now." });
+    expect(headline(counts({ Restless: 3, Alive: 9 }), 12, null)).toEqual({ count: null, text: "Nothing needs you now." });
+  });
+
+  it("keeps the Possessed headline first, whatever else is wrong (2.1)", () => {
+    expect(join(headline(counts({ Possessed: 2, Dead: 4, Haunted: 1 }), 12, null, 3))).toBe("2 of 12 dependencies need you now.");
+  });
+
+  it("names the Dead and Haunted packages when nothing is Possessed (2.16)", () => {
+    expect(headline(counts({ Dead: 4, Restless: 2 }), 12, null, 2)).toEqual({ count: null, text: "Nothing is possessed. 4 of 12 need fixing." });
+    expect(join(headline(counts({ Dead: 1, Haunted: 2 }), 12, null))).toBe("Nothing is possessed. 3 of 12 need fixing.");
+    expect(join(headline(counts({ Haunted: 1, Alive: 5 }), 6, null))).toBe("Nothing is possessed. 1 of 6 needs fixing.");
+  });
+
+  it("names the failing policy rules when nothing is Possessed, Dead or Haunted (2.17)", () => {
+    expect(headline(counts({ Restless: 2 }), 2, null, 1)).toEqual({ count: null, text: "Nothing is possessed. The policy fails on 1 rule." });
+    expect(join(headline(counts({ Alive: 2 }), 2, null, 3))).toBe("Nothing is possessed. The policy fails on 3 rules.");
+  });
+
+  it("shows the all-clear only when nothing is Possessed, Dead or Haunted and the policy passes (2.2, Property 21)", () => {
+    const n = fc.nat({ max: 50 });
+    fc.assert(
+      fc.property(fc.record({ Possessed: n, Dead: n, Haunted: n, Restless: n, Alive: n }), fc.nat({ max: 9 }), (c, failing) => {
+        const total = c.Possessed + c.Dead + c.Haunted + c.Restless + c.Alive;
+        const clear = join(headline(c, total, null, failing)) === "Nothing needs you now.";
+        expect(clear).toBe(c.Possessed === 0 && c.Dead === 0 && c.Haunted === 0 && failing === 0);
+      }),
+      { numRuns: 200 },
+    );
   });
 
   it("speaks in the past at an earlier date (2.3)", () => {
