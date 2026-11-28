@@ -54,7 +54,7 @@ describe("applyPackageJsonEdits (1.1 to 1.5)", () => {
     expect(out.endsWith("\n")).toBe(false);
   });
 
-  it("removes a name from every dependency section", () => {
+  it("removes a name from dependencies and devDependencies", () => {
     const text = '{"dependencies":{"x":"1"},"devDependencies":{"x":"1","y":"1"}}';
     const parsed = JSON.parse(ok(text, [{ path: "package.json", op: "remove-dependency", section: "dependencies", name: "x" }])) as Record<string, Record<string, string>>;
     expect(parsed).toEqual({ dependencies: {}, devDependencies: { y: "1" } });
@@ -125,3 +125,55 @@ describe("Feature: remediate, Property 66: applyPackageJsonEdits", () => {
     );
   });
 });
+
+// Spec remediation-remove-scope, bugfix 2.1 to 2.3 and 3.1, Property 1.
+describe("remove-dependency scope (remediation-remove-scope)", () => {
+  const remove = (name: string): PackageJsonEdit => ({ path: "package.json", op: "remove-dependency", section: "dependencies", name });
+  it("keeps peerDependencies and optionalDependencies", () => {
+    const text = '{"dependencies":{"x":"1"},"peerDependencies":{"x":"^1"},"optionalDependencies":{"x":"1","y":"1"}}';
+    expect(JSON.parse(ok(text, [remove("x")]))).toEqual({ dependencies: {}, peerDependencies: { x: "^1" }, optionalDependencies: { x: "1", y: "1" } });
+  });
+  it("refuses a name listed only in peerDependencies or optionalDependencies", () => {
+    expect(applyPackageJsonEdits('{"dependencies":{},"peerDependencies":{"x":"1"},"optionalDependencies":{"x":"1"}}', [remove("x")])).toEqual({ ok: false, reason: "name-absent" });
+  });
+  it("ignores a peerDependencies or optionalDependencies member that is not an object", () => {
+    expect(JSON.parse(ok('{"dependencies":{"x":"1"},"peerDependencies":[],"optionalDependencies":"x"}', [remove("x")]))).toEqual({ dependencies: {}, peerDependencies: [], optionalDependencies: "x" });
+  });
+  it("Property 1: touches only dependencies and devDependencies", () => {
+    const names = fc.constantFrom("a", "b", "c", "x");
+    const section = fc.oneof(fc.constant(undefined), fc.dictionary(names, fc.constantFrom("1", "^2", "~3"), { maxKeys: 4 }), fc.constantFrom<unknown>([], "s", 1, null));
+    fc.assert(
+      fc.property(section, section, section, section, names, (deps, dev, opt, peer, name) => {
+        const doc: Record<string, unknown> = { name: "app" };
+        const parts: [string, unknown][] = [["dependencies", deps], ["devDependencies", dev], ["optionalDependencies", opt], ["peerDependencies", peer]];
+        for (const [key, value] of parts) if (value !== undefined) doc[key] = value;
+        const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
+        const listed = [deps, dev].some((v) => isObj(v) && Object.hasOwn(v, name));
+        const badMain = [deps, dev].some((v) => v !== undefined && !isObj(v));
+        const r = applyPackageJsonEdits(JSON.stringify(doc, null, 2) + "\n", [remove(name)]);
+        if (badMain) {
+          if (!r.ok) expect(["section-not-object", "name-absent"]).toContain(r.reason);
+          return;
+        }
+        if (!listed) {
+          expect(r).toEqual({ ok: false, reason: "name-absent" });
+          return;
+        }
+        expect(r.ok).toBe(true);
+        if (!r.ok) return;
+        const out = JSON.parse(r.text) as Record<string, unknown>;
+        for (const key of Object.keys(doc)) {
+          if (key === "dependencies" || key === "devDependencies") {
+            const before = doc[key] as Record<string, unknown>;
+            const after = out[key] as Record<string, unknown>;
+            expect(Object.hasOwn(after, name)).toBe(false);
+            expect(Object.keys(after)).toEqual(Object.keys(before).filter((k) => k !== name));
+          } else expect(out[key]).toEqual(doc[key]);
+        }
+        expect(Object.keys(out)).toEqual(Object.keys(doc));
+      }),
+      { numRuns: 100 },
+    );
+  });
+});
+

@@ -1,11 +1,12 @@
 // runCli arguments and exit codes. Spec: .kiro/specs/cli-and-action, Requirements 3.1 to 3.5. Properties 43 and 44.
 
 import fc from "fast-check";
-import { ENGINE_VERSION } from "@sexton/engine";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseCommand } from "../src/args.js";
 import { USAGE } from "../src/messages.js";
 import { runCli } from "../src/run-cli.js";
+import { CLI_VERSION } from "../src/version.js";
 import { fakeDeps } from "./support.js";
 
 const offline = () => fakeDeps({ transport: () => Promise.reject(new Error("no network in this test")) });
@@ -50,7 +51,16 @@ describe("arguments", () => {
     expect(h.out.join("")).toBe(USAGE);
     const v = offline();
     expect(await runCli(["--version"], v.deps)).toBe(0);
-    expect(v.out.join("")).toBe(`${ENGINE_VERSION}\n`);
+    expect(v.out.join("")).toBe(`${CLI_VERSION}\n`);
+  });
+
+  // Spec release, Requirement 6.1: --version prints the CLI's own version, which the published `sexton` package carries, not the engine's.
+  it("prints the CLI package's version, not the engine's", async () => {
+    const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string };
+    expect(CLI_VERSION).toBe(pkg.version);
+    const v = offline();
+    expect(await runCli(["--version"], v.deps)).toBe(0);
+    expect(v.out).toEqual([`${pkg.version}\n`]);
   });
 });
 

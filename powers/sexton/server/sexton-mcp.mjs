@@ -20436,7 +20436,7 @@ var REDUCED_LIST_LIMIT = 5;
 var POSSESSED_WARNING = "> **Warning:** this package is Possessed. Check the maintainer, provenance, install-script, new dependency or publisher change before you merge.";
 var MAJOR_UPGRADE_LINE = "Major upgrade: the chosen version is outside the declared range.";
 var RANGE_STYLE_LINE = "Range style preserved.";
-var REMOVE_SCOPE_LINE = "The edit removes it from every dependency section of package.json that lists it.";
+var REMOVE_SCOPE_LINE = "The edit removes it from dependencies and devDependencies in package.json.";
 var REMOVE_CHECK_LINE = "No reference to this package was found in the files read. A package loaded by name at run time is not detected. Check before merging.";
 var MIGRATE_LINE = "A migration is proposed. Its changes come from the recipe.";
 var NO_RULE_LINE = "No policy rule fails for this package.";
@@ -21034,6 +21034,15 @@ var NAME_CHARS = /[A-Za-z0-9._\-@/~]/;
 function baseName(path) {
   return path.slice(path.lastIndexOf("/") + 1);
 }
+var UNREAD_SOURCE_DIRECTORIES = ["build", "dist", "coverage"];
+function isUnreadSourcePath(path) {
+  const segments = path.split("/");
+  if (!segments.slice(0, -1).some((s) => UNREAD_SOURCE_DIRECTORIES.includes(s)))
+    return false;
+  if (segments.some((s) => s === "node_modules" || s === ".git") || NEVER_COUNTED.includes(baseName(path)))
+    return false;
+  return COUNTED_EXTENSIONS.some((ext) => path.endsWith(ext));
+}
 function isCountedPath(path) {
   if (hasIgnoredSegment(path) || NEVER_COUNTED.includes(baseName(path)))
     return false;
@@ -21188,7 +21197,16 @@ function readError(outcome, messages) {
 }
 async function importSites(path, intake, scripts, deps) {
   const tree = deps.workingTree(path);
-  const capped = capFileSource(tree, COUNT_LIMITS);
+  let unread = 0;
+  const counted = {
+    listFiles: async () => {
+      const all = await tree.listFiles();
+      unread = all.filter(isUnreadSourcePath).length;
+      return all;
+    },
+    readFile: (p) => tree.readFile(p)
+  };
+  const capped = capFileSource(counted, COUNT_LIMITS);
   const listed2 = (await capped.source.listFiles()).filter(isCountedPath);
   const texts = await mapWithConcurrency(listed2, READ_CONCURRENCY, async (p) => ({ path: p, text: await capped.source.readFile(p) }));
   const files = texts.flatMap((f) => typeof f.text === "string" ? [{ path: f.path, text: f.text }] : []);
@@ -21196,7 +21214,7 @@ async function importSites(path, intake, scripts, deps) {
   const counts = countReferences(files, scripts, names);
   const c = capped.counts();
   const t = tree.counts();
-  return importSitesFor(intake, counts, { performed: c.performed && t.performed, capped: c.capped || t.rawCapped, skipped: c.skipped + t.skipped });
+  return importSitesFor(intake, counts, { performed: c.performed && t.performed, capped: c.capped || t.rawCapped, skipped: c.skipped + t.skipped + t.unread + unread });
 }
 async function runScanPipeline(target, deps) {
   const store = new MemoryCacheStore();
@@ -21382,6 +21400,7 @@ import { join as join2, sep } from "node:path";
 var MAX_RAW_ENTRIES = 2e4;
 async function walk(root) {
   const paths = [];
+  let unread = 0;
   const pending = [""];
   while (pending.length > 0) {
     const dir = pending.shift();
@@ -21392,19 +21411,22 @@ async function walk(root) {
       if (entry2.isDirectory()) {
         if (!IGNORED_DIRECTORIES.includes(entry2.name))
           pending.push(rel);
+        else if (UNREAD_SOURCE_DIRECTORIES.includes(entry2.name))
+          unread += 1;
       } else if (entry2.isFile()) {
         if (paths.length >= MAX_RAW_ENTRIES)
-          return { paths, capped: true };
+          return { paths, capped: true, unread };
         paths.push(rel);
       }
     }
   }
-  return { paths, capped: false };
+  return { paths, capped: false, unread };
 }
 function createWorkingTreeSource(root, git2) {
   let performed = false;
   let rawCapped = false;
   let skipped = 0;
+  let unread = 0;
   let listed2 = /* @__PURE__ */ new Set();
   let realRoot = null;
   return {
@@ -21417,6 +21439,7 @@ function createWorkingTreeSource(root, git2) {
           const walked = await walk(realRoot);
           raw = walked.paths;
           rawCapped = walked.capped;
+          unread = walked.unread;
         } else {
           rawCapped = fromGit.length > MAX_RAW_ENTRIES;
           raw = fromGit.slice(0, MAX_RAW_ENTRIES);
@@ -21463,7 +21486,7 @@ function createWorkingTreeSource(root, git2) {
       }
     },
     counts() {
-      return { performed, rawCapped, skipped };
+      return { performed, rawCapped, skipped, unread };
     }
   };
 }

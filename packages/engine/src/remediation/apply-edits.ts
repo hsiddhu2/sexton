@@ -9,6 +9,8 @@ export type ApplyResult = { readonly ok: true; readonly text: string } | { reado
 
 /** The dependency sections, in the order a new one is placed after. */
 export const DEPENDENCY_SECTIONS = ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"] as const;
+/** The sections a remove-dependency Edit changes: the two that intake reads (HP decision 7). Spec remediation-remove-scope, bugfix 2.1. */
+export const REMOVE_SECTIONS = ["dependencies", "devDependencies"] as const;
 
 type Obj = Record<string, unknown>;
 
@@ -78,7 +80,7 @@ function withSection(root: Obj, name: string): Obj {
 function applyOne(root: Obj, edit: PackageJsonEdit): { ok: true; root: Obj } | { ok: false; reason: ApplyFailure } {
   if (edit.op === "remove-dependency") {
     let found = false;
-    for (const s of DEPENDENCY_SECTIONS) {
+    for (const s of REMOVE_SECTIONS) {
       if (!Object.hasOwn(root, s)) continue;
       const section = root[s];
       if (!isObj(section)) return { ok: false, reason: "section-not-object" };

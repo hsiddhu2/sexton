@@ -10,12 +10,14 @@ const lines = readme.split("\n");
 const HEADING = "## Sexton and Dependabot";
 
 // Spec judge-path, Deliberate test change 4: "Try it in two minutes" comes first.
+// Spec release, Requirement 5.1: "Install (coming with release 0.1)" follows Quick start.
 const ORIGINAL_HEADINGS: readonly string[] = [
   "## Try it in two minutes",
   "## The problem",
   "## What Sexton does",
   "## The five states",
   "## Quick start",
+  "## Install (coming with release 0.1)",
   "## CLI",
   "## GitHub Action",
   "## Ask Sexton from Kiro",

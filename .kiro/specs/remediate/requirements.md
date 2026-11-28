@@ -40,7 +40,7 @@ It does not include any repository other than `hsiddhu2/sexton-demo`, merging, p
 2. WHEN the text is not JSON, its top level is not an object, a named section is not an object, or a set-range or remove names a package absent from its section, THE function SHALL answer a failure.
 3. THE output SHALL keep the input's indentation (tab, 2 or 4 spaces, default 2), its key order, and its final newline when present.
 4. WHEN add-dependency targets a section whose keys are sorted, THE function SHALL keep it sorted; otherwise it SHALL append; a missing section SHALL be created after the last existing dependency section.
-5. WHEN remove-dependency is applied, THE function SHALL remove the name from every dependency section.
+5. WHEN remove-dependency is applied, THE function SHALL remove the name from dependencies and devDependencies, and SHALL leave optionalDependencies and peerDependencies unchanged (spec remediation-remove-scope).
 6. THE output SHALL always parse, SHALL equal the expected object and SHALL change only the named keys; a second apply of set-range SHALL change nothing, and a second apply of remove SHALL answer the name-absent failure.
 7. THE Transport request method SHALL be `GET`, `POST` or `PUT`; DELETE and PATCH SHALL not be expressible.
 

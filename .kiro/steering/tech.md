@@ -3,7 +3,7 @@ inclusion: always
 ---
 # Stack
 
-- TypeScript 5.7.2, strict, ES2022, NodeNext modules. Node 22 (.nvmrc is 22, engines is >=22).
+- TypeScript 5.7.2, strict, ES2022, NodeNext modules. The workspace builds and tests on Node 22 (.nvmrc is 22, the root engines is >=22). The published npm packages, sexton and sexton-mcp, need Node 20.19.0 or later (engines >=20.19.0), because each is one bundle built for Node 20.
 - npm workspaces: packages/* and infra. Packages: engine, cli, api, web, action, mcp. The infra workspace is named sexton-infra.
 - Tests: Vitest 4.1.12. Property tests: fast-check 3.23.1, numRuns 100 default, 1000 for security invariants.
 - Lint: ESLint 10.15.0 with typescript-eslint 8.72.2 strict. Zero warnings allowed (--max-warnings=0).
@@ -17,6 +17,7 @@ inclusion: always
 - npm run typecheck (tsc -b), npm run lint, npm test and npm run build at the root run every package.
 - npm test -w @sexton/engine runs one package.
 - npm run build:power builds packages/mcp and bundles powers/sexton/server/sexton-mcp.mjs (target Node 20, the Node Kiro starts the server with). npm test -w @sexton/mcp fails when the committed Bundle is stale.
+- node scripts/build-release.mjs bundles the two npm packages into build/release/sexton and build/release/sexton-mcp with the same esbuild options (scripts/lib/bundle.mjs). The workspace packages (@sexton/engine, @sexton/cli, @sexton/mcp) are private and never published.
 - npm run scan:self scores Sexton's own dependencies live. It needs network and builds on npm run build -w @sexton/engine.
 - npm run synth -w sexton-infra runs cdk synth. npm test -w sexton-infra runs the infra tests.
 - npm run demo:generate -w @sexton/api writes the demo scan and evidence files for the web app.

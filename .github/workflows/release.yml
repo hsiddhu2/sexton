@@ -1,0 +1,78 @@
+# Sexton release. Spec: .kiro/specs/release, requirement 3.
+# On a pushed tag vMAJOR.MINOR.PATCH: run the gates, then publish sexton (the CLI) and sexton-mcp (the MCP server) to npm,
+# in that order, with npm trusted publishing (OIDC). Each is one bundled file with the engine inside, built by
+# scripts/build-release.mjs. No npm token and no secret: npm exchanges the job's OIDC token for a short-lived publish
+# token, and generates provenance for a public package from a public repository.
+# Third-party actions are pinned to full commit SHAs. No cache in a release build.
+
+name: release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  gates:
+    # The same gates as ci.yml, on the tagged commit, plus the self-scan. This job gets no OIDC token.
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build -w @sexton/engine
+      - run: npm run scan:self
+
+  publish:
+    needs: gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Node 24 ships npm 11, which trusted publishing needs (npm 11.5.1 or later, Node 22.14.0 or later).
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      # No install scripts while this job holds an OIDC token. The build is tsc and esbuild, and needs none.
+      - run: npm ci --ignore-scripts
+      - run: npm run build -w @sexton/engine -w @sexton/cli -w @sexton/mcp
+      - run: node scripts/build-release.mjs
+      - name: Check the tag against the packages
+        run: node scripts/release-check.mjs "$GITHUB_REF_NAME"
+      - name: Publish in order
+        # A version already on npm is skipped, so a re-run after a failure publishes only what is missing.
+        run: |
+          for name in sexton sexton-mcp; do
+            version=$(node -p "require('./build/release/$name/package.json').version")
+            if npm view "$name@$version" version > /dev/null 2>&1; then
+              echo "$name@$version is already on npm, skipped"
+            else
+              npm publish "./build/release/$name"
+            fi
+          done

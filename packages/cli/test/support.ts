@@ -90,7 +90,7 @@ export function fakeDeps(options: FakeOptions = {}): Captured {
         return source.listFiles();
       },
       readFile: (p) => source.readFile(p),
-      counts: () => ({ performed: listed, rawCapped: false, skipped: 0 }),
+      counts: () => ({ performed: listed, rawCapped: false, skipped: 0, unread: 0 }),
     };
   };
   const deps: CliDeps = {

@@ -2,19 +2,11 @@
 
 Sexton finds the dependencies that will hurt you, proves it, and opens the pull request that fixes it.
 
+Sexton is an open-source supply-chain tool for npm projects. Give it a GitHub repository and it reads the public registry history of each direct dependency, up to 300, gives each one a state from Alive to Possessed, and proposes a fix where a safe one exists. Every finding links to its source and date.
+
+The web app draws the scan as a cemetery where each grave is one dependency. The same engine runs as a command line, as a GitHub Action that fails CI when your policy breaks, and as an MCP server you can ask from Kiro.
+
 ![The Sexton cemetery for the demo scan. Each grave is one dependency. Its shape and colour show its state.](docs/cemetery.png)
-
-Characters are original vector art. The ghost is original art.
-
-The site plays no generated sound. Music is off until you press the Music button; it then plays one recorded track, Ghost Party, in a loop, and the characters dance to its beat. Under reduced motion they hold still. The track's credit:
-
-Ghost Party by The Piano Says | https://soundcloud.com/thepianosays
-
-Royalty Free Music by https://www.free-stock-music.com
-
-Creative Commons / Attribution 3.0 Unported License (CC BY 3.0)
-
-https://creativecommons.org/licenses/by/3.0/deed.en_US
 
 Status: pre-release. Release 0.1 is due on 4 December 2026. Each feature below says whether it is on `main` today, in progress, or planned.
 
@@ -31,6 +23,16 @@ To scan your own public repository, type `owner/name` in the home page's Scan bo
 3. Read the evidence and the fix. The drawer's Evidence tab shows every signal with its source and date. The fix tab shows the change Sexton proposes, when there is one, with the text of its pull request. History shows how the package's state changed over time.
 4. Replay an attack. Press "Watch a real attack" under the cemetery and pick axios, or open [the axios replay](https://de1giv8lj8sfh.cloudfront.net/cemetery?replay=axios) directly. [The keyv replay](https://de1giv8lj8sfh.cloudfront.net/cemetery?replay=keyv) shows a second attack. Press "Next step" to follow it.
 
+The site plays no generated sound. Music is off until you press the Music button. It then plays one recorded track, Ghost Party, in a loop, and the characters dance to its beat. Under reduced motion they hold still. The track's credit:
+
+Ghost Party by The Piano Says | https://soundcloud.com/thepianosays
+
+Royalty Free Music by https://www.free-stock-music.com
+
+Creative Commons / Attribution 3.0 Unported License (CC BY 3.0)
+
+https://creativecommons.org/licenses/by/3.0/deed.en_US
+
 ## The problem
 
 Supply-chain attacks arrive through packages that looked fine in the lockfile. Think of event-stream in 2018, ua-parser-js in 2021, colors in 2022 and xz in 2024. In each case the warning signs were visible in public registry data before the damage. Sexton reads those signals for every direct dependency of a repository, keeps their history, enforces a policy on them and opens the fix.
@@ -40,7 +42,7 @@ Supply-chain attacks arrive through packages that looked fine in the lockfile. T
 - **Signals.** It scores up to 300 direct dependencies per scan on twelve signals. These twelve measure the seven product signals in the roadmap, from last publish date and known advisories to maintainer change, provenance, transitive reach, a change of publisher and a newly added dependency. Every signal carries its source URL and fetch time. On `main` today.
 - **History.** It keeps a dated snapshot of each package's maintainers, install scripts and attestations. The npm packument lists each version's maintainers, publisher (`_npmUser`) and attestations, but it shows the maintainer list only as it is today and as it was at each publish, so a change between two releases leaves no trace there. A maintainer change or lost provenance is computed from the history, not from one read. The snapshot engine is on `main`, and the hosted site runs it every day.
 - **Policy.** You commit a `sexton.policy.yml` with four rule types and package matchers. Sexton evaluates it and fails CI when a rule breaks. The policy engine, `sexton check` and the GitHub Action are on `main`.
-- **Remediation pull requests.** For each dangerous package it proposes one fix: a version bump, a removal, or a migration such as node-sass to sass. The pull request carries its evidence. The plans are on `main` in the engine and the CLI. Hosted scans carry the plans too, without removals, and name the commit they read. Opening the pull request is on `main` and on the hosted site, for the demo repository `hsiddhu2/sexton-demo` only. Every other repository shows the plan and the pull request body, with no button. The hosted site needs no sign-in and never asks for a GitHub password. Sexton proposes a bump only to a version that passes its checks; otherwise it proposes no change.
+- **Remediation pull requests.** For each dangerous package it proposes one fix: a version bump, a removal, or a migration such as node-sass to sass. The pull request carries its evidence. The plans are on `main` in the engine and the CLI. Hosted scans carry the plans too, and name the commit they read. A hosted scan makes no remove plan. A migration such as node-sass to sass still replaces the old package, and its pull request lists the places to review, or says the files were not scanned. Opening the pull request is on `main` and on the hosted site, for the demo repository `hsiddhu2/sexton-demo` only. Every other repository shows the plan and the pull request body, with no button. The hosted site needs no sign-in and never asks for a GitHub password. Sexton proposes a bump only to a version that passes its checks; otherwise it proposes no change.
 - **Evidence pack.** It writes a CycloneDX 1.5 SBOM, every signal with its source, the policy results and the remediation plans and log as one JSON file, and a Markdown report rendered from it. A SHA-256 digest over the canonical JSON body lets a reviewer check it against a digest they got separately. The digest is not a signature. On `main` today: the engine, `GET /api/evidence?repo=<url>&format=json|md`, and the demo download links in the site footer. Each hosted download runs its own scan. The hosted site serves the evidence endpoint and the footer links.
 
 ## The five states
@@ -77,6 +79,17 @@ npm run scan:self                   # score Sexton's own dependencies live and c
 ```
 
 The last command calls the npm registry, OSV and deps.dev, so it needs network. It exits non-zero when the policy fails.
+
+## Install (coming with release 0.1)
+
+Nothing is on npm yet. With release 0.1, two packages will be published to npm from GitHub Actions, each with npm provenance that links it to the commit and workflow that built it:
+
+- `sexton`, the command line, with the `sexton` command.
+- `sexton-mcp`, the MCP server, with the `sexton-mcp` command. It will also be listed in the official MCP Registry as `io.github.hsiddhu2/sexton`.
+
+Each is one file with no dependencies, and runs on Node.js 20.19 or later. The install commands will go here once they work.
+
+Until then, run the CLI from a clone (see "CLI" below), and use the MCP server through the Kiro Power (see "Ask Sexton from Kiro"). Building from a clone needs Node.js 22. The release plan is `.kiro/specs/release`.
 
 ## CLI
 
@@ -247,6 +260,7 @@ Agents in `.kiro/agents/`:
 - `impl.md`: the implementer for spec tasks; it runs tests, typecheck, lint and read-only commands without asking, and asks before anything else.
 - `security-reviewer.md`: read-only reviewer against the spec and the security steering.
 - `gravedigger.md`: read-only reviewer that checks a remediation plan can never make a repository worse.
+- The gravedigger agent was also run headless from the Kiro CLI: see [`build/reviews/cli-run.md`](build/reviews/cli-run.md).
 
 ## Limits
 
@@ -281,4 +295,4 @@ Open-source packages are used as dependencies at the exact versions in `package-
 
 ## Licence
 
-Apache-2.0. See LICENSE and NOTICE.
+Apache-2.0. See LICENSE and NOTICE. Credits for the art, the fonts and the music are in CREDITS.md.
