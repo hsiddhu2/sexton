@@ -42,7 +42,7 @@ It has termination protection, so `cdk destroy` cannot remove it by accident.
 | WAF rate rule `RemediateRateLimit` | 10 requests per 300 s per IP on paths starting with `/api/remediate`, 429 JSON (spec remediate) |
 | Outputs | `DistributionDomainName`, `DistributionId`, `WebBucketName`, `ScanFunctionName`, `SnapshotterFunctionName`, `RemediateFunctionName` |
 
-The last `cdk synth --strict` (spec fresh-site, 26 Nov 2026) produced 5 resources in the Data stack and 48 in the Edge stack, with no warnings. The Edge stack has 4 Lambda functions: scan, remediate, snapshotter and the CDK BucketDeployment handler.
+The last `cdk synth --strict` (spec fresh-site, 26 Nov 2026, and again at deploy 6, 28 Nov 2026) produced 5 resources in the Data stack and 48 in the Edge stack, with no warnings. The Edge stack has 4 Lambda functions: scan, remediate, snapshotter and the CDK BucketDeployment handler.
 
 ## IAM roles and their statements
 
@@ -78,8 +78,8 @@ No role grants `dynamodb:UpdateItem`, `DeleteItem`, `BatchWriteItem`, PartiQL wr
 
 Stop if any check fails. Each one is read-only.
 
-1. **The engine fix is on main.** Kiro's `version.ts` Bugfix spec (spec engine-version) is merged into `origin/main`, and HP has merged `main` into `spec/infra`. Agents do not merge. Without the fix, both bundled Lambdas fail on load with `Cannot find module '../package.json'`.
-2. **`parseApiBase` accepts `/api`.** The cemetery-ui change is on `origin/main` and merged in. Without it, the deployed web app shows the demo but treats the live API as not configured.
+1. **The engine fix is on main.** Met since deploy 1 (21 Nov 2026). Kiro's `version.ts` Bugfix spec (spec engine-version) is merged into `origin/main`, and HP has merged `main` into `spec/infra`. Agents do not merge. Without the fix, both bundled Lambdas fail on load with `Cannot find module '../package.json'`.
+2. **`parseApiBase` accepts `/api`.** Met since deploy 1. The cemetery-ui change is on `origin/main` and merged in. Without it, the deployed web app shows the demo but treats the live API as not configured.
 3. **Gates pass** on the commit being deployed: typecheck, lint and test.
 4. **The engine is built** (`npm run build -w @sexton/engine`). The API bundle reads the engine from `packages/engine/dist`, so a stale `dist` would bundle old engine code.
 5. **The web app is built** with `VITE_SEXTON_API=/api`.
@@ -91,7 +91,7 @@ Stop if any check fails. Each one is read-only.
 
 ## Commands, in order
 
-Run every command in **one shell session**, starting from the repository root on branch `spec/infra`. The variables from step 1 are used all the way through. Replace `<profile>` and `<email>`. Never write the email or the account ID into a file. All build output and scratch files go to `$WORK`, outside the repository, so `npm run lint` never sees the bundles.
+Run every command in **one shell session**, from the repository root, with the commit being deployed checked out detached (`git switch --detach <sha>`). That commit must equal `origin/main`, and CI must have succeeded on every job for it. The variables from step 1 are used all the way through. Replace `<profile>` and `<email>`. Never write the email or the account ID into a file. All build output and scratch files go to `$WORK`, outside the repository, so `npm run lint` never sees the bundles.
 
 ### 1. Environment (read-only)
 
@@ -144,6 +144,8 @@ npx cdk deploy SextonEdge-dev -a "$OUT" --require-approval broadening \
   --parameters SextonEdge-dev:AlarmEmail=<email>
 ```
 
+On a later deploy, leave out the `--parameters` line. CDK then keeps the stack's previous `AlarmEmail` value, and nobody types the address. Pass it only on the first deploy or to change the address.
+
 Data goes first, because Edge imports its exports. `--require-approval broadening` stops for a yes on any IAM change, and the first deploy always asks because every role is new. The warnings check already ran in step 2 with `synth --strict`. Deploying from `-a "$OUT"` uses exactly the checked templates and bundles. Then HP confirms the SNS subscription from the email AWS sends. Until it is confirmed, no alarm reaches anyone.
 
 ## Smoke checks after deploy
@@ -160,14 +162,14 @@ SCAN_LOGS="$(aws lambda get-function-configuration --function-name "$SCAN_FN" --
 EXPRESS="https://$DOMAIN/api/scan?repo=https%3A%2F%2Fgithub.com%2Fexpressjs%2Fexpress"
 ```
 
-1. **The CloudFront URL serves the demo.**
-   - Command: `curl -sS -o /dev/null -w '%{http_code}\n' "https://$DOMAIN/"`, then open the URL in a browser.
-   - Pass: 200, and the cemetery renders the demo scan.
+1. **The CloudFront URL serves the site.**
+   - Command: `curl -sS -o /dev/null -w '%{http_code}\n' "https://$DOMAIN/"`, then open `/` and `/cemetery` in a browser.
+   - Pass: 200. `/` renders the home page (spec home-page), and `/cemetery` renders the demo scan.
 2. **Security headers are present.**
    - Command: `curl -sS -D - -o /dev/null "https://$DOMAIN/" | grep -iE 'strict-transport|content-security|x-frame|referrer'`
    - Pass: all four headers appear.
 3. **Cold scan.**
-   - Command: `curl -sS -o "$WORK/cold.json" -w '%{http_code} %{time_total}\n' "$EXPRESS"`, as the first scan after the deploy.
+   - Command: `curl -sS -o "$WORK/cold.json" -w '%{http_code} %{time_total}\n' "$EXPRESS"`, as the first scan after the deploy. Cold means the first invocation of the new function. The cache table may still hold upstream answers from an earlier deploy.
    - Pass: 200 in under 60 s, and `cold.json` holds `report` and `policy`.
 4. **Warm scan.**
    - Command: `curl -sS -D "$WORK/warm.headers" -o "$WORK/warm.json" -w '%{http_code} %{time_total}\n' "$EXPRESS"`, within a few minutes of check 3.
@@ -195,11 +197,21 @@ EXPRESS="https://$DOMAIN/api/scan?repo=https%3A%2F%2Fgithub.com%2Fexpressjs%2Fex
    - Pass: `SnapshotterFailed`, `SnapshotterDeferred` and `SnapshotterError` are listed.
 9. **WAF answers 429 on a burst.**
    - Command: `for i in $(seq 1 130); do curl -s -o /dev/null -w '%{http_code}\n' "https://$DOMAIN/api/scan?repo=x"; done | sort | uniq -c`
-   - Pass: 400 at first, then 429 after about 100 requests.
-   - WAF checks the rate about every 10 s, so a few extra requests may get through. `repo=x` is rejected before any upstream call, so the burst sends no traffic to npm, OSV or GitHub. It still invokes the Lambda about 100 times.
+   - Pass: 400 at first, then 429 after about 100 requests, in this burst or in the second round below.
+   - WAF counts in the background and acts with a delay, so a fast burst of 130 often gets 400 on every request (deploys 1 and 6). That is not a failure. Run a slower second round straight after:
+     ```sh
+     for i in $(seq 1 30)
+     do
+       curl -s -o /dev/null -w '%{http_code}\n' "https://$DOMAIN/api/scan?repo=x"
+       sleep 2
+     done | uniq -c
+     ```
+   - Second round pass: 429 with `{"code":"rate-limited",...}` within that round. Deploy 6 saw the first 429 after about 134 requests in all. A last 400 as the window moves on is normal.
+   - `repo=x` is rejected before any upstream call, so the burst sends no traffic to npm, OSV or GitHub. It still invokes the Lambda for every request that gets through, about 130 times over both rounds.
+   - The runner's address stays blocked on `/api/` until fewer than 100 of its requests fall in the last 300 s. Wait 5 minutes after the last 429 before checks 12 to 19, which call `/api/`.
 10. **The correlation ID is logged.**
     - Command: `aws logs tail "$SCAN_LOGS" --region us-east-1 --since 15m | head`
-    - Pass: the lines carry `correlationId`. Record whether it equals the `x-amz-cf-id` (design.md, open item 11).
+    - Pass: the lines carry `correlationId`, equal to the response's `x-amz-cf-id` and `x-sexton-request-id`. Design.md open item 11 was settled at deploy 1. Check the warm scan's ID from `warm.headers` appears in the log.
 11. **No alarm is firing.**
     - Command: `aws cloudwatch describe-alarms --region us-east-1 --state-value ALARM --query 'MetricAlarms[].AlarmName'`
     - Pass: empty, apart from any alarm the burst in check 9 caused on purpose. The alarm names are generated by CloudFormation, for example `SextonEdge-dev-ScanErrorRate…`.
@@ -213,7 +225,7 @@ EXPRESS="https://$DOMAIN/api/scan?repo=https%3A%2F%2Fgithub.com%2Fexpressjs%2Fex
 
 The path without a token is proven by tests only. The live secret is never emptied for a check.
 
-Checks 14 to 19 (spec remediate) run after HP has pushed the demo repository to `hsiddhu2/sexton-demo`. They open one real pull request there.
+Checks 14 to 19 (spec remediate) run after HP has pushed the demo repository to `hsiddhu2/sexton-demo`. Deploy 3 opened pull request #1 there with check 15. Later deploys answer `existing` while #1 stays open. Before check 15, confirm it is open: `gh pr view 1 --repo hsiddhu2/sexton-demo --json state`. If #1 is closed or merged, check 15 opens a new real pull request, so stop and ask HP first.
 
 ```sh
 REMEDIATE_FN="$(output RemediateFunctionName)"
@@ -228,7 +240,8 @@ DEMO_REPO="https://github.com/hsiddhu2/sexton-demo"
     - Pass: `{"remediate":true}`, a proposed migrate for node-sass, and the bump plans.
 15. **POST remediate opens the node-sass pull request.**
     - Command: `remediate "$DEMO_REPO" node-sass`
-    - Pass: `{"status":"opened","prUrl":"https://github.com/hsiddhu2/sexton-demo/pull/<n>","logged":true,"reviewSites":{"posted":<n>,"dropped":0}}` and 200. On GitHub: the pull request changes package.json only, base `main`, branch `sexton/migrate-node-sass`, and has one comment that links each review site.
+    - Pass, while #1 is open: `{"status":"existing","prUrl":"https://github.com/hsiddhu2/sexton-demo/pull/1"}` and 200.
+    - Pass, on the run that opens it: `{"status":"opened","prUrl":"https://github.com/hsiddhu2/sexton-demo/pull/<n>","logged":true,"reviewSites":{"posted":<n>,"dropped":0}}` and 200. On GitHub: the pull request changes package.json only, base `main`, branch `sexton/migrate-node-sass`, and has one comment that links each review site.
     - If it answers the web page with 200 instead of JSON, Lambda refused the signature: check that the curl sent `x-amz-content-sha256` with the SHA-256 of the exact body. The `remediate` log line's `bodyHash` shows whether the header reached the function: it is not in the policy, but OAC signing may add it; record what the first deploy shows.
 16. **The same POST again answers existing.**
     - Command: `remediate "$DEMO_REPO" node-sass`
@@ -238,7 +251,7 @@ DEMO_REPO="https://github.com/hsiddhu2/sexton-demo"
     - Pass: 422 with `"code":"repository-not-allowed"`. (Not 403: the distribution would turn a 403 into the web page.)
 18. **The demo evidence pack shows the log.**
     - Command: `curl -sS "https://$DOMAIN/api/evidence?repo=https%3A%2F%2Fgithub.com%2Fhsiddhu2%2Fsexton-demo&format=json" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.stringify(JSON.parse(s).body.remediation.log)))'`
-    - Pass: `"available":true` and one entry for node-sass with the pull request URL.
+    - Pass: `"available":true` and an entry for node-sass with the pull request URL. The log is append-only and keeps every pull request ever opened, so it may hold more entries. Since 22 Nov 2026 it also holds the uuid bump, `pull/2`.
 19. **No GitHub path, owner, repository or token in the logs.**
     - Command: `aws logs tail "$REMEDIATE_LOGS" --region us-east-1 --since 15m | grep -E 'api.github.com' | head`, then `aws logs tail "$REMEDIATE_LOGS" --region us-east-1 --since 15m | grep -ciE 'sexton-demo|github_pat_|/pull/'`
     - Pass: the api.github.com lines have `"path":""`, and the count is 0.
@@ -246,7 +259,9 @@ DEMO_REPO="https://github.com/hsiddhu2/sexton-demo"
     - Command: `npx tsx "$ROOT/infra/scripts/check-cache-headers.ts" "$DOMAIN"`
     - Pass: exit 0. `/`, `/index.html`, `/demo/scan.json` and `/replay/axios.json` are PASS with `no-cache`, and the hashed script under `/assets/` is PASS with `public, max-age=31536000, immutable`. The `/sexton-cache-check-fallback` and `/assets/sexton-cache-check-missing.js` lines are INFO and do not affect the exit status: record their headers in the deploy report.
 
-The remediate deploy moves the scan function's CloudFront origin from Origin2 to Origin3 (spec remediate, design decision 13). cdk diff shows two Lambda permissions replaced. Run checks 3 and 13 right after the deploy to confirm the scan still answers.
+The new addresses (spec home-page) need their own numbered check at the next change: the home page, `/cemetery`, `/scan`, the two old-address forwards (`/?replay=axios` and `/?repo=...`), the three pictures and the link preview tags. Until then they are checked by hand, as in Deploy 6 in build/reviews/10-infra.md.
+
+Deploy 3 only: the remediate deploy moved the scan function's CloudFront origin from Origin2 to Origin3 (spec remediate, design decision 13). cdk diff showed two Lambda permissions replaced. Checks 3 and 13 ran right after that deploy to confirm the scan still answered.
 
 ## GitHub token rotation
 
@@ -274,7 +289,7 @@ Every synth or deploy below writes to `$WORK`, never into the repository.
 | The first `SextonData-dev` create fails | **Stop for HP.** CloudFormation rolls back, but the retained resources stay behind under their fixed names: `sexton-snapshots-dev` and `sexton/github-token-dev`. Termination protection also blocks deleting the `ROLLBACK_COMPLETE` stack. A second deploy then fails with "already exists". Nobody deletes the table or the secret. HP decides how to clear the stack |
 | A later `SextonData-dev` update fails | CloudFormation rolls back to the previous state. Read the cause with `aws cloudformation describe-stack-events --stack-name SextonData-dev --region us-east-1 --max-items 20`, then stop for HP |
 | A `SextonEdge-dev` deploy fails part way | CloudFormation rolls the stack back by itself. Read the cause with `aws cloudformation describe-stack-events --stack-name SextonEdge-dev --region us-east-1 --max-items 20`. Fix it and run steps 2 and 3 again |
-| A deploy succeeds, but the new code is wrong | Redeploy Edge from the last good commit: `cd "$ROOT" && git switch --detach <last-good-sha> && WORK="$(mktemp -d)" && OUT="$WORK/cdk.out" && npm ci && npm run build -w @sexton/engine && VITE_SEXTON_API=/api npm run build -w @sexton/web && cd infra && npx cdk synth --strict -q -o "$OUT"`. Then run the bundle-load loop from step 2. If every line says ok, run `npx cdk deploy SextonEdge-dev -a "$OUT" --require-approval broadening --parameters SextonEdge-dev:AlarmEmail=<email>`. Data does not change. Afterwards, `git switch spec/infra` to leave the detached HEAD |
+| A deploy succeeds, but the new code is wrong | Redeploy Edge from the last good commit: `cd "$ROOT" && git switch --detach <last-good-sha> && WORK="$(mktemp -d)" && OUT="$WORK/cdk.out" && npm ci && npm run build -w @sexton/engine && VITE_SEXTON_API=/api npm run build -w @sexton/web && cd infra && npx cdk synth --strict -q -o "$OUT"`. Then run the bundle-load loop from step 2. If every line says ok, run `npx cdk deploy SextonEdge-dev -a "$OUT" --require-approval broadening --parameters SextonEdge-dev:AlarmEmail=<email>`. Data does not change. Afterwards, switch back to the branch you started on to leave the detached HEAD |
 | Take the hosted demo down | `cd "$ROOT/infra" && npx cdk destroy SextonEdge-dev -o "$WORK/destroy.out"`. This removes the distribution, the functions, WAF, the schedule and the alarms. The web bucket is retained and private. A later redeploy creates a new bucket, so delete the old one by hand when it is no longer wanted. `SextonData-dev` stays, with termination protection on it and deletion protection plus RETAIN on the snapshots table |
 
 Nobody deletes `sexton-snapshots-dev` or turns off its protection as part of a rollback. Snapshot history cannot be rebuilt. If an item is ever replaced, PITR keeps 35 days to restore from.
@@ -286,6 +301,8 @@ Nobody deletes `sexton-snapshots-dev` or turns off its protection as part of a r
 - Lambda throttling at the reserved concurrency of 10 reaches the viewer as 429 or 502, and the `ScanThrottles` alarm fires.
 
 ## Last dry run
+
+Superseded. Both open preconditions below have been met since deploy 1, 21 Nov 2026. Deploy records are in build/reviews/10-infra.md.
 
 20 Nov 2026, on `spec/infra`:
 - With the web app built by `VITE_SEXTON_API=/api`, `cdk synth --strict` succeeded with no warnings. It gave 4 resources in Data and 37 in Edge.
