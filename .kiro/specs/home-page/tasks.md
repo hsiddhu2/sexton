@@ -83,3 +83,5 @@ Run-time notes:
     - _Requirements: 17.1, 17.2_
   - [x] 7.6 Give "GitHub" the bar's 36 px height, and give both Scan boxes the short hint "owner/name" in the Narrow layout, with unit tests for the hint and Playwright checks that it fits at 360 and 390 px and that every control in the Home page's bar is 36 px high
     - _Requirements: 3.8, 12.8, 12.12_
+  - [x] 7.7 Add the sixth "Built with Kiro" card, "Headless CLI", as the Claim `home.kiro.card.cli` resting on README.md's line about the headless Kiro CLI run, with a unit test for the six cards
+    - _Requirements: 7.1, 7.3, 11.1, 11.2_

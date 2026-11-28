@@ -297,6 +297,10 @@ const DEFS = {
     text: "Sexton inside Kiro, as an MCP server you install from GitHub.",
     readme: ["`powers/sexton` is a Kiro Power.", "the read-only MCP server `packages/mcp`", "Import power from a repository URL"],
   },
+  "home.kiro.card.cli": {
+    text: "The gravedigger agent was also run headless from the Kiro CLI.",
+    readme: ["The gravedigger agent was also run headless from the Kiro CLI"],
+  },
   "home.roadmap.lead": { text: "Releases are sequenced, not promised by date.", readme: ["Releases are sequenced, not promised by date."] },
   "home.roadmap.0.1": {
     text: "npm, seven signals, policy, fix pull requests, evidence pack, cemetery, CLI and GitHub Action",
@@ -320,8 +324,11 @@ const DEFS = {
   },
   "home.footer.owner": {
     text: "Sexton · Harpreet Singh Siddhu · Apache-2.0 · Characters and ghost are original art.",
-    readme: ["Apache-2.0. See LICENSE and NOTICE.", "Characters are original vector art. The ghost is original art."],
-    files: [["NOTICE", "Copyright 2026 Harpreet Singh Siddhu"]],
+    readme: ["Apache-2.0. See LICENSE and NOTICE."],
+    files: [
+      ["NOTICE", "Copyright 2026 Harpreet Singh Siddhu"],
+      ["CREDITS.md", "The characters (the zombie, the skeleton, the hand, the priest), the costumes, the ghost, the church, the tree and the bats are original vector art"],
+    ],
   },
   // The Scan field's first example (1.9), the scanning card (1.14) and a failure card's next step (12.2).
   "example.demo": { text: "pull requests work here", readme: [README_DEMO_ONLY] },

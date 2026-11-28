@@ -61,6 +61,7 @@ const KIRO_CARDS: readonly { readonly title: string; readonly id: ClaimId }[] = 
   { title: L.kiroCards.hooks, id: "home.kiro.card.hooks" },
   { title: L.kiroCards.agents, id: "home.kiro.card.agents" },
   { title: L.kiroCards.power, id: "home.kiro.card.power" },
+  { title: L.kiroCards.cli, id: "home.kiro.card.cli" },
 ];
 
 /** The sections an address can name by its id (2.2). */

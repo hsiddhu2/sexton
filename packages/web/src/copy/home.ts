@@ -36,7 +36,7 @@ export const L = {
   cliStatus: "On main · npm release next",
   kiroEyebrow: "Built with Kiro",
   kiroHeading: "Every feature began as a spec",
-  kiroCards: { specs: "Specs", steering: "Steering", hooks: "Hooks", agents: "Custom agents", power: "A Power" },
+  kiroCards: { specs: "Specs", steering: "Steering", hooks: "Hooks", agents: "Custom agents", power: "A Power", cli: "Headless CLI" },
   videoEyebrow: "See it in three minutes",
   videoHeading: "The demo",
   videoLink: "Watch the demo video",

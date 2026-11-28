@@ -153,6 +153,18 @@ describe("the sections, in the order of requirements 2 to 10 (16.8)", () => {
     );
   });
 
+  it("shows six Built with Kiro cards, the sixth Headless CLI on its README line (7.1, 7.3)", () => {
+    const { view } = mount();
+    expect([...view.container.querySelectorAll(".hp-kiro-card")].map((c) => [c.querySelector("h3")?.textContent, c.querySelector("p")?.textContent])).toEqual([
+      [L.kiroCards.specs, claim("home.kiro.card.specs")],
+      [L.kiroCards.steering, claim("home.kiro.card.steering")],
+      [L.kiroCards.hooks, claim("home.kiro.card.hooks")],
+      [L.kiroCards.agents, claim("home.kiro.card.agents")],
+      [L.kiroCards.power, claim("home.kiro.card.power")],
+      ["Headless CLI", "The gravedigger agent was also run headless from the Kiro CLI."],
+    ]);
+  });
+
   it("labels the five places with their status (6.2)", () => {
     const { view } = mount();
     expect([...view.container.querySelectorAll(".hp-where")].map((c) => [c.querySelector("h3")?.textContent, c.querySelector(".hp-status")?.textContent])).toEqual([

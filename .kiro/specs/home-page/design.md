@@ -82,7 +82,7 @@ function cemeteryPath(view: View): "/cemetery" | "/scan";  // "/scan" for a repo
 - **Attacks**: two `article` cards, axios with `/replay-axios.png` and keyv with `/replay-keyv.png`.
 - **How it works**: an ordered list of four steps, then the five state cards with `border-color` and name colour `var(--state-<name>)`.
 - **Where it runs**: five cards with Status labels. "Live" and "On main" are in the Alive colour and the CLI's label is in the accent colour.
-- **Built with Kiro**: two lines and five cards.
+- **Built with Kiro**: two lines and six cards. The sixth, "Headless CLI", rests on README.md's line about the gravedigger agent's headless Kiro CLI run.
 - **Demo video**: renders only when `DEMO_VIDEO_URL` (home-page/video.ts) is an https URL (8.1 to 8.3).
 - **Roadmap**: an ordered list of four headstones over a dashed line marked `aria-hidden`, with 0.1 lit and labelled "Now".
 - **Open source**, then the **footer** with the owner line and the Track slot's `creditParts`.
@@ -237,7 +237,7 @@ The rendered Home page, with and without an API base and with Recent scans, hold
 
 ### Task 3: the Home page
 
-- **Claims may rest on repository files.** A Claim gains `files: [path, text][]`. The check reads each tracked file it names. The axios and keyv card texts rest on the cemetery-time, cemetery-time-fixes and clean-site specs, the gravedigger line on the remediation-safety spec and the owner line on NOTICE.
+- **Claims may rest on repository files.** A Claim gains `files: [path, text][]`. The check reads each tracked file it names. The axios and keyv card texts rest on the cemetery-time, cemetery-time-fixes and clean-site specs, the gravedigger line on the remediation-safety spec and the footer line on NOTICE and CREDITS.md.
 - **The Haunted card reuses the Claim `state.Haunted`**, since its text is the same and the registry keeps one Claim per text.
 - **The Home page check is strict.** Every sentence must be a Claim sentence or a label of copy/home.ts, with Recent scans rows and the track credit as data. Links outside running text count as blocks of their own.
 - **The video slot renders a link, not an embed**, so the CSP needs no frame-src (8.3).

@@ -106,7 +106,8 @@ Out of scope: any change to the engine, the API or infra. Also out of scope: a s
 
 #### Acceptance Criteria
 
-1. THE section "Built with Kiro" SHALL show the heading "Every feature began as a spec", two lines on specs and on the gravedigger review, and five cards: Specs, Steering, Hooks, Custom agents and A Power.
+1. THE section "Built with Kiro" SHALL show the heading "Every feature began as a spec", two lines on specs and on the gravedigger review, and six cards: Specs, Steering, Hooks, Custom agents, A Power and Headless CLI.
+3. THE "Headless CLI" card SHALL say only that the gravedigger agent was also run headless from the Kiro CLI, as the Claim `home.kiro.card.cli`, resting on README.md's line about that run.
 2. EVERY sentence of the section SHALL rest on README.md or a spec in .kiro/specs (requirement 11).
 
 ### Requirement 8: The demo video
@@ -137,7 +138,7 @@ Out of scope: any change to the engine, the API or infra. Also out of scope: a s
 #### Acceptance Criteria
 
 1. EVERY sentence the Home page shows SHALL be a Claim of the Claim registry or a listed label (a heading, a link or button text, an eyebrow, a Status label, a Roadmap label or a date line).
-2. EVERY Claim SHALL rest on texts found as written in README.md, or in a named tracked repository file (a spec under .kiro/specs, a steering file or NOTICE), or both.
+2. EVERY Claim SHALL rest on texts found as written in README.md, or in a named tracked repository file (a spec under .kiro/specs, a steering file, NOTICE or CREDITS.md), or both.
 3. A test SHALL render the Home page and fail on any sentence that is neither a Claim sentence nor a listed label, and on any Claim whose resting text is not found.
 
 ### Requirement 12: The wordmark and the Scan boxes
