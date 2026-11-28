@@ -23,6 +23,7 @@ const ALLOWED: Readonly<Record<string, string>> = {
   "packages/web/e2e/remediate.spec.ts": "web e2e reads its own demo scan, created by pretest:e2e",
   "infra/test/nag.test.ts": "skips cdk.out while it walks infra/",
   "packages/mcp/test/stdio.test.ts": "mcp runs its own dist/bin.js, which its pretest builds (tsc -b)",
+  "packages/cli/test/ports.test.ts": "makes build, dist and coverage folders in its own temporary directory (spec remediation-remove-scope)",
 };
 
 const ROOTS = [

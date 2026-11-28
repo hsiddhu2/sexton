@@ -41,7 +41,7 @@ export function capList<T>(list: readonly T[], cap: number): Capped<T> {
   return { items: list.slice(0, cap), truncated: list.length > cap };
 }
 
-/** A tracker the bounded copy sets when it drops anything. */
+/** A flag the bounded copy sets when it drops anything. */
 export interface Cut {
   truncated: boolean;
 }

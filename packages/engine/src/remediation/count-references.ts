@@ -17,6 +17,18 @@ function baseName(path: string): string {
   return path.slice(path.lastIndexOf("/") + 1);
 }
 
+/** Ignored directories that can hold project source. A counted file under one is not read, so the listing is incomplete. */
+export const UNREAD_SOURCE_DIRECTORIES: readonly string[] = ["build", "dist", "coverage"];
+/**
+ * True for a listed file that isCountedPath drops only because it is under build, dist or coverage: no node_modules or .git
+ * segment, a counted extension and a counted base name. Spec remediation-remove-scope, bugfix 2.4.
+ */
+export function isUnreadSourcePath(path: string): boolean {
+  const segments = path.split("/");
+  if (!segments.slice(0, -1).some((s) => UNREAD_SOURCE_DIRECTORIES.includes(s))) return false;
+  if (segments.some((s) => s === "node_modules" || s === ".git") || NEVER_COUNTED.includes(baseName(path))) return false;
+  return COUNTED_EXTENSIONS.some((ext) => path.endsWith(ext));
+}
 /** True for a path whose file Sexton reads when counting references. */
 export function isCountedPath(path: string): boolean {
   if (hasIgnoredSegment(path) || NEVER_COUNTED.includes(baseName(path))) return false;

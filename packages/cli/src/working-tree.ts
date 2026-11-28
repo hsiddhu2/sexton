@@ -4,14 +4,15 @@
 
 import { lstat, readdir, realpath } from "node:fs/promises";
 import { join, sep } from "node:path";
-import { IGNORED_DIRECTORIES, MAX_FILE_BYTES } from "@sexton/engine";
+import { IGNORED_DIRECTORIES, MAX_FILE_BYTES, UNREAD_SOURCE_DIRECTORIES } from "@sexton/engine";
 import type { GitPort, TreeCounts, TreeSource } from "./deps.js";
 import { nodeFilePort } from "./file-port.js";
 
 export const MAX_RAW_ENTRIES = 20000;
 
-async function walk(root: string): Promise<{ paths: string[]; capped: boolean }> {
+async function walk(root: string): Promise<{ paths: string[]; capped: boolean; unread: number }> {
   const paths: string[] = [];
+  let unread = 0;
   const pending: string[] = [""];
   while (pending.length > 0) {
     const dir = pending.shift() as string;
@@ -21,19 +22,21 @@ async function walk(root: string): Promise<{ paths: string[]; capped: boolean }>
       const rel = dir === "" ? entry.name : `${dir}/${entry.name}`;
       if (entry.isDirectory()) {
         if (!IGNORED_DIRECTORIES.includes(entry.name)) pending.push(rel);
+        else if (UNREAD_SOURCE_DIRECTORIES.includes(entry.name)) unread += 1;
       } else if (entry.isFile()) {
-        if (paths.length >= MAX_RAW_ENTRIES) return { paths, capped: true };
+        if (paths.length >= MAX_RAW_ENTRIES) return { paths, capped: true, unread };
         paths.push(rel);
       }
     }
   }
-  return { paths, capped: false };
+  return { paths, capped: false, unread };
 }
 
 export function createWorkingTreeSource(root: string, git: GitPort): TreeSource {
   let performed = false;
   let rawCapped = false;
   let skipped = 0;
+  let unread = 0;
   let listed = new Set<string>();
   let realRoot: string | null = null;
 
@@ -47,6 +50,7 @@ export function createWorkingTreeSource(root: string, git: GitPort): TreeSource 
           const walked = await walk(realRoot);
           raw = walked.paths;
           rawCapped = walked.capped;
+          unread = walked.unread;
         } else {
           rawCapped = fromGit.length > MAX_RAW_ENTRIES;
           raw = fromGit.slice(0, MAX_RAW_ENTRIES);
@@ -91,7 +95,7 @@ export function createWorkingTreeSource(root: string, git: GitPort): TreeSource 
       }
     },
     counts(): TreeCounts {
-      return { performed, rawCapped, skipped };
+      return { performed, rawCapped, skipped, unread };
     },
   };
 }

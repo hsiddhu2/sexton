@@ -31,6 +31,8 @@ export interface TreeCounts {
   readonly performed: boolean;
   readonly rawCapped: boolean;
   readonly skipped: number;
+  /** Walked build, dist or coverage folders that were not read. Spec remediation-remove-scope, bugfix 2.5. */
+  readonly unread: number;
 }
 
 export interface TreeSource extends FileSource {

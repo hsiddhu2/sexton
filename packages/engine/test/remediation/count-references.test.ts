@@ -2,7 +2,7 @@
 
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { countReferences, isCountedPath } from "../../src/remediation/count-references.js";
+import { countReferences, isCountedPath, isUnreadSourcePath, UNREAD_SOURCE_DIRECTORIES } from "../../src/remediation/count-references.js";
 
 const arbName = fc.oneof(
   fc.stringMatching(/^[a-z][a-z0-9]{0,8}$/),
@@ -83,5 +83,34 @@ describe("countReferences examples", () => {
     expect(isCountedPath("src/a.svelte")).toBe(true);
     expect(isCountedPath("src/a.md")).toBe(false);
     expect(isCountedPath("tsconfig.json")).toBe(true);
+  });
+});
+
+// Spec remediation-remove-scope, bugfix 2.4, Property 3.
+describe("isUnreadSourcePath", () => {
+  it("marks counted files under build, dist or coverage, and nothing else", () => {
+    expect(UNREAD_SOURCE_DIRECTORIES).toEqual(["build", "dist", "coverage"]);
+    expect(isUnreadSourcePath("build/webpack.config.js")).toBe(true);
+    expect(isUnreadSourcePath("packages/a/dist/index.mjs")).toBe(true);
+    expect(isUnreadSourcePath("coverage/lcov.json")).toBe(true);
+    expect(isUnreadSourcePath("build/notes.md")).toBe(false);
+    expect(isUnreadSourcePath("build/package.json")).toBe(false);
+    expect(isUnreadSourcePath("node_modules/x/build/a.js")).toBe(false);
+    expect(isUnreadSourcePath(".git/build/a.js")).toBe(false);
+    expect(isUnreadSourcePath("src/build.js")).toBe(false);
+    expect(isUnreadSourcePath("src/a.js")).toBe(false);
+  });
+  it("Property 3: is the gap of isCountedPath left by build, dist and coverage", () => {
+    const segment = fc.constantFrom("src", "lib", "build", "dist", "coverage", "node_modules", ".git", "a");
+    const file = fc.constantFrom("a.js", "b.ts", "c.md", "package.json", "d.css", "e.yml", "README");
+    fc.assert(
+      fc.property(fc.array(segment, { maxLength: 4 }), file, (dirs, name) => {
+        const path = [...dirs, name].join("/");
+        const stripped = [...dirs.filter((d) => !UNREAD_SOURCE_DIRECTORIES.includes(d)), name].join("/");
+        const expected = !isCountedPath(path) && dirs.some((d) => UNREAD_SOURCE_DIRECTORIES.includes(d)) && isCountedPath(stripped);
+        expect(isUnreadSourcePath(path)).toBe(expected);
+      }),
+      { numRuns: 100 },
+    );
   });
 });

@@ -307,7 +307,7 @@ export { fetchPolicyText, MAX_POLICY_BYTES, POLICY_FILE, policyUrl } from "./cli
 export type { PolicyText } from "./clients/github-policy.js";
 export { neutralise } from "./remediation/escape-field.js";
 export { cleanLine } from "./remediation/clean-line.js";
-export { countReferences, isCountedPath, COUNTED_EXTENSIONS } from "./remediation/count-references.js";
+export { countReferences, isUnreadSourcePath, UNREAD_SOURCE_DIRECTORIES, isCountedPath, COUNTED_EXTENSIONS } from "./remediation/count-references.js";
 export type { CapLimits } from "./remediation/capped-source.js";
 export { REMOVE_CHECK_LINE } from "./remediation/pr-body.js";
 
@@ -330,6 +330,6 @@ export { GithubFileSource, githubFileUrl, READ_BUDGET_MS } from "./clients/githu
 export type { GithubFileSourceOptions, GithubSourceCounts } from "./clients/github-file-source.js";
 
 // Spec remediate: structured package.json edits for the Executor.
-export { applyPackageJsonEdits, detectIndent, DEPENDENCY_SECTIONS } from "./remediation/apply-edits.js";
+export { applyPackageJsonEdits, detectIndent, DEPENDENCY_SECTIONS, REMOVE_SECTIONS } from "./remediation/apply-edits.js";
 export type { ApplyFailure, ApplyResult } from "./remediation/apply-edits.js";
 export { compareTriage, triageOrder } from "./triage.js";

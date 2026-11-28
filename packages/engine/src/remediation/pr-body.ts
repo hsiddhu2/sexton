@@ -23,7 +23,7 @@ export const POSSESSED_WARNING =
   "> **Warning:** this package is Possessed. Check the maintainer, provenance, install-script, new dependency or publisher change before you merge.";
 export const MAJOR_UPGRADE_LINE = "Major upgrade: the chosen version is outside the declared range.";
 export const RANGE_STYLE_LINE = "Range style preserved.";
-export const REMOVE_SCOPE_LINE = "The edit removes it from every dependency section of package.json that lists it.";
+export const REMOVE_SCOPE_LINE = "The edit removes it from dependencies and devDependencies in package.json.";
 /** Spec cli-and-action, Requirement 2.7: what the import count cannot see. */
 export const REMOVE_CHECK_LINE =
   "No reference to this package was found in the files read. A package loaded by name at run time is not detected. Check before merging.";
