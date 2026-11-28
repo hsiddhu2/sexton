@@ -33,7 +33,7 @@ export const L = {
   where: { cemetery: "The cemetery", cli: "The CLI", action: "GitHub Action", power: "Kiro Power", evidence: "Evidence pack" },
   live: "Live",
   onMain: "On main",
-  cliStatus: "On main · npm release next",
+  cliStatus: "On npm",
   kiroEyebrow: "Built with Kiro",
   kiroHeading: "Every feature began as a spec",
   kiroCards: { specs: "Specs", steering: "Steering", hooks: "Hooks", agents: "Custom agents", power: "A Power", cli: "Headless CLI" },

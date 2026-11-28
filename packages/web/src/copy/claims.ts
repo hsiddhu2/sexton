@@ -77,11 +77,12 @@ const DEFS = {
     readme: [README_DEMO_ONLY],
   },
   "guide.answer.automatic": {
-    text: "Yes. Add the Sexton GitHub Action to your repo. It runs in your own GitHub workflow, checks every pull request against your rules, and leaves one summary comment. You can also run sexton check on your own computer, from a clone of Sexton.",
+    text: "Yes. Add the Sexton GitHub Action to your repo. It runs in your own GitHub workflow, checks every pull request against your rules, and leaves one summary comment. You can also run sexton check on your own computer, with the sexton package from npm.",
     readme: [
       "runs `sexton check` on your checkout, writes the job summary and posts one summary comment on the pull request.",
       "Sexton evaluates it and fails CI when a rule breaks.",
-      "Not published to npm yet, run it from a clone with Node.js 22:",
+      "the command line, with the `sexton` command.",
+      "Release 0.1.0 put two packages on npm:",
     ],
   },
   "guide.answer.proof": {

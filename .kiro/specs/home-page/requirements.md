@@ -30,7 +30,7 @@ Out of scope: any change to the engine, the API or infra. Also out of scope: a s
 - **Fresh**: an Entry with a response saved less than 15 minutes ago and not in the future.
 - **Recent scans**: the Entries of the Scan cache, newest first, at most 10.
 - **Claim registry**: web/src/copy/claims.ts, the one source of every sentence the Site shows that says what Sexton does or can do.
-- **Status label**: the pill on a "Where it runs" card that says how far that part is: "Live", "On main", or "On main · npm release next".
+- **Status label**: the pill on a "Where it runs" card that says how far that part is: "Live", "On main", or "On npm".
 - **Off-site link**: a link whose address is on another site, an absolute URL with a scheme.
 - **Top bar**: the sticky header of every page, the Home page's and the Cemetery view's, built from the same parts (requirement 12).
 - **Tabs**: the two links "Overview" and "Cemetery" right after the wordmark in the Top bar (12.5). "Overview" names the Home page. "Cemetery" names the Cemetery view, not spec clean-site's **Home**, the cemetery's own view of a loaded scan.
@@ -100,7 +100,7 @@ Out of scope: any change to the engine, the API or infra. Also out of scope: a s
 #### Acceptance Criteria
 
 1. THE section "Where it runs" SHALL show five cards in order: the cemetery, the CLI, the GitHub Action, the Kiro Power and the evidence pack, each with its Claim text and a Status label.
-2. THE Status labels SHALL be "Live" for the cemetery, "On main · npm release next" for the CLI and "On main" for the GitHub Action, the Kiro Power and the evidence pack, each resting on README.md.
+2. THE Status labels SHALL be "Live" for the cemetery, "On npm" for the CLI, since release 0.1.0 put it on npm on 28 November 2026, and "On main" for the GitHub Action, the Kiro Power and the evidence pack, each resting on README.md.
 
 ### Requirement 7: Built with Kiro
 

@@ -109,7 +109,7 @@ The server takes no argument and no environment variable (each tool call names i
 
 ### README and steering
 
-README: a section "Install (coming with release 0.1)" after "Quick start", naming `sexton` and `sexton-mcp`, with no command. Steering `tech.md`: the workspace builds on Node 22. The Published packages need Node 20.19.0 or later. It also names `scripts/build-release.mjs` and the private Workspace packages.
+README: a section "Install" after "Quick start", naming `sexton` and `sexton-mcp`. Until 0.1.0 was published it was "Install (coming with release 0.1)", with no command. Since 28 November 2026 it links both npm pages, states their provenance and gives `npx sexton --help`, `npm install --global sexton sexton-mcp`, `sexton --version`, the `npm audit signatures` check and the stdio configuration for `sexton-mcp`, each run from a folder outside the repository first. Steering `tech.md`: the workspace builds on Node 22. The Published packages need Node 20.19.0 or later. It also names `scripts/build-release.mjs` and the private Workspace packages.
 
 ## Data Models
 
@@ -158,7 +158,7 @@ Checked by hand on 27 Nov 2026 and recorded under "Results": `npm pack --dry-run
 8. **Publish job on Node 24. Gates on Node 22.** Trusted publishing needs npm 11.5.1 or later and Node 22.14.0 or later. Node 22.23.5 ships npm 10.9.9. Node 24.22.3 ships npm 11.19.1. The publish job's output does not depend on the Node version: `tsc` and esbuild with a fixed target.
 9. **No npm token.** Every CI publish uses OIDC. The one step OIDC cannot do: a trusted publisher can be set only on a package that already exists on npm (`npm trust`: "Package must exist"). So the first publish of each name is the owner's, by hand, with 2FA and no token (Owner steps, npm step 2).
 10. **`npm publish`, not `npm stage publish`.** A trusted publisher created after 3 Sep 2026 allows `npm stage publish` by default, and direct `npm publish` only when the owner ticks it. The workflow uses `npm publish`. For maximum security npm suggests stage-only, where each CI publish waits for a maintainer's 2FA approval. Switching is one word in the workflow and one setting.
-11. **Deliberate test change.** `packages/web/test/readme.test.ts` pins the README's section headings. Its list gains `## Install (coming with release 0.1)` after `## Quick start`.
+11. **Deliberate test change.** `packages/web/test/readme.test.ts` pins the README's section headings. Its list gains `## Install (coming with release 0.1)` after `## Quick start`. Once 0.1.0 was on npm the heading became `## Install`, and the list follows it.
 
 ## Name check (27 Nov 2026, read-only)
 

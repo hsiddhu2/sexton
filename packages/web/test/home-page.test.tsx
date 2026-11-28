@@ -169,7 +169,7 @@ describe("the sections, in the order of requirements 2 to 10 (16.8)", () => {
     const { view } = mount();
     expect([...view.container.querySelectorAll(".hp-where")].map((c) => [c.querySelector("h3")?.textContent, c.querySelector(".hp-status")?.textContent])).toEqual([
       ["The cemetery", "Live"],
-      ["The CLI", "On main · npm release next"],
+      ["The CLI", "On npm"],
       ["GitHub Action", "On main"],
       ["Kiro Power", "On main"],
       ["Evidence pack", "On main"],

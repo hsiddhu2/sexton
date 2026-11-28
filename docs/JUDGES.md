@@ -1,10 +1,11 @@
 # Sexton: a guide for judges
 
-One page. Everything named here is on `main`. The hosted site is deployed by hand, so it can lag `main`. It was last deployed on 26 November 2026.
+One page. Everything named here is on `main`. The hosted site is deployed by hand, so it can lag `main`. It was last deployed on 28 November 2026. Release 0.1.0 of the CLI and the MCP server is on npm.
 
 ## Open
 
-- The cemetery: https://de1giv8lj8sfh.cloudfront.net
+- The home page: https://de1giv8lj8sfh.cloudfront.net. It says what Sexton is and links to the rest. The tabs "Overview" and "Cemetery" at the top of every page switch between the two.
+- The cemetery: https://de1giv8lj8sfh.cloudfront.net/cemetery
 - The two replays: https://de1giv8lj8sfh.cloudfront.net/cemetery?replay=axios and https://de1giv8lj8sfh.cloudfront.net/cemetery?replay=keyv
 
 ## Click
@@ -15,7 +16,7 @@ One page. Everything named here is on `main`. The hosted site is deployed by han
 4. "What is Sexton?" opens a two-minute guide. Legend explains each grave. Tour points out the three main parts of the page. Music is off until you press it; then a recorded track plays and the characters dance to its beat.
 5. The links in the site footer download the evidence pack as JSON and as Markdown.
 
-Type a public GitHub repository, as owner/name or a github.com link, in the header field and press Scan for a live scan. The "Open pull request" button on the drawer's fix tab appears only on a live scan of the demo repository `https://github.com/hsiddhu2/sexton-demo`, and it opens a real pull request there.
+Type a public GitHub repository, as owner/name or a github.com link, in the Scan box on the home page or the Scan field in the cemetery header, and press Scan for a live scan. The "Open pull request" button on the drawer's fix tab appears only on a live scan of the demo repository `https://github.com/hsiddhu2/sexton-demo`, and it opens a real pull request there.
 
 ## The five states
 
@@ -30,6 +31,16 @@ The rules run in this order, and the first match wins.
 | Alive | None of the above |
 
 ## Run it locally
+
+From npm, with Node.js 20.19 or later:
+
+```sh
+npx sexton --help                        # the commands and the exit codes
+```
+
+Then run the `scan`, `check` and `evidence` commands below with `npx sexton` in place of `node packages/cli/dist/bin.js`.
+
+The packages are [`sexton`](https://www.npmjs.com/package/sexton) and [`sexton-mcp`](https://www.npmjs.com/package/sexton-mcp). Both carry npm provenance from the release workflow.
 
 With Node.js 22, from a clone:
 

@@ -55,6 +55,9 @@ Prepares release 0.1: two npm packages, `sexton` and `sexton-mcp`, each one bund
     - _Requirements: 5.4_
   - [x] 7.3 Sources in design.md
     - _Requirements: 5.3_
+  - [x] 7.4 README "Install" after 0.1.0 is on npm
+    - Links both npm pages, states their provenance, gives the install commands, each run from a folder outside the repository. The heading list in `readme.test.ts` follows.
+    - _Requirements: 5.1, 5.2_
 - [x] 8. Gates and commit
   - [x] 8.1 Typecheck, lint with `--max-warnings=0`, every package's tests. Search the changed files for private terms and machine paths
     - _Requirements: 2.2_
