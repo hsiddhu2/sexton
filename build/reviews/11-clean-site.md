@@ -283,7 +283,7 @@ Gates: typecheck, lint (zero warnings) and test pass, 2386 tests across 6 worksp
 
 ## Naming the site's look
 
-The spec, the steering and the web package now name the site's look in plain words everywhere, and the review steps say that their results go in design.md. Only words changed: comments, prose, one describe title in `test/home.test.tsx` and one test title in `e2e/clean.spec.ts`, with the same assertions. The JavaScript uses such as `Object.prototype` and `HTMLElement.prototype` and the lint ignore entry for the private folder stay.
+The spec, the steering and the web package now name the site's look in plain words everywhere, and the review steps say that their results go in design.md. Only words changed: comments, prose, one describe title in `test/home.test.tsx` and one test title in `e2e/clean.spec.ts`, with the same assertions. The JavaScript uses such as `Object.prototype` and `HTMLElement.prototype` and the lint ignore entry for a local folder that git ignores stay.
 
 Independent review before the commit. Verdict: ready. No defect found: no code or assertion changed, no doubled phrase, and no added line names a private path or document.
 
