@@ -354,7 +354,7 @@ export function App({ fetchFn, apiBase, initialSearch, pageOrigin, onNavigate, s
   const source = screen.view.source;
   const scanning = state.status === "loading" && state.source === "hosted" && source.kind === "repo" ? scanTag(source) : null;
   const guide = screen.owner === "guide";
-  // What the page showed last (review against the approved design): the tag and the Home scan of the last load that
+  // What the page showed last (review against spec clean-site): the tag and the Home scan of the last load that
   // finished for the Source on screen. While a load runs or after it fails, the tag keeps the old text (a Live scan's
   // name shows only once its scan is in) and Home keeps the old page under the card.
   const tagNow = scanTag(prompt === null ? source : { kind: "demo" });

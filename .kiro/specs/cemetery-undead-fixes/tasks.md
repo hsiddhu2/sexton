@@ -69,7 +69,7 @@ Run-time notes:
     - _Requirements: 2.2, 2.5, 3.7_
   - [x] 7.2 Root typecheck, lint with zero warnings, `npm test`, `npm run test:e2e -w @sexton/web`; record counts, the four speed medians and the Halo layer repaint median
     - _Requirements: 2.9, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
-  - [x] 7.3 Visual critic against the approved design pictures at 1440 by 900 and 390 by 844, with a frame 600 ms into the Burst, until READY at both sizes; record each round
+  - [x] 7.3 Visual critic against its checklist at 1440 by 900 and 390 by 844, with a frame 600 ms into the Burst, until READY at both sizes. Record each round
     - _Requirements: 2.2_
   - [x] 7.4 Independent review of the branch; fix every defect; record the notes
     - _Requirements: 2.1 to 2.8, 3.1 to 3.10_

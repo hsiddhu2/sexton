@@ -107,7 +107,7 @@ Notes:
 4. A loaded file of the Replay with no story would have shown the waiting card for ever. Fixed before the commit: it shows an alert; a test renders the view with such a response, and another checks that the validator refuses it first.
 5. Over-cap Step and why texts are reported as WRONG_TYPE, as the other capped strings are.
 6. The source-comment test finds each sentence on one line of the facts file; a sentence wrapped over two lines would fail the test rather than pass.
-7. design.md speaks of the approved design in words only, as the spec does throughout; no path or private document is named.
+7. design.md names no outside path or document.
 
 Gates after the fixes: typecheck, lint (zero warnings) and test pass; 2268 tests across 6 workspaces. The changed e2e specs pass locally but for five cases in `time.spec.ts` and two in `smoke.spec.ts` that fail the same way before this task and wait for task 12.
 
@@ -197,7 +197,7 @@ Notes:
 
 1. `fitScale` called directly with a NaN width returned NaN (`planScene` clamps the width first, so the page never did). Fixed before the commit: a width that is not finite gives 1, with a test.
 2. A test title claimed "the largest scale that fits" while checking only a scale under 1 that fits. Fixed before the commit: the title and comment now say what is checked.
-3. In the Narrow layout the fit height is not used; the phone scrolls, as in the approved design, and the scale comes from two front graves to a row.
+3. In the Narrow layout the fit height is not used. The phone scrolls, and the scale comes from two front graves to a row.
 4. The scale follows the count of graves per Tier, so a package changing Tier could resize every grave between frames. Tiers follow the scan-date State, which a burial does not change; a new scan re-plans anyway.
 5. The replaced e2e cases keep their intent or follow the steering change from full-bleed to a card; none asserts the opposite of a requirement. The 390 by 844 case leaves the order of the middle and back Tiers to the unit test.
 6. The no-overlap loop of `fit-layout.test.ts` compares the first 61 graves with all others, as the older Tier property does; the pitch argument covers the rest.
@@ -207,7 +207,7 @@ Gates after the fixes: typecheck, lint (zero warnings) and test pass; 2362 tests
 
 ## Task 12
 
-Checks, pictures and documents (12.1 and 12.2): `e2e/clean.spec.ts` runs every flow of the approved design at 1440 by 900 and 390 by 844, each case in a fresh browser context with the API answered in the page, and samples one View owner and one Pop-over at most, nothing over a grave's Art box but the allowed elements, no request off the page origin and the API base, and no AudioContext or audio element; axe runs on every view; 300 graves repaint inside the budget. The two README pictures are retaken; README.md, CREDITS.md, docs/JUDGES.md, docs/requirements.md (version 1.1) and the steering files describe the site as built. The check found one defect in the site, fixed: at 390 px the Legend ran 32 px past the left edge of the viewport.
+Checks, pictures and documents (12.1 and 12.2): `e2e/clean.spec.ts` runs every flow of spec clean-site at 1440 by 900 and 390 by 844, each case in a fresh browser context with the API answered in the page, and samples one View owner and one Pop-over at most, nothing over a grave's Art box but the allowed elements, no request off the page origin and the API base, and no AudioContext or audio element. Axe runs on every view. 300 graves repaint inside the budget. The two README pictures are retaken. README.md, CREDITS.md, docs/JUDGES.md, docs/requirements.md (version 1.1) and the steering files describe the site as built. The check found one defect in the site, fixed: at 390 px the Legend ran 32 px past the left edge of the viewport.
 
 Independent review before the commit. Verdict: not ready, for one defect, fixed before the commit:
 
@@ -244,9 +244,9 @@ Notes:
 
 Gates: typecheck, lint (zero warnings) and test pass; 2372 tests across 6 workspaces. Playwright, from packages/web on its own port: 66 passed. Repaint medians at 300 graves at 1440 by 900: 1.30 ms at rest, 1.00 ms with a filter, 0.90 ms with the hover ring.
 
-## Review against the approved design
+## Review against the spec
 
-The built site was walked against the design the owner approved at 1440 by 900 and 390 by 844, in a fresh profile. These were fixed: an earlier date made the Scene full size and pushed the Footer bar below the fold; the Drawer showed raw engine values; Evidence labels and List badges broke inside words; a fast move from a grave to a Term opened the old package's Term; the scan tag named a repository before its scan was in, and kept it after a failure; the page emptied while a scan loaded or failed; "Scanning is off in this build." covered the Welcome bar and the disabled Scan button looked pressable; the History dots were one grey. Four differences are kept, each with its reason, in design.md ("Review against the approved design").
+The built site was walked against spec clean-site at 1440 by 900 and 390 by 844, in a fresh profile. These were fixed: an earlier date made the Scene full size and pushed the Footer bar below the fold. The Drawer showed raw engine values. Evidence labels and List badges broke inside words. A fast move from a grave to a Term opened the old package's Term. The scan tag named a repository before its scan was in, and kept it after a failure. The page emptied while a scan loaded or failed. "Scanning is off in this build." covered the Welcome bar and the disabled Scan button looked pressable. The History dots were one grey. Four differences are kept, each with its reason, in design.md ("Review against this spec").
 
 Independent review before the commit. First verdict: not ready, one defect. The tag shown during a load or a failure came from the last finished load of any kind, so after a Replay, a failed Live scan showed "Replay" over the Sample scan's page. Fixed: the tag is kept with the Home scan it belongs to, and a Replay always reads "Replay". A new unit test covers Replay, then a failed scan, and fails on the first version.
 
@@ -281,9 +281,9 @@ Notes:
 
 Gates: typecheck, lint (zero warnings) and test pass, 2386 tests across 6 workspaces. Playwright, from packages/web on its own port: 72 passed, the four new cases among them, each failing on the build before the change. Repaint medians at 300 graves at 1440 by 900: 2.55 ms at rest, 1.60 ms with the Dead filter, 1.60 ms with the hover ring.
 
-## Saying "the approved design"
+## Naming the site's look
 
-The spec, the steering and the web package now call the design the owner approved "the approved design" or "the design" everywhere, and the review steps say that their results go in design.md. Only words changed: comments, prose, one describe title in `test/home.test.tsx` and one test title in `e2e/clean.spec.ts`, with the same assertions. The JavaScript uses such as `Object.prototype` and `HTMLElement.prototype` and the lint ignore entry for the private folder stay.
+The spec, the steering and the web package now name the site's look in plain words everywhere, and the review steps say that their results go in design.md. Only words changed: comments, prose, one describe title in `test/home.test.tsx` and one test title in `e2e/clean.spec.ts`, with the same assertions. The JavaScript uses such as `Object.prototype` and `HTMLElement.prototype` and the lint ignore entry for the private folder stay.
 
 Independent review before the commit. Verdict: ready. No defect found: no code or assertion changed, no doubled phrase, and no added line names a private path or document.
 

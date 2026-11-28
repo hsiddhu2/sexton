@@ -1,5 +1,5 @@
 // The Glossary (spec clean-site, design C9, requirement 11): one plain meaning per Term, the plural forms, and the
-// marking of Terms in running text. The meanings are the approved design's. Pure.
+// marking of Terms in running text. The meanings are the spec's. Pure.
 
 export const TERMS = [
   "provenance",

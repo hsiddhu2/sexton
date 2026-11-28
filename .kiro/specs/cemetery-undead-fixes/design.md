@@ -8,7 +8,7 @@ Five defects found by the owner after cemetery-undead-2 merged (main 86bc37d, 25
 2. **Flaky check.** The sprite comparison's two paints are some milliseconds apart on a running clock, so a Character Pose can change between them. The fix paints both at one fixed instant with the page clock paused, waits for the fonts as a second guard, and keeps the limit.
 3. **Tooltip over a neighbour's name.** Placement checks only the Scene's edges. The fix tries right, left, above and over the cell, and takes the first place that covers no other grave's name.
 4. **Bubble over a neighbour.** When no place is clear of other graves' art, the Bubble still shows. The fix shows no Bubble then.
-5. **CI region.** The infra job takes its region from the runner. The fix sets us-east-1 on that job (approved by the owner on 25 Nov 2026).
+5. **CI region.** The infra job takes its region from the runner. The fix sets us-east-1 on that job (decided on 25 Nov 2026).
 
 ## Glossary
 
@@ -157,7 +157,7 @@ If the build finds another test that pins a value this fix changes on purpose, i
 
 ### Validation Approach
 
-Exploration first: each bug gets a test that fails on the unfixed code, run before the fix and recorded. Then preservation tests on the unfixed code, which must pass before and after. Then the fix, the same tests passing, every gate, the visual critic against the approved design pictures, and an independent review.
+Exploration first: each bug gets a test that fails on the unfixed code, run before the fix and recorded. Then preservation tests on the unfixed code, which must pass before and after. Then the fix, the same tests passing, every gate, the visual critic against its checklist, and an independent review.
 
 ### Exploratory Bug Condition Checking
 

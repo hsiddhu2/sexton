@@ -122,7 +122,7 @@ describe("styles.css static checks", () => {
     for (const r of rulesFor(".visually-hidden")) expect(r.body).not.toMatch(/color|background|#[0-9a-fA-F]{3,8}\b|rgba?\(/);
   });
 
-  // Review against the approved design (D3, D4, D7 and the History dots).
+  // Review against spec clean-site (D3, D4, D7 and the History dots).
   it("keeps whole words in the Evidence labels and the List, and lets the List scroll sideways inside its own box", () => {
     const has = (selector: string, pattern: RegExp): boolean => rulesFor(selector).some((r) => pattern.test(r.body));
     expect(has(".drawer-signal-label", /white-space:\s*nowrap/)).toBe(true);

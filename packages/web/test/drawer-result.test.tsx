@@ -23,7 +23,7 @@ if (PKG === undefined) throw new Error("demo package missing");
 
 const never = (): Promise<never> => new Promise(() => undefined);
 
-// Review against the approved design (D2): the Evidence values in the Inspector's plain words, with each source and fetch time.
+// Review against spec clean-site (D2): the Evidence values in the Inspector's plain words, with each source and fetch time.
 describe("the Evidence values in plain words", () => {
   it("writes dates as a day, yes and no with a capital, advisories as a count with the worst severity and lists as names", () => {
     expect(evidenceWords("lastPublish", "2018-09-29T06:55:49.107Z")).toBe("29 Sep 2018");

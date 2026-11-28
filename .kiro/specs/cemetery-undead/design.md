@@ -2,12 +2,12 @@
 
 ## Overview
 
-cemetery-undead is Phase 1 of the art pass "Night of the Living Deps". The owner approved art direction C on 24 Nov 2026 at 03:41 from two approved designs:
+cemetery-undead is Phase 1 of the art pass "Night of the Living Deps". Art direction C was chosen on 24 Nov 2026 at 03:41. It covers two views:
 
-- the approved cemetery design;
-- the approved replay design, the axios replay moment.
+- the cemetery
+- the axios replay moment.
 
-Their pictures at 1440 by 900 are the visual target. The approved designs are fixed-width: at 390 px they render at 1440 and scroll, so the 390 by 844 target is the same art reflowed by the rules of "Layout at 390 px".
+Both at 1440 by 900, as this spec sets them, are the visual target. The 390 by 844 target is the same art reflowed by the rules of "Layout at 390 px".
 
 The spec changes how the cemetery looks and leaves what a grave means alone. A grave's State still comes from the Engine. Its Form, Character and Costume depend only on that State. A Ghost still means one or more advisories. Triage order still sets the keyboard order. Implements requirements 1 to 15.
 
@@ -16,11 +16,11 @@ The spec changes how the cemetery looks and leaves what a grave means alone. A g
 1. **Paths.** packages/web, plus the README line, CREDITS.md, the two screenshots, web.md and this folder. Dev-only additions to `@sexton/web` devDependencies are allowed for the Bake, so the root `package-lock.json` changes. No runtime dependency is added.
 2. **State colours.** Alive #8fe3d0, Restless #e69f00, Haunted #56b4e9, Dead #bfb8ad, Possessed #cc79a7, each adjusted within its hue family only if a check fails. None fails with this palette (see "Palette").
 3. **Fonts.** Pirata One, IM Fell English SC, IM Fell English italic and Instrument Sans, self-hosted with their OFL files.
-4. **Characters.** CC0 models by Quaternius, baked into sprite Atlases by a dev-only script. The bake has one day. If it fails, the fallback is vector characters in the approved design's blocky style.
+4. **Characters.** CC0 models by Quaternius, baked into sprite Atlases by a dev-only script. The bake has one day. If it fails, the fallback is vector characters in a blocky style.
 5. **Ghost.** Original art. Never the Kiro logo.
 6. **Depth.** Three Tiers by urgency. Triage order holds within a Tier and in the keyboard order.
 7. **Frame rate.** 12 a second. One still Pose under Reduced motion. The 300-grave repaint stays inside 16 ms.
-8. **Epitaphs.** A fixed table keyed by State and reason, approved by the owner on 24 Nov 2026 with one change: the install-script line is the owner's wording (section "Epitaph table").
+8. **Epitaphs.** A fixed table keyed by State and reason, set on 24 Nov 2026 (section "Epitaph table"). The install-script line was reworded that day.
 9. **Serious mode.** Off by default, remembered per browser with a guarded localStorage read.
 10. **Sound button.** Shown but disabled in Phase 1.
 11. **Canvas top.** At or above y 190 at 1440 by 900.
@@ -191,7 +191,7 @@ The Clips:
 - **Licence check.** The bake writes the pack name and licence into each JSON, and a test checks it says CC0.
 - **Fallback.** If the bake does not produce all four Atlases within one working day of task 4, the Vector fallback is used and the call is recorded under "Notes and open items".
 
-**Vector fallback.** `scene/characters/vector.ts` draws each Pose from rectangles and simple paths in the approved design's blocky style (its possessed, skeleton and hand figures). Its Poses are 12 per Clip by joint angles from a fixed table. It uses the same `CharacterSource` interface.
+**Vector fallback.** `scene/characters/vector.ts` draws each Pose from rectangles and simple paths in a blocky style (possessed, skeleton and hand figures). Its Poses are 12 per Clip by joint angles from a fixed table. It uses the same `CharacterSource` interface.
 
 ```ts
 export type CharacterId = "zombie" | "skeleton" | "hand";
@@ -223,7 +223,7 @@ The sprite source loads the Atlases with `new Image()` from the page origin. Unt
 
 `SHAPE_BY_STATE` becomes Alive "rounded", Restless "tilted", Haunted "cross", Dead "cracked", Possessed "open" (Deliberate test changes 1 and 2).
 
-**Ghost.** `GHOST_PATH` becomes the ghost of the approved design: a rounded body with a wavy hem, two oval eyes in ink and two blush ovals. It stays one cell-relative path set, the same for every grave, with no Kiro logo or mark.
+**Ghost.** `GHOST_PATH` becomes a new ghost: a rounded body with a wavy hem, two oval eyes in ink and two blush ovals. It stays one cell-relative path set, the same for every grave, with no Kiro logo or mark.
 
 ### Motion (requirement 4)
 
@@ -307,7 +307,7 @@ export function hereLies(name: string, version: string): string; // "Here lies <
 
 Anything else gives null, and then no Punchline.
 
-#### Epitaph table (approved by the owner on 24 Nov 2026)
+#### Epitaph table (set 24 Nov 2026)
 
 | State | Engine reason | Reason family | Punchline | Why it is true |
 |---|---|---|---|---|
@@ -536,13 +536,13 @@ Every existing test not listed here must pass unmodified. Titles are from the in
 `e2e/smoke.spec.ts`
 27. "demo loads under the CSP, then 300 graves redraw within budget". Addition, added during task 8 and reviewed in task 9.5. Before the README screenshot the step blurs the active element and moves the mouse to (1, 899), so the download clicks leave no focus or hover ring in docs/cemetery.png. No assertion changes, and the 16 ms budget check is unchanged.
 
-Fix round (24 Nov 2026), after the owner's review against the approved design pictures:
+Fix round (24 Nov 2026), after the owner's review of the screenshots:
 
 `test/tooltip.test.tsx`, `test/replay.test.tsx`, `test/scrubber.test.tsx`
 28. "shows the version, state and reason of each Stop in the grave name, tooltip and drawer" (replay) and "shows the Segment version in the button name, tooltip and drawer title, …" (scrubber). Old: the tooltip text contains "<version>, <State>". New: the version shows once, in "Here lies <name> <version>"; the State line is the State alone, checked on `.tooltip-state`, and the text no longer contains "<version>, <State>".
 
 `test/header.test.tsx`
-29. "has the title text 'Sexton cemetery', …". Old: the h1 holds an aria-hidden svg mark. New: the h1 holds no svg; the wordmark is the name alone, as in the approved design. The title text check is unchanged.
+29. "has the title text 'Sexton cemetery', …". Old: the h1 holds an aria-hidden svg mark. New: the h1 holds no svg. The wordmark is the name alone. The title text check is unchanged.
 
 `test/layout.test.ts`
 30. The Tier model and "puts the first package at the left of its Tier's first row, at the Tier's scale". Old: the graves of a row sit one cell width apart. New: they spread apart up to 1.07, 1.2 and 1.4 cell widths (front, middle, back) to fill the row, and the row is centred on its used width. The first front grave of three at width 1280 moves from x 352 to x 339, the second is 205 to its right. Rectangle sizes, the y values and the 300-grave heights are unchanged.
@@ -569,20 +569,19 @@ After every visual sub-task, the Orchestrator does three things:
 1. It builds e2e (`VITE_SEXTON_API=/api vite build --mode e2e`), serves `dist-e2e` locally, and captures `/` and `/?replay=axios` at 1440 by 900 and 390 by 844, with Reduced motion off at a fixed `page.clock` time.
 2. It spawns a fresh subagent with only:
    - those four images;
-   - the approved design pictures of the cemetery and the replay;
    - the text of the design guidance;
    - this section's checklist.
 3. The critic answers READY, or gives numbered findings. Findings are fixed, the round repeats, and each round's findings go under the sub-task as "Critic round N".
 
 Checklist:
-- the palette and moon match the approved design;
+- the palette and moon match the tokens and sky this spec sets
 - the wordmark is in Pirata One;
 - grave names are in IM Fell English SC;
 - each State's Form reads at a glance;
 - the front Tier is the most urgent;
 - the ghost is the original art, not a logo;
 - nothing overlaps at 390;
-- the footer bar matches the approved design;
+- the footer bar matches the layout this spec sets
 - the Canvas top is near the header;
 - no generic template tells (the design guidance's list).
 
@@ -591,9 +590,9 @@ Checklist:
 1. **No shade adjusted.** All five decided colours pass every check with this backdrop. The glow alphas were chosen so that they do, too.
 2. **Border token #9a8bb3.** Reason: 3:1 against the fog stop.
 3. **ΔE00 minimum of 8 for colour vision.** Reason: given in "Colour vision check".
-4. **Tier scales 1, 0.8 and 0.64.** Reason: the approved design measures about 1, 0.78 and 0.62. These round to a geometric step of 0.8.
+4. **Tier scales 1, 0.8 and 0.64.** Reason: the target rows measure about 1, 0.78 and 0.62. These round to a geometric step of 0.8.
 5. **Tiers use the scan-date State.** Reason: web.md "Triage order and grave positions always use the scan date". Graves never jump between Tiers while the scrubber moves.
-6. **SKY_HEIGHT 160.** Reason: the approved design's moon, church and bats need it. The Canvas top is the header's bottom, so it does not move the 190 limit.
+6. **SKY_HEIGHT 160.** Reason: the moon, church and bats this spec draws need it. The Canvas top is the header's bottom, so it does not move the 190 limit.
 7. **Backdrop cache.** Reason: the 16 ms budget with gradients, a vignette and grain.
 8. **One clock at 12 a second, separate from the ghost drift.** Reason: the ghost drift step of 100 ms is pinned by existing tests and stays.
 9. **Dancer rule (1 in 5, 2 s in 12 s).** Reason: the decisions ask for "a deterministic subset … now and then". The numbers keep motion occasional.
@@ -603,10 +602,10 @@ Checklist:
 13. **The Footer bar after main in the DOM, so the keyboard order changes.** Reason: visual order equals DOM order (WCAG 2.4.3). The grave now comes before Play and the Replay group, as on screen.
 14. **CREDITS.md at the repository root.** Reason: the README line links it, and it covers fonts and models together.
 15. **Source models not committed.** Reason: the Atlases are the product, the models are large, and the bake reads them from gitignored `build/models`.
-16. **Tooltip width 240, allowed past a scaled cell.** Reason: the Epitaph line needs it, since 176 wrapped the approved design's punchlines to four lines. The middle (154 px) and back (123 px) cells are narrower than any readable tooltip. web.md's rule "sits inside its own Cell" becomes "anchored at its own Cell and kept inside the Scene", with `pointer-events: none` unchanged, so clicks still reach the graves. Requirement 12.3 names the rule.
+16. **Tooltip width 240, allowed past a scaled cell.** Reason: the Epitaph line needs it, since 176 wrapped the Epitaph punchlines to four lines. The middle (154 px) and back (123 px) cells are narrower than any readable tooltip. web.md's rule "sits inside its own Cell" becomes "anchored at its own Cell and kept inside the Scene", with `pointer-events: none` unchanged, so clicks still reach the graves. Requirement 12.3 names the rule.
 17. **Clips dance, lounge and twitch only.** The decided clips are idle, dance, rise, lounge and twitch. No Phase 1 Form uses idle or rise: the still Pose under Reduced motion is pose 0 of the Form's own Clip, and rise belongs to the Phase 2 replay burst. Reason: baking unused Clips costs bake time and bundle size. Phase 2 bakes rise.
 18. **One glow per grave.** Reason: stacked glows drop Possessed to 2.59:1 (see "Palette").
-19. **Phase 2 items of the approved design out of scope.** The speech bubbles and the replay stop cards are not built. Reason: the decisions name them Phase 2.
+19. **Phase 2 items out of scope.** The speech bubbles and the replay stop cards are not built. Reason: the decisions name them Phase 2.
 
 ## Decisions made during implementation
 
@@ -617,7 +616,7 @@ Checklist:
    - The state colours are unchanged.
    - Measured minimums: Possessed 3.05:1 against fog over the horizon, and every check over the ten Glow stops passes. The numbers in "Palette" above are those of the first pass.
 2. **Instrument Sans as one variable WOFF2 (task 3).** Google serves weights 400 to 600 as a single variable file. One file covers the same weights and is smaller. The licences are `OFL-<family>.txt` beside the fonts.
-3. **The wordmark mark is hidden, not removed (task 3).** The approved design's wordmark is the name alone. An existing header test pins the decorative aria-hidden mark in the h1, so the mark stays in the DOM and CSS does not show it.
+3. **The wordmark mark is hidden, not removed (task 3).** This spec sets the wordmark as the name alone. An existing header test pins the decorative aria-hidden mark in the h1, so the mark stays in the DOM and CSS does not show it.
 4. **Vector fallback for the Characters (task 4).**
    - The Zombie Apocalypse Kit is CC0, but it downloads only through a Google Drive folder, and the poly.pizza page of the Cube World Kit sits behind a browser challenge.
    - Neither can be fetched by a script, so the bake cannot run unattended. Under requirement 3.9 the Vector fallback is used.
@@ -626,7 +625,7 @@ Checklist:
    - If the owner later downloads the models into `build/models`, a Phase 2 bake can replace the vector source behind the same `drawCharacter` call.
 
 5. **No backdrop cache (task 5).** The scenery is drawn every frame instead of cached in an offscreen layer (call 7). Measured with 300 graves at 1280 by 800, the medians are 2.60 ms and 2.30 ms after a scrubber move, against the 16 ms budget. A cache would add a second canvas and a context that the painter tests cannot see. The e2e budget test guards this choice. If a later change pushes the median near the budget, the cache is the first fix.
-6. **Tier rows are centred (task 5).** The approved design centres every row, so each Tier row is centred in the drawable width (`min(width, MAX_BACKING)`). Graves still fill a row left to right in triage order. The layout tests use an independent model of this rule.
+6. **Tier rows are centred (task 5).** This spec centres every row, so each Tier row is centred in the drawable width (`min(width, MAX_BACKING)`). Graves still fill a row left to right in triage order. The layout tests use an independent model of this rule.
 7. **The moon scales down on narrow scenes (task 5).** The moon gained three craters in moonEdge after critic round 3. Its final values are in decision 11: `r = min(52, floor(width / 5) - 4)`, at x `width - width / 5`, y 62, so it stays inside the sky at width 224.
 8. **Critic round 3 changes (tasks 4 and 5).**
    - Grave name tags are smaller (104 by 26) and the inscription is 15 px.
@@ -678,19 +677,19 @@ Checklist:
     - The final round answered READY at 1440 and 390.
     - The README screenshot step now blurs focus and moves the mouse away first, so no hover or focus ring from the download clicks shows. It changes no assertion (Deliberate test change 27).
 
-17. **Fix round: match the approved design (24 Nov 2026).** The owner overruled the critic's READY: the scene was smaller and flatter than the approved design, and the replay showed one small grave in an empty field.
-    - Rule changes approved by the owner: a replay draws its grave full size (requirement 5.8), and the Footer bar stays in view at 960 px and wider only (requirement 9.4). Both are in docs/requirements.md 0.6. Decision 12 is now the requirement, not a departure.
-    - Stones are tall, as in the approved design: each stone is about 34 by 56 in its 64 box, drawn at 2.75 (was 2), so a front stone is about 94 by 152 px at 1440 by 900. Each stone has a side face (its outline again, offset and shaded with the ink token at the shadow byte). Ghosts are drawn twice as large and float over their stone tops; the planned ghost box and its drift are unchanged.
-    - Rows fill the width: the graves of a row spread apart up to 1.07, 1.2 and 1.4 cell widths (front, middle, back). Front graves at 1440 are 205 px apart, as in the approved design (206). Rectangles stay one cell, so none overlap (Property 1).
+17. **Fix round: a larger, deeper scene (24 Nov 2026).** The owner overruled the critic's READY: the scene was too small and too flat, and the replay showed one small grave in an empty field.
+    - Rule changes this spec makes: a replay draws its grave full size (requirement 5.8), and the Footer bar stays in view at 960 px and wider only (requirement 9.4). Both are in docs/requirements.md 0.6. Decision 12 is now the requirement, not a departure.
+    - Stones are tall: each stone is about 34 by 56 in its 64 box, drawn at 2.75 (was 2), so a front stone is about 94 by 152 px at 1440 by 900. Each stone has a side face (its outline again, offset and shaded with the ink token at the shadow byte). Ghosts are drawn twice as large and float over their stone tops. The planned ghost box and its drift are unchanged.
+    - Rows fill the width: the graves of a row spread apart up to 1.07, 1.2 and 1.4 cell widths (front, middle, back). Front graves at 1440 are 205 px apart (the target is 206). Rectangles stay one cell, so none overlap (Property 1).
     - The sky grows: when the graves fit in the fit height (the free height less a Footer bar that stays in view), the sky grows up to 420 px so the graves stand at the bottom (Property 7). The moon grows with it (r up to 0.3 of the sky). Stars and bats spread over the taller sky.
     - The ground: a low hill meets the sky, lit along its top edge by a 3 px band in skyHorizon, shaded from groundTop to bg over the upper half of the ground; the violet horizon glow is in the sky above it. Every colour is an existing token or backdrop stop, so the contrast tests are unchanged.
     - The Possessed grave: a wide dark pit (the pit token) above the plinth, in a mound of earth (the surface token), the lid tilted off to the left in the state colour with a crack, the pit's edge drawn as a thin line in the lantern token, and the Possessed glow centred over the pit at radius 200. Every glow is drawn in one pass on the ground before any grave, so a wide glow never tints a neighbouring stone. Its alpha is unchanged: alphas of 0x40, 0x50 and 0x60 were tried and each fails the existing glow contrast check (2.84, 2.89 and 2.62 against 3), so the glow can only grow in size.
     - The replay: its one grave is drawn at up to 1.8, and its width leaves 60 cell units each side for the lid, so at 390 px the lid stays on screen. Its story is a card over the scene, top left (the chosen Stop's date, the title, the banner text, the summary, the sources and, before the scan date, the scrubber captions). The Stops are three dated cards in the Footer bar (a Stop before the version was published reads "Not published", the Legend's wording); the slider stays for the keyboard, out of sight, and the current card shows its focus. The header keeps its normal height: canvas top 72.6 px on the axios replay at 1440 by 900.
-    - The tooltip shows the version once and sits beside its grave (right, else left, else over it), as in the approved design. This reverses the two refusals in decisions 8 and 13 (enlarging a lone replay grave, and a tooltip beside the grave), now that the owner asked for them.
+    - The tooltip shows the version once and sits beside its grave (right, else left, else over it). This reverses the two refusals in decisions 8 and 13 (enlarging a lone replay grave, and a tooltip beside the grave), now that the owner asked for them.
     - The wordmark mark is removed from the DOM (was hidden, decision 3).
     - Play is a round button with a play or pause glyph at 960 px and wider; its name stays "Play" or "Pause".
     - Critic requests declined: a stronger Possessed glow (the contrast check above); a shorter replay story (the summary is source data, and the scrubber captions must stay, requirement 9.8), so the card is wider (34rem) and the captions smaller instead; tucking the back row behind the middle row (rectangles never overlap); a one-row header at 390 px (outside this fix); a softer zombie silhouette (the Character art is unchanged apart from its size).
-    - Visual critic rounds against the approved design pictures, each by a fresh reviewer seeing only images:
+    - Visual critic rounds against the checklist, each by a fresh reviewer seeing only images:
       - Round 1: NOT READY at 1440 and 390. Acted on: a lit hill edge in skyHorizon and a darker ground lower down; a gold edge on the pit; the replay grave's width leaves room for its lid at 390; a wider story card with smaller captions. Declined, with the reasons above: a stronger glow, a shorter story, a one-row 390 header.
       - Round 2: NOT READY at 1440 and 390: the glow was not visible and the plinth hid the pit. Acted on: the pit is wider and above the plinth, the zombie stands in it, and the glow grows to radius 200 in its own pass before the graves.
       - Round 3: READY at 1440 and READY at 390. Its notes (a label for the replay header's two times, the pit edge close to the ring's gold, spreading the middle and back rows wider) are left for the owner.
@@ -698,7 +697,7 @@ Checklist:
 
 ## Notes and open items
 
-- **R-UI-1.** Approved by the owner on 24 Nov 2026 as written (see "Open question for the owner").
+- **R-UI-1.** Accepted on 24 Nov 2026 as written (see "Open question for the owner").
 - **Cube World Kit licence.** Checked in task 4.1.
 - **The bake.** Task 4 records whether it worked within its day or the Vector fallback was used.
 - **Alive against Restless.** 1.509:1 against the existing 1.5 minimum, so a later shade change must recheck it.

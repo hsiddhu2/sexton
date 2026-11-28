@@ -75,7 +75,7 @@ export interface HomeViewProps {
   readonly cached?: CachedLineProps;
   /**
    * The Home scan shown before this load, or null. While a load runs or after it fails, its page stays under the
-   * scanning or failure card, over a dimmed Scene, as in the approved design.
+   * scanning or failure card, over a dimmed Scene.
    */
   readonly previous?: PreviousScan | null;
 }
