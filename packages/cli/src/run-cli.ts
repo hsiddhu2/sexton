@@ -1,7 +1,6 @@
 // runCli: the whole CLI behind one function. Spec: .kiro/specs/cli-and-action, Requirements 3.2 to 3.5.
 // Resolves to 0, 1 or 2 and never rejects: every unexpected throw becomes exit 2 with fixed text.
 
-import { ENGINE_VERSION } from "@sexton/engine";
 import { parseCommand } from "./args.js";
 import { checkCommand } from "./commands/check.js";
 import { evidenceCommand, verifyCommand } from "./commands/evidence.js";
@@ -9,6 +8,7 @@ import { scanCommand } from "./commands/scan.js";
 import type { CliDeps } from "./deps.js";
 import { MSG, USAGE, usageError } from "./messages.js";
 import { writeLines } from "./output.js";
+import { CLI_VERSION } from "./version.js";
 
 export type { CliDeps } from "./deps.js";
 
@@ -21,7 +21,7 @@ async function dispatch(argv: readonly string[], deps: CliDeps): Promise<number>
       deps.stdout.write(USAGE);
       return 0;
     case "version":
-      return writeLines(deps.stdout, [ENGINE_VERSION], 0);
+      return writeLines(deps.stdout, [CLI_VERSION], 0);
     case "scan":
       return scanCommand(c.target, c.repo, c.out, deps);
     case "check":

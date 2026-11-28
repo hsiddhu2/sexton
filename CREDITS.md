@@ -31,7 +31,11 @@ The tests validate the CycloneDX SBOM against the published schemas, kept unchan
 | fast-uri | 3.1.9 | BSD-3-Clause | https://github.com/fastify/fast-uri |
 | fast-deep-equal | 3.1.3 | MIT | https://github.com/epoberezkin/fast-deep-equal |
 | json-schema-traverse | 1.0.0 | MIT | https://github.com/epoberezkin/json-schema-traverse |
+
 The Bundle also contains Sexton's own Engine, CLI composition and MCP server (Apache License 2.0, see `LICENSE`). esbuild builds it and is not part of it. The Power's tool results carry package metadata from the npm registry, OSV and deps.dev at run time; none of it is stored in the repository.
+
+The npm packages `sexton` and `sexton-mcp` (spec release) are built with the same esbuild options. Each carries a `THIRD-PARTY-NOTICES.md` with the licence text of every package in its file, copied from the package at build time. `sexton` holds ajv, semver, yaml and the three ajv dependencies, and `sexton-mcp` holds the same packages as the Power's Bundle.
+
 ## Characters and art
 
 The characters (the zombie, the skeleton, the hand, the priest), the costumes, the ghost, the church, the tree and the bats are original vector art, drawn in code in `packages/web/src/scene`. No third-party model, image or sprite is used.

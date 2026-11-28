@@ -1,5 +1,6 @@
 {
   "name": "@sexton/engine",
+  "private": true,
   "version": "0.2.0",
   "description": "Sexton core: signals, states, policy, remediation planning.",
   "license": "Apache-2.0",
