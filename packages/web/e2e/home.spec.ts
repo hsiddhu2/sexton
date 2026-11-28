@@ -633,6 +633,46 @@ for (const width of [1099, 900, 700]) {
   });
 }
 
+// Spec home-page, 3.8 and 12.12: every Scan box shows a hint that fits whole inside its field, at every width from 360 px.
+const HINT_WIDTHS = [360, 390, 700, 1280, 1366, 1440] as const;
+const LONG_HINTS = ["owner/name, for example expressjs/express", "Scan a GitHub repo, for example  facebook/react"];
+
+async function scanHint(page: Page, onHome: boolean): Promise<{ text: string; need: number; room: number; longNeed: number }> {
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  return page.evaluate((home) => {
+    const input = document.querySelector<HTMLInputElement>(home ? "#hp-repo" : ".scan-form input") as HTMLInputElement;
+    const style = getComputedStyle(input, "::placeholder");
+    const ctx = document.createElement("canvas").getContext("2d") as CanvasRenderingContext2D;
+    ctx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    const box = getComputedStyle(input);
+    // The text area is the box less its padding and borders (Chromium's clientWidth for an input already leaves out the padding).
+    const room = input.getBoundingClientRect().width - parseFloat(box.paddingLeft) - parseFloat(box.paddingRight) - parseFloat(box.borderLeftWidth) - parseFloat(box.borderRightWidth);
+    const long = home ? "owner/name, for example expressjs/express" : "Scan a GitHub repo, for example  facebook/react";
+    return { text: input.placeholder, need: ctx.measureText(input.placeholder).width, room, longNeed: ctx.measureText(long).width };
+  }, onHome);
+}
+
+test("every Scan box shows a hint that fits whole inside its field at 360, 390, 700, 1280, 1366 and 1440 px (3.8, 12.12)", async ({ page, baseURL }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const g = await guard(page, originOf(baseURL));
+  for (const width of HINT_WIDTHS) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const address of ["/", "/cemetery"]) {
+      await page.goto(address);
+      const onHome = address === "/";
+      await expect(page.locator(onHome ? "#hp-repo" : ".scan-form input")).toBeVisible();
+      await expect.poll(async () => { const h = await scanHint(page, onHome); return h.need <= h.room; }, { message: `${address} at ${String(width)} px` }).toBe(true);
+      const hint = await scanHint(page, onHome);
+      console.log(`scan hint ${String(width)} px ${address}: "${hint.text}" needs ${hint.need.toFixed(0)} px of ${hint.room.toFixed(0)} px`);
+      expect(["owner/name", ...LONG_HINTS]).toContain(hint.text);
+      expect(hint.need, `${address} at ${String(width)} px`).toBeLessThanOrEqual(hint.room);
+      // The long hint shows wherever it fits with 4 px to spare, and only there.
+      expect(hint.text === LONG_HINTS[onHome ? 0 : 1], `${address} at ${String(width)} px long hint`).toBe(hint.longNeed + 4 <= hint.room);
+    }
+  }
+  expect(g.foreign).toEqual([]);
+});
+
 for (const width of [390, 360]) {
   test(`the Top bar at ${String(width)} px wide shows both tabs, reachable by their names, on both pages (12.11, 16.4)`, async ({ page, baseURL }) => {
     await page.setViewportSize({ width, height: 844 });

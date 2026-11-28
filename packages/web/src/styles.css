@@ -1855,8 +1855,12 @@ a {
   .site-tab {
     padding: 0 8px;
   }
+  /* Room for the short Scan hint at 700 px (spec home-page, 12.12). */
+  .scan-form input {
+    padding: 0 8px;
+  }
   .scan-button {
-    padding: 0 14px;
+    padding: 0 12px;
   }
 }
 

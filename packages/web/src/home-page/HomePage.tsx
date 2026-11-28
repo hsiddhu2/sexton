@@ -1,7 +1,7 @@
 // The Home page at "/" (spec home-page, design C3, requirements 2 to 10, 14 and 16): its sections in the order of
 // those requirements. Every sentence is a Claim (copy/claims.ts) or a label (copy/home.ts). Each section is a region
 // named by its heading. Every link to another site is an OffSiteLink (2.5).
-import { Fragment, useCallback, useEffect, useState, type FormEvent } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import type { Entry } from "../cache/scan-cache.js";
 import { clearCache, readCache } from "../cache/scan-store.js";
 import { claim, type ClaimId } from "../copy/claims.js";
@@ -13,7 +13,7 @@ import { HOSTED_UNAVAILABLE_TEXT } from "../load/use-scan-loader.js";
 import { TRACK } from "../music/track.js";
 import type { Navigate } from "../site/Root.js";
 import { CEMETERY_PATH, SCAN_PATH } from "../site/route.js";
-import { useNarrow } from "../site/use-narrow.js";
+import { useFittingHint } from "../site/use-fitting-hint.js";
 import { RecentScans } from "./RecentScans.js";
 import { SiteLink } from "./SiteLink.js";
 import { DEMO_VIDEO_URL, videoUrl } from "./video.js";
@@ -355,7 +355,8 @@ function HomeScan({ apiConfigured, onScan }: HomeScanProps) {
     onScan(repo.label);
   };
   const describedBy = !apiConfigured ? "hp-scan-off" : refused ? "hp-scan-hint" : undefined;
-  const narrow = useNarrow();
+  const fieldRef = useRef<HTMLInputElement>(null);
+  const hint = useFittingHint(fieldRef, L.scanPlaceholder, L.scanPlaceholderNarrow);
   return (
     <>
       <form className={refused ? "hp-scan hp-scan-refused" : "hp-scan"} onSubmit={submit} noValidate role="search">
@@ -363,12 +364,13 @@ function HomeScan({ apiConfigured, onScan }: HomeScanProps) {
           {L.scanField}
         </label>
         <input
+          ref={fieldRef}
           id="hp-repo"
           name="repo"
           type="text"
           autoComplete="off"
           spellCheck={false}
-          placeholder={apiConfigured ? (narrow ? L.scanPlaceholderNarrow : L.scanPlaceholder) : ""}
+          placeholder={apiConfigured ? hint : ""}
           value={value}
           disabled={!apiConfigured}
           aria-invalid={refused}
