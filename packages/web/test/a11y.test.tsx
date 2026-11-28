@@ -189,7 +189,7 @@ describe("keyboard reach (Requirement 10.5)", () => {
       seen.push(el.getAttribute("aria-label") ?? el.textContent?.trim() ?? el.tagName);
     }
     const order = [
-      "Sexton, back to the cemetery",
+      "Sexton, home page",
       "GitHub repository to scan",
       "Scan",
       "hsiddhu2/sexton-demopull requests work here",

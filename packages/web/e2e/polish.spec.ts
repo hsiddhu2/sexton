@@ -24,7 +24,7 @@ test("at 360 px the page does not scroll sideways and the canvas spans the conte
   await blockForeignOrigins(page, originOf(baseURL));
   await page.setViewportSize(NARROW);
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/");
+  await page.goto("/cemetery");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
   const closed = await scrollWidth(page);
   const canvas = await page.locator("canvas.scene-canvas").first().boundingBox();
@@ -64,7 +64,7 @@ for (const width of [1280, 1440]) test(`a press on the Repository URL box closes
   });
   await page.setViewportSize({ width, height: 800 });
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/");
+  await page.goto("/cemetery");
   const field = page.getByLabel("GitHub repository to scan");
   await field.fill("https://github.com/hsiddhu2/sexton-demo");
   await field.press("Enter");
@@ -86,7 +86,7 @@ for (const width of [1280, 1440]) test(`a press on the Repository URL box closes
 test("the pull request table of lodash is visible in the drawer", async ({ page, baseURL }) => {
   await blockForeignOrigins(page, originOf(baseURL));
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/");
+  await page.goto("/cemetery");
   await page.locator('button[data-grave-index][aria-label^="lodash"]').first().click();
   // Spec clean-site, 7.16: the body is on the fix tab, in a closed disclosure.
   await page.getByRole("dialog").getByRole("tab", { name: "The fix" }).click();

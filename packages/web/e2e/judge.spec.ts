@@ -46,7 +46,7 @@ test("requirement 7.7: axe finds no violation on the demo", async ({ browser, ba
   const context = await browser.newContext({ bypassCSP: true, viewport: { width: 1440, height: 900 } });
   const page = await context.newPage();
   await sameOriginOnly(page, baseURL);
-  await page.goto("/");
+  await page.goto("/cemetery");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
   await page.addScriptTag({ path: AXE_PATH });
   const violations = await page.evaluate(async () => {

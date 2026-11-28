@@ -7,6 +7,7 @@ test.skip(!existsSync(chromium.executablePath()), "chromium is not installed");
 
 const SCREENSHOT = fileURLToPath(new URL("../../../docs/cemetery.png", import.meta.url));
 const REPLAY_SCREENSHOT = fileURLToPath(new URL("../../../docs/replay-axios.png", import.meta.url));
+const KEYV_SCREENSHOT = fileURLToPath(new URL("../../../docs/replay-keyv.png", import.meta.url));
 
 interface TimingWindow {
   __sextonTiming?: { redraw(n: number): number[] };
@@ -46,7 +47,7 @@ test("demo loads under the CSP, then 300 graves redraw within budget", async ({ 
 
   // Reduced motion keeps the Ghost phase at 0, so the screenshot is repeatable.
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/");
+  await page.goto("/cemetery");
   await expect(page.locator("header")).toBeVisible();
   await expect(page.locator("header .scan-tag")).toHaveText("Sample scan");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
@@ -230,6 +231,39 @@ test("the axios replay at its Possessed stop, for the README", async ({ page, ba
   await page.screenshot({ path: REPLAY_SCREENSHOT });
 });
 
+// Spec home-page, 4.2: the keyv card's picture, taken as the axios one is: the built site at 1440 by 900, Reduced
+// motion on, the Welcome bar closed, at the Step where the grave turns Possessed, nothing hovered or focused.
+test("the keyv replay at its Possessed stop, for the Home page", async ({ page, baseURL }) => {
+  const origin = new URL(baseURL ?? "http://localhost:4173").origin;
+  await page.route("**/*", async (route) => {
+    if (new URL(route.request().url()).origin === origin) await route.continue();
+    else await route.abort();
+  });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/cemetery?replay=keyv");
+  await page.getByRole("button", { name: "Close the welcome bar" }).click();
+  const grave = page.locator("button[data-grave-index]").first();
+  await expect(grave).toHaveAttribute("aria-label", "keyv 5.6.0, Alive");
+  const next = page.getByRole("button", { name: "Next step" });
+  await next.click();
+  await expect(grave).toHaveAttribute("aria-label", "keyv 6.0.0, Possessed");
+  await expect(page.locator(".headline")).toHaveText("Watch the keyv attack unfold");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  for (const part of ["canvas.scene-canvas", ".step-panel", ".replay-foot"]) {
+    const box = await page.locator(part).boundingBox();
+    expect((box?.y ?? 999) + (box?.height ?? 999), part).toBeLessThanOrEqual(900);
+  }
+  // The last Step has no "Next step" button, so focus is moved off whatever holds it.
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await waitForFirstPaint(page);
+  await page.mouse.move(1, 899);
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
+  await expect(page.locator(".burst-caption")).toHaveCount(0);
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  await page.screenshot({ path: KEYV_SCREENSHOT });
+});
+
 // Spec cemetery-undead, task 7.3 (requirement 2.3): the fonts come from the page origin and nothing leaves it.
 test("loads the fonts from /fonts on the page origin and makes no request to another origin", async ({ page, baseURL }) => {
   const origin = new URL(baseURL ?? "http://localhost:4173").origin;
@@ -239,7 +273,7 @@ test("loads the fonts from /fonts on the page origin and makes no request to ano
     if (new URL(route.request().url()).origin === origin) await route.continue();
     else await route.abort();
   });
-  await page.goto("/");
+  await page.goto("/cemetery");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
   expect(requests.filter((u) => new URL(u).origin !== origin)).toEqual([]);
@@ -258,7 +292,7 @@ test("draws the zombie on the Possessed grave and the skeleton on a Dead grave",
   });
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/");
+  await page.goto("/cemetery");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
   await waitForFirstPaint(page);
   // Counts the canvas pixels inside a grave's button box that match a colour, within a small tolerance.

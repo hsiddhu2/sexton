@@ -30,9 +30,10 @@ afterEach(() => {
 
 const ORIGIN = "http://localhost";
 const API = "/api";
-const WORDMARK_NAME = "Sexton, back to the cemetery";
+const WORDMARK_NAME = "Sexton, home page";
 const REPO = "https://github.com/a/b";
-const REPO_QUERY = "?repo=https%3A%2F%2Fgithub.com%2Fa%2Fb";
+// Spec home-page, 1.7: a Live scan's repo value is its owner/name.
+const REPO_QUERY = "?repo=a/b";
 
 function fetchAll(seen: string[] = []): typeof fetch {
   return ((input: RequestInfo | URL): Promise<Response> => {
@@ -44,8 +45,20 @@ function fetchAll(seen: string[] = []): typeof fetch {
   }) as typeof fetch;
 }
 
-function mount(search = "", options: { apiBase?: string | null; seen?: string[] } = {}) {
-  return render(<App fetchFn={fetchAll(options.seen)} apiBase={options.apiBase ?? null} initialSearch={search} pageOrigin={ORIGIN} />);
+function mount(search = "", options: { apiBase?: string | null; seen?: string[]; onNavigate?: (to: string) => void } = {}) {
+  return render(
+    <App
+      fetchFn={fetchAll(options.seen)}
+      apiBase={options.apiBase ?? null}
+      initialSearch={search}
+      pageOrigin={ORIGIN}
+      {...(options.onNavigate !== undefined ? { onNavigate: options.onNavigate } : {})}
+    />,
+  );
+}
+
+function crumbHome(): void {
+  fireEvent.click(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("button", { name: /Cemetery/ }));
 }
 
 function tag(): string | null | undefined {
@@ -110,54 +123,57 @@ function demoStops(): string[] {
   });
 }
 
-describe("the wordmark goes home (10.2)", () => {
-  it("is a link to / named for the cemetery", async () => {
+// Spec home-page, 12.1 to 12.3: the wordmark goes to the Home page at "/"; the breadcrumbs keep the Home action.
+describe("the wordmark goes to the Home page (spec home-page, 12.1)", () => {
+  it("is a link to / named for the Home page", async () => {
     mount();
     await ready();
     expect(wordmark().getAttribute("href")).toBe("/");
   });
 
-  it("goes from a Replay to Home without a reload, and Back returns to the Replay", async () => {
+  it("moves to / through the Route on a plain press, from Home and from a Replay", async () => {
+    const onNavigate = vi.fn();
+    mount("", { onNavigate });
+    await ready();
+    fireEvent.click(wordmark(), { button: 0 });
+    expect(onNavigate).toHaveBeenCalledWith("/");
+    cleanup();
+    mount("?replay=axios", { onNavigate });
+    await onReplay();
+    fireEvent.click(wordmark(), { button: 0 });
+    expect(onNavigate).toHaveBeenCalledTimes(2);
+  });
+
+  it("leaves a modifier-key press to the browser", async () => {
+    const onNavigate = vi.fn();
+    mount("?replay=axios", { onNavigate });
+    await onReplay();
+    const allowed = fireEvent.click(wordmark(), { metaKey: true });
+    expect(allowed).toBe(true);
+    expect(onNavigate).not.toHaveBeenCalled();
+    expect(document.querySelector(".replay-view")).not.toBeNull();
+  });
+
+  it("goes from a Replay to Home by its breadcrumb without a reload, and Back returns to the Replay", async () => {
     mount("?replay=axios");
     await onReplay();
-    fireEvent.click(wordmark());
+    crumbHome();
     await onSample();
     expect(window.location.search).toBe("");
+    expect(window.location.pathname).toBe("/cemetery");
     window.history.back();
     await onReplay();
     expect(window.location.search).toBe("?replay=axios");
   });
 
-  it("leaves a modifier-key press to the browser", async () => {
-    mount("?replay=axios");
-    await onReplay();
-    const allowed = fireEvent.click(wordmark(), { metaKey: true });
-    expect(allowed).toBe(true);
-    expect(document.querySelector(".replay-view")).not.toBeNull();
-  });
-
-  it("closes the Drawer on the Sample scan with no new entry", async () => {
-    mount();
-    await ready();
-    fireEvent.click(grave());
-    expect(screen.getByRole("dialog")).not.toBeNull();
-    expect(window.location.search).toBe("?grave=left-padder");
-    const afterOpen = window.history.length;
-    fireEvent.click(wordmark());
-    await settle();
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    await waitFor(() => expect(window.location.search).toBe(""));
-    expect(window.history.length).toBe(afterOpen);
-  });
-
-  it("keeps the List choice made on Home (the Home start)", async () => {
+  it("keeps the List choice made on Home (the Home start) when a breadcrumb goes home", async () => {
     mount();
     await ready();
     fireEvent.click(screen.getByRole("button", { name: "List" }));
     expect(window.location.search).toBe("?view=list");
     pickReplay("keyv");
     await onReplay();
-    fireEvent.click(wordmark());
+    crumbHome();
     await waitFor(() => expect(window.location.search).toBe("?view=list"));
     expect(screen.getByRole("button", { name: "List" }).getAttribute("aria-pressed")).toBe("true");
   });
@@ -494,13 +510,13 @@ describe("a repository link waits for a press (10.11 to 10.13, 10.18)", () => {
     expect(seen.length).toBe(requests);
   });
 
-  it("drops the prompt when the wordmark goes home", async () => {
-    mount(REPO_QUERY, { apiBase: API });
+  it("leaves the prompt for the Home page when the wordmark is pressed (spec home-page, 12.1)", async () => {
+    const onNavigate = vi.fn();
+    mount(REPO_QUERY, { apiBase: API, onNavigate });
     await ready();
     await waitFor(() => expect(screen.getByRole("button", { name: SCAN_PROMPT_TEXT })).not.toBeNull());
-    fireEvent.click(wordmark());
-    await waitFor(() => expect(screen.queryByRole("button", { name: SCAN_PROMPT_TEXT })).toBeNull());
-    expect(window.location.search).toBe("");
+    fireEvent.click(wordmark(), { button: 0 });
+    expect(onNavigate).toHaveBeenCalledWith("/");
   });
 });
 
@@ -517,11 +533,12 @@ describe("an unknown replay (10.10)", () => {
     expect(seen).toEqual([`${ORIGIN}/demo/scan.json`]);
   });
 
-  it("reaches the Sample scan from the wordmark too", async () => {
-    mount("?replay=nope");
+  it("reaches the Home page from the wordmark too (spec home-page, 12.1)", async () => {
+    const onNavigate = vi.fn();
+    mount("?replay=nope", { onNavigate });
     await waitFor(() => expect(screen.getByRole("alert")).not.toBeNull());
-    fireEvent.click(wordmark());
-    await onSample();
+    fireEvent.click(wordmark(), { button: 0 });
+    expect(onNavigate).toHaveBeenCalledWith("/");
   });
 });
 

@@ -67,8 +67,12 @@ describe("styles.css static checks", () => {
     expect(css).not.toMatch(/outline:\s*(none|0)\b/);
   });
 
-  it("puts the Scan field on its own row under 700 px and lets the field shrink", () => {
-    expect(css).toMatch(/@media \(max-width: 699px\)[\s\S]*\.scan-wrap\s*\{[^}]*flex-basis:\s*100%/);
+  // Spec home-page, 12.11: the Scan field's row starts with the tabs. A full-width empty line after the first row
+  // forces the break, and the field fills the rest of its row.
+  it("puts the tabs and the Scan field on their own row under 700 px, and lets the field shrink", () => {
+    expect(css).toMatch(/@media \(max-width: 699px\)[\s\S]*\.site-header::before\s*\{[^}]*order:\s*2;[^}]*flex-basis:\s*100%/);
+    expect(css).toMatch(/@media \(max-width: 699px\)[\s\S]*\.site-tabs\s*\{[^}]*order:\s*3/);
+    expect(css).toMatch(/@media \(max-width: 699px\)[\s\S]*\.scan-wrap\s*\{[^}]*flex:\s*1 1 0;[^}]*order:\s*4/);
     expect(rulesFor(".scan-form input").some((r) => /min-width:\s*0/.test(r.body) && /flex:\s*1 1 auto/.test(r.body))).toBe(true);
   });
 

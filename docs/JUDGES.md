@@ -5,7 +5,7 @@ One page. Everything named here is on `main`. The hosted site is deployed by han
 ## Open
 
 - The cemetery: https://de1giv8lj8sfh.cloudfront.net
-- The two replays: https://de1giv8lj8sfh.cloudfront.net/?replay=axios and https://de1giv8lj8sfh.cloudfront.net/?replay=keyv
+- The two replays: https://de1giv8lj8sfh.cloudfront.net/cemetery?replay=axios and https://de1giv8lj8sfh.cloudfront.net/cemetery?replay=keyv
 
 ## Click
 

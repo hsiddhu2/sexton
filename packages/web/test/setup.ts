@@ -132,6 +132,12 @@ beforeEach(() => {
   // tests clear this.
   setLoadMomentPlayedForTests(true);
   install();
+  // Each case starts with an empty scan cache (spec home-page, 13), so a scan of one case is not served to the next.
+  try {
+    window.localStorage.removeItem("sexton:scans");
+  } catch {
+    // No storage in this environment.
+  }
 });
 
 afterEach(async () => {

@@ -182,6 +182,63 @@ a {
   text-decoration: none;
 }
 
+/* The two tabs right after the wordmark (spec home-page, 12.5): muted text, the current page's tab in the text
+   colour with an underline, never the gold accent (1.8). They share the buttons' height and text size. */
+.site-tabs {
+  display: flex;
+  flex: none;
+  gap: 2px;
+  margin-left: -8px;
+}
+
+.site-tab {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: var(--ui-muted);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.site-tab:hover {
+  color: var(--ui-text);
+}
+
+.site-tab[aria-current="page"] {
+  color: var(--ui-text);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+}
+
+/* The Home page's call to the demo, at the bar's end: the Scan button's look at the buttons' height. */
+.bar-cta {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  background: var(--ui-accent);
+  color: var(--ui-accent-ink);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.bar-end {
+  margin-left: auto;
+}
+
+.bar-end .ib {
+  color: var(--ui-text);
+  text-decoration: none;
+}
+
 .wordmark-glyph {
   width: 22px;
   height: 22px;
@@ -195,7 +252,7 @@ a {
 
 .scan-tag {
   display: inline-block;
-  max-width: 16rem;
+  max-width: 12rem;
   padding: 2px 9px;
   border: 1px solid color-mix(in srgb, var(--ui-accent) 40%, var(--ui-bg));
   border-radius: 999px;
@@ -408,6 +465,7 @@ a {
 }
 
 .ib {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -1735,7 +1793,7 @@ a {
 }
 
 /* Layouts: the scan tag hides under 1300 px; one column and icon-only buttons under 1100 px; the header wraps with
-   the Scan field on its own row under 700 px, where the help line hides (1.2 to 1.4, 3.2, 2.10). */
+   the tabs and the Scan field on their own row under 700 px, where the help line hides (1.2 to 1.4, 3.2, 2.10). */
 @media (max-width: 1299px) {
   .scan-tag-wrap {
     display: none;
@@ -1776,6 +1834,32 @@ a {
   }
 }
 
+/* The Middle layout keeps one row with both tabs (spec home-page, 12.7): "What is Sexton?" shows its book glyph alone,
+   named by its words, and the bar's gaps, side padding, icon buttons, tabs and Scan button take less room. */
+@media (min-width: 700px) and (max-width: 1099px) {
+  .ib-guide-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .site-header {
+    gap: 12px;
+    padding: 0 20px;
+  }
+  .ib {
+    padding: 0 10px;
+  }
+  .site-tab {
+    padding: 0 8px;
+  }
+  .scan-button {
+    padding: 0 14px;
+  }
+}
+
 @media (max-width: 699px) {
   .site-header {
     flex-wrap: wrap;
@@ -1784,13 +1868,62 @@ a {
     padding: 10px 14px;
   }
   .scan-wrap {
-    flex-basis: 100%;
-    order: 3;
+    flex: 1 1 0;
+    order: 4;
+    margin-top: -10px;
+    min-width: 0;
     max-width: none;
   }
   .header-buttons {
     gap: 4px;
     margin-left: auto;
+  }
+  /* On a phone the first row keeps the wordmark and the buttons, and the two tabs open the Scan field's row (spec
+     home-page, 12.8). The empty line after the first row forces that break. It adds a second row gap, which the
+     second row's items take back with a negative top margin, so the rows stay 10 px apart. */
+  .site-header::before {
+    content: "";
+    order: 2;
+    flex-basis: 100%;
+    height: 0;
+  }
+  .site-tabs {
+    order: 3;
+    margin-top: -10px;
+    margin-left: -6px;
+  }
+  /* The Scan field shares its row with the tabs, so the example list and the field's notes keep the field's right
+     edge and open to the page's full width (15.5). */
+  .examples {
+    left: auto;
+    width: calc(100vw - 28px);
+  }
+  .scan-note:not(.scan-off) {
+    right: 0;
+    left: auto;
+    width: max-content;
+    max-width: calc(100vw - 28px);
+  }
+  /* The tabs take the Scan field's height, so their row sits at the same place on both pages. */
+  .site-tab {
+    height: 42px;
+    padding: 0 6px;
+  }
+  /* The field keeps room for its short hint "owner/name" at 360 px (spec home-page, 12.12): the decorative search
+     glyph hides, and the field and its button take less padding. */
+  .scan-glyph {
+    display: none;
+  }
+  .scan-form input {
+    padding: 0 8px;
+  }
+  .scan-button {
+    padding: 0 10px;
+  }
+  /* "Scanning is off in this build." takes the room the hidden glyph and the narrower button leave. */
+  .scan-note.scan-off {
+    right: 56px;
+    left: 0;
   }
   /* The Legend opens under the button row and lines up with its right end, so it stays inside the viewport (15.5). */
   .legend {

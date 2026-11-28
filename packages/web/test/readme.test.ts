@@ -64,8 +64,9 @@ describe("README", () => {
     const end = rest.findIndex((l) => l.startsWith("## "));
     const body = (end === -1 ? rest : rest.slice(0, end)).join("\n");
     expect(lines.filter((l) => l === "## Replay")).toHaveLength(1);
-    expect(body).toContain("[?replay=axios](https://de1giv8lj8sfh.cloudfront.net/?replay=axios)");
-    expect(body).toContain("[?replay=keyv](https://de1giv8lj8sfh.cloudfront.net/?replay=keyv)");
+    // Spec home-page, 1.11: the replays live at /cemetery?replay=<name>.
+    expect(body).toContain("[/cemetery?replay=axios](https://de1giv8lj8sfh.cloudfront.net/cemetery?replay=axios)");
+    expect(body).toContain("[/cemetery?replay=keyv](https://de1giv8lj8sfh.cloudfront.net/cemetery?replay=keyv)");
     expect(body).toContain("A replay is reconstructed from public reports. It is not a live scan.");
     expect(body).not.toContain(";");
     expect(body).not.toContain("\u2014");
@@ -143,6 +144,7 @@ describe("README: Try it in two minutes", () => {
 
   it("links the hosted site and both replays as absolute https URLs", () => {
     const found = [...body().matchAll(/\]\((https:\/\/[^)\s]+)\)/g)].map((m) => m[1]);
-    expect(found).toEqual([HOSTED, `${HOSTED}/?replay=axios`, `${HOSTED}/?replay=keyv`]);
+    // Spec home-page, 1.11 and 17.1: the home page, the cemetery and both replays on their new addresses.
+    expect(found).toEqual([HOSTED, `${HOSTED}/cemetery`, `${HOSTED}/cemetery?replay=axios`, `${HOSTED}/cemetery?replay=keyv`]);
   });
 });

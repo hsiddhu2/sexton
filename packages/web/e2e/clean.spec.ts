@@ -348,7 +348,7 @@ for (const size of SIZES) {
         }
         return route.fulfill({ status: 404, body: "" });
       });
-      await page.goto("/");
+      await page.goto("/cemetery");
       await expect(grave(page, "left-padder")).toHaveCount(1);
 
       // 1.1: the wordmark, the scan tag, the Scan field and the buttons, in order; 1.4: the tag hides under 1300 px.
@@ -427,7 +427,9 @@ for (const size of SIZES) {
       await expect(card).toHaveCount(0);
       // 1.6 and 10.5: the Live scan names its repository in the tag and the address.
       if (size.width >= 1300) await expect(page.locator(".scan-tag")).toHaveText("hsiddhu2/sexton-demo");
-      expect(new URL(page.url()).searchParams.get("repo")).toBe(DEMO_REPO_URL);
+      // Spec home-page, 1.7: the address names the repository as owner/name, on /scan.
+      expect(new URL(page.url()).pathname).toBe("/scan");
+      expect(new URL(page.url()).searchParams.get("repo")).toBe("hsiddhu2/sexton-demo");
       expect(g.api).toEqual([`/api/scan?repo=${encodeURIComponent(DEMO_REPO_URL)}`]);
       await expect(grave(page, "left-padder")).toHaveCount(1);
       await expectGravesClear(page);
@@ -440,7 +442,7 @@ for (const size of SIZES) {
       const context = await browser.newContext();
       const page = await freshPage(context, size);
       const g = await guard(page, origin);
-      await page.goto("/");
+      await page.goto("/cemetery");
       await expect(grave(page, "left-padder")).toHaveCount(1);
       await scenePainted(page);
 
@@ -580,7 +582,7 @@ for (const size of SIZES) {
       await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin });
       const page = await freshPage(context, size);
       const g = await guard(page, origin);
-      await page.goto("/");
+      await page.goto("/cemetery");
       await expect(grave(page, "event-stream")).toHaveCount(1);
       await scenePainted(page);
 
@@ -703,7 +705,7 @@ for (const size of SIZES) {
         if (url.pathname === "/api/scan") return route.fulfill({ status: 200, contentType: "application/json", body: demoBody(true) });
         return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ status: "opened", prUrl: `${DEMO_REPO_URL}/pull/9`, logged: true }) });
       });
-      await page.goto("/");
+      await page.goto("/cemetery");
       const field = page.getByLabel("GitHub repository to scan");
       await field.fill("hsiddhu2/sexton-demo");
       await field.press("Enter");
@@ -729,7 +731,7 @@ for (const size of SIZES) {
       const context = await browser.newContext();
       const page = await freshPage(context, size);
       const g = await guard(page, origin);
-      await page.goto("/");
+      await page.goto("/cemetery");
       await expect(grave(page, "left-padder")).toHaveCount(1);
       await scenePainted(page);
 
@@ -824,7 +826,7 @@ for (const size of SIZES) {
       const context = await browser.newContext();
       const page = await freshPage(context, size);
       const g = await guard(page, origin);
-      await page.goto("/");
+      await page.goto("/cemetery");
       await expect(grave(page, "left-padder")).toHaveCount(1);
 
       // 8.1, 8.2: the axios Replay from the attack picker, at Step 1, in place of Home.
@@ -931,7 +933,7 @@ for (const size of SIZES) {
       const context = await browser.newContext();
       const page = await freshPage(context, size);
       const g = await guard(page, origin);
-      await page.goto("/");
+      await page.goto("/cemetery");
       await expect(grave(page, "left-padder")).toHaveCount(1);
 
       // 9.5, 9.9: a fresh profile shows the Welcome bar under the header, in the page flow.
@@ -957,7 +959,7 @@ for (const size of SIZES) {
       // 9.6, 9.11: in another fresh profile, "Read the guide" opens the Guide page and stores the choice.
       const second = await freshPage(await browser.newContext(), size);
       const g2 = await guard(second, origin);
-      await second.goto("/");
+      await second.goto("/cemetery");
       await second.getByRole("region", { name: "Welcome" }).getByRole("button", { name: "Read the guide" }).click();
       await expect(second.locator("main.guide")).toBeVisible();
       await expect(second.getByRole("region", { name: "Welcome" })).toHaveCount(0);
@@ -1079,7 +1081,7 @@ for (const size of SIZES) {
       });
       const consoleText: string[] = [];
       page.on("console", (m) => consoleText.push(m.text()));
-      await page.goto("/");
+      await page.goto("/cemetery");
       await expect(grave(page, "left-padder")).toHaveCount(1);
       const field = page.getByLabel("GitHub repository to scan");
       await field.fill("someone/not-there");
@@ -1104,7 +1106,9 @@ for (const size of SIZES) {
       await card.getByRole("button", { name: "Try the demo repo" }).click();
       await expect(card).toHaveCount(0);
       await expect(grave(page, "left-padder")).toHaveCount(1);
-      expect(new URL(page.url()).searchParams.get("repo")).toBe(DEMO_REPO_URL);
+      // Spec home-page, 1.7: the address names the repository as owner/name, on /scan.
+      expect(new URL(page.url()).pathname).toBe("/scan");
+      expect(new URL(page.url()).searchParams.get("repo")).toBe("hsiddhu2/sexton-demo");
       expect(g.api).toEqual([`/api/scan?repo=${encodeURIComponent("https://github.com/someone/not-there")}`, `/api/scan?repo=${encodeURIComponent(DEMO_REPO_URL)}`]);
       // 12.6: Back to the sample, after another failure.
       await field.fill("someone/not-there");
@@ -1119,12 +1123,12 @@ for (const size of SIZES) {
       await context.close();
     });
 
-    test("the way back: the wordmark, Escape and browser Back", async ({ browser, baseURL }) => {
+    test("the way back: the breadcrumbs, the wordmark to the Home page, Escape and browser Back", async ({ browser, baseURL }) => {
       const origin = new URL(baseURL ?? "http://localhost:4173").origin;
       const context = await browser.newContext();
       const page = await freshPage(context, size);
       const g = await guard(page, origin);
-      await page.goto("/");
+      await page.goto("/cemetery");
       await expect(grave(page, "left-padder")).toHaveCount(1);
       const home = page.locator(".headline");
       const wordmark = page.locator("header .wordmark").first();
@@ -1159,12 +1163,15 @@ for (const size of SIZES) {
 
       await expectGravesClear(page);
       await expectNoReload();
-      // A Replay: the wordmark goes home; Back returns to the Replay; Escape goes home (10.3).
+      // A Replay: the wordmark goes to the Home page at / (spec home-page, 12.1); Back returns to the Replay; Escape
+      // goes home (10.3).
       await page.goto("/?replay=axios");
       await mark();
       await expect(home).toHaveText("Watch the axios attack unfold");
       await wordmark.click();
-      await expect(home).toHaveText("1 of 12 dependencies needs you now.");
+      await expect(page.locator(".hp")).toBeVisible();
+      expect(new URL(page.url()).pathname).toBe("/");
+      await expectNoReload();
       await page.goBack();
       await expect(home).toHaveText("Watch the axios attack unfold");
       await page.keyboard.press("Escape");
@@ -1176,20 +1183,20 @@ for (const size of SIZES) {
       await page.locator(".crumbs").getByRole("button", { name: "← Cemetery" }).click();
       await expect(home).toHaveText("1 of 12 dependencies needs you now.");
 
-      // The Guide page: Escape goes home, Back returns to it, the wordmark goes home.
+      // The Guide page: Escape goes home, Back returns to it, its breadcrumb goes home.
       await page.getByRole("button", { name: "What is Sexton?" }).click();
       await expect(page.locator("main.guide")).toBeVisible();
       await page.keyboard.press("Escape");
       await expect(home).toHaveText("1 of 12 dependencies needs you now.");
       await page.goBack();
       await expect(page.locator("main.guide")).toBeVisible();
-      await wordmark.click();
+      await page.locator(".crumbs").getByRole("button", { name: "← Cemetery" }).click();
       await expect(page.locator("main.guide")).toHaveCount(0);
 
       // The List choice is kept by the Home action; Escape on Home with a Drawer closes only the Drawer.
       await page.getByRole("button", { name: "List", exact: true }).click();
       await page.getByRole("button", { name: "What is Sexton?" }).click();
-      await wordmark.click();
+      await page.locator(".crumbs").getByRole("button", { name: "← Cemetery" }).click();
       await expect(page.locator("table.list-table")).toBeVisible();
       await page.getByRole("button", { name: "Graveyard" }).click();
       await grave(page, "lodash").click();
@@ -1226,7 +1233,7 @@ for (const size of SIZES) {
         });
         expect(violations, view).toEqual([]);
       };
-      await page.goto("/");
+      await page.goto("/cemetery");
       await expect(grave(page, "left-padder")).toHaveCount(1);
       await axe("Home with the Welcome bar");
       await page.getByRole("button", { name: "Legend" }).click();
@@ -1290,7 +1297,7 @@ for (const size of SIZES) {
     const context = await browser.newContext();
     const page = await freshPage(context, size);
     const g = await guard(page, origin);
-    await page.goto("/");
+    await page.goto("/cemetery");
     await expect(grave(page, "left-padder")).toHaveCount(1);
     await scenePainted(page);
     await page.evaluate(() => document.fonts.ready.then(() => undefined));
@@ -1414,7 +1421,7 @@ for (const size of [...SIZES, ...SHORT_SIZES.slice(0, 1)]) {
     const context = await browser.newContext();
     const page = await freshPage(context, size);
     const g = await guard(page, origin);
-    await page.goto("/");
+    await page.goto("/cemetery");
     await expect(grave(page, "left-padder")).toHaveCount(1);
     await scenePainted(page);
     await page.evaluate(() => document.fonts.ready.then(() => undefined));
@@ -1578,7 +1585,7 @@ test("requirement 14.7: Music makes one looping audio element from the site orig
   await context.addInitScript(quietMedia);
   const page = await freshPage(context, SIZES[0] ?? { name: "1440 by 900", width: 1440, height: 900, narrow: false });
   const g = await guard(page, origin);
-  await page.goto("/");
+  await page.goto("/cemetery");
   await expect(grave(page, "left-padder")).toHaveCount(1);
   const music = page.getByRole("button", { name: "Music" });
   await expect(music).toHaveAttribute("aria-pressed", "false");
@@ -1624,7 +1631,7 @@ test("requirement 3.28: Home fits 1440 by 900 with no page scroll, with the Welc
   const context = await browser.newContext();
   const page = await freshPage(context, SIZES[0] ?? { name: "1440 by 900", width: 1440, height: 900, narrow: false });
   const g = await guard(page, origin);
-  await page.goto("/");
+  await page.goto("/cemetery");
   await expect(grave(page, "left-padder")).toHaveCount(1);
   await scenePainted(page);
   const sizes = () => page.evaluate(() => ({ scroll: document.documentElement.scrollHeight, viewport: window.innerHeight }));
@@ -1654,7 +1661,7 @@ for (const size of SHORT_SIZES) {
     const context = await browser.newContext();
     const page = await freshPage(context, size);
     const g = await guard(page, origin);
-    await page.goto("/");
+    await page.goto("/cemetery");
     await expect(grave(page, "left-padder")).toHaveCount(1);
     await scenePainted(page);
     const names = DEMO.report.packages.map((p) => p.name);
@@ -1810,7 +1817,7 @@ test("requirement 2.18: the history slider's earlier dates on the demo read the 
   const context = await browser.newContext();
   const page = await freshPage(context, SIZES[0] ?? { name: "1440 by 900", width: 1440, height: 900, narrow: false });
   const g = await guard(page, origin);
-  await page.goto("/");
+  await page.goto("/cemetery");
   await expect(grave(page, "left-padder")).toHaveCount(1);
   const headline = page.locator("h1.headline");
   await expect(headline).toHaveText("1 of 12 dependencies needs you now.");

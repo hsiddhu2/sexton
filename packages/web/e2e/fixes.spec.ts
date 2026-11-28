@@ -58,7 +58,7 @@ test("bug 2: across a Pose boundary the sprite comparison differs far more than 
   await sameOriginOnly(page, baseURL);
   await page.clock.install({ time: new Date("2026-11-24T12:00:00Z") });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
+  await page.goto("/cemetery");
   await expect(page.locator("button[data-grave-index]")).toHaveCount(12);
   await page.waitForFunction(() => (window as unknown as HookWindow).__sextonTiming !== undefined);
   await page.clock.runFor(1_500);

@@ -31,6 +31,7 @@ import { stopsFor } from "../time/stops.js";
 import { triageOrder } from "../triage/triage.js";
 import { AttackPicker } from "./AttackPicker.js";
 import { countsAt, headline } from "./headline.js";
+import { CachedLine, type CachedLineProps } from "./CachedLine.js";
 import { ListView } from "./ListView.js";
 import { notices } from "./notices.js";
 import { ScanningCard } from "./ScanningCard.js";
@@ -70,6 +71,8 @@ export interface HomeViewProps {
   readonly onRetry?: () => void;
   /** The music beat while Music is on (14.3). */
   readonly beat?: Beat | null;
+  /** Set while the Live scan shown came from the scan cache (spec home-page, 13.3). */
+  readonly cached?: CachedLineProps;
   /**
    * The Home scan shown before this load, or null. While a load runs or after it fails, its page stays under the
    * scanning or failure card, over a dimmed Scene, as in the approved design.
@@ -148,7 +151,7 @@ function formOf(response: ScanResponse, pkg: PackageHealth, atMs: number | null)
   return atMs === null ? scanForm : formAt(timelineOf(response, pkg.name), atMs, scanForm);
 }
 
-function ReadyHome({ response, loadId, screen, current = true, dispatch, theme, reducedMotion, repoFieldRef, onRemediate, onReplay, onTerm, scanKind, onGuide, beat, veil }: ReadyProps) {
+function ReadyHome({ response, loadId, screen, current = true, dispatch, theme, reducedMotion, repoFieldRef, onRemediate, onReplay, onTerm, scanKind, onGuide, beat, veil, cached }: ReadyProps) {
   const veiled = veil !== undefined;
   const order = useMemo(() => triageOrder(response.report.packages), [response]);
   const indexOf = useMemo(() => new Map(order.map((p, i) => [p.name, i])), [order]);
@@ -285,6 +288,7 @@ function ReadyHome({ response, loadId, screen, current = true, dispatch, theme, 
             {head.count === null ? null : <em className="headline-count">{head.count}</em>}
             {head.text}
           </h1>
+          {cached !== undefined && current ? <CachedLine {...cached} /> : null}
           {notes.map((note) => (
             <p key={note} className="notice">
               {note}

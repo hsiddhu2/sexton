@@ -1,0 +1,761 @@
+/* The Home page (spec home-page, design C3, requirement 16), built from the Site's colour tokens and self-hosted
+   faces only. The page scrolls as a normal page. */
+.hp {
+  --hp-gutter: 32px;
+  --hp-body: var(--muted);
+  min-height: 100vh;
+  background: var(--ui-bg);
+  color: var(--ui-text);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+/* The page's own links and focus outlines. The shared top bar keeps the Site's, so it looks the same on every page. */
+.hp-main a,
+.hp-footer a {
+  color: var(--ui-accent);
+}
+
+.hp-main a:focus-visible,
+.hp-footer a:focus-visible,
+.hp-main button:focus-visible,
+.hp-main input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.hp-wrap {
+  box-sizing: border-box;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--hp-gutter);
+}
+
+.hp-narrow {
+  max-width: 980px;
+}
+
+.hp h2 {
+  margin: 10px 0 12px;
+  font-size: 44px;
+  line-height: 1.1;
+}
+
+.hp h3 {
+  margin: 0 0 8px;
+  font-size: 19px;
+  line-height: 1.3;
+}
+
+.hp-body {
+  margin: 0 0 18px;
+  color: var(--hp-body);
+}
+
+.hp-muted {
+  margin: 0;
+  color: var(--ui-muted);
+  font-size: 15px;
+}
+
+.hp-faint {
+  color: var(--ui-faint);
+  font-size: 13px;
+}
+
+.hp-lead {
+  max-width: 720px;
+  margin: 0 0 36px;
+  color: var(--ui-muted);
+}
+
+/* Buttons and links styled as buttons. */
+.hp .hp-btn {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 22px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.hp .hp-btn-gold {
+  background: var(--ui-accent);
+  color: var(--ui-accent-ink);
+}
+
+.hp .hp-btn-gold:hover {
+  background: var(--marker);
+}
+
+.hp .hp-btn-line {
+  border: 1px solid var(--ui-line2);
+  color: var(--ui-text);
+}
+
+.hp .hp-btn-line:hover {
+  border-color: var(--ui-faint);
+}
+
+.hp-main section {
+  scroll-margin-top: 84px;
+}
+
+/* Eyebrows: the accent only for the hero, How it works and the demo (16.5); the others take a state colour. */
+.hp-eyebrow {
+  margin: 0 0 18px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hp-section .hp-eyebrow {
+  margin: 0;
+}
+
+.hp-eyebrow-accent {
+  color: var(--ui-accent);
+}
+
+.hp-eyebrow-possessed {
+  color: var(--state-possessed);
+}
+
+.hp-eyebrow-alive {
+  color: var(--state-alive);
+}
+
+.hp-eyebrow-haunted {
+  color: var(--state-haunted);
+}
+
+.hp-eyebrow-restless {
+  color: var(--state-restless);
+}
+
+/* The hero (requirement 3). */
+.hp-hero {
+  background: radial-gradient(ellipse at 78% 18%, color-mix(in srgb, var(--ui-accent) 10%, transparent), transparent 40%),
+    linear-gradient(var(--sky-mid), var(--ui-bg) 85%);
+}
+
+.hp-hero-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 48px;
+  padding-top: 84px;
+  padding-bottom: 96px;
+}
+
+.hp-hero-text {
+  flex: 1 1 440px;
+  min-width: 0;
+}
+
+.hp-title {
+  margin: 0;
+  font-size: 64px;
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+}
+
+.hp-pitch {
+  max-width: 560px;
+  margin: 22px 0 0;
+  color: var(--hp-body);
+  font-size: 19px;
+}
+
+.hp-scan {
+  display: flex;
+  max-width: 520px;
+  height: 52px;
+  margin-top: 32px;
+  border: 1px solid var(--ui-line2);
+  border-radius: 12px;
+  background: var(--ui-bg2);
+  overflow: hidden;
+}
+
+.hp-scan:focus-within {
+  border-color: var(--ui-accent);
+}
+
+.hp-scan-refused {
+  border-color: var(--state-restless);
+}
+
+.hp-scan input {
+  flex: 1;
+  min-width: 0;
+  padding: 0 16px;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: var(--ui-text);
+  font: inherit;
+  font-size: 15px;
+}
+
+.hp-scan input::placeholder {
+  color: var(--ui-faint);
+}
+
+.hp .hp-scan input:focus-visible {
+  outline: 0;
+}
+
+.hp-scan button {
+  flex: none;
+  padding: 0 22px;
+  border: 0;
+  background: var(--ui-accent);
+  color: var(--ui-accent-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hp-scan button:disabled,
+.hp-scan input:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.hp-scan-note {
+  margin: 8px 0 0;
+  color: var(--ui-muted);
+  font-size: 13px;
+}
+
+.hp-scan-hint {
+  color: var(--ui-text);
+}
+
+.hp-hero-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.hp-hero-figure {
+  flex: 1 1 520px;
+  min-width: 0;
+  margin: 0;
+}
+
+.hp-hero-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--ui-line);
+  border-radius: 16px;
+  box-shadow: 0 30px 80px color-mix(in srgb, var(--sky-top) 70%, transparent);
+}
+
+.hp-hero-figure figcaption {
+  margin-top: 12px;
+  color: var(--ui-faint);
+  font-size: 13px;
+}
+
+/* Recent scans (requirement 14), here and in the header example list. */
+.recent {
+  margin: 0;
+}
+
+.hp-recent {
+  max-width: 520px;
+  margin-top: 14px;
+}
+
+.recent-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.recent-heading {
+  margin: 0;
+  color: var(--ui-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.recent-clear {
+  padding: 2px 8px;
+  border: 1px solid var(--ui-line2);
+  border-radius: 6px;
+  background: none;
+  color: var(--ui-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.recent-clear:hover {
+  color: var(--ui-text);
+}
+
+.recent-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recent-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  max-width: 100%;
+  padding: 4px 10px;
+  border: 1px solid var(--ui-line2);
+  border-radius: 999px;
+  background: var(--ui-bg2);
+  color: var(--ui-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.recent-row:hover {
+  border-color: var(--ui-faint);
+}
+
+.recent-repo {
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+.recent-age {
+  flex: none;
+  color: var(--ui-faint);
+  font-size: 12px;
+}
+
+.recent-pop {
+  padding: 4px 4px 10px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--ui-line);
+}
+
+.recent-pop .recent-list {
+  flex-direction: column;
+  gap: 2px;
+}
+
+.recent-pop .recent-row {
+  justify-content: space-between;
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+}
+
+.recent-pop .recent-row:hover,
+.recent-pop .recent-row:focus-visible {
+  background: var(--ui-panel2);
+}
+
+/* Sections. */
+.hp-section {
+  padding: 96px 0;
+  border-top: 1px solid var(--ui-line);
+}
+
+.hp-band {
+  background: var(--ui-bg2);
+}
+
+.hp-grid {
+  display: grid;
+  gap: 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hp-grid-attacks {
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  gap: 24px;
+}
+
+.hp-grid-steps {
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  margin-top: 28px;
+}
+
+.hp-grid-states {
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+  gap: 14px;
+}
+
+.hp-grid-where {
+  grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr));
+  gap: 18px;
+  margin-top: 28px;
+}
+
+.hp-grid-kiro {
+  flex: 1 1 520px;
+  min-width: 0;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: 14px;
+}
+
+.hp-grid-roadmap {
+  position: relative;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: 22px;
+}
+
+.hp-card {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid var(--ui-line);
+  border-radius: 14px;
+  background: var(--ui-panel);
+}
+
+/* The attacks (requirement 4). */
+.hp-attack {
+  overflow: hidden;
+  padding: 0;
+  border-radius: 16px;
+}
+
+.hp-attack-art {
+  display: block;
+  width: 100%;
+  height: 220px;
+  border-bottom: 1px solid var(--ui-line);
+  object-fit: cover;
+  object-position: 30% 45%;
+}
+
+.hp-attack-body {
+  padding: 24px 26px 28px;
+}
+
+.hp-attack h3 {
+  margin: 6px 0 10px;
+  font-size: 22px;
+}
+
+.hp-attack .hp-body {
+  margin-bottom: 20px;
+}
+
+.hp-date {
+  margin: 0;
+  color: var(--ui-faint);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+}
+
+/* How it works and the states (requirement 5). */
+.hp-step-n {
+  margin: 0 0 12px;
+  color: var(--ui-accent);
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.hp .hp-subheading {
+  margin: 56px 0 18px;
+  font-size: 20px;
+}
+
+.hp-state {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--ui-line);
+  border-radius: 12px;
+  background: var(--ui-panel);
+}
+
+.hp-state-name {
+  margin: 0 0 6px;
+  font-weight: 700;
+}
+
+.hp-state-text {
+  margin: 0;
+  color: var(--hp-body);
+  font-size: 14px;
+}
+
+.hp-state-possessed {
+  border-color: var(--state-possessed);
+}
+
+.hp-state-possessed .hp-state-name {
+  color: var(--state-possessed);
+}
+
+.hp-state-dead {
+  border-color: var(--state-dead);
+}
+
+.hp-state-dead .hp-state-name {
+  color: var(--state-dead);
+}
+
+.hp-state-haunted {
+  border-color: var(--state-haunted);
+}
+
+.hp-state-haunted .hp-state-name {
+  color: var(--state-haunted);
+}
+
+.hp-state-restless {
+  border-color: var(--state-restless);
+}
+
+.hp-state-restless .hp-state-name {
+  color: var(--state-restless);
+}
+
+.hp-state-alive {
+  border-color: var(--state-alive);
+}
+
+.hp-state-alive .hp-state-name {
+  color: var(--state-alive);
+}
+
+/* Where it runs (requirement 6). */
+.hp-where {
+  padding: 22px;
+}
+
+.hp-where .hp-muted {
+  margin-bottom: 14px;
+  font-size: 14px;
+}
+
+.hp-status {
+  display: inline-block;
+  padding: 2px 10px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.hp-status-alive {
+  color: var(--state-alive);
+}
+
+.hp-status-accent {
+  color: var(--ui-accent);
+}
+
+/* Built with Kiro (requirement 7). */
+.hp-kiro-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 48px;
+}
+
+.hp-kiro-text {
+  flex: 1 1 360px;
+  min-width: 0;
+}
+
+.hp-kiro-card {
+  padding: 18px;
+  border-radius: 12px;
+}
+
+.hp-kiro-card h3 {
+  margin-bottom: 4px;
+  font-size: 16px;
+}
+
+.hp-kiro-card .hp-muted {
+  font-size: 14px;
+}
+
+/* The Roadmap (requirement 9): four headstones on a dashed path, 0.1 lit. */
+.hp-roadmap {
+  padding-bottom: 110px;
+  background: linear-gradient(var(--ui-bg2), var(--sky-top));
+}
+
+.hp-roadmap .hp-lead {
+  margin-bottom: 48px;
+}
+
+.hp-path {
+  position: relative;
+}
+
+.hp-path-line {
+  position: absolute;
+  top: 74px;
+  right: 0;
+  left: 0;
+  border-top: 2px dashed var(--ui-line2);
+}
+
+.hp-stop {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  text-align: center;
+}
+
+.hp-stone {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 150px;
+  margin: 0;
+  border: 2px solid var(--ui-line2);
+  border-radius: 60px 60px 6px 6px;
+  background: var(--ui-panel2);
+  color: var(--hp-body);
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 40px;
+  font-weight: 600;
+}
+
+.hp-stop-label {
+  margin: 16px 0 6px;
+  font-weight: 700;
+}
+
+.hp-stop-items {
+  margin: 0;
+  color: var(--ui-muted);
+  font-size: 14px;
+}
+
+.hp-stop-lit .hp-stone {
+  border-color: var(--ui-accent);
+  background: var(--sky-mid);
+  color: var(--ui-accent);
+}
+
+.hp-stop-lit .hp-stop-label {
+  color: var(--ui-accent);
+}
+
+.hp-stop-lit .hp-stop-items {
+  color: var(--hp-body);
+}
+
+/* Open source (requirement 10). */
+.hp-open {
+  padding: 88px 0;
+  text-align: center;
+}
+
+.hp-open h2 {
+  margin-top: 0;
+}
+
+.hp-open .hp-body {
+  margin-bottom: 28px;
+}
+
+.hp-open-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* The footer (10.2). */
+.hp-footer {
+  padding: 28px 0;
+  border-top: 1px solid var(--ui-line);
+}
+
+.hp-footer-row p {
+  margin: 0;
+}
+
+.hp-footer-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--ui-faint);
+  font-size: 13px;
+}
+
+/* Under 700 px the Top bar wraps to two rows, 111 px high, so a section address lands its heading below it (2.2). */
+@media (max-width: 699px) {
+  .hp-main section {
+    scroll-margin-top: 131px;
+  }
+}
+
+/* Phone width (16.4). */
+@media (max-width: 759px) {
+  .hp {
+    --hp-gutter: 18px;
+  }
+
+  .hp-hero-row {
+    gap: 32px;
+    padding-top: 48px;
+    padding-bottom: 64px;
+  }
+
+  .hp-title {
+    font-size: 42px;
+  }
+
+  .hp-pitch {
+    font-size: 17px;
+  }
+
+  .hp h2 {
+    font-size: 34px;
+  }
+
+  .hp-section {
+    padding: 64px 0;
+  }
+
+  .hp-scan button {
+    padding: 0 14px;
+  }
+
+  .hp .hp-btn {
+    white-space: normal;
+    text-align: center;
+  }
+
+  .hp-path-line {
+    display: none;
+  }
+}

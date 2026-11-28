@@ -1,12 +1,17 @@
 // The Scan field (spec clean-site, design C2, requirements 1.9 to 1.13): a wide field with its Scan button and the
 // example list, a Pop-over that opens when the field gains focus.
 import { useEffect, useState, type FocusEvent, type FormEvent, type RefObject } from "react";
+import type { Entry } from "../cache/scan-cache.js";
+import { RecentScans } from "../home-page/RecentScans.js";
 import { HOSTED_UNAVAILABLE_TEXT } from "../load/use-scan-loader.js";
 import { EXAMPLES, EXAMPLES_HEADING } from "./examples.js";
 import { SearchGlyph } from "./icons.js";
+import { useNarrow } from "../site/use-narrow.js";
 import { normaliseRepo, REPO_INPUT_HINT } from "./repo-input.js";
 
 export const SCAN_PLACEHOLDER = "Scan a GitHub repo, for example  facebook/react";
+/** The field's shorter hint in the Narrow layout, where the field shares its row with the tabs (spec home-page, 12.12). */
+export const SCAN_PLACEHOLDER_NARROW = "owner/name";
 export const SCAN_FIELD_NAME = "GitHub repository to scan";
 /** The Scan button's name while a repository from the address waits for a press (10.11, 10.18). */
 export const SCAN_PROMPT_TEXT = "Scan this repository";
@@ -20,9 +25,13 @@ export interface ScanFieldProps {
   readonly onExamples: (open: boolean) => void;
   /** Starts a Live scan of the canonical repository URL. */
   readonly onScan: (url: string) => void;
+  /** Recent scans above the examples (spec home-page, 14.2), the clock for their ages, and Clear. */
+  readonly recent?: readonly Entry[];
+  readonly now?: () => number;
+  readonly onClearRecent?: () => void;
 }
 
-export function ScanField({ apiConfigured, fieldRef, prompt = null, examplesOpen, onExamples, onScan }: ScanFieldProps) {
+export function ScanField({ apiConfigured, fieldRef, prompt = null, examplesOpen, onExamples, onScan, recent = [], now = Date.now, onClearRecent }: ScanFieldProps) {
   const [value, setValue] = useState(prompt ?? "");
   useEffect(() => {
     if (prompt !== null) setValue(prompt);
@@ -52,6 +61,7 @@ export function ScanField({ apiConfigured, fieldRef, prompt = null, examplesOpen
     if (examplesOpen) onExamples(false);
   };
   const describedBy = !apiConfigured ? "scan-off" : refused ? "scan-hint" : undefined;
+  const narrow = useNarrow();
   return (
     <div className="scan-wrap" data-popover="examples" data-tour="scan" onBlur={onBlur}>
       <form className={refused ? "scan-form scan-refused" : "scan-form"} onSubmit={submit} noValidate role="search">
@@ -62,7 +72,7 @@ export function ScanField({ apiConfigured, fieldRef, prompt = null, examplesOpen
           name="repo"
           autoComplete="off"
           spellCheck={false}
-          placeholder={apiConfigured ? SCAN_PLACEHOLDER : ""}
+          placeholder={apiConfigured ? (narrow ? SCAN_PLACEHOLDER_NARROW : SCAN_PLACEHOLDER) : ""}
           aria-label={SCAN_FIELD_NAME}
           aria-invalid={refused}
           {...(describedBy !== undefined ? { "aria-describedby": describedBy } : {})}
@@ -92,6 +102,21 @@ export function ScanField({ apiConfigured, fieldRef, prompt = null, examplesOpen
       ) : null}
       {examplesOpen && apiConfigured ? (
         <div className="examples pop">
+          {onClearRecent === undefined ? null : (
+            <RecentScans
+              className="recent recent-pop"
+              entries={recent}
+              now={now()}
+              onPick={(label) => {
+                setValue(label);
+                scan(label);
+              }}
+              onClear={() => {
+                onClearRecent();
+                fieldRef?.current?.focus();
+              }}
+            />
+          )}
           <p className="pop-heading">{EXAMPLES_HEADING}</p>
           {EXAMPLES.map((example) => (
             <button

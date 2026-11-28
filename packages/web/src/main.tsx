@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { App } from "./App.js";
+import { Root } from "./site/Root.js";
 import { parseApiBase } from "./load/api-base.js";
 import "./styles.css";
 
@@ -9,12 +9,7 @@ if (container !== null) {
   const apiBase = parseApiBase(import.meta.env.VITE_SEXTON_API);
   createRoot(container).render(
     <StrictMode>
-      <App
-        fetchFn={window.fetch.bind(window)}
-        apiBase={apiBase}
-        initialSearch={window.location.search}
-        pageOrigin={window.location.origin}
-      />
+      <Root fetchFn={window.fetch.bind(window)} apiBase={apiBase} pageOrigin={window.location.origin} />
     </StrictMode>,
   );
 }

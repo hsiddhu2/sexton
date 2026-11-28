@@ -15,6 +15,9 @@ inclusion: always
   - src/timelines.ts builds timelines, src/timelines-guard.ts applies the 5 MiB guard, src/pull-requests.ts turns the remediation log into pennant marks.
   - scripts/generate-demo-scan.mjs also writes the replay fixtures to packages/web/public/replay from scripts/lib/replay-facts.mjs.
 - packages/web: the cemetery. Reads from api. Never calls registries directly.
+  - src/site: the Route and the Root (the Home page at "/", the cemetery at "/cemetery" and "/scan").
+  - src/home-page: the product Home page, Recent scans and the demo video slot. src/cache: the browser scan cache.
+  - src/copy: the Claim registry, the headline texts and the Home page labels.
   - src/scene: canvas drawing, palette and characters. src/drawer and src/header: DOM. src/triage: ordering. src/load: API clients.
   - src/time: scrubber, play and burial; form-at.ts only looks up Segments. src/replay: replay ids, the story model and the Replay view. src/overlay: grave buttons and their labels.
   - src/home: Home, the List, the Footer bar and the site footer. src/panel: the Inspector, the Fix order and Clamped.tsx, the clamped text boxes they share with the Step panel. src/guide: the Guide page and the Welcome bar. src/tour: the Tour. src/glossary: the Terms and their meanings. src/copy: the Claim registry and mischief.ts, the Epitaph, Dry and Scanning lines. src/music: the Track slot for one music track.
