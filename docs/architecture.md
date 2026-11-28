@@ -162,4 +162,4 @@ At 1000 scans a day it comes to about 15.80 USD a month. That assumes 50 depende
 | CloudFront, S3, SNS, alarms | 0.00, inside the free tier |
 | Total | about 15.80 |
 
-The target in the product requirements is under 20 USD a month. The design file shows the working for each line.
+The target in the product requirements is under 20 USD a month. The infra spec's design.md shows the working for each line.

@@ -232,7 +232,7 @@ export function sceneryFor(width: number, skyHeight: number = SKY_HEIGHT): Scene
       grass.push(makeTuft(x, 8 + Math.floor(t.v * 9), 4 + Math.floor(t.r * 5), t.r2 < 0.5 ? -1 : 1, t.r3 < 0.5 ? "dark" : "light"));
     }
   }
-  // The harvest moon grows with a taller sky, as in the approved design, and always fits inside it.
+  // The harvest moon grows with a taller sky and always fits inside it.
   const moonR = Math.min(Math.floor(width / 5) - 4, Math.max(52, Math.floor(sky * 0.3)));
   const scenery: Scenery = {
     skyHeight: sky,
@@ -293,7 +293,7 @@ export const MIN_FIT_SCALE = 0.4;
 export const NARROW_MIN_FIT_SCALE = 0.6;
 /** The fit scales tried, largest first. */
 const FIT_STEP = 0.02;
-/** The front graves the Narrow layout stands in one row, as in the approved design. */
+/** The front graves the Narrow layout stands in one row. */
 export const NARROW_FRONT_COLUMNS = 2;
 
 /** Pure. The height the graves of `counts` need at a fit scale: the Tiers' rows, the padding and the smallest sky. */
@@ -380,7 +380,7 @@ export function planScene(input: SceneInput): ScenePlan {
     const tierRows = Math.ceil(members.length / cols);
     members.forEach((index, k) => {
       // Each row is centred in the drawable width (the backing store stops at MAX_BACKING), and its graves spread
-      // apart up to PITCH_CAP to fill the row, as in the approved design. The rectangle stays one cell, so none overlap.
+      // apart up to PITCH_CAP to fill the row. The rectangle stays one cell, so none overlap.
       const row = Math.floor(k / cols);
       const inRow = Math.min(cols, members.length - row * cols);
       const pitch = Math.max(cell.w, Math.min(Math.floor(cell.w * PITCH_CAP[tier]), Math.floor(span / inRow)));

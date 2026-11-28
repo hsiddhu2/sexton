@@ -85,3 +85,5 @@ Run-time notes:
     - _Requirements: 3.8, 12.8, 12.12_
   - [x] 7.7 Add the sixth "Built with Kiro" card, "Headless CLI", as the Claim `home.kiro.card.cli` resting on README.md's line about the headless Kiro CLI run, with a unit test for the six cards
     - _Requirements: 7.1, 7.3, 11.1, 11.2_
+  - [x] 7.8 Choose each Scan box's hint by measuring its field (`site/use-fitting-hint.ts`), so the hint fits whole at every width from 360 px up, with unit tests for `chooseHint` and a Playwright check at 360, 390, 700, 1280, 1366 and 1440 px on both pages
+    - _Requirements: 3.8, 12.12_

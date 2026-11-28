@@ -9,7 +9,7 @@ Phase 1 of "Night of the Living Deps":
 - U4 depth Tiers and a night backdrop;
 - U5 Epitaphs;
 - U6 Serious mode;
-- U7 a header and a Footer bar like the approved design.
+- U7 a header and a Footer bar in the layout this spec sets.
 
 Then the README, web.md, the screenshots, the gates and the fresh-clone run. Paths are relative to the repository root. No test touches the network.
 
@@ -60,7 +60,7 @@ Run-time notes:
     - Notes: Critic round 1 (round-2-1): not ready, sky purple too grey and thin, ground hazy grey, moon flat, gold too pale, links white, slider track grey. Sky, ground, gold and moon tokens changed. The moon gradient moves to task 5, the gold links and the slider track to task 7. Critic round 2 (round-3-1, with fonts): gold and type right. Open: a softer, taller sky glow with no hard horizon line, and a darker ground top (task 5); wordmark colour and glow (fixed).
   - [x] 2.5 Independent code review of task 2
     - _Requirements: 15.5_
-    - Review notes: READY, no defect. CIEDE2000 and the three reference pairs (Sharma 2005 Table 1 pairs 1, 4 and 19) checked, and the Machado matrices are the severity 1.0 values. Acted on: design.md now records the final palette (decision 1), and the new tokens (silhouette, lantern, moonEdge, costume) have a format and contrast test. Task 1 (docs/requirements.md) was reviewed with it: READY, R-UI-1 byte-identical to the approved text. Note kept: web.md still says upright stone for Alive and Restless until task 8.3.
+    - Review notes: READY, no defect. CIEDE2000 and the three reference pairs (Sharma 2005 Table 1 pairs 1, 4 and 19) checked, and the Machado matrices are the severity 1.0 values. Acted on: design.md now records the final palette (decision 1), and the new tokens (silhouette, lantern, moonEdge, costume) have a format and contrast test. Task 1 (docs/requirements.md) was reviewed with it: READY, R-UI-1 byte-identical to the design.md text. Note kept: web.md still says upright stone for Alive and Restless until task 8.3.
 
 - [x] 3. Fonts (U2)
   - Self-hosts the four families and switches the interface and canvas type.
@@ -156,7 +156,7 @@ Run-time notes:
   - Adds "Here lies" and the Punchlines to the tooltip and the drawer, and the Serious mode toggle.
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 8.1, 8.2, 8.3, 8.4_
   - [x] 6.1 Write `src/epitaph/epitaph.ts` and `src/epitaph/serious.ts`
-    - The Reason families, the table of design.md exactly as the owner approved it, `hereLies`, and the guarded storage read and write.
+    - The Reason families, the table of design.md exactly as written, `hereLies`, and the guarded storage read and write.
     - _Requirements: 7.3, 7.4, 7.6, 8.3, 8.4_
     - Notes: src/epitaph/epitaph.ts holds the ten rows of the approved table, each a State and an anchored pattern of the Engine reason text, plus hereLies. src/epitaph/serious.ts holds the guarded read and write and the guarded window.localStorage access.
   - [x] 6.2 Update `GraveTooltip.tsx`, `tooltip-model.ts`, `Drawer.tsx` and `App.tsx`
@@ -240,7 +240,7 @@ Run-time notes:
     - _Requirements: 15.5_
     - Review notes: NOT READY, one defect, fixed. The smoke-test screenshot step (blur and mouse move, no assertion change) was cited as change 19, but no listed change covered it. It is now Deliberate test change 27, and both citations are corrected. Clean: paths, secrets, network, origins, injection, random sources, numRuns, budget, package files, wording, trailers, no Kiro logo. Notes acted on: change 26 now says it drops the replay-row sub-check; the Backdrop and Tiers sections point to decisions 5, 6 and 11 for the final values (no cache, sky 120, no Tier gap).
 
-- [x] 10. Fix round: match the approved design
+- [x] 10. Fix round: a larger, deeper scene
   - [x] 10.1 Rule changes: a replay draws its grave full size, and the Footer bar stays in view at 960 px and wider only
     - Amend requirements 5.8 and 9.4, add the 0.6 line to docs/requirements.md, record it in design.md.
     - _Requirements: 5.8, 9.4_
@@ -257,7 +257,7 @@ Run-time notes:
     - The version shows once and the tooltip sits beside its grave; the wordmark mark is removed; a browser test checks the zombie and the skeleton are drawn.
     - _Requirements: 3.1, 7.1, 9.1_
     - Notes: Deliberate test changes 28, 29 and 33.
-  - [x] 10.5 README screenshots, gates, Visual critic rounds against the approved design pictures and an independent review
+  - [x] 10.5 README screenshots, gates, Visual critic rounds against the checklist and an independent review
     - _Requirements: 14.1, 15.3, 15.4, 15.5_
     - Notes: root tests 1913 (web 435), typecheck and lint clean, e2e 26 passed; 300-grave medians 2.90 ms and 2.70 ms; canvas top 119.7 px on the demo and 72.6 px on the axios replay at 1440 by 900. Critic: round 1 and 2 NOT READY, round 3 READY at 1440 and 390 (design.md decision 17).
     - Review notes: READY, no defects. Notes acted on: Property 7 states how many pairs it checks; change 33 names the renamed test; the "Not published" Stop card wording is in decision 17. Notes left open: the footer height hook watches the footer node it found first (the footer is not replaced on a new load); the open grave's lid paints past its cell (drawn only, never a hit area); the Character e2e relies on the skin and bone tokens staying unique to Costumes.

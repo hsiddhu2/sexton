@@ -2,7 +2,7 @@
 
 ## Overview
 
-The site shell rebuilt to the design the owner approved on 26 November 2026, around the unchanged canvas Scene. Paths are relative to the repository root. No test touches the network.
+The site shell rebuilt to the look, layout and wording this spec sets (26 November 2026), around the unchanged canvas Scene. Paths are relative to the repository root. No test touches the network.
 
 Run-time notes:
 
@@ -117,11 +117,11 @@ Run-time notes:
 
 - [x] 12. Checks, pictures, documents and the review
   - _Requirements: 16.1, 16.2, 16.8 to 16.11, 16.13, 16.14, 18.1 to 18.7_
-  - [x] 12.1 Write `e2e/clean.spec.ts` for every flow of the approved design at 1440 by 900 and 390 by 844; update the other e2e specs; axe on every view; repaint at 300 graves
+  - [x] 12.1 Write `e2e/clean.spec.ts` for every flow this spec covers at 1440 by 900 and 390 by 844. Update the other e2e specs. Axe on every view. Repaint at 300 graves
     - _Requirements: 16.1, 16.2, 16.8 to 16.11, 16.13, 16.14_
   - [x] 12.2 Retake the two README pictures; update README.md, CREDITS.md and docs/JUDGES.md; rewrite `.kiro/steering/web.md`; docs/requirements.md 1.1
     - _Requirements: 18.1 to 18.5, 18.7_
-  - [x] 12.3 After task 13, review the built site against the approved design in a fresh profile at both sizes; list every difference with its reason in design.md, with the frame time at 300 graves and what was removed
+  - [x] 12.3 After task 13, review the built site against this spec in a fresh profile at both sizes. List every difference with its reason in design.md, with the frame time at 300 graves and what was removed
     - _Requirements: 18.6_
 
 - [x] 13. A little mischief
@@ -135,7 +135,7 @@ Run-time notes:
   - [x] 13.4 Update web.md (Inspector, failure cards, scanning card, the ghost exception) and structure.md (`copy/mischief.ts`); update `e2e/clean.spec.ts` and run the whole e2e suite; retake docs/cemetery.png
     - _Requirements: 18.1, 18.4, 19.9_
 
-- [x] 14. Fixes from the review against the approved design
+- [x] 14. Fixes from the review against this spec
   - _Requirements: 1.5, 1.6, 1.13, 1.14, 3.15, 6.1, 7.2, 7.17, 11.4, 12.1, 15.2, 15.5, 16.3_
   - [x] 14.1 Keep the fit scale and the Scene the same at every date, with the Footer bar in view at 1440 by 900; e2e check
     - _Requirements: 15.2, 16.3_

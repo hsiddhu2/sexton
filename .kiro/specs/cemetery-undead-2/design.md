@@ -4,10 +4,9 @@
 
 cemetery-undead-2 is Phase 2 of the art pass "Night of the Living Deps". Phase 1 (cemetery-undead) merged to main at b513514 on 25 Nov 2026.
 
-The visual target is unchanged:
-- the approved cemetery design, with two speech bubbles;
-- the approved replay design, the axios replay at its burst, with the caption "The wind stops. A grave opens.";
-- their pictures.
+The visual target is unchanged, as cemetery-undead and this spec set it:
+- the cemetery, with two speech bubbles
+- the axios replay at its burst, with the caption "The wind stops. A grave opens.".
 
 Part A finishes the owner's review of Phase 1 (25 Nov 2026). Part B adds sound, speech bubbles, the replay burst, the burial priest, the rise clip and the load moment.
 
@@ -17,8 +16,8 @@ As in Phase 1, nothing here changes what a grave means. A grave's State comes fr
 
 1. **Paths.** packages/web, the README line, CREDITS.md, the two screenshots, web.md, docs/requirements.md and this folder. No runtime dependency, no audio file, no `.config.kiro`.
 2. **Sound.** Web Audio API, generated in code. Off by default. No AudioContext before the viewer turns it on. A remembered "on" still waits for the first gesture. Serious mode silences every sound but the burial bell. Reduced motion does not change sound.
-3. **Voices.** A low wind bed, a Possessed sting, a grave-rise thud, a burial bell and a short ghost call on hover of a grave with advisories. One master gain with a hard cap. Every sound short except the wind bed. The owner approves the Sound list.
-4. **Bubbles.** One short line from a fixed table by State and reason, true of that reason. At most two on screen, rotated on a seeded schedule, never over a name label, hidden in Serious mode, aria-hidden, still under Reduced motion. The owner approves the Bubble table. The approved design's two lines are approved: "Deprecated, not departed." and "One more minor bump and I am coming out."
+3. **Voices.** A low wind bed, a Possessed sting, a grave-rise thud, a burial bell and a short ghost call on hover of a grave with advisories. One master gain with a hard cap. Every sound short except the wind bed. The Sound list is set in this spec.
+4. **Bubbles.** One short line from a fixed table by State and reason, true of that reason. At most two on screen, rotated on a seeded schedule, never over a name label, hidden in Serious mode, aria-hidden, still under Reduced motion. The Bubble table is set in this spec. Two of its lines are fixed here: "Deprecated, not departed." and "One more minor bump and I am coming out."
 5. **Burst.** At the axios 00:21 UTC Stop, and at keyv's Possessed Stop: the lid is flung, dirt and shards fly, the zombie rises, the caption shows, and the sting and thud play when sound is on. It plays again on each arrival. Reduced motion shows the final pose at once. The 16 ms budget holds with 300 graves.
 6. **Priest.** Original vector art in the blocky style. Walks, reads, the bell sounds. Stands still under Reduced motion for the burial's duration.
 7. **Rise clip and load moment.** One rise animation shared by the Burst and the Load moment. The Load moment raises the graves in triage order, once per page load, in under one second, and is skipped under Reduced motion.
@@ -29,8 +28,8 @@ As in Phase 1, nothing here changes what a grave means. A grave's State comes fr
 
 - **R-UI-8 approved as written**, added to docs/requirements.md section 5.8 with the change log line 0.7:
   > R-UI-8. THE SYSTEM MAY play sound generated in code and show short speech bubbles over the cemetery. Sound SHALL be off by default and SHALL not start before the user turns it on. Speech bubbles SHALL never cover a grave's name, SHALL be hidden in Serious mode, and SHALL carry no information the grave's tooltip and drawer do not.
-- **Bubble table approved with two changes**: "Restless, no-signals" reads "Couldn't read my papers. Ask me again later." and "Restless, stale" reads "Two years without a release. Getting restless." The table below holds the approved lines.
-- **Sound list approved as written.**
+- **Bubble table set, with two changes**: "Restless, no-signals" reads "Couldn't read my papers. Ask me again later." and "Restless, stale" reads "Two years without a release. Getting restless." The table below holds the final lines.
+- **Sound list set as written.**
 - **The Halo limit accepted**: the strong pink shows around the rows and above them, not between graves packed tight in a row. The owner judges it on the screenshot.
 
 ## Architecture
@@ -99,7 +98,7 @@ export function labelRect(grave: GravePlan): Rect; // LABEL_BOX scaled to grave.
 **Why this box is enough.** Rows never overlap, so a box inside its own cell's vertical band cannot reach a label in another row. In a row, a neighbour's cell starts at least one cell width away and its label starts 44 cell units in, so a reach of 40 past the side leaves at least 4 cell units clear. Graves in one row share one scale. Property 1 checks this over the layout model.
 
 **Drawing changes** that bring every mark inside ART_BOX:
-- The Ghost's draw shift becomes (−4, −2), from (−4, −40). Without drift the Ghost then spans y 10 to 66 in cell units, over its stone top as in the approved design. The drift of ±6 px is divided by the Tier scale, so the span is about 4 to 72 at the front Tier and 0.6 to 75.4 at the back Tier (6 / 0.64 = 9.4). The planned Ghost box and its drift are unchanged, so the ghost-drift and layout tests stay as they are.
+- The Ghost's draw shift becomes (−4, −2), from (−4, −40). Without drift the Ghost then spans y 10 to 66 in cell units, over its stone top. The drift of ±6 px is divided by the Tier scale, so the span is about 4 to 72 at the front Tier and 0.6 to 75.4 at the back Tier (6 / 0.64 = 9.4). The planned Ghost box and its drift are unchanged, so the ghost-drift and layout tests stay as they are.
 - The open grave's lid moves 5 shape units right: its leftmost vertex goes to 8 + (−16.38 × 2.75) = −37.05 cell units, and its stroke (STONE_LINE_WIDTH 0.5 shape units, about 0.95 cell units at a right-angled corner) to about −38. It was −50.8. The replay overhang of 60 stays as room around the lone replay grave.
 - The Possessed zombie, the Dead skeleton, the Restless hand, the Alive hat, the pennant, the Priest and the Burst particles are clamped to the box where the probe of Property 2 finds a mark outside it. Any such move is listed in "Decisions made during implementation".
 
@@ -116,7 +115,7 @@ Property 2 proves the box by drawing, not by trust: a bounds-recording context d
 
 ### A3. The Halo (requirement 3)
 
-The approved design's Possessed glow is a strong pink halo. The existing glow contrast check composites the Possessed colour at GLOW_ALPHA_BYTE "28" over the ground tokens and needs every state colour, the ghost, the marker, the ring, the focus colour and the border at 3:1 on it. Alphas 0x40, 0x50 and 0x60 fail it (cemetery-undead decision 17). The check guards what sits on a glow. So the strong part goes only where nothing it guards can sit.
+This spec sets the Possessed glow as a strong pink halo. The existing glow contrast check composites the Possessed colour at GLOW_ALPHA_BYTE "28" over the ground tokens and needs every state colour, the ghost, the marker, the ring, the focus colour and the border at 3:1 on it. Alphas 0x40, 0x50 and 0x60 fail it (cemetery-undead decision 17). The check guards what sits on a glow. So the strong part goes only where nothing it guards can sit.
 
 **Method.**
 1. The existing glow pass stays: radius 200, GLOW_ALPHA_BYTE "28", drawn before the graves.
@@ -211,7 +210,7 @@ export function createSoundEngine(make: () => AudioContextLike): SoundEngine; //
 
 The noise for the wind bed and the thud is one 2-second mono buffer filled once from a mulberry32 generator seeded with 0x5e7701c3. No `Math.random`.
 
-#### Sound list (approved by the owner, 25 Nov 2026)
+#### Sound list (set 25 Nov 2026)
 
 Every Voice is built per play from these nodes and joins the Master gain (value MASTER_CAP 0.7, never set higher), then a DynamicsCompressor as a limiter (threshold −10 dB, knee 0, ratio 20, attack 3 ms, release 250 ms), then the destination. Peaks are the Voice gain before the Master gain.
 
@@ -233,14 +232,14 @@ The loudest single Voice after the Master gain is the thud at about −14 dBFS. 
 export function bubbleLine(state: State, reason: string): string | null; // uses reasonFamily from epitaph.ts
 ```
 
-#### Bubble table (approved by the owner, 25 Nov 2026)
+#### Bubble table (set 25 Nov 2026)
 
-Each line is at most 46 characters, so it fits two lines in a 220 px bubble (the owner's "Getting restless." line is 46). The first two are the approved design's lines.
+Each line is at most 46 characters, so it fits two lines in a 220 px bubble (the "Getting restless." line is 46). The first two are the lines fixed in decision 4.
 
 | State | Reason family | Bubble line | Why it is true |
 |---|---|---|---|
-| Dead | deprecated | Deprecated, not departed. | the installed version is deprecated and still installed (the approved design's line) |
-| Restless | minor-advisory | One more minor bump and I am coming out. | a Moderate or Low advisory is open; one more at High would make it Haunted (the approved design's line) |
+| Dead | deprecated | Deprecated, not departed. | the installed version is deprecated and still installed (fixed in decision 4) |
+| Restless | minor-advisory | One more minor bump and I am coming out. | a Moderate or Low advisory is open. One more at High would make it Haunted (fixed in decision 4) |
 | Possessed | maintainer-change | Who has the keys now? | a maintainer was added or removed in the last 90 days |
 | Possessed | provenance-regression | Papers? I left them in the last version. | an earlier version had provenance and this one does not |
 | Possessed | install-script | I brought a script. It runs on install. | this version added an install script, which npm runs at install |
@@ -280,7 +279,7 @@ The candidates, in order:
 
 The first candidate that lies inside the Scene and intersects no `labelRect` and nothing in `taken` wins. When none is clear, the grave gets no Bubble in that slot. The second Bubble is placed with the first in `taken`. At 390 px the "above" candidate meets the label band of the row above, so on a phone mostly top-row graves and row ends get Bubbles; that is the label rule working, not a fault.
 
-**DOM.** `speech/Bubbles.tsx` renders `<div className="bubble-layer" aria-hidden="true">` inside `.scene-container`, over the canvas, holding at most two `<p className="bubble">` at their planned rectangles. `pointer-events: none`. The style is the approved design's: a `text` token background with `ink` text, 13.5 px, weight 600, radius 14, padding 8 by 12. Both are existing tokens, and ink on text is above 15:1.
+**DOM.** `speech/Bubbles.tsx` renders `<div className="bubble-layer" aria-hidden="true">` inside `.scene-container`, over the canvas, holding at most two `<p className="bubble">` at their planned rectangles. `pointer-events: none`. The style: a `text` token background with `ink` text, 13.5 px, weight 600, radius 14, padding 8 by 12. Both are existing tokens, and ink on text is above 15:1.
 
 **Timing.** One `setTimeout` to the next slot start or show boundary updates a `bubbleClock` state. It does not run while Serious mode is on, while the drawer is open or while the page is hidden. A Bubble appears at its slot start and goes at the show boundary, 4,500 ms later. Without Reduced motion each Bubble fades over 200 ms with an opacity transition. Under Reduced motion the class has no transition.
 
@@ -309,7 +308,7 @@ export const BURST_PARTICLES: readonly Particle[]; // 8 dirt clods, 6 shards, fi
 
 ### B4. The burial Priest (requirement 10)
 
-`scene/characters/priest.ts` draws the Priest in shape-box units: a long cassock in the `surface` token outlined in `border`, a collar and a book in `marker`, a face in `bone`, all blocky rectangles as in the approved design's figures.
+`scene/characters/priest.ts` draws the Priest in shape-box units: a long cassock in the `surface` token outlined in `border`, a collar and a book in `marker`, a face in `bone`, all blocky rectangles, like the other figures.
 
 - **Path.** The Priest is 24 cell units wide. His left edge walks from x 208 (so his right edge is at 232, the edge of ART_BOX) to x 180, over burial phases 0 to 0.4, with a two-Pose walk. He reads from 0.4 to 1 at x 180 to 204 with a one-Pose read and the book raised, clear of the pennant (x 160 to 176, y 124 to 168), which shows from phase 0.65.
 - **Bell.** At phase 0.4, once per burial, `play("bell")` if Sound is on.
@@ -483,14 +482,14 @@ If the build finds another existing test that pins a value this spec changes on 
 
 ### Visual critic protocol (requirement 15)
 
-As cemetery-undead "Visual critic protocol", with these captures: `/` and `/?replay=axios` at 1440 by 900 and 390 by 844, plus the axios replay at the Burst Stop at 600 ms into the Burst (mid-animation) and at its final pose, with Reduced motion off at a fixed page clock. The critic sees only those images, the two approved design pictures, the design guidance and this checklist:
+As cemetery-undead "Visual critic protocol", with these captures: `/` and `/?replay=axios` at 1440 by 900 and 390 by 844, plus the axios replay at the Burst Stop at 600 ms into the Burst (mid-animation) and at its final pose, with Reduced motion off at a fixed page clock. The critic sees only those images, the design guidance and this checklist:
 - no ghost, lid, character or bubble over another grave's name;
-- the Possessed halo reads strong and pink, as in the approved design;
+- the Possessed halo reads strong and pink
 - the pit edge is not gold like the selection ring;
 - the middle and back rows fill the width;
 - the replay header labels its two times;
 - the story card's sources are on one line;
-- the bubbles look like those of the approved design;
+- the bubbles match the style B2 sets
 - the Burst reads as a grave bursting open, with its caption;
 - the Priest reads as a priest;
 - no generic template tells.
@@ -502,7 +501,7 @@ As cemetery-undead "Visual critic protocol", with these captures: `/` and `/?rep
 3. **The Halo by cutting out, not by a new contrast rule.** Reason: the decisions record that the existing check passes unchanged, so the strong part goes only where the check has nothing to guard.
 4. **Pit edge in `costume.flower`.** Reason in A4.
 5. **Pitch caps from the front pitch.** Reason in A5.
-6. **"Sound off" and "Sound on" as the toggle's names.** Note: assistive technology reads the name and the pressed state, so it hears "Sound on, pressed". The names match the approved design and the decided wording.
+6. **"Sound off" and "Sound on" as the toggle's names.** Note: assistive technology reads the name and the pressed state, so it hears "Sound on, pressed". The names are the decided wording.
 7. **A limiter after the Master gain.** Reason: the sting, the thud and the bell can start together at the Burst.
 8. **The Burst caption is plain text, not a live region.** Reason: the Play live line already announces the Stop, and a second announcement would talk over it.
 9. **The Burst uses the Form at the Stop, found from the Segments.** Reason: web holds no state rule, and the Stop must not be a date in the code.
@@ -513,7 +512,7 @@ As cemetery-undead "Visual critic protocol", with these captures: `/` and `/?rep
 
 ## Decisions made during implementation
 
-1. **Bubble line length 46, not 44.** The owner's approved line "Two years without a release. Getting restless." is 46 characters. The cap follows the approved wording; two lines in a 220 px bubble still hold it.
+1. **Bubble line length 46, not 44.** The Bubble table line "Two years without a release. Getting restless." is 46 characters. The cap follows that line. Two lines in a 220 px bubble still hold it.
 2. **ART_BOX is 220 high, not 224.** A Tier cell is rounded to whole pixels (154 by 179 at 0.8), so 224 units at the drawing scale (154 / 192) pass the cell's bottom by under a pixel. Nothing is drawn below 219 units.
 3. **Marks moved into the Art box, found by the probe.** The Ghost shift is (−4, −2). The lid, its crack, its solid box and its specks move 5 shape units right. The zombie is drawn at 1.15 (was 1.35), centred at x 32 and moved to −7, so its horns stay inside the top of the cell and its feet stand in the pit. The party hat is 9 rows from y 2 with its bobble at y −2 (was 13 rows, bobble at −9).
 4. **The Form box is split.** One core box per shape, without the shadow, plus GHOST_BOX {80, 0, 48, 76} when the grave has a Ghost and MARKER_BOX {160, 124, 16, 44} when it has a pennant (`formRects`). The shadow is not cut: no checked token sits on it. Critic round 2 saw dark boxes where whole Forms were cut.

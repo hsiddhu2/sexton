@@ -80,12 +80,12 @@ The workspace packages keep their `@sexton/*` names and every import stays as it
 
 ### Requirement 5: Documentation
 
-**User Story:** As a reader of the README, I want to know install from npm is coming, without a command that fails today.
+**User Story:** As a reader of the README, I want the commands that install Sexton from npm, and each of them works today.
 
 #### Acceptance Criteria
 
-1. THE README SHALL have a section "Install" marked as coming with release 0.1, naming the two packages.
-2. THE section SHALL hold no command that does not work yet.
+1. THE README SHALL have a section "Install" that names the two packages, links their npm pages and states that both carry npm provenance from the release workflow. Before 0.1.0 was published the section was marked as coming with release 0.1. Since 28 November 2026, when 0.1.0 was published, it gives the install commands.
+2. THE section SHALL hold no command that does not work today. Each command in it is run from a folder outside the repository before it is written.
 3. THE spec SHALL cite the npm and MCP Registry documents it relies on, with their URLs.
 4. THE steering file `tech.md` SHALL say that the Published packages need Node 20.19.0 or later while the workspace builds on Node 22.
 

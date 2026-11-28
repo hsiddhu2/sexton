@@ -1,12 +1,12 @@
 // The Scan field (spec clean-site, design C2, requirements 1.9 to 1.13): a wide field with its Scan button and the
 // example list, a Pop-over that opens when the field gains focus.
-import { useEffect, useState, type FocusEvent, type FormEvent, type RefObject } from "react";
+import { useEffect, useRef, useState, type FocusEvent, type FormEvent, type RefObject } from "react";
 import type { Entry } from "../cache/scan-cache.js";
 import { RecentScans } from "../home-page/RecentScans.js";
 import { HOSTED_UNAVAILABLE_TEXT } from "../load/use-scan-loader.js";
 import { EXAMPLES, EXAMPLES_HEADING } from "./examples.js";
 import { SearchGlyph } from "./icons.js";
-import { useNarrow } from "../site/use-narrow.js";
+import { useFittingHint } from "../site/use-fitting-hint.js";
 import { normaliseRepo, REPO_INPUT_HINT } from "./repo-input.js";
 
 export const SCAN_PLACEHOLDER = "Scan a GitHub repo, for example  facebook/react";
@@ -32,6 +32,8 @@ export interface ScanFieldProps {
 }
 
 export function ScanField({ apiConfigured, fieldRef, prompt = null, examplesOpen, onExamples, onScan, recent = [], now = Date.now, onClearRecent }: ScanFieldProps) {
+  const ownRef = useRef<HTMLInputElement>(null);
+  const inputRef = fieldRef ?? ownRef;
   const [value, setValue] = useState(prompt ?? "");
   useEffect(() => {
     if (prompt !== null) setValue(prompt);
@@ -53,7 +55,7 @@ export function ScanField({ apiConfigured, fieldRef, prompt = null, examplesOpen
     event.preventDefault();
     if (!apiConfigured) return;
     // A refused input keeps focus in the field and sends no request (1.12).
-    if (!scan(value)) fieldRef?.current?.focus();
+    if (!scan(value)) inputRef.current?.focus();
   };
   const onBlur = (event: FocusEvent<HTMLDivElement>): void => {
     const next = event.relatedTarget;
@@ -61,18 +63,18 @@ export function ScanField({ apiConfigured, fieldRef, prompt = null, examplesOpen
     if (examplesOpen) onExamples(false);
   };
   const describedBy = !apiConfigured ? "scan-off" : refused ? "scan-hint" : undefined;
-  const narrow = useNarrow();
+  const hint = useFittingHint(inputRef, SCAN_PLACEHOLDER, SCAN_PLACEHOLDER_NARROW);
   return (
     <div className="scan-wrap" data-popover="examples" data-tour="scan" onBlur={onBlur}>
       <form className={refused ? "scan-form scan-refused" : "scan-form"} onSubmit={submit} noValidate role="search">
         <SearchGlyph />
         <input
-          ref={fieldRef}
+          ref={inputRef}
           type="text"
           name="repo"
           autoComplete="off"
           spellCheck={false}
-          placeholder={apiConfigured ? (narrow ? SCAN_PLACEHOLDER_NARROW : SCAN_PLACEHOLDER) : ""}
+          placeholder={apiConfigured ? hint : ""}
           aria-label={SCAN_FIELD_NAME}
           aria-invalid={refused}
           {...(describedBy !== undefined ? { "aria-describedby": describedBy } : {})}
@@ -113,7 +115,7 @@ export function ScanField({ apiConfigured, fieldRef, prompt = null, examplesOpen
               }}
               onClear={() => {
                 onClearRecent();
-                fieldRef?.current?.focus();
+                inputRef.current?.focus();
               }}
             />
           )}

@@ -45,7 +45,7 @@ export function GraveButtons({ plan, selectedIndex, packages, onSelect, onOpen, 
     onLantern?.(lit);
   }, [lit, onLantern]);
   // The grave under the pointer is told in the pointer event itself, not in an effect after it, so the Inspector
-  // shows the right package before the next press lands on it (review against the approved design, D5).
+  // shows the right package before the next press lands on it (spec clean-site, D5).
   const pointer = useRef<number | null>(null);
   const [holder, setHolder] = useState<number | null>(null);
   useEffect(() => {

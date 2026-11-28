@@ -11,8 +11,8 @@ export interface ShapeDef {
 }
 
 /**
- * Four distinct outlines in a 64 by 64 box, every stone standing on y 60. The stones are tall, as in the approved
- * design. The tilt is a constant of the shape, never per package.
+ * Four distinct outlines in a 64 by 64 box, every stone standing on y 60. The stones are tall.
+ * The tilt is a constant of the shape, never per package.
  */
 export const SHAPES: Record<ShapeId, ShapeDef> = {
   // Alive: a tall rounded stone, upright (a party hat and flowers are its Costume). Spec cemetery-undead, 3.5.

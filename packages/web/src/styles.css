@@ -137,7 +137,7 @@ main {
 }
 
 
-/* The shell (spec clean-site): colours from the chrome tokens of the design the owner approved. */
+/* The shell (spec clean-site): colours from the chrome tokens of design C14. */
 button {
   font: inherit;
   color: inherit;
@@ -337,14 +337,14 @@ a {
   cursor: not-allowed;
 }
 
-/* With no API base the Scan button looks as off as it is (review against the approved design, D7). */
+/* With no API base the Scan button looks as off as it is (spec clean-site, D7). */
 .scan-button:disabled {
   background: var(--ui-panel2);
   color: var(--ui-faint);
 }
 
 /* "Scanning is off in this build." reads inside the field where the placeholder would be, so it covers nothing under
-   the header (review against the approved design, D7). */
+   the header (spec clean-site, D7). */
 .scan-note.scan-off {
   top: 0;
   right: 96px;
@@ -825,7 +825,7 @@ a {
   overflow: auto;
 }
 
-/* The table keeps whole words: on a narrow screen it scrolls sideways inside the List, as in the approved design (D4). */
+/* The table keeps whole words: on a narrow screen it scrolls sideways inside the List (spec clean-site, D4). */
 .list-table {
   width: 100%;
   min-width: 640px;
@@ -1855,8 +1855,12 @@ a {
   .site-tab {
     padding: 0 8px;
   }
+  /* Room for the short Scan hint at 700 px (spec home-page, 12.12). */
+  .scan-form input {
+    padding: 0 8px;
+  }
   .scan-button {
-    padding: 0 14px;
+    padding: 0 12px;
   }
 }
 
@@ -1929,7 +1933,7 @@ a {
   .legend {
     position: static;
   }
-  /* The wordmark and the four buttons, Music among them, share the first row at 390 px, as in the approved design
+  /* The wordmark and the four buttons, Music among them, share the first row at 390 px
      (15.1): the buttons are 8 px in, and "What is Sexton?" drops its decorative book glyph and keeps its words. */
   .ib {
     padding: 0 8px;
@@ -2354,7 +2358,7 @@ a {
   text-align: left;
 }
 
-/* Words break only between words; a long name breaks only when it cannot fit alone (review against the approved design, D3). */
+/* Words break only between words; a long name breaks only when it cannot fit alone (spec clean-site, D3). */
 .drawer-signals td {
   padding: 10px 10px 10px 0;
   border-bottom: 1px solid var(--ui-line);
@@ -2556,7 +2560,7 @@ a {
   }
 }
 
-/* A Replay's Footer bar wraps on a phone, one Step card a row, as in the approved design. */
+/* A Replay's Footer bar wraps on a phone, one Step card a row. */
 @media (max-width: 699px) {
   .replay-foot,
   .step-cards {
@@ -2735,8 +2739,8 @@ a {
   position: relative;
 }
 
-/* Review against the approved design: while a scan loads or after it fails, the scan shown before stays under the card, and
-   its Scene is dimmed, as in the approved design. The card keeps its own colours over the dim layer. */
+/* Review against spec clean-site: while a scan loads or after it fails, the scan shown before stays under the card, and
+   its Scene is dimmed. The card keeps its own colours over the dim layer. */
 .scene-veil .scene-card-overlay {
   background: none;
 }

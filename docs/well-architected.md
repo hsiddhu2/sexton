@@ -4,7 +4,7 @@ This is a short review of the release 0.1 deployment against the six pillars of 
 
 ## Operational excellence
 
-Everything is code. One CDK app in `infra/` defines both stacks, and the tests synthesise it with no AWS credentials. Every change is checked by CDK assertions, an IAM-shape test and the cdk-nag AwsSolutions rules. A finding we do not fix must be acknowledged in code with a written reason. A test checks that the same reason appears in the design file. The plan for logs is one JSON line per upstream request with a correlation ID on every line, kept for 30 days. Five alarms send email through SNS. The trade-off is that there is one stage, `dev`, and CI does not deploy. A person runs the deploy by hand.
+Everything is code. One CDK app in `infra/` defines both stacks, and the tests synthesise it with no AWS credentials. Every change is checked by CDK assertions, an IAM-shape test and the cdk-nag AwsSolutions rules. A finding we do not fix must be acknowledged in code with a written reason. A test checks that the same reason appears in the infra spec's design.md. The plan for logs is one JSON line per upstream request with a correlation ID on every line, kept for 30 days. Five alarms send email through SNS. The trade-off is that there is one stage, `dev`, and CI does not deploy. A person runs the deploy by hand.
 
 ## Security
 

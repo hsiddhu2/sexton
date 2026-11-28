@@ -30,7 +30,7 @@ Out of scope: any change to the engine, the API or infra. Also out of scope: a s
 - **Fresh**: an Entry with a response saved less than 15 minutes ago and not in the future.
 - **Recent scans**: the Entries of the Scan cache, newest first, at most 10.
 - **Claim registry**: web/src/copy/claims.ts, the one source of every sentence the Site shows that says what Sexton does or can do.
-- **Status label**: the pill on a "Where it runs" card that says how far that part is: "Live", "On main", or "On main · npm release next".
+- **Status label**: the pill on a "Where it runs" card that says how far that part is: "Live", "On main", or "On npm".
 - **Off-site link**: a link whose address is on another site, an absolute URL with a scheme.
 - **Top bar**: the sticky header of every page, the Home page's and the Cemetery view's, built from the same parts (requirement 12).
 - **Tabs**: the two links "Overview" and "Cemetery" right after the wordmark in the Top bar (12.5). "Overview" names the Home page. "Cemetery" names the Cemetery view, not spec clean-site's **Home**, the cemetery's own view of a loaded scan.
@@ -78,7 +78,7 @@ Out of scope: any change to the engine, the API or infra. Also out of scope: a s
 5. WHILE the Site has no API base, THE Scan box field and button SHALL be disabled and described by "Scanning is off in this build."
 6. THE hero SHALL hold a "Walk the sample cemetery" link to `/cemetery` and the line "Public repos only. No sign-in. Apache-2.0."
 7. THE hero SHALL show the cemetery picture of docs/cemetery.png, with a text alternative and the caption of the Claim `home.hero.caption`.
-8. WHILE the Site is in the Narrow layout, THE Scan box's hint SHALL read "owner/name" and SHALL fit whole inside the field at 360 and 390 px. In the other layouts it reads "owner/name, for example expressjs/express".
+8. THE Scan box's hint SHALL fit whole inside its field at every width from 360 px up. It SHALL read "owner/name, for example expressjs/express" while that whole text fits inside the field's text area with 4 px to spare, and "owner/name" otherwise. Where the field cannot be measured, the Narrow layout decides: "owner/name" in it, the long hint outside it. A check SHALL measure the hint against the field at 360, 390, 700, 1280, 1366 and 1440 px.
 
 ### Requirement 4: The attacks are real
 
@@ -100,7 +100,7 @@ Out of scope: any change to the engine, the API or infra. Also out of scope: a s
 #### Acceptance Criteria
 
 1. THE section "Where it runs" SHALL show five cards in order: the cemetery, the CLI, the GitHub Action, the Kiro Power and the evidence pack, each with its Claim text and a Status label.
-2. THE Status labels SHALL be "Live" for the cemetery, "On main · npm release next" for the CLI and "On main" for the GitHub Action, the Kiro Power and the evidence pack, each resting on README.md.
+2. THE Status labels SHALL be "Live" for the cemetery, "On npm" for the CLI, since release 0.1.0 put it on npm on 28 November 2026, and "On main" for the GitHub Action, the Kiro Power and the evidence pack, each resting on README.md.
 
 ### Requirement 7: Built with Kiro
 
@@ -156,7 +156,7 @@ Out of scope: any change to the engine, the API or infra. Also out of scope: a s
 9. WHILE the Site is in the Wide layout, at 1440 by 900, 1366 by 768 and 1280 by 800, THE Cemetery view's Top bar SHALL be one row of at most 64 px and the page SHALL not scroll, with the Welcome bar open and closed, the Music button shown and the longest scan tag (spec clean-site, 3.28 and 3.29). The Scan field SHALL keep at least 300 px, so wider font rendering still fits. The scan tag SHALL be at most 12rem wide, its text cut with an ellipsis.
 10. WHILE the Site is in the Middle layout (700 to 1099 px), THE Top bar SHALL stay one row of at most 64 px with both Tabs showing their words. "What is Sexton?" SHALL show its book glyph alone, named by its words, as Legend, Music and Tour do (spec clean-site, 1.3). The bar's side padding SHALL be 20 px and its gaps 12 px.
 11. WHILE the Site is in the Narrow layout (under 700 px), THE Top bar SHALL wrap. Its first row keeps the wordmark and the buttons (GitHub and Try the demo on the Home page). Its second row starts with the Tabs, followed in the Cemetery view by the Scan field. Both Tabs SHALL show their words, be reachable by their names, and cause no sideways scroll at 360 and 390 px. In this layout the Tabs take the Scan field's height (42 px), and at 390 px the bar is 111 px high on both pages with the Tabs at the same place. Under that width the Cemetery view's buttons may wrap to a row of their own, as they did before this spec.
-12. WHILE the Site is in the Narrow layout, THE Cemetery view's Scan field SHALL show the hint "owner/name", which SHALL fit whole inside the field at 360 and 390 px. To make room, the field's decorative search glyph SHALL hide and the field, its Scan button and the Tabs SHALL take less padding. In the other layouts the hint stays "Scan a GitHub repo, for example  facebook/react".
+12. THE Cemetery view's Scan field SHALL follow the hint rule of 3.8 with its own long hint, "Scan a GitHub repo, for example  facebook/react", and the short hint "owner/name", so its hint fits whole at every width from 360 px up. WHILE the Site is in the Narrow layout, the field's decorative search glyph SHALL hide and the field, its Scan button and the Tabs SHALL take less padding. WHILE the Site is in the Middle layout, the field and its Scan button SHALL also take less padding, so the short hint fits at 700 px.
 
 ### Requirement 13: The scan cache
 

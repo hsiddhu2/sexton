@@ -250,7 +250,7 @@ No path throws. The client catches every rejection and turns it into an entry re
    - `src/load/lists.ts`, `test/lists.test.ts`, `test/arbitraries.ts` (task 1): `lists.ts` asserts at compile time that its `SIGNAL_NAMES` equals the API contract's, so two new signal names fail the root typecheck unless the list, its test and the signal generator gain them in the same commit.
    - `public/replay/axios.json`, `public/replay/keyv.json` (task 8): the replay generator writes them; the instructions ask for the new axios reason.
    - `public/demo/scan.json`, `evidence.json`, `evidence.md` are generated at test time and not committed; they change with the fixtures and the version.
-   No web source file other than `lists.ts`, and no web test that quotes the axios reason, changes before task 10. Approved by the owner at `go`, 25 Nov 2026.
+   No web source file other than `lists.ts`, and no web test that quotes the axios reason, changes before task 10. Accepted at `go`, 25 Nov 2026.
 10. **Engine version 0.2.0.** Two signals change the evidence body shape. `packages/api` and `packages/cli` pin `@sexton/engine` exactly, so their pins move to 0.2.0 and the lockfile is updated with `npm install` (no new package).
 11. **Demo evidence digest.** Before: `c8fb6cab465d46ca92cf83dbc10022b6a662c8fad68ec8f64d827ef16f43344d`. After: `de2736eabb384057dd9946972ac4f8516ff7e12a2213d9cabc09ffeeb3f138f1`. Golden pack: `d797b6ec…` to `212bb42b…`.
 12. **The compromised account's name is left out of the replay facts.** It is sourced, but no output needs it: the reason at 00:21 is provenance regression and the report version is 1.14.0. In the spirit of Requirement 9.3, the replay does not name the person whose account was taken. publisherChange for 1.14.1 is therefore `unknown`.
@@ -346,7 +346,7 @@ Notes kept as they are: "FOR EACH" and "FOR ANY" criteria follow history-signals
 
 - Rule order: the three Existing rules first and unchanged, then the New dependency rule, then the Publisher rule.
 - The axios replay keeps its provenance regression reason and its story text. No web test quoting the axios reason changes. Task 8 only regenerates the replay files with the new signals as evidence. Task 10 adds one sentence to the axios story about plain-crypto-js being published 22 minutes earlier.
-- All other decisions accepted. Approved lines: epitaph "A new hand signed this one. The pipeline did not." and bubble "Published by hand. The robot usually does it." for `publisher changed in`; epitaph "It brought a new friend along. Check the friend." and bubble "I brought a plus-one. Nobody checked the list." for `new dependency in`.
+- All other decisions accepted. Lines set: epitaph "A new hand signed this one. The pipeline did not." and bubble "Published by hand. The robot usually does it." for `publisher changed in`. Epitaph "It brought a new friend along. Check the friend." and bubble "I brought a plus-one. Nobody checked the list." for `new dependency in`.
 
 ## Decisions made during implementation
 
@@ -360,7 +360,7 @@ Notes kept as they are: "FOR EACH" and "FOR ANY" criteria follow history-signals
 ## Owner decisions of 25 Nov 2026, with task 10
 
 - Main with phase 2 merged in; change-log line 0.8.
-- The four approved lines added; the axios story gains "plain-crypto-js 4.2.1 was published 22 minutes before axios 1.14.1." (the facts give 22 minutes 46 seconds).
+- The four lines set at go added. The axios story gains "plain-crypto-js 4.2.1 was published 22 minutes before axios 1.14.1." (the facts give 22 minutes 46 seconds).
 - The PR body Possessed warning now reads "Check the maintainer, provenance, install-script, new dependency or publisher change before you merge."
 - The README state-table Possessed row names the two new conditions.
 - A missing publisher name reads "unknown" in the publisher-changed reason (`UNKNOWN_PUBLISHER` in state.ts), never an empty gap. The status rules make `changed` need both names, so this guards hand-built or replay values; tested in state-new-signals.test.ts. The web patterns accept any non-empty text for each name.

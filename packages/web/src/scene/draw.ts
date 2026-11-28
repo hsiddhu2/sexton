@@ -865,7 +865,7 @@ export function drawGhost(ctx: PaintContext2D, x: number, y: number, size: numbe
   const colours = PALETTE.dark;
   ctx.save();
   ctx.translate(x, y + ghostOffset(phase));
-  // Drawn larger and higher than its planned point, floating over the top of its stone, as in the approved design.
+  // Drawn larger and higher than its planned point, floating over the top of its stone.
   ctx.translate(GHOST_SHIFT_X, GHOST_SHIFT_Y);
   ctx.scale(size, size);
   const paintGhost = (c: PaintContext2D): void => {

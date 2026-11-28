@@ -8,9 +8,9 @@ The web app draws the scan as a cemetery where each grave is one dependency. The
 
 ![The Sexton cemetery for the demo scan. Each grave is one dependency. Its shape and colour show its state.](docs/cemetery.png)
 
-Status: pre-release. Release 0.1 is due on 4 December 2026. Each feature below says whether it is on `main` today, in progress, or planned.
+Status: release 0.1.0 is on npm. The CLI and the MCP server were published on 28 November 2026. Each feature below says whether it is on `main` today, in progress, or planned.
 
-The hosted site, https://de1giv8lj8sfh.cloudfront.net, is deployed by hand, so it can lag `main`. It was last deployed on 26 November 2026.
+The hosted site, https://de1giv8lj8sfh.cloudfront.net, is deployed by hand, so it can lag `main`. It was last deployed on 28 November 2026.
 
 ## Try it in two minutes
 
@@ -59,7 +59,7 @@ Each package gets exactly one state. The rules run in this order, and the first 
 
 ## Quick start
 
-The CLI is on `main`. It is not published to npm yet, so run it from a clone (see "CLI" below).
+The CLI is on npm as `sexton`. Install it (see "Install" below), or put `npx` in front of each command.
 
 ```sh
 sexton scan https://github.com/<owner>/<repo>   # score every direct dependency and write scan.json
@@ -69,7 +69,7 @@ sexton evidence                                 # write the evidence pack
 
 Hosted demo: https://de1giv8lj8sfh.cloudfront.net
 
-What runs today, from a clone of this repository, with Node.js 22:
+To work on Sexton itself, from a clone of this repository, with Node.js 22:
 
 ```sh
 npm ci                              # install the exact versions in the lockfile
@@ -80,28 +80,47 @@ npm run scan:self                   # score Sexton's own dependencies live and c
 
 The last command calls the npm registry, OSV and deps.dev, so it needs network. It exits non-zero when the policy fails.
 
-## Install (coming with release 0.1)
+## Install
 
-Nothing is on npm yet. With release 0.1, two packages will be published to npm from GitHub Actions, each with npm provenance that links it to the commit and workflow that built it:
+Release 0.1.0 put two packages on npm:
 
-- `sexton`, the command line, with the `sexton` command.
-- `sexton-mcp`, the MCP server, with the `sexton-mcp` command. It will also be listed in the official MCP Registry as `io.github.hsiddhu2/sexton`.
+- [`sexton`](https://www.npmjs.com/package/sexton), the command line, with the `sexton` command.
+- [`sexton-mcp`](https://www.npmjs.com/package/sexton-mcp), the MCP server, with the `sexton-mcp` command. Its name for the official MCP Registry is `io.github.hsiddhu2/sexton`. The listing there is a separate step.
 
-Each is one file with no dependencies, and runs on Node.js 20.19 or later. The install commands will go here once they work.
+Both packages carry npm provenance from the release workflow, `.github/workflows/release.yml`, which published them from GitHub Actions. The provenance links each package to the commit and workflow that built it. Each is one file with no dependencies, and runs on Node.js 20.19 or later.
 
-Until then, run the CLI from a clone (see "CLI" below), and use the MCP server through the Kiro Power (see "Ask Sexton from Kiro"). Building from a clone needs Node.js 22. The release plan is `.kiro/specs/release`.
+```sh
+npx sexton --help                         # run the CLI once, with no install
+npm install --global sexton sexton-mcp    # or install both commands
+sexton --version                          # prints 0.1.0
+```
+
+To check the provenance, add both packages to a project with `npm install sexton sexton-mcp` and run `npm audit signatures` there. It reports verified registry signatures and verified attestations for both.
+
+To use the MCP server, add it to your MCP client's configuration as a stdio server:
+
+```json
+{
+  "mcpServers": {
+    "sexton": { "command": "npx", "args": ["-y", "sexton-mcp"] }
+  }
+}
+```
+
+In Kiro, the Kiro Power carries the same server (see "Ask Sexton from Kiro"). Building from a clone needs Node.js 22. The release plan is `.kiro/specs/release`.
 
 ## CLI
 
-Not published to npm yet, run it from a clone with Node.js 22:
+Install it from npm (see "Install"), or run each command with `npx sexton` in place of `sexton`:
 
 ```sh
-npm ci && npx tsc -b packages/cli
-node packages/cli/dist/bin.js scan <repo-or-path> [--repo <url>] [--out <file>]
-node packages/cli/dist/bin.js check [repo-or-path] [--repo <url>] [--summary <file>]
-node packages/cli/dist/bin.js evidence [repo-or-path] [--repo <url>] [--out-dir <dir>]
-node packages/cli/dist/bin.js evidence --verify <file>
+sexton scan <repo-or-path> [--repo <url>] [--out <file>]
+sexton check [repo-or-path] [--repo <url>] [--summary <file>]
+sexton evidence [repo-or-path] [--repo <url>] [--out-dir <dir>]
+sexton evidence --verify <file>
 ```
+
+From a clone, with Node.js 22, build it with `npm ci && npx tsc -b packages/cli` and run `node packages/cli/dist/bin.js` in place of `sexton`.
 
 - A target that is a GitHub repository URL is read from GitHub. Any other target is a local directory, default the current one. A local directory needs its repository name: `--repo`, or an `origin` remote on github.com.
 - `scan` prints a table and writes `scan.json`. `check` prints every rule and exits non-zero when one fails. `evidence` writes `sexton-evidence.json` and `sexton-evidence.md` and prints the digest. `--verify` checks a pack.
@@ -137,7 +156,7 @@ Install it in under two minutes, with no clone and no build:
 1. In Kiro, open the Powers panel, choose Add Custom Power, then Import power from a repository URL, and paste `https://github.com/hsiddhu2/sexton/tree/main/powers/sexton`. The folder is also installable with Import power from a folder.
 2. Open a project that has a `package.json` and ask in chat: "Which of my npm dependencies should I fix first, and why?" Kiro approves each tool call with you and passes the workspace root as `projectDir`.
 
-The server runs on the Node that Kiro starts it with (Node 20 or later), reads `package.json`, `package-lock.json`, `sexton.policy.yml` and source files to count imports, and asks `registry.npmjs.org`, `api.osv.dev` and `api.deps.dev`. It writes nothing, installs nothing, runs no code from the project and returns no file contents. Every string in an answer came from a registry or the project, so each answer starts with a line that says to treat it as data.
+The server runs on the Node that Kiro starts it with (Node 20.19 or later), reads `package.json`, `package-lock.json`, `sexton.policy.yml` and source files to count imports, and asks `registry.npmjs.org`, `api.osv.dev` and `api.deps.dev`. It writes nothing, installs nothing, runs no code from the project and returns no file contents. Every string in an answer came from a registry or the project, so each answer starts with a line that says to treat it as data.
 
 Residual risk. Kiro does not tell a Power's server which folder is the workspace, so every tool takes a `projectDir`. The server accepts any real directory that holds a `package.json`, not only the workspace. If a model, or text that steers it, passes another directory and you approve the call, Sexton scans that directory and sends its dependency names and versions to the three public services above, and the model learns what that project depends on. The Power sets no auto-approve, so Kiro shows the `projectDir` before a call runs. Trust the tools for all calls only if you accept this.
 
@@ -191,7 +210,7 @@ Releases are sequenced, not promised by date. Release 0.1 lists each item's stat
 - Remediation pull requests: bump, remove, and one migration (node-sass to sass). On `main`
 - Evidence pack: CycloneDX JSON SBOM, policy results, remediation log, hash. On `main`, in the engine, the API and the CLI
 - Cemetery UI, with the history scrubber and two replays. On `main`
-- CLI with scan, check and evidence. On `main`, not published to npm yet
+- CLI with scan, check and evidence. On `main`, and on npm as `sexton` since 28 November 2026
 - GitHub Action. On `main`
 - Scheduled re-scan agent that judges changes against the policy, planned
 
@@ -202,7 +221,6 @@ Releases are sequenced, not promised by date. Release 0.1 lists each item's stat
 - Private repositories through a GitHub App
 - Two more migration recipes
 - Workspace scanning in the CLI
-- CLI published to npm
 
 ### 0.3
 

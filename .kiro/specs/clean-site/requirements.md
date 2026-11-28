@@ -4,7 +4,7 @@
 
 The owner walked the hosted site as a first visitor and then tried the calm-first-visit build on 26 November 2026. He rejected the overall design. His words: "A lot of noise. Tooltips all around. As a first visitor I was confused." "Hover boxes cover the graves and nothing says which one I am looking at." "Hard to read the cursive writing." "The scan is so small." "So much noise going on in the header." "When I click legend the whole thing comes down." "What is the point of serious mode?" "No action items." "I would like a minimalistic but neat and clean design." "The sound is third class. White noise." On a draft of the design: the replay "says the same stuff three times", two buttons "do the same thing", a help line he "had to read three times", and "we do not have a complete guide. A kid should get it."
 
-On 26 November 2026 he approved a working design. It is the single source for look, layout, wording and flow, and it wins over any other description of them. Where the approved design and the engine's real data differ, the real data wins and the layout stays. The design's graves and backdrop are still drawings: the live canvas scene and its animated characters stay as they are on main.
+On 26 November 2026 the look, layout, wording and flow of the site were set in this spec. This spec (requirements.md and design.md) is the single source for them, and it wins over any other description of them. Where this spec and the engine's real data differ, the real data wins and the layout stays. The graves and backdrop stay those of the live canvas scene: the scene and its animated characters stay as they are on main.
 
 This spec rebuilds the site shell around the canvas scene. It adds:
 
@@ -431,9 +431,9 @@ Out of scope: GitHub sign-in, any change to the engine's state rules, the canvas
 3. THE build SHALL update CREDITS.md and docs/JUDGES.md where they describe fonts, sound, the tooltip, Serious mode, the header or the replay controls.
 4. THE build SHALL rewrite .kiro/steering/web.md for the new site and drop the rules of removed features.
 5. THE build SHALL move docs/requirements.md to version 1.1, correct its header line, rewrite R-UI-4 and R-UI-8, and add a change-log line.
-6. THE review SHALL use the built site in a fresh browser profile at 1440 by 900 and 390 by 844 through every flow of the approved design, and SHALL list every difference from the approved design with its reason.
+6. THE review SHALL use the built site in a fresh browser profile at 1440 by 900 and 390 by 844 through every flow this spec covers, and SHALL list every difference from this spec with its reason.
 7. WHEN the owner approves at go THE build SHALL add to README.md the three facts the Claim registry rests on that README lacks: "The hosted site needs no sign-in and never asks for a GitHub password.", "Sexton reads a repository's package.json and package-lock.json at its root." and "Sexton proposes a bump only to a version that passes its checks; otherwise it proposes no change."
-8. THE build SHALL add to README.md the sentence "The cemetery puts the graves to fix first in front: Possessed, then Dead, Haunted and Restless, then by advisory severity and reach.", approved by the owner on 26 November 2026, and the Claim registry SHALL rest the Tour's first step (13.3) and the Legend's fix order line (13.1) on it.
+8. THE build SHALL add to README.md the sentence "The cemetery puts the graves to fix first in front: Possessed, then Dead, Haunted and Restless, then by advisory severity and reach.", fixed word for word on 26 November 2026, and the Claim registry SHALL rest the Tour's first step (13.3) and the Legend's fix order line (13.1) on it.
 
 ### Requirement 19: A little mischief, never in the way
 

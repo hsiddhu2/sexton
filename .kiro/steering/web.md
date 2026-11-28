@@ -4,7 +4,7 @@ fileMatchPattern: ["packages/web/**/*.ts", "packages/web/**/*.tsx", "packages/we
 ---
 # Site rules
 
-The site is the shell of spec clean-site around the canvas cemetery: a one-row header, Home (the headline, the chips, the Scene or the List, the Footer bar and the Panel), a tabbed Drawer, a Replay told step by step, a Guide page, a Legend, a Tour, failure cards and a Track slot for music. The design the owner approved on 26 November 2026 is the reference for look, layout and wording; real data wins over it, and the layout stays.
+The site is the shell of spec clean-site around the canvas cemetery: a one-row header, Home (the headline, the chips, the Scene or the List, the Footer bar and the Panel), a tabbed Drawer, a Replay told step by step, a Guide page, a Legend, a Tour, failure cards and a Track slot for music. Spec clean-site (its requirements.md and design.md) is the reference for look, layout and wording. Real data wins over it, and the layout stays.
 
 ## One thing at a time
 

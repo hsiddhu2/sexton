@@ -2,7 +2,7 @@
 
 ## Introduction
 
-cemetery-undead is Phase 1 of the "Night of the Living Deps" art pass, approved by the owner on 24 Nov 2026 at 03:41 from two approved designs: the cemetery and the axios replay moment. It changes how the cemetery looks. It does not change what any grave means.
+cemetery-undead is Phase 1 of the "Night of the Living Deps" art pass, chosen on 24 Nov 2026 at 03:41. It covers two views: the cemetery and the axios replay moment. It changes how the cemetery looks. It does not change what any grave means.
 
 - **U1.** A Halloween night palette, with state colours chosen to stay apart for viewers with colour vision deficiency.
 - **U2.** Self-hosted display and interface fonts.
@@ -10,9 +10,9 @@ cemetery-undead is Phase 1 of the "Night of the Living Deps" art pass, approved 
 - **U4.** A deeper scene: graves recede in three depth tiers by urgency, with church and fence silhouettes, bats, fog, a lantern glow, a vignette and grain.
 - **U5.** Epitaphs: "Here lies" and a short punchline that is true of the State's reason.
 - **U6.** Serious mode, which hides the punchlines.
-- **U7.** A header and a footer bar in the approved design's layout.
+- **U7.** A header and a footer bar in the layout this spec sets.
 
-Phase 2 (sound, speech bubbles, the replay burst choreography and the burial priest) is a separate spec. The approved design shows some Phase 2 items (speech bubbles, the replay stop cards). This spec does not build them.
+Phase 2 (sound, speech bubbles, the replay burst choreography and the burial priest) is a separate spec. Some Phase 2 items (speech bubbles, the replay stop cards) belong to the same look. This spec does not build them.
 
 This spec traces to R-UI-1 to R-UI-7 of docs/requirements.md section 5.8, to N-7 and N-9 of section 6, and to the cemetery-polish, cemetery-time and cemetery-time-fixes specs. It changes no state rule, no policy rule, no API field and no evidence field. The demo evidence digest stays c8fb6cab465d46ca92cf83dbc10022b6a662c8fad68ec8f64d827ef16f43344d.
 
@@ -32,7 +32,7 @@ Paths: this spec changes `packages/web`, the root `package-lock.json` (dev-only 
 - **Pose**: one frame of a Clip.
 - **Atlas**: a PNG image under `packages/web/public/sprites` that holds the Poses of one Clip, with a JSON frame table.
 - **Bake**: the dev-only script `packages/web/scripts/bake-sprites.mjs`, which renders CC0 models into Atlases.
-- **Vector fallback**: Characters drawn as blocky vector shapes on the canvas in the approved design's style, used when the Bake does not work within its budget.
+- **Vector fallback**: Characters drawn as blocky vector shapes on the canvas, used when the Bake does not work within its budget.
 - **Frame rate**: 12 Poses a second for every Character.
 - **Dancer**: a Dead grave whose skeleton breaks into the dance Clip on a seeded schedule.
 - **Tier**: a depth band of the Scene. Front holds Possessed and Dead, middle holds Haunted and Restless, back holds Alive.
@@ -49,7 +49,7 @@ Paths: this spec changes `packages/web`, the root `package-lock.json` (dev-only 
 - **Footer bar**: the bar at the bottom of the page that holds Play, the History date slider and "Replay an attack".
 - **Canvas top**: the y of the top edge of the scene canvas in CSS pixels, from the top of the viewport.
 - **Reduced motion**: the `prefers-reduced-motion: reduce` media query.
-- **Visual critic**: a review subagent that sees only screenshots, the approved design screenshots and the design guidance, never the code.
+- **Visual critic**: a review subagent that sees only screenshots, the design guidance and the checklist in design.md, never the code.
 - **Deliberate test change**: a change to an existing test that design.md lists because the test pins a value this spec changes on purpose.
 
 ## Requirements
@@ -135,7 +135,7 @@ Paths: this spec changes `packages/web`, the root `package-lock.json` (dev-only 
 
 ### Requirement 6: The night backdrop
 
-**User Story:** As a viewer, I want a churchyard at night, so that the scene feels like the approved design.
+**User Story:** As a viewer, I want a churchyard at night, so that the scene has the mood this spec sets.
 
 **Traces to:** U4; web.md scenery rules
 
@@ -245,13 +245,13 @@ Paths: this spec changes `packages/web`, the root `package-lock.json` (dev-only 
 
 ### Requirement 14: The screenshot loop
 
-**User Story:** As the owner, I want the result to match the approved design, so that the approved art direction is what ships.
+**User Story:** As the owner, I want the result to match the look this spec sets, so that the chosen art direction is what ships.
 
 **Traces to:** U1 to U7; the decided build method (the screenshot loop)
 
 #### Acceptance Criteria
 
-1. AFTER every visual change, THE Orchestrator SHALL take screenshots of the demo and of the axios replay at 1440 by 900 and at 390 by 844, and compare them with the approved design pictures.
+1. AFTER every visual change, THE Orchestrator SHALL take screenshots of the demo and of the axios replay at 1440 by 900 and at 390 by 844, and check them against the Visual critic checklist in design.md.
 2. THE Visual critic SHALL answer READY or list what is off. THE Orchestrator SHALL fix and repeat until the Visual critic answers READY at both sizes.
 3. THE Orchestrator SHALL record the findings of each round in tasks.md notes in plain words.
 

@@ -358,7 +358,7 @@ For any fixture project, every URL the transport sees has host `registry.npmjs.o
 1. **Triage in two places.** Decision 2 keeps Requirement 8.4 and 8.5 as a tested pair. Alternatives need a rule change: let web import an Engine subpath, or serve the order from the API. Recommended: as written.
 2. **Closed by the spike.** The SDK v2 runs with hand-written schemas and Kiro's client connects to it, so neither `zod` nor the v1 SDK is needed. The owner allowed zod only if the spike showed it was needed.
 3. **Skill instead of steering file; plugin format instead of POWER.md.** Decision 9. Say if a literal steering file under the legacy format is wanted.
-4. **A requirements version bump (approved by the owner, 26 Nov 2026).** Requirement 15's companion: `docs/requirements.md` 1.1 gains one line under 4.1 (an MCP server and a Power), and one change-log line. Task 9.3. Without approval the task is skipped and the spec is the only record.
+4. **A requirements version bump (decided on 26 Nov 2026).** Requirement 15's companion: `docs/requirements.md` 1.1 gains one line under 4.1 (an MCP server and a Power), and one change-log line. Task 9.3. Without approval the task is skipped and the spec is the only record.
 5. **The Power installs from `main` by default.** Until this branch merges, a judge installs from the branch URL or the folder. The README gives both.
 
 ## Notes and open items (26 Nov 2026, task 2 spike)

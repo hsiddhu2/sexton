@@ -2,7 +2,7 @@
 
 ## Introduction
 
-cemetery-undead-2 is Phase 2 of the "Night of the Living Deps" art pass. Phase 1 (cemetery-undead) merged to main at b513514 on 25 Nov 2026. The visual target is still the approved design of the cemetery and the replay, with its pictures.
+cemetery-undead-2 is Phase 2 of the "Night of the Living Deps" art pass. Phase 1 (cemetery-undead) merged to main at b513514 on 25 Nov 2026. The visual target is still the cemetery and the replay as cemetery-undead set them.
 
 It has two parts:
 
@@ -80,7 +80,7 @@ Paths: this spec changes `packages/web`, `README.md`, `CREDITS.md`, `docs/cemete
 
 ### Requirement 3: A strong Possessed glow that keeps the contrast check
 
-**User Story:** As a viewer, I want the Possessed grave to glow as in the approved design, so that the most urgent grave draws the eye.
+**User Story:** As a viewer, I want the Possessed grave to glow strong and pink, so that the most urgent grave draws the eye.
 
 **Traces to:** A3; R-UI-7; cemetery-undead requirement 1.4
 
@@ -105,7 +105,7 @@ Paths: this spec changes `packages/web`, `README.md`, `CREDITS.md`, `docs/cemete
 
 ### Requirement 5: Wider middle and back rows
 
-**User Story:** As a viewer, I want the rows to fill the cemetery, so that it looks like the approved design.
+**User Story:** As a viewer, I want the rows to fill the cemetery, so that the scene looks full.
 
 **Traces to:** A5; R-UI-1
 
@@ -116,7 +116,7 @@ Paths: this spec changes `packages/web`, `README.md`, `CREDITS.md`, `docs/cemete
 
 ### Requirement 6: The replay story card
 
-**User Story:** As a reviewer, I want the sources in one tidy line, so that the card reads like the approved design.
+**User Story:** As a reviewer, I want the sources in one tidy line, so that the card reads cleanly.
 
 **Traces to:** A6; cemetery-undead requirement 9.8
 
@@ -156,7 +156,7 @@ Paths: this spec changes `packages/web`, `README.md`, `CREDITS.md`, `docs/cemete
 3. THE Web app SHALL remember the choice per browser in `localStorage` under `sexton:sound` with the value "on" or "off". IF reading or writing throws, or the value is anything else, THEN Sound SHALL be off and the page SHALL keep working.
 4. WHEN the remembered value is "on", THE toggle SHALL show "Sound on", and THE AudioContext SHALL be created only at the first pointer or key press on the page.
 5. THE Sound SHALL be made in code with the Web Audio API, from oscillators and from noise generated from a fixed seed, with no audio file and no request.
-6. THE Voices SHALL be the wind bed, the sting, the thud, the bell and the ghost call of the Sound list in design.md, each with the synthesis and peak level the owner approved.
+6. THE Voices SHALL be the wind bed, the sting, the thud, the bell and the ghost call of the Sound list in design.md, each with the synthesis and peak level that list sets.
 7. THE Web app SHALL pass every Voice through one Master gain whose value never exceeds MASTER_CAP, and SHALL end every Voice but the wind bed within 2,500 ms.
 8. WHILE Serious mode is on, THE Web app SHALL play no Voice but the bell.
 9. WHILE Reduced motion applies, THE Web app SHALL play the same Voices for the same triggers as without it.
@@ -248,13 +248,13 @@ Paths: this spec changes `packages/web`, `README.md`, `CREDITS.md`, `docs/cemete
 
 ### Requirement 15: The screenshot loop
 
-**User Story:** As the owner, I want the result to match the approved design, so that the approved art direction is what ships.
+**User Story:** As the owner, I want the result to match the look this spec sets, so that the chosen art direction is what ships.
 
 **Traces to:** A1 to A6, B2, B3; cemetery-undead requirement 14
 
 #### Acceptance Criteria
 
-1. AFTER every visual change, THE Orchestrator SHALL take screenshots of the demo and of the axios replay at 1440 by 900 and at 390 by 844, with the Burst captured mid-animation and at its final pose, and compare them with the approved design pictures.
+1. AFTER every visual change, THE Orchestrator SHALL take screenshots of the demo and of the axios replay at 1440 by 900 and at 390 by 844, with the Burst captured mid-animation and at its final pose, and check them against the Visual critic checklist in design.md.
 2. THE Visual critic SHALL answer READY or list what is off. THE Orchestrator SHALL fix and repeat until the Visual critic answers READY at both sizes.
 3. THE Orchestrator SHALL record the findings of each round in tasks.md notes in plain words.
 
