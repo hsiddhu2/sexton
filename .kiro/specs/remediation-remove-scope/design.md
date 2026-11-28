@@ -79,5 +79,5 @@ The same run reported seven notes. Note 2 (build, dist, coverage) is defect 2 ab
 
 ## After the third run
 
-The third headless review reported two defects. D1 (a migrate intent carries several Edits) and D2 (a migration removes node-sass with no import-sites count, on the hosted path too) came from a checklist written before migrations existed, and from an agent that did not load the migration spec. Both behaviours are what migration-node-sass 4.2, 4.6, 5.4 and 7.1 and hosted-plans 6.5 require. The agent now loads migration-node-sass, checklist items 4, 5 and 6 follow it, and remediation 1.6 and 4.12 point to the change. No code changed.
+The third headless review reported two defects. D1 (a migrate intent carries several Edits) and D2 (a migration removes node-sass with no import-sites count, on the hosted path too) came from a checklist written before migrations existed, and from an agent that did not load the migration spec. Both behaviours are what migration-node-sass 4.2, 4.6, 5.4 and 7.1 and hosted-plans 6.5 require. The agent now loads migration-node-sass, checklist items 4, 5 and 6 follow it, and remediation 1.6 and 4.12 point to the change. No behaviour changed.
 

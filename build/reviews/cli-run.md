@@ -20,7 +20,7 @@ kiro-cli chat --no-interactive --agent gravedigger --trust-tools=fs_read "Review
 
 - First run, on `e3761ff`: a remove Edit also deleted `peerDependencies` and `optionalDependencies` entries, and a package used only from `build/`, `dist/` or `coverage/` could get a remove proposal. Spec `remediation-remove-scope` fixed both (`178ddc1`). The PR line now names `dependencies` and `devDependencies` (`ee84172`). Its other notes were accepted, with reasons in that spec's design.
 - Second run, on `178ddc1`: after this run the agent was given the read tool only, with no shell (`ee84172`). A review now only reads files.
-- Third run, on `ee84172`: it reported two defects, a migrate intent with several Edits and a migration that removes node-sass without an import count, on the hosted path too. Both are what migration-node-sass and hosted-plans require. The agent now loads the migration spec and its checklist follows it (`252a259`). No code changed.
+- Third run, on `ee84172`: it reported two defects, a migrate intent with several Edits and a migration that removes node-sass without an import count, on the hosted path too. Both are what migration-node-sass and hosted-plans require. The agent now loads the migration spec and its checklist follows it (`252a259`). No behaviour changed.
 
 ## Standard output
 
