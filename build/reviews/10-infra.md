@@ -385,3 +385,92 @@ Cost-relevant settings as deployed:
 | Snapshotter function | Reserved concurrency 1, nodejs22.x arm64, 1024 MB, 600 s. Max memory used 229 MB |
 | Log groups | 30-day retention, both |
 | WAF | One web ACL with two AWS managed rule groups and the rate rule |
+
+## Deploy 6: the hosted site from main at 31974bb, us-east-1, 28 Nov 2026
+
+Run by the runbook, build/infra/10-deploy.md, after HP gave the deploy word for this one deploy. Profile `sandbox`, stage dev. The commit was checked out detached. The account ID and the alarm email are not recorded here.
+
+Commit: `31974bb3eb17b6a69078360ba33c37d94b679f8b`, the merge of spec/home-page (PR #22). It equalled `origin/main` after a fresh fetch. CI run 46110733552 succeeded on every job: gates on ubuntu-latest and macos-latest, e2e, self-scan and infra.
+
+Preconditions, all pass:
+
+| Check | Result |
+|---|---|
+| Gates | typecheck, lint and test exit 0. Tests: action 12, api 306, cli 69, engine 1191, mcp 91, web 833, infra 75 |
+| Engine build | exit 0 |
+| Web build with `VITE_SEXTON_API=/api` | exit 0. The bundle check found 16 files clean |
+| `cdk synth --strict` | exit 0, no warnings. 5 resources in Data, 48 in Edge |
+| Bundle load | All 3 handlers print `ok` |
+| CDKToolkit | `CREATE_COMPLETE` |
+| Unreserved concurrency | 977 |
+
+Diff, from `cdk diff --method template`:
+
+- SextonData-dev: "There were no differences".
+- SextonEdge-dev: only the code key and asset metadata of `ScanFunction`, `RemediateFunction` and `SnapshotterFunction`, and the source object keys of the web deployment custom resource.
+- No role, policy statement, security setting, WAF rule, table, secret or distribution behaviour changed. No approval was asked for.
+
+| Stack | Result | Time |
+|---|---|---|
+| SextonData-dev | "no changes" | 3 s |
+| SextonEdge-dev | UPDATE_COMPLETE, finished 06:31:06 UTC | 84 s, of which 62 s in CloudFormation |
+
+CloudFront URL: https://de1giv8lj8sfh.cloudfront.net
+
+| # | Check | Result | Time |
+|---|---|---|---|
+| 1 | The URL serves the site | 200, title "Sexton: find the dependencies that will hurt you". The browser rendered the home page | |
+| 2 | Security headers | HSTS `max-age=63072000`, CSP, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` | |
+| 3 | Cold scan of expressjs/express | 200. Body keys `report`, `policy`, `remediations`, `actions`, `timelines`, `pullRequests` | 6.17 s |
+| 4 | Warm scan | 200 | 3.98 s |
+| 5 | Request ID | `x-sexton-request-id` present | |
+| 6 | Direct function URL | 403 | |
+| 7 | Snapshotter invoke | `{"listed":79,"snapshotted":79,"failed":0,"deferred":0}`, `snap#body-parser` Count 13 | 19 s |
+| 8 | Snapshotter metrics | `SnapshotterFailed`, `SnapshotterDeferred`, `SnapshotterError`, plus `ScanErrors5xx` | |
+| 9 | WAF 429 on a burst | Pass on a second round. The burst of 130 got 400 on every request. A slower round of 30, one every 2 s, got 4 × 400, then 25 × 429 with `{"code":"rate-limited",...}`, then 1 × 400. The first 429 came after about 134 requests | |
+| 10 | Correlation ID in logs | 146 of 456 scan log lines carry `correlationId`. It equals the response's `x-amz-cf-id`: the warm scan's ID appears in 8 lines | |
+| 11 | No alarm firing | None in ALARM, after the burst too. All five alarms OK | |
+| 12 | Express remediations | `2 false true` | |
+| 13 | Evidence commit | `43fca52d28a422c8be48fd489cbd4f2d6152bab6` | |
+| 14 | Demo scan offers pull requests | `{"remediate":true}`. Plans: node-sass migrate proposed, uuid bump proposed, left-pad and request bump with no safe version | |
+| 15 | Remediate node-sass | 200, `{"status":"existing","prUrl":"https://github.com/hsiddhu2/sexton-demo/pull/1"}`. Existing, as expected, because pull request #1 is still open | |
+| 16 | The same POST again | `existing`, the same URL | |
+| 17 | Another repository | 422, `"code":"repository-not-allowed"` | |
+| 18 | Demo evidence log | `"available":true` with two entries: node-sass `pull/1` (22 Nov 2026, 01:58 UTC) and the uuid bump `pull/2` (22 Nov 2026, 02:18 UTC) | |
+| 19 | No GitHub detail in the logs | 8 api.github.com lines, each `"path":""` and status 200. The count of demo, token and pull paths is 0 | |
+| 20 | Cache-Control | exit 0. `/`, `/index.html`, `/demo/scan.json` and `/replay/axios.json` PASS with `no-cache`. `/assets/index-DftLFR8B.js` PASS with `public, max-age=31536000, immutable`. INFO: `/sexton-cache-check-fallback` and `/assets/sexton-cache-check-missing.js` are both 200 with `no-cache` (spec fresh-site, Decision 4) | |
+
+The demo repository's pull requests #1 (`sexton/migrate-node-sass`) and #2 (`sexton/bump-uuid`) were open before and after. None was opened, closed or reopened.
+
+New address checks (spec home-page), with curl and then a browser:
+
+| Address | Status | Cache-Control | Result |
+|---|---|---|---|
+| `/` | 200 | `no-cache` | The home page, with the Overview and Cemetery tabs |
+| `/cemetery` | 200 | `no-cache` | The sample cemetery, 12 graves |
+| `/cemetery?replay=axios` | 200 | `no-cache` | "Watch the axios attack unfold" |
+| `/cemetery?replay=keyv` | 200 | `no-cache` | "Watch the keyv attack unfold" |
+| `/scan?repo=hsiddhu2/sexton-demo` | 200 | `no-cache` | A live scan, 10 graves. One `/api/scan` request |
+| `/?replay=axios` | 200 | `no-cache` | Forwards to `/cemetery?replay=axios` |
+| `/?repo=hsiddhu2/sexton-demo` | 200 | `no-cache` | Forwards to `/scan?repo=hsiddhu2/sexton-demo` |
+| `/cemetery.png`, `/replay-axios.png`, `/replay-keyv.png` | 200 | `no-cache` | `image/png` |
+| `/demo/scan.json`, `/replay/axios.json`, `/replay/keyv.json` | 200 | `no-cache` | JSON |
+| `/assets/index-DftLFR8B.js` | 200 | `public, max-age=31536000, immutable` | The hashed script |
+
+- A reload of `/scan` inside 15 minutes showed the saved scan, "Scanned just now" with a Rescan button, and sent no `/api/` request.
+- `og:image` and `twitter:image` point at `/cemetery.png`, which answers 200 `image/png`.
+
+Scan times:
+
+| Scan | Time |
+|---|---|
+| express, cold (check 3) | 6.17 s |
+| express, warm (check 4) | 3.98 s |
+| sexton-demo, live in the browser | 2.4 s |
+
+What did not go as written:
+
+1. The live scan at `/scan?repo=hsiddhu2/sexton-demo` did not start by itself. The page first showed the sample cemetery with a "Scan this repository" button, as the spec says (home-page 13.5, clean-site 10.11): an address alone waits for a press. No request went out for at least 10 s. The scan began 28 s after load, and during the deploy checks its cause was not confirmed. It was confirmed afterwards on the live site, on 28 Nov 2026. The address `/scan?repo=expressjs/express` made no scan request for 6 s. One press of "Scan this repository" made exactly one request to `/api/scan`, which took 6.5 s, and the scan tag changed to expressjs/express.
+2. Check 9 needed two rounds. The burst of 130 got 400 on every request, because WAF counts with a delay. The 429 came on a slower second round, and its last request got 400 again as the window moved on.
+3. Check 18 shows two log entries, not the one the runbook named. The second is the uuid bump from 22 Nov 2026.
+4. The alarm email was not passed. CDK kept the stack's previous `AlarmEmail` value, so nobody typed the address.

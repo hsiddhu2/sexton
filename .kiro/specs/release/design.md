@@ -43,7 +43,8 @@ release.yml  on: push tags v[0-9]+.[0-9]+.[0-9]+
 registry.npmjs.org   sexton@0.1.0, sexton-mcp@0.1.0, each with provenance, each with no dependency
         |
         v
-mcp-publisher login github; mcp-publisher publish                        (owner, from packages/mcp)
+mcp-publisher login github                                               (owner, from packages/mcp)
+mcp-publisher publish                                                    (owner, from packages/mcp)
         registry.modelcontextprotocol.io checks the GitHub login grants io.github.hsiddhu2/*
         and that sexton-mcp@0.1.0 on npm has mcpName io.github.hsiddhu2/sexton
 ```
@@ -176,7 +177,20 @@ npm may still refuse a new unscoped name that is too close to an existing one. T
 
 ## Owner steps
 
-Nothing below has been run. Each step is the owner's, after his word. The npm account is `hpsiddhu`.
+Each step is the owner's, after his word. The npm account is `hpsiddhu`.
+
+As of 28 November 2026:
+
+| Step | State |
+|---|---|
+| npm 1, two-factor authentication | Done. The owner approves with his passkey |
+| npm 2, both names reserved | Done. `sexton@0.0.0` and `sexton-mcp@0.0.0` published by hand, with npm web login and the owner's passkey |
+| npm 3, trusted publisher | Done on both packages: `hsiddhu2/sexton`, `release.yml`, npm publish allowed |
+| npm 4, tag ruleset | Not yet done |
+| npm 5, tag and release | Done. Tag `v0.1.0` on `02a6f2c`. Release run 46110735872 succeeded on both jobs |
+| npm 6, provenance | Done. `sexton@0.1.0` and `sexton-mcp@0.1.0` are published with provenance. `npm audit signatures` reports 2 packages with verified attestations |
+| npm 7, require 2FA and disallow tokens, deprecate the placeholders | Not yet done |
+| MCP Registry, steps 1 to 5 | Not yet done |
 
 ### npm
 
